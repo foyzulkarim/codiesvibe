@@ -96,8 +96,8 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               </div>
             </div>
             
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {tool.description}
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description}
             </p>
           </div>
         </div>
@@ -133,11 +133,16 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
         {/* Stats Row */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-warning text-warning" />
-              <span className="font-medium">{tool.rating}</span>
-              <span className="text-muted-foreground">({tool.reviewCount.toLocaleString()})</span>
-            </div>
+            {tool.rating && (
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-warning text-warning" />
+                <span className="font-medium">{tool.rating}</span>
+                <span className="text-muted-foreground">({tool.reviewCount?.toLocaleString() || '0'})</span>
+              </div>
+            )}
+            {!tool.rating && (
+              <span className="text-muted-foreground text-xs">No ratings yet</span>
+            )}
           </div>
           
           <div className="flex items-center gap-1 text-muted-foreground">

@@ -123,6 +123,13 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
           onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         />
+        {searchQuery.length >= 1 && searchQuery.length < 2 && (
+          <div className="absolute top-full left-0 right-0 mt-1 p-3 bg-card border border-border rounded-lg shadow-lg z-50">
+            <p className="text-sm text-muted-foreground">
+              Type at least 2 characters to see suggestions...
+            </p>
+          </div>
+        )}
         {searchQuery && (
           <button
             onClick={clearSearch}
@@ -135,6 +142,11 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
 
       {showSuggestions && suggestions.length > 0 && (
         <div className="search-suggestions animate-fade-in">
+          <div className="px-4 py-2 bg-muted/50 border-b border-border">
+            <p className="text-xs text-muted-foreground">
+              Searching across: tool names, descriptions, categories, and features
+            </p>
+          </div>
           {suggestions.map((suggestion, index) => (
             <div
               key={index}
@@ -157,6 +169,30 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      
+      {showSuggestions && searchQuery.length >= 2 && suggestions.length === 0 && (
+        <div className="search-suggestions animate-fade-in">
+          <div className="px-4 py-6 text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              No suggestions found for "{searchQuery}"
+            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Try searching for:</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {["free tools", "code completion", "open source", "VS Code"].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => onSearch(suggestion)}
+                    className="px-2 py-1 text-xs bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

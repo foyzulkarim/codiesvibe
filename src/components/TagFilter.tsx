@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { filterOptions } from "@/data/tools";
-import { X } from "lucide-react";
+import { X, ChevronDown, ChevronUp } from "lucide-react";
 
 interface TagFilterProps {
   activeFilters: Record<string, string[]>;
@@ -16,7 +17,21 @@ export const TagFilter = ({
   filteredCount, 
   totalCount 
 }: TagFilterProps) => {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    pricing: true,
+    functionality: true,
+    interface: false,
+    deployment: false
+  });
+
   const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const getTagClassName = (category: string, value: string) => {
     const isActive = activeFilters[category]?.includes(value);
@@ -49,94 +64,126 @@ export const TagFilter = ({
       <div className="space-y-4">
         {/* Pricing Filters */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-success"></span>
-            Pricing
-          </h3>
-          <div className="tag-group">
-            {filterOptions.pricing.map((option) => (
-              <button
-                key={option}
-                className={getTagClassName("pricing", option)}
-                data-active={isTagActive("pricing", option)}
-                onClick={() => onFilterChange("pricing", option)}
-              >
-                {option}
-                {isTagActive("pricing", option) && (
-                  <div className="w-1 h-1 rounded-full bg-current"></div>
-                )}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => toggleSection("pricing")}
+            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-success"></span>
+              Pricing
+            </h3>
+            {expandedSections.pricing ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {expandedSections.pricing && (
+            <div className="tag-group animate-fade-in">
+              {filterOptions.pricing.map((option) => (
+                <button
+                  key={option}
+                  className={getTagClassName("pricing", option)}
+                  data-active={isTagActive("pricing", option)}
+                  onClick={() => onFilterChange("pricing", option)}
+                >
+                  {option}
+                  {isTagActive("pricing", option) && (
+                    <div className="w-1 h-1 rounded-full bg-current"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Interface Filters */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-primary"></span>
-            Interface
-          </h3>
-          <div className="tag-group">
-            {filterOptions.interface.map((option) => (
-              <button
-                key={option}
-                className={getTagClassName("interface", option)}
-                data-active={isTagActive("interface", option)}
-                onClick={() => onFilterChange("interface", option)}
-              >
-                {option}
-                {isTagActive("interface", option) && (
-                  <div className="w-1 h-1 rounded-full bg-current"></div>
-                )}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => toggleSection("interface")}
+            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-primary"></span>
+              Interface
+            </h3>
+            {expandedSections.interface ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {expandedSections.interface && (
+            <div className="tag-group animate-fade-in">
+              {filterOptions.interface.map((option) => (
+                <button
+                  key={option}
+                  className={getTagClassName("interface", option)}
+                  data-active={isTagActive("interface", option)}
+                  onClick={() => onFilterChange("interface", option)}
+                >
+                  {option}
+                  {isTagActive("interface", option) && (
+                    <div className="w-1 h-1 rounded-full bg-current"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Functionality Filters */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-secondary"></span>
-            Functionality
-          </h3>
-          <div className="tag-group">
-            {filterOptions.functionality.map((option) => (
-              <button
-                key={option}
-                className={getTagClassName("functionality", option)}
-                data-active={isTagActive("functionality", option)}
-                onClick={() => onFilterChange("functionality", option)}
-              >
-                {option}
-                {isTagActive("functionality", option) && (
-                  <div className="w-1 h-1 rounded-full bg-current"></div>
-                )}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => toggleSection("functionality")}
+            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-secondary"></span>
+              Functionality
+            </h3>
+            {expandedSections.functionality ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {expandedSections.functionality && (
+            <div className="tag-group animate-fade-in">
+              {filterOptions.functionality.map((option) => (
+                <button
+                  key={option}
+                  className={getTagClassName("functionality", option)}
+                  data-active={isTagActive("functionality", option)}
+                  onClick={() => onFilterChange("functionality", option)}
+                >
+                  {option}
+                  {isTagActive("functionality", option) && (
+                    <div className="w-1 h-1 rounded-full bg-current"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Deployment Filters */}
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-warning"></span>
-            Deployment
-          </h3>
-          <div className="tag-group">
-            {filterOptions.deployment.map((option) => (
-              <button
-                key={option}
-                className={getTagClassName("deployment", option)}
-                data-active={isTagActive("deployment", option)}
-                onClick={() => onFilterChange("deployment", option)}
-              >
-                {option}
-                {isTagActive("deployment", option) && (
-                  <div className="w-1 h-1 rounded-full bg-current"></div>
-                )}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => toggleSection("deployment")}
+            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-warning"></span>
+              Deployment
+            </h3>
+            {expandedSections.deployment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {expandedSections.deployment && (
+            <div className="tag-group animate-fade-in">
+              {filterOptions.deployment.map((option) => (
+                <button
+                  key={option}
+                  className={getTagClassName("deployment", option)}
+                  data-active={isTagActive("deployment", option)}
+                  onClick={() => onFilterChange("deployment", option)}
+                >
+                  {option}
+                  {isTagActive("deployment", option) && (
+                    <div className="w-1 h-1 rounded-full bg-current"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
