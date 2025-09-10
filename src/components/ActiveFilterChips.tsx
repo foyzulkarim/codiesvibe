@@ -18,14 +18,22 @@ export const ActiveFilterChips = ({
 }: ActiveFilterChipsProps) => {
   const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
   
-  if (!hasActiveFilters) return null;
-
   const allActiveFilters = Object.entries(activeFilters).flatMap(([category, values]) =>
     values.map(value => ({ category, value }))
   );
 
+  if (!hasActiveFilters) {
+    return (
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-foreground">
+          All tools shown
+        </h2>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-3 mb-6">
       {/* Active Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium text-foreground">Active Filters:</span>
@@ -35,6 +43,7 @@ export const ActiveFilterChips = ({
             onClick={() => onRemoveFilter(category, value)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-full hover:bg-primary/90 transition-colors"
           >
+            <span>✓</span>
             {value}
             <X className="w-3 h-3" />
           </button>
@@ -45,13 +54,6 @@ export const ActiveFilterChips = ({
         >
           Clear all filters
         </button>
-      </div>
-
-      {/* Results Summary */}
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">
-          {filteredCount} of {totalCount} tools match your criteria
-        </h2>
       </div>
     </div>
   );
