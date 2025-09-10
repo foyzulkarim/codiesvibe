@@ -2,57 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
+/* AI Tool Discovery Platform Design System */
 @layer base {
   :root {
+    /* Brand Colors - Modern Blue to Purple Gradient Palette */
+    --primary: 225 73% 57%;        /* Modern blue #667eea */
+    --primary-light: 225 73% 67%;  /* Lighter blue for hover states */
+    --primary-dark: 225 73% 47%;   /* Darker blue for active states */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Purple Accent */
+    --secondary: 260 60% 55%;      /* Purple #764ba2 */
+    --secondary-light: 260 60% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-subtle: linear-gradient(135deg, hsl(var(--primary) / 0.05), hsl(var(--secondary) / 0.05));
+    --gradient-hover: linear-gradient(135deg, hsl(var(--primary-light)), hsl(var(--secondary-light)));
+
+    /* Neutral Palette */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 220 13% 9%;      /* Dark gray #1f2937 */
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 13% 9%;
+    --card-hover: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --muted: 220 13% 97%;          /* Light gray backgrounds */
+    --muted-foreground: 220 9% 46%; /* Medium gray text */
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Success States */
+    --success: 142 71% 45%;        /* Green #10b981 */
+    --success-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warning States */
+    --warning: 32 95% 44%;         /* Orange #f59e0b */
+    --warning-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Interactive Elements */
+    --border: 220 13% 91%;         /* Light borders */
+    --input: 220 13% 91%;
+    --ring: 225 73% 57%;           /* Focus rings using primary */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Tag System Colors */
+    --tag-pricing: 142 71% 45%;     /* Green for pricing */
+    --tag-interface: 225 73% 57%;   /* Blue for interface */
+    --tag-functionality: 260 60% 55%; /* Purple for functionality */
+    --tag-deployment: 32 95% 44%;   /* Orange for deployment */
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 13% 9% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 13% 9% / 0.1), 0 2px 4px -1px hsl(220 13% 9% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(220 13% 9% / 0.1), 0 4px 6px -2px hsl(220 13% 9% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 13% 9% / 0.1), 0 10px 10px -5px hsl(220 13% 9% / 0.04);
+    --shadow-glow: 0 0 20px hsl(var(--primary) / 0.3);
 
-    --radius: 0.5rem;
+    /* Animation Timings */
+    --transition-fast: 150ms ease-in-out;
+    --transition-normal: 200ms ease-in-out;
+    --transition-slow: 300ms ease-in-out;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -100,6 +115,138 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+@layer components {
+  /* Search Bar Component Styles */
+  .search-container {
+    @apply relative w-full max-w-2xl mx-auto;
+  }
+  
+  .search-input {
+    @apply w-full px-6 py-4 text-lg bg-white border-2 border-border rounded-2xl 
+           focus:border-primary focus:ring-4 focus:ring-primary/20 
+           transition-all duration-200 ease-in-out
+           placeholder:text-muted-foreground shadow-md;
+  }
+  
+  .search-suggestions {
+    @apply absolute top-full left-0 right-0 mt-2 bg-white border border-border 
+           rounded-xl shadow-xl z-50 max-h-96 overflow-y-auto;
+  }
+  
+  /* Tag Filter System */
+  .tag-group {
+    @apply flex flex-wrap gap-2 items-center;
+  }
+  
+  .tag-pricing {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium 
+           rounded-full border-2 cursor-pointer transition-all duration-200
+           bg-white border-success/30 text-success hover:bg-success hover:text-white
+           data-[active=true]:bg-success data-[active=true]:text-white;
+  }
+  
+  .tag-interface {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium 
+           rounded-full border-2 cursor-pointer transition-all duration-200
+           bg-white border-primary/30 text-primary hover:bg-primary hover:text-white
+           data-[active=true]:bg-primary data-[active=true]:text-white;
+  }
+  
+  .tag-functionality {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium 
+           rounded-full border-2 cursor-pointer transition-all duration-200
+           bg-white border-secondary/30 text-secondary hover:bg-secondary hover:text-white
+           data-[active=true]:bg-secondary data-[active=true]:text-white;
+  }
+  
+  .tag-deployment {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium 
+           rounded-full border-2 cursor-pointer transition-all duration-200
+           bg-white border-warning/30 text-warning hover:bg-warning hover:text-white
+           data-[active=true]:bg-warning data-[active=true]:text-white;
+  }
+  
+  /* Tool Card Components */
+  .tool-card {
+    @apply relative bg-white border border-border rounded-2xl p-6 
+           transition-all duration-200 ease-in-out cursor-pointer
+           hover:border-primary/20 hover:shadow-xl hover:scale-[1.02]
+           group;
+  }
+  
+  .tool-card-expanded {
+    @apply scale-105 shadow-2xl border-primary/30 z-10;
+  }
+  
+  .tool-logo {
+    @apply w-12 h-12 rounded-xl object-cover bg-muted flex-shrink-0
+           shadow-sm ring-1 ring-border;
+  }
+  
+  .popularity-score {
+    @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold
+           bg-gradient-to-r from-primary to-secondary text-white rounded-full
+           shadow-sm;
+  }
+  
+  .quick-actions {
+    @apply absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100
+           transition-opacity duration-200;
+  }
+  
+  /* Gradient Backgrounds */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-subtle {
+    background: var(--gradient-subtle);
+  }
+  
+  .gradient-hover {
+    background: var(--gradient-hover);
+  }
+}
+
+@layer utilities {
+  /* Animation Utilities */
+  .animate-fade-in {
+    @apply animate-in fade-in duration-300;
+  }
+  
+  .animate-scale-in {
+    @apply animate-in zoom-in-95 duration-200;
+  }
+  
+  .animate-slide-up {
+    @apply animate-in slide-in-from-bottom-4 duration-300;
+  }
+  
+  /* Shadow Utilities */
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-elegant {
+    box-shadow: var(--shadow-xl);
+  }
+  
+  /* Text Gradients */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+  
+  /* Interactive States */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+  
+  .hover-glow {
+    @apply transition-shadow duration-200 hover:shadow-glow;
   }
 }
