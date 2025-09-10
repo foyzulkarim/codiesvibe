@@ -39,7 +39,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
 
   return (
     <div 
-      className={`tool-card ${isExpanded ? 'tool-card-expanded' : ''}`}
+      className={`tool-card ${isExpanded ? 'tool-card-expanded' : ''} group`}
       onClick={handleCardClick}
     >
       {/* Quick Actions - Hidden until hover */}

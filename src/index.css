@@ -175,8 +175,7 @@
   .tool-card {
     @apply relative bg-white border border-border rounded-2xl p-6 
            transition-all duration-200 ease-in-out cursor-pointer
-           hover:border-primary/20 hover:shadow-xl hover:scale-[1.02]
-           group;
+           hover:border-primary/20 hover:shadow-xl hover:scale-[1.02];
   }
   
   .tool-card-expanded {
