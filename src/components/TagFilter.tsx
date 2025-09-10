@@ -1,25 +1,21 @@
-import { useState } from "react";
-import { filterOptions } from "@/data/tools";
-import { X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useMemo } from "react";
+import { filterOptions, aiTools } from "@/data/tools";
+import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
 
 interface TagFilterProps {
   activeFilters: Record<string, string[]>;
   onFilterChange: (category: string, value: string) => void;
   onClearAll: () => void;
-  filteredCount: number;
-  totalCount: number;
 }
 
 export const TagFilter = ({ 
   activeFilters, 
   onFilterChange, 
-  onClearAll, 
-  filteredCount, 
-  totalCount 
+  onClearAll
 }: TagFilterProps) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     pricing: true,
-    functionality: true,
+    functionality: false,
     interface: false,
     deployment: false
   });
@@ -33,161 +29,97 @@ export const TagFilter = ({
     }));
   };
 
-  const getTagClassName = (category: string, value: string) => {
-    const isActive = activeFilters[category]?.includes(value);
-    return `tag-${category} ${isActive ? "data-[active=true]" : ""}`;
-  };
+  // Calculate filter counts
+  const getFilterCount = useMemo(() => {
+    return (category: string, value: string) => {
+      // Create a temporary filter state with just this filter active
+      const tempFilters = { ...activeFilters };
+      
+      // If this filter is already active, we want to count tools without it
+      if (activeFilters[category]?.includes(value)) {
+        tempFilters[category] = activeFilters[category].filter(v => v !== value);
+      } else {
+        // If not active, add it to see how many tools would match
+        tempFilters[category] = [...(activeFilters[category] || []), value];
+      }
+      
+      // Count tools that match the temporary filter state
+      let count = aiTools.filter(tool => {
+        return Object.entries(tempFilters).every(([cat, values]) => {
+          if (values.length === 0) return true;
+          const toolValues = tool[cat as keyof typeof tool] as string[];
+          return values.some(val => toolValues.includes(val));
+        });
+      }).length;
+      
+      return count;
+    };
+  }, [activeFilters]);
 
   const isTagActive = (category: string, value: string) => {
     return activeFilters[category]?.includes(value) || false;
   };
 
+  const getChipClassName = (category: string, value: string) => {
+    const isActive = isTagActive(category, value);
+    const baseClasses = "inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105";
+    
+    if (isActive) {
+      return `${baseClasses} bg-primary text-primary-foreground shadow-sm`;
+    }
+    
+    return `${baseClasses} bg-muted border border-border text-foreground hover:bg-muted/80 hover:border-border/80`;
+  };
+
+  const sectionIcons = {
+    pricing: "💰",
+    interface: "🖥️", 
+    functionality: "⚡",
+    deployment: "🚀"
+  };
+
   return (
     <div className="space-y-6">
-      {/* Filter Results Summary */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{filteredCount}</span> of {totalCount} tools match your criteria
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={onClearAll}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full hover:bg-muted"
-          >
-            <X className="w-4 h-4" />
-            Clear all filters
-          </button>
-        )}
-      </div>
 
       {/* Filter Categories */}
       <div className="space-y-4">
-        {/* Pricing Filters */}
-        <div>
-          <button
-            onClick={() => toggleSection("pricing")}
-            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-success"></span>
-              Pricing
-            </h3>
-            {expandedSections.pricing ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.pricing && (
-            <div className="tag-group animate-fade-in">
-              {filterOptions.pricing.map((option) => (
-                <button
-                  key={option}
-                  className={getTagClassName("pricing", option)}
-                  data-active={isTagActive("pricing", option)}
-                  onClick={() => onFilterChange("pricing", option)}
-                >
-                  {option}
-                  {isTagActive("pricing", option) && (
-                    <div className="w-1 h-1 rounded-full bg-current"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Interface Filters */}
-        <div>
-          <button
-            onClick={() => toggleSection("interface")}
-            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-primary"></span>
-              Interface
-            </h3>
-            {expandedSections.interface ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.interface && (
-            <div className="tag-group animate-fade-in">
-              {filterOptions.interface.map((option) => (
-                <button
-                  key={option}
-                  className={getTagClassName("interface", option)}
-                  data-active={isTagActive("interface", option)}
-                  onClick={() => onFilterChange("interface", option)}
-                >
-                  {option}
-                  {isTagActive("interface", option) && (
-                    <div className="w-1 h-1 rounded-full bg-current"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Functionality Filters */}
-        <div>
-          <button
-            onClick={() => toggleSection("functionality")}
-            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-secondary"></span>
-              Functionality
-            </h3>
-            {expandedSections.functionality ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.functionality && (
-            <div className="tag-group animate-fade-in">
-              {filterOptions.functionality.map((option) => (
-                <button
-                  key={option}
-                  className={getTagClassName("functionality", option)}
-                  data-active={isTagActive("functionality", option)}
-                  onClick={() => onFilterChange("functionality", option)}
-                >
-                  {option}
-                  {isTagActive("functionality", option) && (
-                    <div className="w-1 h-1 rounded-full bg-current"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Deployment Filters */}
-        <div>
-          <button
-            onClick={() => toggleSection("deployment")}
-            className="flex items-center justify-between w-full text-left mb-2 hover:text-primary transition-colors"
-          >
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-warning"></span>
-              Deployment
-            </h3>
-            {expandedSections.deployment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          {expandedSections.deployment && (
-            <div className="tag-group animate-fade-in">
-              {filterOptions.deployment.map((option) => (
-                <button
-                  key={option}
-                  className={getTagClassName("deployment", option)}
-                  data-active={isTagActive("deployment", option)}
-                  onClick={() => onFilterChange("deployment", option)}
-                >
-                  {option}
-                  {isTagActive("deployment", option) && (
-                    <div className="w-1 h-1 rounded-full bg-current"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {Object.entries(filterOptions).map(([category, options]) => (
+          <div key={category}>
+            <button
+              onClick={() => toggleSection(category)}
+              className="flex items-center justify-between w-full text-left mb-3 hover:text-primary transition-colors group"
+            >
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="text-base">{sectionIcons[category as keyof typeof sectionIcons]}</span>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </h3>
+              {expandedSections[category] ? 
+                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" /> : 
+                <span className="text-muted-foreground group-hover:text-primary transition-colors">▶</span>
+              }
+            </button>
+            {expandedSections[category] && (
+              <div className="flex flex-wrap gap-2 animate-fade-in">
+                {options.map((option) => (
+                  <button
+                    key={option}
+                    className={getChipClassName(category, option)}
+                    onClick={() => onFilterChange(category, option)}
+                  >
+                    {isTagActive(category, option) && (
+                      <Check className="w-3.5 h-3.5" />
+                    )}
+                    {option}
+                    <span className="text-xs opacity-75">
+                      ({getFilterCount(category, option)})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
-
-      {/* Popular Filter Combinations */}
       {!hasActiveFilters && (
         <div className="border-t border-border pt-4">
           <h3 className="text-sm font-medium text-muted-foreground mb-3">Popular combinations:</h3>

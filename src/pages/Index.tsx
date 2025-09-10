@@ -3,6 +3,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { TagFilter } from "@/components/TagFilter";
 import { ToolGrid } from "@/components/ToolGrid";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
+import { ActiveFilterChips } from "@/components/ActiveFilterChips";
 import { aiTools, AITool } from "@/data/tools";
 import { toast } from "@/hooks/use-toast";
 import { Sparkles, Zap } from "lucide-react";
@@ -162,8 +163,6 @@ const Index = () => {
                 activeFilters={activeFilters}
                 onFilterChange={handleFilterChange}
                 onClearAll={handleClearFilters}
-                filteredCount={filteredTools.length}
-                totalCount={aiTools.length}
               />
 
               {/* Comparison Widget */}
@@ -198,6 +197,13 @@ const Index = () => {
 
           {/* Main Content - Tool Grid */}
           <div className="lg:col-span-3">
+            <ActiveFilterChips
+              activeFilters={activeFilters}
+              onRemoveFilter={(category, value) => handleFilterChange(category, value)}
+              onClearAll={handleClearFilters}
+              totalCount={aiTools.length}
+              filteredCount={filteredTools.length}
+            />
             <ToolGrid
               tools={filteredTools}
               onCompare={handleCompare}
