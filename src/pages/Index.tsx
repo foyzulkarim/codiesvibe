@@ -6,7 +6,8 @@ import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { ActiveFilterChips } from "@/components/ActiveFilterChips";
 import { aiTools, AITool } from "@/data/tools";
 import { toast } from "@/hooks/use-toast";
-import { Sparkles, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Zap, LogIn, UserPlus } from "lucide-react";
 
 const Index = () => {
   // Search and filter state
@@ -112,6 +113,20 @@ const Index = () => {
       {/* Hero Section */}
       <div className="gradient-subtle border-b border-border">
         <div className="container mx-auto px-4 py-16">
+          {/* Login/Signup Button */}
+          <div className="flex justify-end mb-8">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" className="gap-2">
+                <LogIn className="w-4 h-4" />
+                Login
+              </Button>
+              <Button className="gap-2">
+                <UserPlus className="w-4 h-4" />
+                Sign Up
+              </Button>
+            </div>
+          </div>
+          
           <div className="text-center max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Sparkles className="w-8 h-8 text-primary" />
