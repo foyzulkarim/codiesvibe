@@ -11,10 +11,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { ToolsService } from './tools.service';
+import { ToolsService, SearchFilters, SearchOptions } from './tools.service';
 import { CreateToolDto } from './dto/create-tool.dto';
 import { UpdateToolDto } from './dto/update-tool.dto';
 import { ToolResponseDto } from './dto/tool-response.dto';
+import { GetToolsQueryDto } from './dto/get-tools-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Tools')
@@ -29,84 +30,85 @@ export class ToolsController {
   @ApiResponse({ status: 201, description: 'Tool created successfully', type: ToolResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async create(@Body() createToolDto: CreateToolDto, @Req() req: any) {
+  async create(@Body() createToolDto: CreateToolDto, @Req() req: any): Promise<ToolResponseDto> {
     const tool = await this.toolsService.create(createToolDto, req.user.id);
-    return {
-      id: tool._id,
-      name: tool.name,
-      description: tool.description,
-      createdAt: (tool as any).createdAt,
-      updatedAt: (tool as any).updatedAt,
-    };
+    return ToolResponseDto.fromDocument(tool);
   }
 
   @Get()
-  @ApiOperation({ summary: "List user's tools" })
+  @ApiOperation({ summary: "List user's tools with enhanced filtering and sorting" })
   @ApiResponse({ status: 200, description: 'Tools retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
-    @Req() req: any,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '20',
-    @Query('search') search?: string,
+    @Query() query: GetToolsQueryDto,
+    @Req() req: any
   ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 20;
-    
-    let tools;
-    if (search) {
-      tools = await this.toolsService.search(search, req.user.id, pageNum, limitNum);
+    const filters: SearchFilters = {};
+    const options: SearchOptions = {
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy as any
+    };
+
+    // Build filters from query parameters
+    if (query.functionality) {
+      filters.functionality = typeof query.functionality === 'string' 
+        ? query.functionality.split(',').map(s => s.trim())
+        : query.functionality;
+    }
+
+    if (query.tags) {
+      filters.tags = typeof query.tags === 'string'
+        ? query.tags.split(',').map(s => s.trim())
+        : query.tags;
+    }
+
+    if (query.deployment) {
+      filters.deployment = typeof query.deployment === 'string'
+        ? query.deployment.split(',').map(s => s.trim())
+        : query.deployment;
+    }
+
+    if (query.minRating !== undefined) {
+      filters.minRating = query.minRating;
+    }
+
+    if (query.maxRating !== undefined) {
+      filters.maxRating = query.maxRating;
+    }
+
+    let result;
+    if (query.search) {
+      result = await this.toolsService.search(query.search, req.user.id, options, filters);
     } else {
-      tools = await this.toolsService.findAll(req.user.id, pageNum, limitNum);
+      result = await this.toolsService.findAll(req.user.id, options, filters);
     }
 
     return {
-      data: tools.map(tool => ({
-        id: tool._id,
-        name: tool.name,
-        description: tool.description,
-        createdAt: (tool as any).createdAt,
-        updatedAt: (tool as any).updatedAt,
-      })),
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: tools.length,
-      },
+      data: result.data.map(tool => ToolResponseDto.fromDocument(tool)),
+      pagination: result.pagination
     };
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific tool' })
+  @ApiOperation({ summary: 'Get a specific tool with enhanced response' })
   @ApiResponse({ status: 200, description: 'Tool retrieved successfully', type: ToolResponseDto })
   @ApiResponse({ status: 404, description: 'Tool not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async findOne(@Param('id') id: string, @Req() req: any) {
+  async findOne(@Param('id') id: string, @Req() req: any): Promise<ToolResponseDto> {
     const tool = await this.toolsService.findOne(id, req.user.id);
-    return {
-      id: tool._id,
-      name: tool.name,
-      description: tool.description,
-      createdAt: (tool as any).createdAt,
-      updatedAt: (tool as any).updatedAt,
-    };
+    return ToolResponseDto.fromDocument(tool);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a tool' })
+  @ApiOperation({ summary: 'Update a tool with enhanced fields support' })
   @ApiResponse({ status: 200, description: 'Tool updated successfully', type: ToolResponseDto })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 404, description: 'Tool not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async update(@Param('id') id: string, @Body() updateToolDto: UpdateToolDto, @Req() req: any) {
+  async update(@Param('id') id: string, @Body() updateToolDto: UpdateToolDto, @Req() req: any): Promise<ToolResponseDto> {
     const tool = await this.toolsService.update(id, updateToolDto, req.user.id);
-    return {
-      id: tool._id,
-      name: tool.name,
-      description: tool.description,
-      createdAt: (tool as any).createdAt,
-      updatedAt: (tool as any).updatedAt,
-    };
+    return ToolResponseDto.fromDocument(tool);
   }
 
   @Delete(':id')

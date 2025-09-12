@@ -1,0 +1,488 @@
+openapi: 3.0.3
+info:
+  title: AI Tools API
+  description: Enhanced API for managing AI tools with comprehensive metadata
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+paths:
+  /api/tools:
+    get:
+      summary: List user's tools with enhanced filtering and sorting
+      description: Retrieve tools belonging to the authenticated user with new filtering capabilities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+            description: Search in name, description, and searchKeywords
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [popularity, rating, reviewCount, createdAt]
+            default: createdAt
+        - name: functionality
+          in: query
+          schema:
+            type: string
+            description: Comma-separated functionality categories
+        - name: tags
+          in: query
+          schema:
+            type: string
+            description: Comma-separated tags to filter by
+        - name: minRating
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+        - name: maxRating
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+      responses:
+        '200':
+          description: Tools retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ToolResponse'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create a new AI tool
+      description: Create a new AI tool with comprehensive metadata
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateToolDto'
+      responses:
+        '201':
+          description: Tool created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/tools/{id}:
+    get:
+      summary: Get a specific tool
+      description: Retrieve a specific tool by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tool retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    patch:
+      summary: Update a tool
+      description: Update an existing tool with enhanced metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateToolDto'
+      responses:
+        '200':
+          description: Tool updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      summary: Delete a tool
+      description: Delete an existing tool
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Tool deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  schemas:
+    ToolResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          example: "ChatGPT"
+        description:
+          type: string
+          example: "Advanced AI chatbot for natural conversations"
+        longDescription:
+          type: string
+          example: "ChatGPT is an advanced language model..."
+        pricing:
+          type: array
+          items:
+            type: string
+          example: ["Free", "Paid", "API"]
+        interface:
+          type: array
+          items:
+            type: string
+          example: ["Web", "API", "Mobile"]
+        functionality:
+          type: array
+          items:
+            type: string
+          example: ["Text Generation", "Translation", "Code Generation"]
+        deployment:
+          type: array
+          items:
+            type: string
+          example: ["Cloud"]
+        popularity:
+          type: number
+          example: 95000
+        rating:
+          type: number
+          example: 4.5
+        reviewCount:
+          type: number
+          example: 2500
+        lastUpdated:
+          type: string
+          format: date-time
+        logoUrl:
+          type: string
+          format: uri
+          example: "https://example.com/chatgpt-logo.png"
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          example:
+            apiAccess: true
+            freeTier: true
+            multiLanguage: false
+        searchKeywords:
+          type: array
+          items:
+            type: string
+          example: ["chatbot", "AI", "conversation", "GPT"]
+        tags:
+          type: object
+          properties:
+            primary:
+              type: array
+              items:
+                type: string
+            secondary:
+              type: array
+              items:
+                type: string
+          example:
+            primary: ["AI", "Chatbot"]
+            secondary: ["Productivity", "Communication"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateToolDto:
+      type: object
+      required:
+        - name
+        - description
+        - pricing
+        - interface
+        - functionality
+        - deployment
+        - logoUrl
+        - searchKeywords
+        - tags
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "ChatGPT"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Advanced AI chatbot for natural conversations"
+        longDescription:
+          type: string
+          maxLength: 2000
+          example: "ChatGPT is an advanced language model..."
+        pricing:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["Free", "Paid", "API"]
+        interface:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["Web", "API", "Mobile"]
+        functionality:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["Text Generation", "Translation", "Code Generation"]
+        deployment:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["Cloud"]
+        popularity:
+          type: number
+          minimum: 0
+          maximum: 1000000
+          default: 0
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+          default: 0
+        reviewCount:
+          type: number
+          minimum: 0
+          maximum: 1000000
+          default: 0
+        logoUrl:
+          type: string
+          format: uri
+          example: "https://example.com/chatgpt-logo.png"
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          default: {}
+          example:
+            apiAccess: true
+            freeTier: true
+            multiLanguage: false
+        searchKeywords:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          example: ["chatbot", "AI", "conversation", "GPT"]
+        tags:
+          type: object
+          required:
+            - primary
+            - secondary
+          properties:
+            primary:
+              type: array
+              items:
+                type: string
+            secondary:
+              type: array
+              items:
+                type: string
+          example:
+            primary: ["AI", "Chatbot"]
+            secondary: ["Productivity", "Communication"]
+
+    UpdateToolDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        longDescription:
+          type: string
+          maxLength: 2000
+        pricing:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        interface:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        functionality:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        deployment:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        popularity:
+          type: number
+          minimum: 0
+          maximum: 1000000
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+        reviewCount:
+          type: number
+          minimum: 0
+          maximum: 1000000
+        logoUrl:
+          type: string
+          format: uri
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+        searchKeywords:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        tags:
+          type: object
+          properties:
+            primary:
+              type: array
+              items:
+                type: string
+            secondary:
+              type: array
+              items:
+                type: string
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              error:
+                type: string
+              statusCode:
+                type: integer
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer
+
+    UnauthorizedError:
+      description: Unauthorized access
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              statusCode:
+                type: integer
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
