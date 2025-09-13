@@ -24,7 +24,8 @@ export class Tool {
   @Prop({ 
     type: Types.ObjectId, 
     ref: 'User', 
-    required: true 
+    required: true,
+    immutable: true
   })
   createdBy!: Types.ObjectId;
 
@@ -91,7 +92,18 @@ export class Tool {
     required: true,
     min: 0,
     max: 5,
-    default: 0
+    default: 0,
+    validate: {
+      validator: function(v: number) {
+        // Rating should be 0 if reviewCount is 0, or between 0.1-5 if there are reviews
+        const reviewCount = (this as any).reviewCount || 0;
+        if (reviewCount === 0) {
+          return v === 0;
+        }
+        return v >= 0.1 && v <= 5;
+      },
+      message: 'Rating must be 0 when no reviews exist, or between 0.1-5 when reviews exist'
+    }
   })
   rating!: number;
 
@@ -100,7 +112,14 @@ export class Tool {
     required: true,
     min: 0,
     max: 1000000,
-    default: 0
+    default: 0,
+    validate: {
+      validator: function(v: number) {
+        // ReviewCount must be a non-negative integer
+        return Number.isInteger(v) && v >= 0;
+      },
+      message: 'Review count must be a non-negative integer'
+    }
   })
   reviewCount!: number;
 
@@ -222,15 +241,17 @@ ToolSchema.index({ createdBy: 1 }); // User-specific queries
 ToolSchema.index({ 
   name: 'text', 
   description: 'text',
+  longDescription: 'text',
   searchKeywords: 'text'
 }, { 
   name: 'tool_enhanced_search_index',
   weights: {
-    name: 10,
-    description: 5,
-    searchKeywords: 8
+    name: 15,
+    description: 8,
+    longDescription: 3,
+    searchKeywords: 12
   }
-}); // Enhanced text search with weights
+}); // Enhanced text search with optimized weights
 
 // Performance indexes for filtering and sorting
 ToolSchema.index({ popularity: -1 }, { name: 'tool_popularity_index' }); // Popular tools first

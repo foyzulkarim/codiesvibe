@@ -171,15 +171,16 @@ export class CreateToolDto {
   @IsOptional()
   @IsObject()
   @Transform(({ value }) => {
-    // Ensure all values are boolean
-    if (typeof value === 'object' && value !== null) {
+    // Only transform if it's already a valid object, otherwise let validation fail
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       const transformed: Record<string, boolean> = {};
       for (const [key, val] of Object.entries(value)) {
         transformed[key] = Boolean(val);
       }
       return transformed;
     }
-    return {};
+    // Return the value as-is for validation to catch invalid types
+    return value;
   })
   features?: Record<string, boolean> = {};
 
@@ -191,15 +192,7 @@ export class CreateToolDto {
   @IsArray()
   @ArrayNotEmpty({ message: 'Search keywords must contain at least one keyword' })
   @IsString({ each: true })
-  @Transform(({ value }) => {
-    // Truncate each keyword to 256 characters
-    if (Array.isArray(value)) {
-      return value.map(keyword => 
-        typeof keyword === 'string' ? keyword.substring(0, 256) : String(keyword).substring(0, 256)
-      );
-    }
-    return value;
-  })
+  @Length(1, 256, { each: true, message: 'Each search keyword must be between 1 and 256 characters' })
   searchKeywords!: string[];
 
   @ApiProperty({ 

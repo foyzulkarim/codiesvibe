@@ -208,4 +208,13 @@ export class UpdateToolDto {
   @ValidateNested()
   @Type(() => UpdateTagsDto)
   tags?: UpdateTagsDto;
+
+  @ApiPropertyOptional({ 
+    description: 'Document version for optimistic concurrency control',
+    example: 0
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  version?: number;
 }
