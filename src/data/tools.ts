@@ -1,24 +1,10 @@
 // Mock data for AI coding tools
-export interface AITool {
-  id: string;
-  name: string;
-  description: string;
-  longDescription?: string;
-  pricing: string[];
-  interface: string[];
-  functionality: string[];
-  deployment: string[];
-  popularity: number;
-  rating: number;
-  reviewCount: number;
-  lastUpdated: string;
-  logoUrl: string;
-  features: Record<string, boolean>;
-  searchKeywords: string[];
-  tags: {
-    primary: string[];
-    secondary: string[];
-  };
+// Import shared types
+import { AITool as SharedAITool, FILTER_OPTIONS } from '../../shared/types';
+
+// Use shared interface
+export interface AITool extends SharedAITool {
+  // Frontend-specific fields can be added here if needed
 }
 
 export const aiTools: AITool[] = [
@@ -240,10 +226,5 @@ export const aiTools: AITool[] = [
   }
 ];
 
-// Filter options for the tag system
-export const filterOptions = {
-  pricing: ["Open Source", "Free", "Freemium", "Subscription", "Enterprise"],
-  interface: ["CLI", "IDE", "Web", "Desktop", "Browser Extension"],
-  functionality: ["Code Completion", "Code Generation", "Code Q&A", "Test Generation", "Code Analysis", "Security Scanning", "Code Refactoring", "Code Search"],
-  deployment: ["Cloud", "Self-hosted", "On-premise", "Hybrid"]
-};
+// Use shared filter options
+export const filterOptions = FILTER_OPTIONS;

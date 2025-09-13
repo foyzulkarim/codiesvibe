@@ -1,4 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Tool } from '../schemas/tool.schema';
+import { Document } from 'mongoose';
+import { BaseTool } from '../../../../shared/types/tool.types';
 
 class ResponseTagsDto {
   @ApiProperty({ 
@@ -16,7 +19,7 @@ class ResponseTagsDto {
   secondary!: string[];
 }
 
-export class ToolResponseDto {
+export class ToolResponseDto implements BaseTool {
   @ApiProperty({ 
     description: 'Tool unique identifier',
     example: '507f1f77bcf86cd799439011'
@@ -93,11 +96,11 @@ export class ToolResponseDto {
   })
   reviewCount!: number;
 
-  @ApiPropertyOptional({ 
+  @ApiProperty({ 
     description: 'Last metadata update timestamp',
     example: '2024-01-15T10:30:00.000Z'
   })
-  lastUpdated?: string;
+  lastUpdated!: string;
 
   @ApiProperty({ 
     description: 'Tool logo image URL',
@@ -169,7 +172,7 @@ export class ToolResponseDto {
       popularity: doc.popularity || 0,
       rating: doc.rating || 0,
       reviewCount: doc.reviewCount || 0,
-      lastUpdated: doc.lastUpdated?.toISOString(),
+      lastUpdated: doc.lastUpdated?.toISOString() || doc.updatedAt?.toISOString() || new Date().toISOString(),
       logoUrl: doc.logoUrl,
       features: doc.features || {},
       searchKeywords: doc.searchKeywords || [],

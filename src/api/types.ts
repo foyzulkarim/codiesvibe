@@ -1,45 +1,16 @@
 import { AITool } from '@/data/tools';
 import { SortOption as SortOptionType } from '@/lib/config';
 
-// API Response Types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-}
+// Import shared types
+import { BaseTool, ToolTags, ApiResponse, PaginatedResponse } from '../../shared/types';
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
+// Re-export shared types for backward compatibility
+export type { ApiResponse, PaginatedResponse } from '../../shared/types';
 
 // Tool API Types
-export interface ToolResponseDto {
-  id: string;
-  name: string;
-  description: string;
-  longDescription?: string;
-  pricing: string[];
-  interface: string[];
-  functionality: string[];
-  deployment: string[];
-  popularity: number;
-  rating: number;
-  reviewCount: number;
-  lastUpdated: string;
-  logoUrl: string;
-  features: Record<string, boolean>;
-  searchKeywords: string[];
-  tags: {
-    primary: string[];
-    secondary: string[];
-  };
+// Use shared interface for consistency
+export interface ToolResponseDto extends BaseTool {
+  // Backend-specific fields can be added here if needed
 }
 
 // Query Parameters Types

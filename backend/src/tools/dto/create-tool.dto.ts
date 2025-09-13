@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { CreateToolPayload, ToolTags } from '../../../../shared/types/tool.types';
 
 class TagsDto {
   @ApiProperty({ 
@@ -27,18 +28,17 @@ class TagsDto {
   @IsString({ each: true })
   primary!: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiProperty({ 
     description: 'Secondary category tags',
     type: [String],
-    example: ['Productivity', 'Communication']
+    example: ['Productivity', 'Communication', 'Language']
   })
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  secondary?: string[];
+  secondary!: string[];
 }
 
-export class CreateToolDto {
+export class CreateToolDto implements CreateToolPayload {
   @ApiProperty({ 
     description: 'Tool name',
     minLength: 1,
