@@ -18,9 +18,15 @@ export class HealthController {
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({ status: 200, description: 'Service is healthy' })
   @HealthCheck()
-  check() {
-    return this.health.check([
+  async check() {
+    const healthResult = await this.health.check([
       () => this.db.pingCheck('database'),
     ]);
+    
+    return {
+      ...healthResult,
+      timestamp: new Date().toISOString(),
+      database: healthResult.info?.database || healthResult.details?.database
+    };
   }
 }

@@ -1,58 +1,50 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { SearchBar } from "@/components/SearchBar";
 import { TagFilter } from "@/components/TagFilter";
 import { ToolGrid } from "@/components/ToolGrid";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { ActiveFilterChips } from "@/components/ActiveFilterChips";
-import { aiTools, AITool } from "@/data/tools";
+import { SortSelector } from "@/components/SortSelector";
+import { AITool, aiTools } from "@/data/tools";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap, LogIn, UserPlus } from "lucide-react";
+import { useTools } from "@/hooks/api/useTools";
+import { SORT_OPTIONS } from "@/lib/config";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { FilterState } from "@/api/types";
 
 const Index = () => {
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
     pricing: [],
     interface: [],
     functionality: [],
     deployment: []
   });
   
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>(SORT_OPTIONS.POPULARITY);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // API data fetching
+  const { 
+    data: tools, 
+    isLoading, 
+    isError, 
+    error 
+  } = useTools(searchQuery, activeFilters, sortBy, sortDirection);
+  
   // Comparison state
   const [comparisonTools, setComparisonTools] = useState<AITool[]>([]);
   const [showComparison, setShowComparison] = useState(false);
 
-  // Filter and search logic
-  const filteredTools = useMemo(() => {
-    let filtered = aiTools;
-
-    // Apply text search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(tool =>
-        tool.name.toLowerCase().includes(query) ||
-        tool.description.toLowerCase().includes(query) ||
-        tool.searchKeywords.some(keyword => keyword.toLowerCase().includes(query)) ||
-        tool.functionality.some(func => func.toLowerCase().includes(query)) ||
-        tool.tags.primary.some(tag => tag.toLowerCase().includes(query)) ||
-        tool.tags.secondary.some(tag => tag.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply filters
-    Object.entries(activeFilters).forEach(([category, values]) => {
-      if (values.length > 0) {
-        filtered = filtered.filter(tool => {
-          const toolValues = tool[category as keyof AITool] as string[];
-          return values.some(value => toolValues.includes(value));
-        });
-      }
-    });
-
-    // Sort by popularity by default
-    return filtered.sort((a, b) => b.popularity - a.popularity);
-  }, [searchQuery, activeFilters]);
+  // Filter and search logic is now handled by the API
+  // We just use the tools data directly from the API
+  const filteredTools = tools;
 
   // Handlers
   const handleFilterChange = (category: string, value: string) => {
@@ -71,6 +63,11 @@ const Index = () => {
       functionality: [],
       deployment: []
     });
+  };
+
+  const handleRetry = () => {
+    // This will trigger a refetch due to React Query's retry mechanism
+    window.location.reload();
   };
 
   const handleCompare = (tool: AITool) => {
@@ -144,7 +141,7 @@ const Index = () => {
             <div className="mt-8">
               <SearchBar
                 onSearch={setSearchQuery}
-                tools={aiTools}
+                tools={tools.length > 0 ? tools : aiTools}
                 searchQuery={searchQuery}
               />
             </div>
@@ -153,11 +150,11 @@ const Index = () => {
             <div className="flex items-center justify-center gap-8 pt-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-primary"></span>
-                <span>{aiTools.length} Tools</span>
+                <span>{tools.length || aiTools.length} Tools</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-success"></span>
-                <span>{aiTools.filter(t => t.pricing.some(p => p === "Free" || p === "Open Source")).length} Free</span>
+                <span>{tools.filter(t => t.pricing.some(p => p === "Free" || p === "Open Source")).length} Free</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-secondary"></span>
@@ -175,7 +172,7 @@ const Index = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-6 space-y-6">
               <TagFilter
-                activeFilters={activeFilters}
+                activeFilters={activeFilters as unknown as Record<string, string[]>}
                 onFilterChange={handleFilterChange}
                 onClearAll={handleClearFilters}
               />
@@ -212,18 +209,79 @@ const Index = () => {
 
           {/* Main Content - Tool Grid */}
           <div className="lg:col-span-3">
-            <ActiveFilterChips
-              activeFilters={activeFilters}
-              onRemoveFilter={(category, value) => handleFilterChange(category, value)}
-              onClearAll={handleClearFilters}
-              totalCount={aiTools.length}
-              filteredCount={filteredTools.length}
-            />
-            <ToolGrid
-              tools={filteredTools}
-              onCompare={handleCompare}
-              onSave={handleSave}
-            />
+            {/* Header with sorting and stats */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <ActiveFilterChips
+                  activeFilters={activeFilters as unknown as Record<string, string[]>}
+                  onRemoveFilter={(category, value) => handleFilterChange(category, value)}
+                  onClearAll={handleClearFilters}
+                  totalCount={tools.length || 0}
+                  filteredCount={filteredTools.length}
+                />
+              </div>
+              <SortSelector 
+                currentSort={sortBy}
+                currentDirection={sortDirection}
+                onSortChange={(newSort, newDirection) => {
+                  setSortBy(newSort);
+                  setSortDirection(newDirection);
+                }}
+              />
+            </div>
+
+            {/* Loading State */}
+            {isLoading && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="bg-card border border-border rounded-2xl p-6">
+                      <div className="flex items-start gap-4">
+                        <Skeleton className="w-12 h-12 rounded-xl" />
+                        <div className="flex-1 space-y-3">
+                          <Skeleton className="h-6 w-3/4" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-2/3" />
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                          <Skeleton className="h-6 w-20 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Error State */}
+            {isError && (
+              <div className="space-y-6">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {error?.message || 'Failed to load tools. Please try again.'}
+                  </AlertDescription>
+                </Alert>
+                <div className="text-center">
+                  <Button onClick={handleRetry} className="gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Success State */}
+            {!isLoading && !isError && (
+              <ToolGrid
+                tools={filteredTools}
+                onCompare={handleCompare}
+                onSave={handleSave}
+              />
+            )}
           </div>
         </div>
       </div>

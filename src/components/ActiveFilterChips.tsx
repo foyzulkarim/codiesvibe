@@ -1,6 +1,5 @@
-import { X, ArrowUpDown } from "lucide-react";
+import { X } from "lucide-react";
 import { aiTools } from "@/data/tools";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ActiveFilterChipsProps {
   activeFilters: Record<string, string[]>;
@@ -30,25 +29,6 @@ export const ActiveFilterChips = ({
           <h2 className="text-lg font-semibold text-foreground">
             All tools shown
           </h2>
-          
-          <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-            <Select defaultValue="popularity">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popularity">Popularity</SelectItem>
-                <SelectItem value="pricing-low">Pricing (Low to High)</SelectItem>
-                <SelectItem value="pricing-high">Pricing (High to Low)</SelectItem>
-                <SelectItem value="name-asc">Name (A to Z)</SelectItem>
-                <SelectItem value="name-desc">Name (Z to A)</SelectItem>
-                <SelectItem value="interface-asc">Interface (A to Z)</SelectItem>
-                <SelectItem value="functionality-asc">Functionality (A to Z)</SelectItem>
-                <SelectItem value="deployment-asc">Deployment (A to Z)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
     );
@@ -77,25 +57,6 @@ export const ActiveFilterChips = ({
           >
             Clear all filters
           </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
-          <Select defaultValue="popularity">
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="popularity">Popularity</SelectItem>
-              <SelectItem value="pricing-low">Pricing (Low to High)</SelectItem>
-              <SelectItem value="pricing-high">Pricing (High to Low)</SelectItem>
-              <SelectItem value="name-asc">Name (A to Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z to A)</SelectItem>
-              <SelectItem value="interface-asc">Interface (A to Z)</SelectItem>
-              <SelectItem value="functionality-asc">Functionality (A to Z)</SelectItem>
-              <SelectItem value="deployment-asc">Deployment (A to Z)</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
     </div>

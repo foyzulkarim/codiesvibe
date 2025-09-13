@@ -3,13 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
-
 import { DatabaseModule } from './database/database.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
 import { ToolsModule } from './tools/tools.module';
 import { HealthModule } from './health/health.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AppController } from './app.controller';
 import configuration from './config/configuration';
 
 @Module({
@@ -44,11 +42,10 @@ import configuration from './config/configuration';
       ]),
     }),
     DatabaseModule,
-    AuthModule,
-    UsersModule,
     ToolsModule,
     HealthModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
