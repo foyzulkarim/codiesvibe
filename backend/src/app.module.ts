@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppController } from './app.controller';
 import configuration from './config/configuration';
+import { SeedingModule } from './database/seeding/seeding.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import configuration from './config/configuration';
     DatabaseModule,
     ToolsModule,
     HealthModule,
+    SeedingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T08:40:00Z",
+  "contributors": {
+    "sample-contributor": {
+      "name": "Sample Contributor",
+      "email": "contributor@example.com",
+      "contributions": 1
+    }
+  },
+  "tools": [
+    {
+      "id": "sample-tool",
+      "name": "Sample Tool",
+      "description": "This is a sample tool description showing the required format",
+      "longDescription": "This is a longer description that provides more detailed information about the tool. It must be at least 50 characters long to meet the minimum requirement.",
+      "pricing": ["Free", "Paid"],
+      "interface": ["Web", "API", "Mobile"],
+      "functionality": ["Text Generation", "Data Analysis"],
+      "deployment": ["Cloud", "On-Premise"],
+      "logoUrl": "https://example.com/sample-logo.png",
+      "searchKeywords": ["sample", "tool", "example", "template"],
+      "tags": {
+        "primary": ["Productivity", "AI"],
+        "secondary": ["Development", "Analysis"]
+      },
+      "popularity": 75,
+      "rating": 4.2,
+      "reviewCount": 850,
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": true
+      },
+      "integrations": ["Slack", "Discord", "API"],
+      "languages": ["English", "Spanish", "French"],
+      "pros": [
+        "Easy to use interface",
+        "Good documentation",
+        "Reliable performance"
+      ],
+      "cons": [
+        "Limited free tier",
+        "Learning curve for advanced features"
+      ],
+      "useCases": [
+        "Content creation",
+        "Data analysis",
+        "Workflow automation"
+      ],
+      "contributor": "sample-contributor",
+      "dateAdded": "2025-09-14T08:40:00Z",
+      "lastUpdated": "2025-09-14T08:40:00Z"
+    }
+  ]
+}

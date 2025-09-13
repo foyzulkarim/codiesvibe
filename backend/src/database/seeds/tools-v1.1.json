@@ -1,0 +1,46 @@
+{
+  "version": 1.1,
+  "lastUpdated": "2025-09-14T09:17:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 1
+    }
+  },
+  "tools": [
+    {
+      "id": "claude-ai",
+      "name": "Claude AI",
+      "description": "AI assistant by Anthropic for helpful, harmless, and honest conversations",
+      "longDescription": "Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest.",
+      "pricing": ["Free", "Paid"],
+      "interface": ["Web", "API"],
+      "functionality": ["Text Generation", "Analysis", "Code Generation"],
+      "deployment": ["Cloud"],
+      "popularity": 85,
+      "rating": 4.6,
+      "reviewCount": 1200,
+      "lastUpdated": "2025-09-14T09:17:00Z",
+      "logoUrl": "https://example.com/claude-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "safetyFocused": true
+      },
+      "searchKeywords": ["AI", "assistant", "claude", "anthropic", "conversation"],
+      "tags": {
+        "primary": ["AI", "Assistant"],
+        "secondary": ["Productivity", "Analysis"]
+      },
+      "integrations": ["API", "Web"],
+      "languages": ["English", "French", "Spanish", "German"],
+      "pros": ["Very helpful", "Safe responses", "Good reasoning"],
+      "cons": ["Limited free usage", "Newer than competitors"],
+      "useCases": ["Writing assistance", "Data analysis", "Research help"],
+      "contributor": "system",
+      "dateAdded": "2025-09-14T09:17:00Z"
+    }
+  ]
+}

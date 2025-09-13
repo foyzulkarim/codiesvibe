@@ -12,14 +12,15 @@
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/backend/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "npm run build && cross-env SEED_TOOLS=true EXIT_AFTER_SEED=true node dist/backend/src/main.js"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",
@@ -55,6 +56,9 @@
     "@types/passport-github2": "^1.2.9",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "cross-env": "^7.0.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

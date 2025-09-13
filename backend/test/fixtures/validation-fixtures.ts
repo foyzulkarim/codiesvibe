@@ -8,6 +8,7 @@
 export const VALIDATION_FIXTURES = {
   // Valid tool data with all enhanced fields
   validCompleteTool: {
+    id: "chatgpt-ai-tool",
     name: "ChatGPT",
     description: "Advanced AI chatbot for natural conversations",
     longDescription: "ChatGPT is an advanced language model designed for natural language conversations and assistance across various domains.",
@@ -15,10 +16,10 @@ export const VALIDATION_FIXTURES = {
     interface: ["Web", "API", "Mobile"],
     functionality: ["Text Generation", "Translation", "Code Generation"],
     deployment: ["Cloud"],
-    popularity: 95000,
+    popularity: 95,
     rating: 4.5,
     reviewCount: 2500,
-    lastUpdated: new Date("2025-09-12T10:00:00Z"),
+    lastUpdated: "2025-09-12T10:00:00Z",
     logoUrl: "https://example.com/chatgpt-logo.png",
     features: {
       apiAccess: true,
@@ -30,11 +31,14 @@ export const VALIDATION_FIXTURES = {
     tags: {
       primary: ["AI", "Chatbot"],
       secondary: ["Productivity", "Communication", "Language"]
-    }
+    },
+    contributor: "test-user",
+    dateAdded: "2025-09-12T10:00:00Z"
   },
 
   // Valid minimal tool data (only required fields)
   validMinimalTool: {
+    id: "simple-tool",
     name: "Simple Tool",
     description: "A simple tool description",
     pricing: ["Free"],
@@ -45,8 +49,10 @@ export const VALIDATION_FIXTURES = {
     searchKeywords: ["simple", "tool"],
     tags: {
       primary: ["Utility"],
-      secondary: ["Basic"]
-    }
+      secondary: []
+    },
+    contributor: "test-user",
+    dateAdded: "2025-09-12T10:00:00Z"
   },
 
   // Edge case fixtures for validation testing
@@ -58,7 +64,7 @@ export const VALIDATION_FIXTURES = {
     maxLengthSearchKeyword: "a".repeat(256), // Exactly 256 characters (max per keyword)
 
     // Numeric boundaries
-    maxPopularity: 1000000,
+    maxPopularity: 100,
     maxRating: 5,
     maxReviewCount: 1000000,
     minPopularity: 0,
@@ -107,7 +113,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     missingDescription: {
@@ -118,7 +126,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     // String validation failures
@@ -131,7 +141,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     nameTooLong: "a".repeat(101), // 101 characters (exceeds 100)
@@ -152,7 +164,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     emptyInterface: {
@@ -164,7 +178,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     emptyFunctionality: {
@@ -176,7 +192,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     emptyDeployment: {
@@ -188,7 +206,9 @@ export const VALIDATION_FIXTURES = {
       deployment: [],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     emptySearchKeywords: {
@@ -200,7 +220,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: [],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     emptyTags: {
@@ -212,7 +234,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: [], secondary: [] }
+      tags: { primary: [], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     // Numeric validation failures
@@ -226,7 +250,9 @@ export const VALIDATION_FIXTURES = {
       popularity: -1,
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     popularityTooHigh: {
@@ -236,10 +262,12 @@ export const VALIDATION_FIXTURES = {
       interface: ["Web"],
       functionality: ["Basic"],
       deployment: ["Cloud"],
-      popularity: 1000001,
+      popularity: 101,
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     ratingTooHigh: {
@@ -252,7 +280,9 @@ export const VALIDATION_FIXTURES = {
       rating: 5.1,
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     ratingTooLow: {
@@ -265,7 +295,9 @@ export const VALIDATION_FIXTURES = {
       rating: -0.1,
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     // URL validation failures
@@ -278,7 +310,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "not-a-valid-url",
       searchKeywords: ["test"],
-      tags: { primary: ["Test"], secondary: [] }
+      tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     // Features object validation failures
@@ -292,6 +326,8 @@ export const VALIDATION_FIXTURES = {
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
       tags: { primary: ["Test"], secondary: [] },
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z",
       features: {
         validBoolean: true,
         invalidString: "not a boolean",
@@ -311,7 +347,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { secondary: ["test"] } // Missing primary
+      tags: { secondary: ["test"] }, // Missing primary
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     },
 
     missingTagsSecondary: {
@@ -323,7 +361,9 @@ export const VALIDATION_FIXTURES = {
       deployment: ["Cloud"],
       logoUrl: "https://example.com/logo.png",
       searchKeywords: ["test"],
-      tags: { primary: ["test"] } // Missing secondary is allowed (empty array)
+      tags: { primary: ["test"] }, // Missing secondary is allowed (empty array)
+      contributor: "test-user",
+      dateAdded: "2025-09-12T10:00:00Z"
     }
   }
 };
