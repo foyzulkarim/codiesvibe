@@ -1,6 +1,6 @@
 // Mock data for AI coding tools
 // Import shared types
-import { AITool as SharedAITool, FILTER_OPTIONS } from '../../shared/types';
+import { AITool as SharedAITool, FILTER_OPTIONS } from '@shared/types';
 
 // Use shared interface
 export interface AITool extends SharedAITool {

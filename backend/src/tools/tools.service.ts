@@ -79,9 +79,9 @@ export class ToolsService {
     const toolData = {
       ...createToolDto,
       createdBy: userId,
-      popularity: createToolDto.popularity ?? 0,
-      rating: createToolDto.rating ?? 0,
-      reviewCount: createToolDto.reviewCount ?? 0,
+      popularity: 0,
+      rating: 0,
+      reviewCount: 0,
       features: createToolDto.features ?? {},
       tags: {
         primary: createToolDto.tags?.primary ?? [],

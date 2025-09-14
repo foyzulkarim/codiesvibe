@@ -1,210 +1,164 @@
-import { 
-  IsString, 
-  Length, 
-  IsArray, 
-  ArrayNotEmpty, 
-  IsNumber, 
-  Min, 
-  Max, 
-  IsOptional, 
-  IsUrl, 
-  IsObject, 
-  ValidateNested,
-  ArrayMinSize,
-  IsBoolean
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsNotEmpty,
+  Length,
+  IsUrl,
+  IsObject,
+  ArrayNotEmpty,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CreateToolPayload, ToolTags } from '../../../../shared/types/tool.types';
 
-class TagsDto {
-  @ApiProperty({ 
-    description: 'Primary category tags',
-    type: [String],
-    example: ['AI', 'Chatbot']
-  })
-  @IsArray()
-  @ArrayNotEmpty({ message: 'Primary tags must not be empty' })
-  @IsString({ each: true })
-  primary!: string[];
-
-  @ApiProperty({ 
-    description: 'Secondary category tags',
-    type: [String],
-    example: ['Productivity', 'Communication', 'Language']
-  })
-  @IsArray()
-  @IsString({ each: true })
-  secondary!: string[];
-}
-
-export class CreateToolDto implements CreateToolPayload {
-  @ApiProperty({ 
+export class CreateToolDto {
+  @ApiProperty({
     description: 'Tool name',
-    minLength: 1,
-    maxLength: 100,
-    example: 'ChatGPT'
+    example: 'ChatGPT',
   })
   @IsString()
-  @Length(1, 100)
+  @IsNotEmpty()
+  @Length(1, 100, {
+    message: 'Tool name must be between 1 and 100 characters',
+  })
   name!: string;
 
-  @ApiProperty({ 
-    description: 'Tool description',
-    minLength: 1,
-    maxLength: 500,
-    example: 'Advanced AI chatbot for natural conversations'
+  @ApiProperty({
+    description: 'Brief tool description',
+    example: 'AI-powered conversational assistant',
   })
   @IsString()
-  @Length(1, 500)
+  @IsNotEmpty()
+  @Length(1, 500, {
+    message: 'Description must be between 1 and 500 characters',
+  })
   description!: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Detailed tool description',
-    maxLength: 2000,
-    example: 'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations...'
+    example:
+      'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations...',
   })
   @IsOptional()
   @IsString()
-  @Length(0, 2000)
+  @Length(0, 2000, {
+    message: 'Long description must not exceed 2000 characters',
+  })
   longDescription?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Pricing models',
-    type: [String],
-    example: ['Free', 'Paid', 'API']
+    example: ['Free', 'Paid'],
   })
   @IsArray()
-  @ArrayNotEmpty({ message: 'Pricing must contain at least one option' })
+  @ArrayNotEmpty()
   @IsString({ each: true })
+  @Length(1, 50, {
+    each: true,
+    message: 'Each pricing model must be between 1 and 50 characters',
+  })
   pricing!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Interface types',
-    type: [String],
-    example: ['Web', 'API', 'Mobile']
+    example: ['Web', 'API'],
   })
   @IsArray()
-  @ArrayNotEmpty({ message: 'Interface must contain at least one option' })
+  @ArrayNotEmpty()
   @IsString({ each: true })
+  @Length(1, 50, {
+    each: true,
+    message: 'Each interface type must be between 1 and 50 characters',
+  })
   interface!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Functionality categories',
-    type: [String],
-    example: ['Text Generation', 'Translation', 'Code Generation']
+    example: ['Text Generation', 'Translation'],
   })
   @IsArray()
-  @ArrayNotEmpty({ message: 'Functionality must contain at least one option' })
+  @ArrayNotEmpty()
   @IsString({ each: true })
+  @Length(1, 100, {
+    each: true,
+    message: 'Each functionality must be between 1 and 100 characters',
+  })
   functionality!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Deployment options',
-    type: [String],
-    example: ['Cloud', 'On-premise']
+    example: ['Cloud', 'On-premise'],
   })
   @IsArray()
-  @ArrayNotEmpty({ message: 'Deployment must contain at least one option' })
+  @ArrayNotEmpty()
   @IsString({ each: true })
+  @Length(1, 50, {
+    each: true,
+    message: 'Each deployment option must be between 1 and 50 characters',
+  })
   deployment!: string[];
 
-  @ApiPropertyOptional({ 
-    description: 'Popularity score (0-1000000)',
-    minimum: 0,
-    maximum: 1000000,
-    example: 85000,
-    default: 0
+  @ApiPropertyOptional({
+    description: 'Tool logo URL',
+    example: 'https://example.com/logo.png',
   })
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(1000000)
-  popularity?: number = 0;
+  @IsUrl({}, { message: 'Logo URL must be a valid URL' })
+  logoUrl?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'User rating (0-5)',
-    minimum: 0,
-    maximum: 5,
-    example: 4.5,
-    default: 0
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  rating?: number = 0;
-
-  @ApiPropertyOptional({ 
-    description: 'Number of reviews (0-1000000)',
-    minimum: 0,
-    maximum: 1000000,
-    example: 1250,
-    default: 0
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(1000000)
-  reviewCount?: number = 0;
-
-  @ApiProperty({ 
-    description: 'Tool logo image URL',
-    example: 'https://example.com/logo.png'
-  })
-  @IsString()
-  @IsUrl({}, { message: 'logoUrl must be a valid URL' })
-  logoUrl!: string;
-
-  @ApiPropertyOptional({ 
-    description: 'Feature flags with boolean values',
-    type: 'object',
-    additionalProperties: { type: 'boolean' },
+  @ApiPropertyOptional({
+    description: 'Tool features as key-value pairs',
     example: {
-      apiAccess: true,
-      freeTier: true,
       multiLanguage: true,
-      codeExecution: false
+      apiAccess: false,
+      freeVersion: true,
     },
-    default: {}
   })
   @IsOptional()
   @IsObject()
-  @Transform(({ value }) => {
-    // Only transform if it's already a valid object, otherwise let validation fail
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      const transformed: Record<string, boolean> = {};
-      for (const [key, val] of Object.entries(value)) {
-        transformed[key] = Boolean(val);
-      }
-      return transformed;
-    }
-    // Return the value as-is for validation to catch invalid types
-    return value;
-  })
-  features?: Record<string, boolean> = {};
+  features?: Record<string, any>;
 
-  @ApiProperty({ 
-    description: 'Search keywords for improved discoverability (max 256 chars each)',
-    type: [String],
-    example: ['chatbot', 'AI assistant', 'natural language', 'conversation']
+  @ApiProperty({
+    description: 'Search keywords for discoverability',
+    example: ['AI', 'chatbot', 'language model'],
   })
   @IsArray()
-  @ArrayNotEmpty({ message: 'Search keywords must contain at least one keyword' })
-  @IsString({ each: true })
-  @Length(1, 256, { each: true, message: 'Each search keyword must be between 1 and 256 characters' })
+  @ArrayNotEmpty({
+    message: 'Search keywords must contain at least one keyword',
+  })
+  @IsString({
+    each: true,
+    message: 'Each search keyword must be between 1 and 256 characters',
+  })
+  @Length(1, 256, { each: true })
   searchKeywords!: string[];
 
-  @ApiProperty({ 
-    description: 'Categorization tags with primary and secondary arrays',
-    type: TagsDto,
-    example: {
-      primary: ['AI', 'Chatbot'],
-      secondary: ['Productivity', 'Communication', 'Language']
-    }
+  @ApiProperty({
+    description: 'Tool tags for categorization',
+    example: { primary: ['AI', 'Chatbot'], secondary: ['Productivity'] },
   })
-  @IsObject()
-  @ValidateNested()
-  @Type(() => TagsDto)
-  tags!: TagsDto;
+  tags: any;
+
+  static getExampleTool(): CreateToolDto {
+    return {
+      name: 'ChatGPT',
+      description: 'AI-powered conversational assistant',
+      longDescription:
+        'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, answer questions, help with writing, coding, and many other tasks.',
+      pricing: ['Free', 'Paid'],
+      interface: ['Web', 'API'],
+      functionality: ['Text Generation', 'Conversation'],
+      deployment: ['Cloud'],
+      logoUrl: 'https://example.com/chatgpt-logo.png',
+      features: {
+        multiLanguage: true,
+        apiAccess: true,
+        freeVersion: true,
+      },
+      searchKeywords: ['AI', 'chatbot', 'language model', 'OpenAI'],
+      tags: {
+        primary: ['AI', 'Chatbot'],
+        secondary: ['Productivity', 'Communication'],
+      },
+    };
+  }
 }

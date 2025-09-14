@@ -57,6 +57,95 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Database Seeding
+
+The application includes a simple seeding system for initial data setup.
+
+### Seed Tools Data
+
+To seed the tools collection with initial data:
+
+```bash
+# Run seeding (builds and seeds, then exits)
+$ npm run seed
+```
+
+The seeding system:
+- Reads from `src/database/seeds/tools.json`
+- Uses incremental updates (only adds new tools, doesn't duplicate)
+- Validates all data using class-validator DTOs
+- Tracks seed version to avoid re-running same data
+
+### Tools JSON Structure
+
+The `tools.json` file should follow this structure (see `tools-sample.json` for a complete example):
+
+```json
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T08:40:00Z",
+  "contributors": {
+    "contributor-id": {
+      "name": "Contributor Name",
+      "email": "email@example.com",
+      "contributions": 1
+    }
+  },
+  "tools": [
+    {
+      "id": "tool-id",                          // Required: lowercase, numbers, hyphens only
+      "name": "Tool Name",                      // Required: max 100 chars
+      "description": "Short description",      // Required: max 500 chars
+      "longDescription": "Detailed description", // Optional: min 50 chars
+      "pricing": ["Free", "Paid"],             // Required: array of strings
+      "interface": ["Web", "API"],             // Required: array of strings
+      "functionality": ["Category"],           // Required: array of strings
+      "deployment": ["Cloud"],                 // Required: array of strings
+      "logoUrl": "https://example.com/logo.png", // Required: valid URL
+      "searchKeywords": ["keyword1", "keyword2"], // Required: array of strings
+      "tags": {                                // Required: at least one non-empty
+        "primary": ["Category1"],
+        "secondary": ["Category2"]
+      },
+      "popularity": 95,                        // Optional: 0-100
+      "rating": 4.5,                          // Optional: 0-5
+      "reviewCount": 1000,                    // Optional: >= 0
+      "features": {                           // Optional: boolean values only
+        "apiAccess": true,
+        "freeTier": false
+      },
+      "integrations": ["Service1"],           // Optional: array of strings
+      "languages": ["English"],               // Optional: array of strings
+      "pros": ["Advantage 1"],                // Optional: array of strings
+      "cons": ["Limitation 1"],               // Optional: array of strings
+      "useCases": ["Use case 1"],             // Optional: array of strings
+      "contributor": "contributor-id",        // Required: references contributors
+      "dateAdded": "2025-09-14T08:40:00Z",   // Required: ISO date string
+      "lastUpdated": "2025-09-14T08:40:00Z"  // Optional: ISO date string
+    }
+  ]
+}
+```
+
+### Field Requirements
+
+**Required fields**: `id`, `name`, `description`, `pricing`, `interface`, `functionality`, `deployment`, `logoUrl`, `searchKeywords`, `tags`, `contributor`, `dateAdded`
+
+**Validation rules**:
+- `id`: Must match `/^[a-z0-9-]+$/` pattern
+- `name`: 1-100 characters
+- `description`: 1-500 characters
+- `logoUrl`: Must be valid URL
+- `tags`: Must have at least one non-empty array (primary or secondary)
+- `popularity`: 0-100 if provided
+- `rating`: 0-5 if provided
+- `features`: All values must be boolean if provided
+
+### Environment Variables
+
+- `SEED_TOOLS=true` - Enable seeding on startup
+- `EXIT_AFTER_SEED=true` - Exit after seeding (useful for one-time runs)
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
