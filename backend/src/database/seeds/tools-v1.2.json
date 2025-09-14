@@ -1,0 +1,48 @@
+{
+  "version": 1.2,
+  "lastUpdated": "2025-01-15T10:30:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 1
+    }
+  },
+  "tools": [
+    {
+      "id": "amazon-q",
+      "name": "Amazon Q",
+      "description": "AI-powered assistant by AWS for developers and business users",
+      "longDescription": "Amazon Q is an AI-powered assistant by AWS that helps developers and business users with coding, troubleshooting, and business intelligence. It provides contextual assistance for AWS services, code generation, debugging, and can answer questions about your AWS infrastructure and applications.",
+      "pricing": ["Free", "Paid"],
+      "interface": ["Web", "API", "IDE Plugin"],
+      "functionality": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence"],
+      "deployment": ["Cloud"],
+      "popularity": 72,
+      "rating": 4.3,
+      "reviewCount": 850,
+      "lastUpdated": "2025-01-15T10:30:00Z",
+      "logoUrl": "https://example.com/amazon-q-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "awsIntegration": true,
+        "codeCompletion": true,
+        "securityScanning": true
+      },
+      "searchKeywords": ["AI", "AWS", "amazon", "q", "developer", "assistant", "cloud"],
+      "tags": {
+        "primary": ["AI", "Developer Tools"],
+        "secondary": ["AWS", "Cloud", "Business Intelligence"]
+      },
+      "integrations": ["AWS Console", "VS Code", "JetBrains", "API", "Slack"],
+      "languages": ["English", "Spanish", "French", "German", "Japanese"],
+      "pros": ["Deep AWS integration", "Code security scanning", "Business intelligence features", "IDE integration"],
+      "cons": ["Limited outside AWS ecosystem", "Newer to market", "Learning curve for non-AWS users"],
+      "useCases": ["AWS development", "Code debugging", "Infrastructure troubleshooting", "Business analytics", "Security scanning"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T10:30:00Z"
+    }
+  ]
+}

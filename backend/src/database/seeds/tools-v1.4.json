@@ -1,0 +1,153 @@
+{
+  "version": 1.4,
+  "lastUpdated": "2025-01-15T12:30:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 4
+    }
+  },
+  "tools": [
+    {
+      "id": "augment-code",
+      "name": "Augment Code",
+      "description": "AI pair programmer with deep codebase understanding and memory",
+      "longDescription": "Augment Code is an advanced AI coding assistant designed for large codebases with features like Augment Agent that provides high-quality code generation, persistent memories across conversations, and deep contextual understanding. It offers superior performance compared to traditional coding assistants with intelligent code suggestions and automated task completion.",
+      "pricing": ["Free Trial", "Paid"],
+      "interface": ["IDE Plugin", "Desktop"],
+      "functionality": ["Code Generation", "Code Completion", "AI Chat", "Memory Persistence", "Large Codebase Support"],
+      "deployment": ["Cloud"],
+      "popularity": 84,
+      "rating": 4.7,
+      "reviewCount": 1280,
+      "lastUpdated": "2025-01-15T12:30:00Z",
+      "logoUrl": "https://example.com/augment-code-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "codeCompletion": true,
+        "aiChat": true,
+        "memoryPersistence": true
+      },
+      "searchKeywords": ["augment", "AI coding", "pair programmer", "large codebase", "memory", "agent"],
+      "tags": {
+        "primary": ["AI", "Code Assistant"],
+        "secondary": ["Large Codebase", "Memory", "Agent"]
+      },
+      "integrations": ["VS Code", "JetBrains", "Git", "GitHub"],
+      "languages": ["TypeScript", "Python", "JavaScript", "Java", "C++", "Go", "Rust"],
+      "pros": ["Superior to other coding assistants", "Persistent memory across sessions", "Excellent large codebase support", "High-quality code generation"],
+      "cons": ["Limited free trial period", "Newer to market", "Requires internet connection"],
+      "useCases": ["Large codebase development", "Enterprise software engineering", "Complex project management", "Team collaboration", "Code refactoring"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:30:00Z"
+    },
+    {
+      "id": "sourcegraph-cody",
+      "name": "Sourcegraph Cody",
+      "description": "AI coding assistant with intelligent code search and autocompletion",
+      "longDescription": "Sourcegraph Cody is an AI-powered coding assistant that provides chat interface, autocompletion, and inline code edits. It leverages Sourcegraph's code intelligence platform to offer context-aware assistance across large codebases with support for latest-generation models that don't retain or train on your code.",
+      "pricing": ["Free", "Paid"],
+      "interface": ["IDE Plugin", "Web", "API"],
+      "functionality": ["Code Generation", "Code Completion", "AI Chat", "Code Search", "Inline Editing"],
+      "deployment": ["Cloud", "Self-hosted"],
+      "popularity": 81,
+      "rating": 4.5,
+      "reviewCount": 2150,
+      "lastUpdated": "2025-01-15T12:30:00Z",
+      "logoUrl": "https://example.com/sourcegraph-cody-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "codeCompletion": true,
+        "aiChat": true,
+        "codeSearch": true
+      },
+      "searchKeywords": ["sourcegraph", "cody", "code search", "AI assistant", "autocompletion", "enterprise"],
+      "tags": {
+        "primary": ["AI", "Code Assistant"],
+        "secondary": ["Code Search", "Enterprise", "Privacy"]
+      },
+      "integrations": ["VS Code", "JetBrains", "Neovim", "Emacs", "GitHub", "GitLab", "Bitbucket"],
+      "languages": ["Python", "JavaScript", "TypeScript", "Java", "Go", "C++", "Rust", "PHP"],
+      "pros": ["Excellent code search capabilities", "Privacy-focused (no data retention)", "Enterprise-ready", "Multi-editor support"],
+      "cons": ["Paid plans start at $19/month", "Complex setup for self-hosted", "Learning curve for advanced features"],
+      "useCases": ["Enterprise development", "Large codebase navigation", "Code understanding", "Developer onboarding", "Support engineering"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:30:00Z"
+    },
+    {
+      "id": "askcodi",
+      "name": "AskCodi",
+      "description": "Versatile AI coding assistant with project management and chat features",
+      "longDescription": "AskCodi is a practical AI coding assistant that offers code generation, suggestions, and optimization across multiple programming languages. It features Codi Projects for code organization, Codi Chat for conversational assistance, and Codi Workbook for code documentation and testing, with seamless IDE integration.",
+      "pricing": ["Free", "Paid"],
+      "interface": ["IDE Plugin", "Web", "API"],
+      "functionality": ["Code Generation", "Code Suggestions", "AI Chat", "Project Management", "Code Documentation"],
+      "deployment": ["Cloud"],
+      "popularity": 75,
+      "rating": 4.2,
+      "reviewCount": 980,
+      "lastUpdated": "2025-01-15T12:30:00Z",
+      "logoUrl": "https://example.com/askcodi-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "codeGeneration": true,
+        "projectManagement": true,
+        "aiChat": true
+      },
+      "searchKeywords": ["askcodi", "AI coding", "code generation", "project management", "chat assistant"],
+      "tags": {
+        "primary": ["AI", "Code Assistant"],
+        "secondary": ["Project Management", "Documentation", "Learning"]
+      },
+      "integrations": ["VS Code", "PyCharm", "Sublime Text", "GitHub"],
+      "languages": ["Python", "Java", "TypeScript", "Rust", "Ruby", "Kotlin", "JavaScript", "C++"],
+      "pros": ["Versatile and easy to use", "Good project organization features", "Reliable code suggestions", "Multiple IDE support"],
+      "cons": ["Not as advanced as premium alternatives", "Limited enterprise features", "Smaller community"],
+      "useCases": ["Code learning and practice", "Small to medium projects", "Code documentation", "Bug fixing", "Performance optimization"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:30:00Z"
+    },
+    {
+      "id": "mistral-code",
+      "name": "Mistral Code",
+      "description": "Enterprise AI coding assistant with local deployment and advanced automation",
+      "longDescription": "Mistral Code is an enterprise-focused AI coding assistant that bundles powerful models including Codestral, in-IDE assistance, local deployment options, and enterprise tooling. It supports 80+ programming languages and offers advanced automation capabilities including complete ticket execution with configurable approval workflows.",
+      "pricing": ["Enterprise"],
+      "interface": ["IDE Plugin", "API", "CLI"],
+      "functionality": ["Code Generation", "Code Completion", "Automated Task Execution", "Enterprise Security", "Local Deployment"],
+      "deployment": ["Cloud", "Local", "Self-hosted"],
+      "popularity": 78,
+      "rating": 4.4,
+      "reviewCount": 1560,
+      "lastUpdated": "2025-01-15T12:30:00Z",
+      "logoUrl": "https://example.com/mistral-code-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": false,
+        "multiLanguage": true,
+        "localDeployment": true,
+        "enterpriseSecurity": true,
+        "taskAutomation": true
+      },
+      "searchKeywords": ["mistral", "codestral", "enterprise", "local deployment", "automation", "security"],
+      "tags": {
+        "primary": ["AI", "Enterprise"],
+        "secondary": ["Local Deployment", "Security", "Automation"]
+      },
+      "integrations": ["JetBrains", "VS Code", "Enterprise IDEs", "CI/CD Pipelines", "Git"],
+      "languages": ["Python", "Java", "C", "C++", "JavaScript", "Bash", "Swift", "Fortran", "80+ languages"],
+      "pros": ["Extensive language support (80+)", "Enterprise-grade security", "Local deployment options", "Advanced automation capabilities"],
+      "cons": ["Enterprise pricing only", "Complex setup requirements", "Requires IT team support"],
+      "useCases": ["Enterprise development", "Secure coding environments", "Automated development workflows", "Large-scale software projects", "Regulated industries"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:30:00Z"
+    }
+  ]
+}
