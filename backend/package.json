@@ -12,7 +12,7 @@
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/backend/src/main",
+    "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -20,7 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typecheck": "tsc --noEmit",
-    "seed": "npm run build && cross-env SEED_TOOLS=true EXIT_AFTER_SEED=true node dist/backend/src/main.js"
+    "seed": "npm run build && cross-env SEED_TOOLS=true EXIT_AFTER_SEED=true node dist/main.js"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",

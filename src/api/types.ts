@@ -2,10 +2,10 @@ import { AITool } from '@/data/tools';
 import { SortOption as SortOptionType } from '@/lib/config';
 
 // Import shared types
-import { BaseTool, ToolTags, ApiResponse, PaginatedResponse } from '../../shared/types';
+import { BaseTool, ToolTags, ApiResponse, PaginatedResponse } from '@shared/types';
 
 // Re-export shared types for backward compatibility
-export type { ApiResponse, PaginatedResponse } from '../../shared/types';
+export type { ApiResponse, PaginatedResponse } from '@shared/types';
 
 // Tool API Types
 // Use shared interface for consistency
