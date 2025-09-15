@@ -1,17 +1,28 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Star, TrendingUp, Plus, GitCompare, Heart, ExternalLink, Calendar } from "lucide-react";
-import { AITool } from "@/data/tools";
+import { AITool } from "@shared/types";
 
 interface ToolCardProps {
   tool: AITool;
-  onCompare: (tool: AITool) => void;
-  onSave: (tool: AITool) => void;
+  onCompare?: (tool: AITool) => void;
+  onSave?: (tool: AITool) => void;
   isExpanded?: boolean;
   onToggleExpanded?: (toolId: string) => void;
+  searchTerm?: string;
 }
 
-export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded }: ToolCardProps) => {
+export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded, searchTerm }: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
+
+  // Memoized highlight function for performance
+  const highlightText = useMemo(() => {
+    return (text: string, term?: string): string => {
+      if (!term || term.length < 2) return text;
+      
+      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>');
+    };
+  }, []);
 
   const getPricingColor = (pricing: string[]) => {
     if (pricing.includes("Free") || pricing.includes("Open Source")) return "text-success";
@@ -87,18 +98,27 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-foreground truncate">
-                {tool.name}
-              </h3>
+              <h3 
+                className="text-lg font-semibold text-foreground truncate"
+                dangerouslySetInnerHTML={{ 
+                  __html: highlightText(tool.name, searchTerm) 
+                }}
+              />
               <div className="popularity-score">
                 <TrendingUp className="w-3 h-3" />
                 {tool.popularity}
               </div>
             </div>
             
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description}
-            </p>
+            <p 
+              className="text-sm text-muted-foreground leading-relaxed"
+              dangerouslySetInnerHTML={{ 
+                __html: highlightText(
+                  tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description,
+                  searchTerm
+                )
+              }}
+            />
           </div>
         </div>
 

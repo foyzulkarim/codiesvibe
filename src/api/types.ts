@@ -16,12 +16,14 @@ export interface ToolResponseDto extends BaseTool {
 // Query Parameters Types
 export interface ToolsQueryParams {
   search?: string;
-  functionality?: string | string[];
-  tags?: string | string[];
-  deployment?: string | string[];
+  functionality?: string;
+  tags?: string;
+  deployment?: string;
+  pricing?: string;
+  interface?: string;
   minRating?: number;
   maxRating?: number;
-  sortBy?: SortOptionType;
+  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance';
 }
 
 export interface FilterState {
@@ -65,9 +67,10 @@ export interface SortOptionUI {
 
 // Available sort options for UI
 export const SORT_OPTIONS_UI: SortOptionUI[] = [
-  { value: 'popularity', label: 'Popularity', direction: 'desc' },
-  { value: 'rating', label: 'Rating', direction: 'desc' },
-  { value: 'reviewCount', label: 'Review Count', direction: 'desc' },
-  { value: 'createdAt', label: 'Created Date', direction: 'desc' },
-  { value: 'relevance', label: 'Relevance', direction: 'desc' },
+  { value: 'popularity', label: 'Most Popular', direction: 'desc' },
+  { value: 'rating', label: 'Highest Rated', direction: 'desc' },
+  { value: 'reviewCount', label: 'Most Reviewed', direction: 'desc' },
+  { value: 'name', label: 'Name A-Z', direction: 'asc' },
+  { value: 'createdAt', label: 'Newest', direction: 'desc' },
+  { value: 'relevance', label: 'Most Relevant', direction: 'desc' }
 ];

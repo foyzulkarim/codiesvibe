@@ -2,25 +2,27 @@ import { X } from "lucide-react";
 import { aiTools } from "@/data/tools";
 
 interface ActiveFilterChipsProps {
-  activeFilters: Record<string, string[]>;
-  onRemoveFilter: (category: string, value: string) => void;
+  filters: Record<string, string[]>;
+  searchQuery: string;
+  onRemoveFilter: (type: string, value: string) => void;
   onClearAll: () => void;
-  totalCount: number;
-  filteredCount: number;
 }
 
 export const ActiveFilterChips = ({ 
-  activeFilters, 
+  filters, 
+  searchQuery,
   onRemoveFilter, 
-  onClearAll, 
-  totalCount,
-  filteredCount 
+  onClearAll
 }: ActiveFilterChipsProps) => {
-  const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
+  const hasActiveFilters = Object.values(filters).some(filterArray => filterArray.length > 0) || searchQuery.length > 0;
   
-  const allActiveFilters = Object.entries(activeFilters).flatMap(([category, values]) =>
+  const allActiveFilters = Object.entries(filters).flatMap(([category, values]) =>
     values.map(value => ({ category, value }))
   );
+
+  // Add search query as a filter chip if it exists
+  const searchFilter = searchQuery ? [{ category: 'search', value: searchQuery }] : [];
+  const allFilters = [...allActiveFilters, ...searchFilter];
 
   if (!hasActiveFilters) {
     return (
@@ -35,30 +37,30 @@ export const ActiveFilterChips = ({
   }
 
   return (
-    <div className="space-y-3 mb-6">
-      {/* Active Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-foreground">Active Filters:</span>
-          {allActiveFilters.map(({ category, value }) => (
+      <div className="space-y-3 mb-6">
+        {/* Active Filters */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-foreground">Active Filters:</span>
+            {allFilters.map(({ category, value }) => (
+              <button
+                key={`${category}-${value}`}
+                onClick={() => onRemoveFilter(category, value)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-full hover:bg-primary/90 transition-colors"
+              >
+                <span>✓</span>
+                {category === 'search' ? `"${value}"` : value}
+                <X className="w-3 h-3" />
+              </button>
+            ))}
             <button
-              key={`${category}-${value}`}
-              onClick={() => onRemoveFilter(category, value)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-full hover:bg-primary/90 transition-colors"
+              onClick={onClearAll}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded-md"
             >
-              <span>✓</span>
-              {value}
-              <X className="w-3 h-3" />
+              Clear all filters
             </button>
-          ))}
-          <button
-            onClick={onClearAll}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted rounded-md"
-          >
-            Clear all filters
-          </button>
+          </div>
         </div>
       </div>
-    </div>
   );
 };

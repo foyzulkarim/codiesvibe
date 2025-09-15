@@ -48,9 +48,13 @@ const buildQueryParams = (
   Object.entries(filters).forEach(([key, values]) => {
     if (values.length > 0) {
       if (key === 'functionality') {
-        params.functionality = values;
+        params.functionality = values.join(',');
       } else if (key === 'deployment') {
-        params.deployment = values;
+        params.deployment = values.join(',');
+      } else if (key === 'pricing') {
+        params.pricing = values.join(',');
+      } else if (key === 'interface') {
+        params.interface = values.join(',');
       }
     }
   });

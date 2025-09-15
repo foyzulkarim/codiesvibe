@@ -26,6 +26,7 @@ export const SORT_OPTIONS_UI: SortOptionUI[] = [
   { value: 'popularity', label: 'Most Popular', direction: 'desc' },
   { value: 'rating', label: 'Highest Rated', direction: 'desc' },
   { value: 'reviewCount', label: 'Most Reviewed', direction: 'desc' },
+  { value: 'name', label: 'Name A-Z', direction: 'asc' },
   { value: 'createdAt', label: 'Newest', direction: 'desc' },
   { value: 'relevance', label: 'Most Relevant', direction: 'desc' }
 ];

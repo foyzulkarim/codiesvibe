@@ -5,16 +5,20 @@ import { Grid, List } from "lucide-react";
 
 interface ToolGridProps {
   tools: AITool[];
+  isLoading?: boolean;
+  searchTerm?: string;
   onCompare: (tool: AITool) => void;
   onSave: (tool: AITool) => void;
+  savedTools?: Set<string>;
+  comparisonTools?: AITool[];
 }
 
-export const ToolGrid = ({ tools, onCompare, onSave }: ToolGridProps) => {
+export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, savedTools, comparisonTools }: ToolGridProps) => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const handleToggleExpanded = (toolId: string) => {
-    setExpandedCard(expandedCard === toolId ? null : toolId);
+  const handleToggleExpanded = (toolName: string) => {
+    setExpandedCard(expandedCard === toolName ? null : toolName);
   };
 
   if (tools.length === 0) {
@@ -82,12 +86,13 @@ export const ToolGrid = ({ tools, onCompare, onSave }: ToolGridProps) => {
       }>
         {tools.map((tool) => (
           <ToolCard
-            key={tool.id}
+            key={tool.name}
             tool={tool}
+            searchTerm={searchTerm}
+            isExpanded={expandedCard === tool.name}
+            onToggleExpanded={() => handleToggleExpanded(tool.name)}
             onCompare={onCompare}
             onSave={onSave}
-            isExpanded={expandedCard === tool.id}
-            onToggleExpanded={handleToggleExpanded}
           />
         ))}
       </div>
