@@ -1,0 +1,273 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.798Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 5
+    }
+  },
+  "tools": [
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "description": "AI-native code editor with predictive editing",
+      "longDescription": "AI-native code editor with predictive editing. This tool provides comprehensive functionality for standalone desktop ides tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Standalone Desktop IDEs"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "cursor",
+        "standalone desktop ides"
+      ],
+      "tags": {
+        "primary": [
+          "Standalone Desktop IDEs",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "windsurf-editor",
+      "name": "Windsurf Editor",
+      "description": "First AI-native IDE with Cascade AI assistant",
+      "longDescription": "First AI-native IDE with Cascade AI assistant. This tool provides comprehensive functionality for standalone desktop ides tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Standalone Desktop IDEs"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "windsurf editor",
+        "standalone desktop ides"
+      ],
+      "tags": {
+        "primary": [
+          "Standalone Desktop IDEs",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "visual-studio-2022",
+      "name": "Visual Studio 2022",
+      "description": "Built-in AI features with GitHub Copilot",
+      "longDescription": "Built-in AI features with GitHub Copilot. This tool provides comprehensive functionality for standalone desktop ides tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Standalone Desktop IDEs"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "visual studio 2022",
+        "standalone desktop ides"
+      ],
+      "tags": {
+        "primary": [
+          "Standalone Desktop IDEs",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "description": "High-performance editor with AI integration",
+      "longDescription": "High-performance editor with AI integration. This tool provides comprehensive functionality for standalone desktop ides tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Standalone Desktop IDEs"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "zed",
+        "standalone desktop ides"
+      ],
+      "tags": {
+        "primary": [
+          "Standalone Desktop IDEs",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "xcode-ai-assistant",
+      "name": "Xcode AI Assistant",
+      "description": "Apple's built-in AI for iOS/macOS development",
+      "longDescription": "Apple's built-in AI for iOS/macOS development. This tool provides comprehensive functionality for standalone desktop ides tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Standalone Desktop IDEs"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "xcode ai assistant",
+        "standalone desktop ides"
+      ],
+      "tags": {
+        "primary": [
+          "Standalone Desktop IDEs",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}
