@@ -1,0 +1,637 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.797Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 12
+    }
+  },
+  "tools": [
+    {
+      "id": "ai-toolkit-for-visual-studio-code",
+      "name": "AI Toolkit for Visual Studio Code",
+      "description": "Microsoft's comprehensive AI toolkit",
+      "longDescription": "Microsoft's comprehensive AI toolkit. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "ai toolkit for visual studio code",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "continue",
+      "name": "Continue",
+      "description": "Leading open-source AI code agent",
+      "longDescription": "Leading open-source AI code agent. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "continue",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codegpt",
+      "name": "CodeGPT",
+      "description": "Multi-provider AI extension",
+      "longDescription": "Multi-provider AI extension. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codegpt",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "kilo-code",
+      "name": "Kilo Code",
+      "description": "All-in-one AI coding agent",
+      "longDescription": "All-in-one AI coding agent. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "kilo code",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "cline",
+      "name": "Cline",
+      "description": "AI agent with IDE capabilities and project context",
+      "longDescription": "AI agent with IDE capabilities and project context. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "cline",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "tabnine",
+      "name": "Tabnine",
+      "description": "Enterprise features and local deployment",
+      "longDescription": "Enterprise features and local deployment. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "tabnine",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "pieces-for-developers",
+      "name": "Pieces for Developers",
+      "description": "AI copilot with long-term memory",
+      "longDescription": "AI copilot with long-term memory. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "pieces for developers",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "amazon-q-developer",
+      "name": "Amazon Q Developer",
+      "description": "AWS-focused AI coding assistant",
+      "longDescription": "AWS-focused AI coding assistant. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "amazon q developer",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "intellicode",
+      "name": "IntelliCode",
+      "description": "Microsoft's AI-powered suggestions",
+      "longDescription": "Microsoft's AI-powered suggestions. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "intellicode",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "augment-code",
+      "name": "Augment Code",
+      "description": "Context-aware AI with deep codebase indexing",
+      "longDescription": "Context-aware AI with deep codebase indexing. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "augment code",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "supermaven",
+      "name": "Supermaven",
+      "description": "High-speed code completion",
+      "longDescription": "High-speed code completion. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "supermaven",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "windsurf-extension",
+      "name": "Windsurf Extension",
+      "description": "Integration with Windsurf AI IDE",
+      "longDescription": "Integration with Windsurf AI IDE. This tool provides comprehensive functionality for primary ai extensions (beyond github copilot) tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Primary AI Extensions (Beyond GitHub Copilot)"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "windsurf extension",
+        "primary ai extensions (beyond github copilot)"
+      ],
+      "tags": {
+        "primary": [
+          "Primary AI Extensions (Beyond GitHub Copilot)",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

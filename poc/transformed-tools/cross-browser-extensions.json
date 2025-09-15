@@ -1,0 +1,117 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.798Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 2
+    }
+  },
+  "tools": [
+    {
+      "id": "pieces-browser-extensions",
+      "name": "Pieces Browser Extensions",
+      "description": "Chrome, Edge, Teams integration",
+      "longDescription": "Chrome, Edge, Teams integration. This tool provides comprehensive functionality for cross-browser extensions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Cross-Browser Extensions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "pieces browser extensions",
+        "cross-browser extensions"
+      ],
+      "tags": {
+        "primary": [
+          "Cross-Browser Extensions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "tabnine-web-extension",
+      "name": "Tabnine Web Extension",
+      "description": "Code completion in web-based IDEs",
+      "longDescription": "Code completion in web-based IDEs. This tool provides comprehensive functionality for cross-browser extensions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Cross-Browser Extensions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "tabnine web extension",
+        "cross-browser extensions"
+      ],
+      "tags": {
+        "primary": [
+          "Cross-Browser Extensions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

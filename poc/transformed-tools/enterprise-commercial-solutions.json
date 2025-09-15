@@ -1,0 +1,325 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.802Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 6
+    }
+  },
+  "tools": [
+    {
+      "id": "tabnine-enterprise",
+      "name": "Tabnine Enterprise",
+      "description": "Air-gapped deployments, ITAR/CMMC compliant",
+      "longDescription": "Air-gapped deployments, ITAR/CMMC compliant. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "tabnine enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "qodo-enterprise",
+      "name": "Qodo Enterprise",
+      "description": "On-premises with SOC2 certification",
+      "longDescription": "On-premises with SOC2 certification. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "qodo enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "sourcegraph-cody-enterprise",
+      "name": "Sourcegraph Cody Enterprise",
+      "description": "Self-hosted via Docker/Kubernetes",
+      "longDescription": "Self-hosted via Docker/Kubernetes. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "sourcegraph cody enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codecomplete-enterprise",
+      "name": "CodeComplete Enterprise",
+      "description": "Self-hosted fine-tuned solutions",
+      "longDescription": "Self-hosted fine-tuned solutions. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codecomplete enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "mistral-code-enterprise",
+      "name": "Mistral Code Enterprise",
+      "description": "Complete data sovereignty",
+      "longDescription": "Complete data sovereignty. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "mistral code enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "refact-ai-enterprise",
+      "name": "Refact.ai Enterprise",
+      "description": "On-premises deployment with fine-tuning",
+      "longDescription": "On-premises deployment with fine-tuning. This tool provides comprehensive functionality for enterprise commercial solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Enterprise Commercial Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "refact.ai enterprise",
+        "enterprise commercial solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Enterprise Commercial Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

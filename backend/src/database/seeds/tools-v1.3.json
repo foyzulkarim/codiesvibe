@@ -1,0 +1,188 @@
+{
+  "version": 1.3,
+  "lastUpdated": "2025-01-15T12:00:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 5
+    }
+  },
+  "tools": [
+    {
+      "id": "cursor-ide",
+      "name": "Cursor IDE",
+      "description": "AI-powered code editor with intelligent completions and chat",
+      "longDescription": "Cursor is an AI-first code editor built on VS Code that provides intelligent code completions, AI chat assistance, and advanced code generation capabilities. It offers different pricing tiers with varying levels of AI requests and features, making it suitable for both individual developers and enterprise teams.",
+      "pricing": ["Free", "Paid", "Enterprise"],
+      "interface": ["Desktop", "IDE Plugin"],
+      "functionality": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
+      "deployment": ["Local"],
+      "popularity": 88,
+      "rating": 4.6,
+      "reviewCount": 2450,
+      "lastUpdated": "2025-01-15T12:00:00Z",
+      "logoUrl": "https://example.com/cursor-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "codeCompletion": true,
+        "aiChat": true,
+        "contextAware": true
+      },
+      "searchKeywords": ["AI", "code editor", "cursor", "IDE", "completions", "chat", "programming"],
+      "tags": {
+        "primary": ["AI", "Code Editor"],
+        "secondary": ["IDE", "Development", "Productivity"]
+      },
+      "integrations": ["VS Code Extensions", "Git", "GitHub", "Terminal", "Language Servers"],
+      "languages": ["Python", "JavaScript", "TypeScript", "Java", "C++", "Go", "Rust", "PHP"],
+      "pros": ["Excellent AI completions", "Fast performance", "VS Code compatibility", "Intuitive AI chat interface"],
+      "cons": ["Usage limits on free tier", "Requires internet for AI features", "Relatively new to market"],
+      "useCases": ["Code development", "AI-assisted programming", "Code refactoring", "Learning programming", "Rapid prototyping"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z"
+    },
+    {
+      "id": "replit",
+      "name": "Replit",
+      "description": "Cloud-based IDE with AI coding assistance and instant deployment",
+      "longDescription": "Replit is a comprehensive cloud development platform that combines an online IDE with AI-powered coding assistance, instant deployment capabilities, and collaborative features. It supports multiple programming languages and offers various deployment options from static sites to autoscaling applications.",
+      "pricing": ["Free", "Paid", "Enterprise"],
+      "interface": ["Web", "API", "CLI"],
+      "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
+      "deployment": ["Cloud", "Self-hosted"],
+      "popularity": 85,
+      "rating": 4.4,
+      "reviewCount": 3200,
+      "lastUpdated": "2025-01-15T12:00:00Z",
+      "logoUrl": "https://example.com/replit-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "realTimeCollab": true,
+        "instantDeploy": true,
+        "aiAssistant": true
+      },
+      "searchKeywords": ["replit", "cloud IDE", "deployment", "collaboration", "AI coding", "online editor"],
+      "tags": {
+        "primary": ["Cloud IDE", "Development Platform"],
+        "secondary": ["Deployment", "Collaboration", "AI"]
+      },
+      "integrations": ["GitHub", "Git", "NPM", "PyPI", "Docker", "Databases"],
+      "languages": ["Python", "JavaScript", "Java", "C++", "Go", "Rust", "HTML/CSS", "SQL"],
+      "pros": ["Zero setup required", "Instant deployment", "Real-time collaboration", "Generous free tier"],
+      "cons": ["Performance limitations on free tier", "Internet dependency", "Limited customization options"],
+      "useCases": ["Web development", "Prototyping", "Learning programming", "Team collaboration", "Quick deployments"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z"
+    },
+    {
+      "id": "lovable",
+      "name": "Lovable",
+      "description": "AI-powered full-stack app builder from natural language prompts",
+      "longDescription": "Lovable is an AI-powered platform that generates complete full-stack web applications from natural language descriptions. It combines React frontends with Supabase backends, offering rapid prototyping and deployment capabilities for both technical and non-technical users.",
+      "pricing": ["Free", "Paid", "Enterprise"],
+      "interface": ["Web", "API"],
+      "functionality": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
+      "deployment": ["Cloud"],
+      "popularity": 82,
+      "rating": 4.7,
+      "reviewCount": 1850,
+      "lastUpdated": "2025-01-15T12:00:00Z",
+      "logoUrl": "https://example.com/lovable-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": false,
+        "fullStackGen": true,
+        "instantDeploy": true,
+        "collaboration": true
+      },
+      "searchKeywords": ["lovable", "AI app builder", "full-stack", "no-code", "React", "Supabase"],
+      "tags": {
+        "primary": ["AI", "App Builder"],
+        "secondary": ["No-Code", "Full-Stack", "Rapid Prototyping"]
+      },
+      "integrations": ["Supabase", "GitHub", "React", "Tailwind CSS", "Vite"],
+      "languages": ["JavaScript", "TypeScript", "HTML/CSS"],
+      "pros": ["Extremely fast app generation", "No coding required", "Full code ownership", "Modern tech stack"],
+      "cons": ["Limited to web applications", "Credit-based usage model", "Security concerns reported"],
+      "useCases": ["MVP development", "Rapid prototyping", "Idea validation", "Non-technical app creation", "Startup projects"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z"
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "description": "Local LLM runner for running AI models on your own hardware",
+      "longDescription": "Ollama is an open-source platform that enables users to download, run, and manage large language models locally on their own hardware. It provides complete privacy and offline functionality while supporting a wide variety of open-source models including Llama, Mistral, and Code Llama.",
+      "pricing": ["Free"],
+      "interface": ["CLI", "API"],
+      "functionality": ["Model Management", "Local Inference", "API Server", "Model Customization"],
+      "deployment": ["Local"],
+      "popularity": 79,
+      "rating": 4.5,
+      "reviewCount": 1650,
+      "lastUpdated": "2025-01-15T12:00:00Z",
+      "logoUrl": "https://example.com/ollama-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "offlineMode": true,
+        "openSource": true,
+        "privacy": true
+      },
+      "searchKeywords": ["ollama", "local LLM", "AI models", "privacy", "offline", "open source"],
+      "tags": {
+        "primary": ["AI", "Local LLM"],
+        "secondary": ["Privacy", "Open Source", "Offline"]
+      },
+      "integrations": ["Docker", "Python", "JavaScript", "REST API", "Various LLM Models"],
+      "languages": ["Python", "JavaScript", "Go", "Rust", "Java", "C++"],
+      "pros": ["Complete privacy", "Offline functionality", "No usage costs", "Wide model support"],
+      "cons": ["Requires local hardware", "Command-line interface", "Setup complexity for beginners"],
+      "useCases": ["Private AI applications", "Research and experimentation", "Edge deployments", "Sensitive data processing", "Offline AI development"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z"
+    },
+    {
+      "id": "lm-studio",
+      "name": "LM Studio",
+      "description": "User-friendly desktop app for running local AI models with GUI",
+      "longDescription": "LM Studio is a desktop application that provides an intuitive graphical interface for downloading, running, and chatting with local large language models. It offers document-based RAG capabilities, local API server functionality, and cross-platform SDKs for developers.",
+      "pricing": ["Free"],
+      "interface": ["Desktop", "API"],
+      "functionality": ["Model Management", "Chat Interface", "Document RAG", "API Server", "Model Hosting"],
+      "deployment": ["Local"],
+      "popularity": 76,
+      "rating": 4.4,
+      "reviewCount": 1420,
+      "lastUpdated": "2025-01-15T12:00:00Z",
+      "logoUrl": "https://example.com/lm-studio-logo.png",
+      "features": {
+        "apiAccess": true,
+        "freeTier": true,
+        "multiLanguage": true,
+        "guiInterface": true,
+        "documentChat": true,
+        "offlineMode": true
+      },
+      "searchKeywords": ["LM Studio", "local AI", "GUI", "desktop", "LLM", "chat interface"],
+      "tags": {
+        "primary": ["AI", "Desktop App"],
+        "secondary": ["Local LLM", "GUI", "Privacy"]
+      },
+      "integrations": ["Hugging Face", "Python SDK", "TypeScript SDK", "OpenAI API", "Various LLM Models"],
+      "languages": ["Python", "JavaScript", "TypeScript", "Multiple via Models"],
+      "pros": ["User-friendly GUI", "No technical setup required", "Document chat capabilities", "Cross-platform support"],
+      "cons": ["Closed source", "Limited advanced customization", "Performance depends on hardware"],
+      "useCases": ["AI experimentation", "Document analysis", "Local AI development", "Privacy-focused AI usage", "Educational purposes"],
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z"
+    }
+  ]
+}

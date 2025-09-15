@@ -1,0 +1,221 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.797Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 4
+    }
+  },
+  "tools": [
+    {
+      "id": "deepcode-ai",
+      "name": "DeepCode AI",
+      "description": "Free for open source, paid enterprise tiers",
+      "longDescription": "Free for open source, paid enterprise tiers. This tool provides comprehensive functionality for code review and analysis tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Review and Analysis"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "deepcode ai",
+        "code review and analysis"
+      ],
+      "tags": {
+        "primary": [
+          "Code Review and Analysis",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codacy",
+      "name": "Codacy",
+      "description": "Free tier, $10/user/month paid plans",
+      "longDescription": "Free tier, $10/user/month paid plans. This tool provides comprehensive functionality for code review and analysis tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Review and Analysis"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codacy",
+        "code review and analysis"
+      ],
+      "tags": {
+        "primary": [
+          "Code Review and Analysis",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "coderabbit",
+      "name": "CodeRabbit",
+      "description": "Free for individuals, $24/month Pro",
+      "longDescription": "Free for individuals, $24/month Pro. This tool provides comprehensive functionality for code review and analysis tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Review and Analysis"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "coderabbit",
+        "code review and analysis"
+      ],
+      "tags": {
+        "primary": [
+          "Code Review and Analysis",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codeant-ai",
+      "name": "CodeAnt AI",
+      "description": "14-day free trial, enterprise pricing",
+      "longDescription": "14-day free trial, enterprise pricing. This tool provides comprehensive functionality for code review and analysis tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Review and Analysis"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codeant ai",
+        "code review and analysis"
+      ],
+      "tags": {
+        "primary": [
+          "Code Review and Analysis",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

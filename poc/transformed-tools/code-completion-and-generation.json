@@ -1,0 +1,481 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.796Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 9
+    }
+  },
+  "tools": [
+    {
+      "id": "tabby",
+      "name": "Tabby",
+      "description": "Self-hosted AI coding assistant with GPU support",
+      "longDescription": "Self-hosted AI coding assistant with GPU support. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "tabby",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.794Z",
+      "lastUpdated": "2025-09-14T01:34:25.794Z"
+    },
+    {
+      "id": "continue",
+      "name": "Continue",
+      "description": "VS Code extension supporting multiple open-source LLMs",
+      "longDescription": "VS Code extension supporting multiple open-source LLMs. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "continue",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "fauxpilot",
+      "name": "FauxPilot",
+      "description": "Code completion server with CodeGen model support",
+      "longDescription": "Code completion server with CodeGen model support. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "fauxpilot",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "turbopilot",
+      "name": "TurboPilot",
+      "description": "CPU-based Copilot alternative using llama.cpp",
+      "longDescription": "CPU-based Copilot alternative using llama.cpp. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "turbopilot",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "twinny",
+      "name": "Twinny",
+      "description": "Ollama-based AI code completion for VS Code",
+      "longDescription": "Ollama-based AI code completion for VS Code. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "twinny",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "firecoder",
+      "name": "FireCoder",
+      "description": "Self-hosted AI assistant with GPU support",
+      "longDescription": "Self-hosted AI assistant with GPU support. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "firecoder",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codegpt-nvim",
+      "name": "CodeGPT.nvim",
+      "description": "ChatGPT integration for Neovim",
+      "longDescription": "ChatGPT integration for Neovim. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codegpt.nvim",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "ollama-autocoder",
+      "name": "Ollama Autocoder",
+      "description": "VS Code extension for Ollama model integration",
+      "longDescription": "VS Code extension for Ollama model integration. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "ollama autocoder",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "refact-ai",
+      "name": "Refact.ai",
+      "description": "AI-powered refactoring with self-hosted options",
+      "longDescription": "AI-powered refactoring with self-hosted options. This tool provides comprehensive functionality for code completion and generation tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Code Completion and Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "refact.ai",
+        "code completion and generation"
+      ],
+      "tags": {
+        "primary": [
+          "Code Completion and Generation",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

@@ -1,0 +1,273 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.801Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 5
+    }
+  },
+  "tools": [
+    {
+      "id": "docuwriter-ai",
+      "name": "DocuWriter.ai",
+      "description": "Comprehensive documentation with UML diagrams",
+      "longDescription": "Comprehensive documentation with UML diagrams. This tool provides comprehensive functionality for ai-powered documentation generators tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "AI-Powered Documentation Generators"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "docuwriter.ai",
+        "ai-powered documentation generators"
+      ],
+      "tags": {
+        "primary": [
+          "AI-Powered Documentation Generators",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "mintlify",
+      "name": "Mintlify",
+      "description": "AI-native documentation platform",
+      "longDescription": "AI-native documentation platform. This tool provides comprehensive functionality for ai-powered documentation generators tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "AI-Powered Documentation Generators"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "mintlify",
+        "ai-powered documentation generators"
+      ],
+      "tags": {
+        "primary": [
+          "AI-Powered Documentation Generators",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codegpt-documentation",
+      "name": "CodeGPT Documentation",
+      "description": "VS Code extension for detailed documentation",
+      "longDescription": "VS Code extension for detailed documentation. This tool provides comprehensive functionality for ai-powered documentation generators tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "AI-Powered Documentation Generators"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codegpt documentation",
+        "ai-powered documentation generators"
+      ],
+      "tags": {
+        "primary": [
+          "AI-Powered Documentation Generators",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "workik-ai-documentation",
+      "name": "Workik AI Documentation",
+      "description": "Context-driven documentation",
+      "longDescription": "Context-driven documentation. This tool provides comprehensive functionality for ai-powered documentation generators tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "AI-Powered Documentation Generators"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "workik ai documentation",
+        "ai-powered documentation generators"
+      ],
+      "tags": {
+        "primary": [
+          "AI-Powered Documentation Generators",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "swimm",
+      "name": "Swimm",
+      "description": "Static analysis for contextual code documentation",
+      "longDescription": "Static analysis for contextual code documentation. This tool provides comprehensive functionality for ai-powered documentation generators tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "AI-Powered Documentation Generators"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "swimm",
+        "ai-powered documentation generators"
+      ],
+      "tags": {
+        "primary": [
+          "AI-Powered Documentation Generators",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

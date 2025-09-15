@@ -1,0 +1,169 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.802Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 3
+    }
+  },
+  "tools": [
+    {
+      "id": "amazon-q-developer",
+      "name": "Amazon Q Developer",
+      "description": "AWS-optimized for data science workflows",
+      "longDescription": "AWS-optimized for data science workflows. This tool provides comprehensive functionality for data science & analytics tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Data Science & Analytics"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "amazon q developer",
+        "data science & analytics"
+      ],
+      "tags": {
+        "primary": [
+          "Data Science & Analytics",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "jupyter-ai-extensions",
+      "name": "Jupyter AI Extensions",
+      "description": "Various AI-powered extensions",
+      "longDescription": "Various AI-powered extensions. This tool provides comprehensive functionality for data science & analytics tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Data Science & Analytics"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "jupyter ai extensions",
+        "data science & analytics"
+      ],
+      "tags": {
+        "primary": [
+          "Data Science & Analytics",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "spyder-ide",
+      "name": "Spyder IDE",
+      "description": "Python IDE optimized for ML with AI analysis",
+      "longDescription": "Python IDE optimized for ML with AI analysis. This tool provides comprehensive functionality for data science & analytics tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Data Science & Analytics"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "spyder ide",
+        "data science & analytics"
+      ],
+      "tags": {
+        "primary": [
+          "Data Science & Analytics",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

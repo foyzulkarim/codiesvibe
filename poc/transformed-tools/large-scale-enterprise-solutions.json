@@ -1,0 +1,429 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-09-14T01:34:25.797Z",
+  "contributors": {
+    "default-contributor": {
+      "name": "System Generated",
+      "email": "system@codiesvibe.com",
+      "contributions": 8
+    }
+  },
+  "tools": [
+    {
+      "id": "tabnine-enterprise",
+      "name": "Tabnine Enterprise",
+      "description": "$39/user/month, air-gapped deployments, SOC2 compliance",
+      "longDescription": "$39/user/month, air-gapped deployments, SOC2 compliance. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "tabnine enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "github-copilot-enterprise",
+      "name": "GitHub Copilot Enterprise",
+      "description": "$39/user/month, custom models, enterprise security",
+      "longDescription": "$39/user/month, custom models, enterprise security. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "github copilot enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "codegpt-enterprise",
+      "name": "CodeGPT Enterprise",
+      "description": "Custom pricing, self-hosted options, SOC2 Type II certified",
+      "longDescription": "Custom pricing, self-hosted options, SOC2 Type II certified. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "codegpt enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "sourcegraph-cody-enterprise",
+      "name": "Sourcegraph Cody Enterprise",
+      "description": "$15/user/month, advanced search, enterprise security",
+      "longDescription": "$15/user/month, advanced search, enterprise security. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "sourcegraph cody enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "amazon-q-developer-enterprise",
+      "name": "Amazon Q Developer Enterprise",
+      "description": "Custom pricing, AWS ecosystem integration",
+      "longDescription": "Custom pricing, AWS ecosystem integration. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "amazon q developer enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "nvidia-ai-enterprise",
+      "name": "NVIDIA AI Enterprise",
+      "description": "Cloud-native software platform",
+      "longDescription": "Cloud-native software platform. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "nvidia ai enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "augment-code-enterprise",
+      "name": "Augment Code Enterprise",
+      "description": "ISO/IEC 42001 and SOC 2 Type II certified",
+      "longDescription": "ISO/IEC 42001 and SOC 2 Type II certified. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "augment code enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    },
+    {
+      "id": "mistral-code-enterprise",
+      "name": "Mistral Code Enterprise",
+      "description": "Purpose-built models, fine-tuning, self-hosted options",
+      "longDescription": "Purpose-built models, fine-tuning, self-hosted options. This tool provides comprehensive functionality for large-scale enterprise solutions tasks.",
+      "pricing": [
+        "Free"
+      ],
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "Large-Scale Enterprise Solutions"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "",
+      "searchKeywords": [
+        "mistral code enterprise",
+        "large-scale enterprise solutions"
+      ],
+      "tags": {
+        "primary": [
+          "Large-Scale Enterprise Solutions",
+          "AI"
+        ],
+        "secondary": [
+          "Development",
+          "Tools"
+        ]
+      },
+      "popularity": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "features": {
+        "apiAccess": false,
+        "freeTier": true,
+        "multiLanguage": false,
+        "realTimeProcessing": false
+      },
+      "integrations": [],
+      "languages": [
+        "English"
+      ],
+      "pros": [],
+      "cons": [],
+      "useCases": [],
+      "contributor": "default-contributor",
+      "dateAdded": "2025-09-14T01:34:25.795Z",
+      "lastUpdated": "2025-09-14T01:34:25.795Z"
+    }
+  ]
+}

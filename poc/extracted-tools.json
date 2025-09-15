@@ -1,0 +1,1042 @@
+[
+  {
+    "name": "Tabby",
+    "description": "Self-hosted AI coding assistant with GPU support",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "Continue",
+    "description": "VS Code extension supporting multiple open-source LLMs",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "FauxPilot",
+    "description": "Code completion server with CodeGen model support",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "TurboPilot",
+    "description": "CPU-based Copilot alternative using llama.cpp",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "Twinny",
+    "description": "Ollama-based AI code completion for VS Code",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "FireCoder",
+    "description": "Self-hosted AI assistant with GPU support",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "CodeGPT.nvim",
+    "description": "ChatGPT integration for Neovim",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "Ollama Autocoder",
+    "description": "VS Code extension for Ollama model integration",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "Refact.ai",
+    "description": "AI-powered refactoring with self-hosted options",
+    "category": "Code Completion and Generation"
+  },
+  {
+    "name": "CodeLlama",
+    "description": "Meta's code-focused models (7B, 13B, 34B parameters)",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "StarCoder",
+    "description": "15B parameter coding model by BigCode project",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "CodeGen",
+    "description": "Salesforce's code generation models (350M/2B/6B/16B)",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "SantaCoder",
+    "description": "1.1B parameter model by BigCode",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "CodeT5/CodeT5+",
+    "description": "Salesforce's encoder-decoder models",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "InCoder",
+    "description": "Facebook's fill-in-the-middle models (1B/6B)",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "PolyCoder",
+    "description": "Multi-language code model (160M/400M/2.7B)",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "CodeGeeX",
+    "description": "13B parameter multilingual coding model",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "Qwen2.5-Coder",
+    "description": "Alibaba's code-focused model series",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "DeepSeek-Coder",
+    "description": "Advanced reasoning code model",
+    "category": "Open Source Language Models"
+  },
+  {
+    "name": "LocalAI",
+    "description": "OpenAI API-compatible local inference server",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "Ollama",
+    "description": "Easy local LLM deployment and management",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "llama.cpp",
+    "description": "C++ framework for local LLM inference",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "Jan",
+    "description": "Open-source ChatGPT alternative running offline",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "GPT4All",
+    "description": "Local GPT model deployment suite",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "LM Studio",
+    "description": "GUI for running local language models",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "Text Generation Web UI",
+    "description": "Web interface for local model deployment",
+    "category": "Self-Hosted Platforms"
+  },
+  {
+    "name": "GitHub Copilot",
+    "description": "Free for individuals, paid tiers available",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Tabnine",
+    "description": "Free basic plan, $15/month Pro, $39/month Enterprise",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Amazon Q Developer",
+    "description": "Free tier (50 interactions/month), $25/month Pro",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Pieces for Developers",
+    "description": "Free with local model support",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Qodo",
+    "description": "Free for individuals, team plans available",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "CodeGeeX",
+    "description": "Free plugin version, Enterprise plans available",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "IntelliCode",
+    "description": "Free with Visual Studio/VS Code",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Figstack",
+    "description": "Free for basic features",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Replit",
+    "description": "Free tier, $20/month Pro",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Amazon CodeWhisperer",
+    "description": "Free for individuals, $19/month Professional",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "Windsurf",
+    "description": "Free version available, paid Pro features",
+    "category": "Code Completion Assistants"
+  },
+  {
+    "name": "DeepCode AI",
+    "description": "Free for open source, paid enterprise tiers",
+    "category": "Code Review and Analysis"
+  },
+  {
+    "name": "Codacy",
+    "description": "Free tier, $10/user/month paid plans",
+    "category": "Code Review and Analysis"
+  },
+  {
+    "name": "CodeRabbit",
+    "description": "Free for individuals, $24/month Pro",
+    "category": "Code Review and Analysis"
+  },
+  {
+    "name": "CodeAnt AI",
+    "description": "14-day free trial, enterprise pricing",
+    "category": "Code Review and Analysis"
+  },
+  {
+    "name": "Cursor",
+    "description": "Free tier, $20/month Pro, $40/month Business",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Augment Code",
+    "description": "$30/month individual subscription",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Sourcegraph Cody",
+    "description": "$9/month Pro, $19/month Enterprise Starter",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "AskCodi",
+    "description": "$14.99/month Premium, $34.99/month Ultimate",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Codiga",
+    "description": "Free individual, $14/month paid plans",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Mistral Code",
+    "description": "Subscription-based enterprise pricing",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Zencoder",
+    "description": "Free tier, team plans scale per user",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "CodeGPT",
+    "description": "Multiple tiers including BYOK plans",
+    "category": "Monthly/Annual Subscriptions"
+  },
+  {
+    "name": "Tabnine Enterprise",
+    "description": "$39/user/month, air-gapped deployments, SOC2 compliance",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "GitHub Copilot Enterprise",
+    "description": "$39/user/month, custom models, enterprise security",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "CodeGPT Enterprise",
+    "description": "Custom pricing, self-hosted options, SOC2 Type II certified",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "Sourcegraph Cody Enterprise",
+    "description": "$15/user/month, advanced search, enterprise security",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "Amazon Q Developer Enterprise",
+    "description": "Custom pricing, AWS ecosystem integration",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "NVIDIA AI Enterprise",
+    "description": "Cloud-native software platform",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "Augment Code Enterprise",
+    "description": "ISO/IEC 42001 and SOC 2 Type II certified",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "Mistral Code Enterprise",
+    "description": "Purpose-built models, fine-tuning, self-hosted options",
+    "category": "Large-Scale Enterprise Solutions"
+  },
+  {
+    "name": "AI Toolkit for Visual Studio Code",
+    "description": "Microsoft's comprehensive AI toolkit",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Continue",
+    "description": "Leading open-source AI code agent",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "CodeGPT",
+    "description": "Multi-provider AI extension",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Kilo Code",
+    "description": "All-in-one AI coding agent",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Cline",
+    "description": "AI agent with IDE capabilities and project context",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Tabnine",
+    "description": "Enterprise features and local deployment",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Pieces for Developers",
+    "description": "AI copilot with long-term memory",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Amazon Q Developer",
+    "description": "AWS-focused AI coding assistant",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "IntelliCode",
+    "description": "Microsoft's AI-powered suggestions",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Augment Code",
+    "description": "Context-aware AI with deep codebase indexing",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Supermaven",
+    "description": "High-speed code completion",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "Windsurf Extension",
+    "description": "Integration with Windsurf AI IDE",
+    "category": "Primary AI Extensions (Beyond GitHub Copilot)"
+  },
+  {
+    "name": "JetBrains AI Assistant",
+    "description": "Official JetBrains AI plugin",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "GitHub Copilot Plugin",
+    "description": "Official GitHub Copilot integration",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "AI Coding Assistant",
+    "description": "Open source alternative",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "ProxyAI Plugin",
+    "description": "AI-powered code assistant",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "Windsurf JetBrains Plugin",
+    "description": "Agentic AI experience",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "Tabnine",
+    "description": "Available across all JetBrains IDEs",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "CodeGPT",
+    "description": "Multi-LLM support for JetBrains platforms",
+    "category": "Official and Third-Party Plugins"
+  },
+  {
+    "name": "copilot.vim",
+    "description": "Official GitHub Copilot plugin",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "copilot.lua",
+    "description": "Lua-based Copilot implementation",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "CopilotChat.nvim",
+    "description": "Chat interface for GitHub Copilot",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "avante.nvim",
+    "description": "Cursor-like AI IDE experience",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "codeium.nvim",
+    "description": "Free AI completion plugin",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "windsurf.nvim",
+    "description": "Windsurf integration for Neovim",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "vim-ai",
+    "description": "OpenAI and ChatGPT plugin",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "neural",
+    "description": "AI code generation with multiple model support",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "ChatGPT.nvim",
+    "description": "Direct ChatGPT integration",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "gen.nvim",
+    "description": "Ollama integration for local AI models",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "minuet-ai.nvim",
+    "description": "Multi-LLM completion support",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "parrot.nvim",
+    "description": "Multiple provider support",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "gp.nvim",
+    "description": "GPT integration with chat capabilities",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "codecompanion.nvim",
+    "description": "AI coding companion",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "tabnine-nvim",
+    "description": "TabNine integration",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "Pieces for Sublime",
+    "description": "Conversational AI copilot with 20+ LLM support",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "OpenAI completion",
+    "description": "GPT-5, o3, and Ollama support",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "Codex",
+    "description": "Chat interface for OpenAI Codex CLI",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "AskCodi for Sublime Text",
+    "description": "Native AI-assisted coding",
+    "category": "Major Plugins"
+  },
+  {
+    "name": "Monica",
+    "description": "ChatGPT AI assistant with coding capabilities",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "GitHub Copilot Browser Extension",
+    "description": "Web-based code suggestions",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "ChatGPT for Chrome",
+    "description": "Adds ChatGPT alongside search results",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "AI Chat Assistant",
+    "description": "Web-wide AI assistant for development",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "Scalenut",
+    "description": "Real-time code analysis and error detection",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "CodeGPT Browser Extension",
+    "description": "Multi-provider AI coding assistance",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "Chrome DevTools AI",
+    "description": "Built-in AI assistance panel",
+    "category": "Chrome Extensions"
+  },
+  {
+    "name": "Pieces Browser Extensions",
+    "description": "Chrome, Edge, Teams integration",
+    "category": "Cross-Browser Extensions"
+  },
+  {
+    "name": "Tabnine Web Extension",
+    "description": "Code completion in web-based IDEs",
+    "category": "Cross-Browser Extensions"
+  },
+  {
+    "name": "Cursor",
+    "description": "AI-native code editor with predictive editing",
+    "category": "Standalone Desktop IDEs"
+  },
+  {
+    "name": "Windsurf Editor",
+    "description": "First AI-native IDE with Cascade AI assistant",
+    "category": "Standalone Desktop IDEs"
+  },
+  {
+    "name": "Visual Studio 2022",
+    "description": "Built-in AI features with GitHub Copilot",
+    "category": "Standalone Desktop IDEs"
+  },
+  {
+    "name": "Zed",
+    "description": "High-performance editor with AI integration",
+    "category": "Standalone Desktop IDEs"
+  },
+  {
+    "name": "Xcode AI Assistant",
+    "description": "Apple's built-in AI for iOS/macOS development",
+    "category": "Standalone Desktop IDEs"
+  },
+  {
+    "name": "Pieces Desktop App",
+    "description": "Visual GUI for AI coding assistance",
+    "category": "Desktop AI Assistants"
+  },
+  {
+    "name": "Figstack Desktop",
+    "description": "Code explanation and analysis",
+    "category": "Desktop AI Assistants"
+  },
+  {
+    "name": "GitHub Copilot Desktop",
+    "description": "Standalone Copilot application",
+    "category": "Desktop AI Assistants"
+  },
+  {
+    "name": "JetBrains AI Services",
+    "description": "Desktop-based AI tooling",
+    "category": "Desktop AI Assistants"
+  },
+  {
+    "name": "Bolt.new",
+    "description": "Browser-based AI development with WebContainers",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "Replit with AI Agent",
+    "description": "AI-powered platform for web apps",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "Lovable",
+    "description": "Browser-native AI app builder",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "WeWeb",
+    "description": "AI-driven no-code platform",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "Databutton",
+    "description": "AI app builder with editable code generation",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "Softr",
+    "description": "AI-powered no-code app development",
+    "category": "Full Development Environments"
+  },
+  {
+    "name": "CodeGPT Web Platform",
+    "description": "Browser-based AI development environment",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "Ninja AI Code Generator",
+    "description": "Web-based coding platform",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "Canva Code",
+    "description": "AI code generator for interactive widgets",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "n8n",
+    "description": "Workflow automation platform with AI integrations",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "Wix ADI",
+    "description": "AI website builder with coding capabilities",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "GitHub Codespaces",
+    "description": "Cloud development environment with AI",
+    "category": "Specialized Web Tools"
+  },
+  {
+    "name": "Aider",
+    "description": "AI pair programming in terminal with Git integration",
+    "category": "Terminal AI Assistants"
+  },
+  {
+    "name": "Cline",
+    "description": "Open-source autonomous coding agent for terminal",
+    "category": "Terminal AI Assistants"
+  },
+  {
+    "name": "OpenAI Codex CLI",
+    "description": "Terminal-based coding agent",
+    "category": "Terminal AI Assistants"
+  },
+  {
+    "name": "Gemini CLI",
+    "description": "Google's open-source AI agent for terminal",
+    "category": "Terminal AI Assistants"
+  },
+  {
+    "name": "Cursor CLI",
+    "description": "Command-line interface for Cursor AI features",
+    "category": "Terminal AI Assistants"
+  },
+  {
+    "name": "promptr",
+    "description": "CLI tool for GPT-powered codebase operations",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "code-collator",
+    "description": "Creates markdown descriptions of codebases for LLMs",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "AskCommand",
+    "description": "Natural language to Unix command generation",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "AutoComplete.sh",
+    "description": "AI-powered terminal command suggestions",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "PoorCoder",
+    "description": "Unix-style scripts for AI coding assistance",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "batchai",
+    "description": "Batch processing of project codes with AI",
+    "category": "Command-Line Utilities"
+  },
+  {
+    "name": "Warp",
+    "description": "AI-enhanced terminal with intelligent suggestions",
+    "category": "Terminal Enhancement Tools"
+  },
+  {
+    "name": "TmuxAI",
+    "description": "AI-powered terminal assistant for Tmux",
+    "category": "Terminal Enhancement Tools"
+  },
+  {
+    "name": "Fig",
+    "description": "Terminal autocomplete with AI assistance (now AWS)",
+    "category": "Terminal Enhancement Tools"
+  },
+  {
+    "name": "OpenAI Codex",
+    "description": "Powers GitHub Copilot",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "CodeConvert AI",
+    "description": "Multi-language code converter",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "AI Code Convert",
+    "description": "Free code translator",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "ZZZCode.ai Code Converter",
+    "description": "Online conversion tool",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "Proper Programming's CodeTranslator",
+    "description": "ChatGPT-powered, 50+ languages",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "TurkeyCode",
+    "description": "English text to code translation",
+    "category": "Direct Code Generation"
+  },
+  {
+    "name": "Rainforest QA",
+    "description": "AI-accelerated end-to-end testing",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Applitools",
+    "description": "Visual AI testing platform",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Momentic",
+    "description": "Natural language test creation",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Functionize",
+    "description": "AI-powered testing platform",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Virtuoso QA",
+    "description": "Cloud-hosted codeless test automation",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "ACCELQ",
+    "description": "Codeless test automation",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Testim",
+    "description": "AI-powered test creation",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "mabl",
+    "description": "AI-native test automation",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "LambdaTest KaneAI",
+    "description": "GenAI native QA Agent-as-a-Service",
+    "category": "AI-Assisted Testing Platforms"
+  },
+  {
+    "name": "Meticulous",
+    "description": "Automatic visual and functional test creation",
+    "category": "Self-Healing Test Tools"
+  },
+  {
+    "name": "ProdPerfect",
+    "description": "User behavior-based test creation",
+    "category": "Self-Healing Test Tools"
+  },
+  {
+    "name": "TestComplete",
+    "description": "Comprehensive test automation",
+    "category": "Self-Healing Test Tools"
+  },
+  {
+    "name": "DocuWriter.ai",
+    "description": "Comprehensive documentation with UML diagrams",
+    "category": "AI-Powered Documentation Generators"
+  },
+  {
+    "name": "Mintlify",
+    "description": "AI-native documentation platform",
+    "category": "AI-Powered Documentation Generators"
+  },
+  {
+    "name": "CodeGPT Documentation",
+    "description": "VS Code extension for detailed documentation",
+    "category": "AI-Powered Documentation Generators"
+  },
+  {
+    "name": "Workik AI Documentation",
+    "description": "Context-driven documentation",
+    "category": "AI-Powered Documentation Generators"
+  },
+  {
+    "name": "Swimm",
+    "description": "Static analysis for contextual code documentation",
+    "category": "AI-Powered Documentation Generators"
+  },
+  {
+    "name": "Workik AI Debugger",
+    "description": "Context-aware debugging with error detection",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Safurai",
+    "description": "AI-driven code analysis with automated bug fixes",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "DeepScan",
+    "description": "Static code analysis for JavaScript",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "ZZZCode Debug",
+    "description": "Online AI bug detector",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Debugcode.ai",
+    "description": "Multi-language debugging support",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Microsoft Copilot Debug",
+    "description": "AI debugging assistance",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Ploomber AI Debugger",
+    "description": "Deployment error debugging",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Bugsnag",
+    "description": "Application monitoring with AI-enhanced error analysis",
+    "category": "AI-Powered Debuggers"
+  },
+  {
+    "name": "Refact.ai",
+    "description": "AI coding agent with autonomous refactoring",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "Qodo Refactoring",
+    "description": "Advanced AI models for code optimization",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "Workik Code Refactoring",
+    "description": "Framework upgrades and performance optimization",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "CodePal",
+    "description": "Multi-language code generation with refactoring",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "HyperWrite Code Refactor Assistant",
+    "description": "Legacy code review and optimization",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "AI Code Mentor",
+    "description": "Code explanation and optimization",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "Refraction",
+    "description": "Code generation with optimization and bug detection",
+    "category": "AI Refactoring Platforms"
+  },
+  {
+    "name": "Tabnine Enterprise",
+    "description": "Air-gapped deployments, ITAR/CMMC compliant",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "Qodo Enterprise",
+    "description": "On-premises with SOC2 certification",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "Sourcegraph Cody Enterprise",
+    "description": "Self-hosted via Docker/Kubernetes",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "CodeComplete Enterprise",
+    "description": "Self-hosted fine-tuned solutions",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "Mistral Code Enterprise",
+    "description": "Complete data sovereignty",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "Refact.ai Enterprise",
+    "description": "On-premises deployment with fine-tuning",
+    "category": "Enterprise Commercial Solutions"
+  },
+  {
+    "name": "TabbyML/Tabby",
+    "description": "Self-contained Docker/Kubernetes deployment",
+    "category": "Open-Source Self-Hosted"
+  },
+  {
+    "name": "Continue.dev",
+    "description": "Local IDE extension with model server",
+    "category": "Open-Source Self-Hosted"
+  },
+  {
+    "name": "CodeGeeX",
+    "description": "Self-hosted model weights",
+    "category": "Open-Source Self-Hosted"
+  },
+  {
+    "name": "LocalAI",
+    "description": "OpenAI-compatible local API",
+    "category": "Open-Source Self-Hosted"
+  },
+  {
+    "name": "Coder Enterprise",
+    "description": "Self-hosted cloud development environments",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "HPE Private Cloud AI",
+    "description": "On-premises private cloud infrastructure",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Rackspace Private Cloud AI",
+    "description": "Customer-owned data center deployment",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Google Distributed Cloud Air-Gapped",
+    "description": "Fully disconnected deployment",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Apple Private Cloud Compute",
+    "description": "Custom server hardware with Apple silicon",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Ollama",
+    "description": "Simplified LLM deployment with OpenAI-compatible API",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "LM Studio",
+    "description": "Cross-platform GUI for local models",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Hugging Face Transformers",
+    "description": "Custom model hosting platform",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "PrivateGPT",
+    "description": "Document-aware local AI with coding capabilities",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Open WebUI",
+    "description": "Lightweight web frontend for local LLMs",
+    "category": "Hybrid and Private Cloud"
+  },
+  {
+    "name": "Amazon Q Developer",
+    "description": "AWS-optimized for data science workflows",
+    "category": "Data Science & Analytics"
+  },
+  {
+    "name": "Jupyter AI Extensions",
+    "description": "Various AI-powered extensions",
+    "category": "Data Science & Analytics"
+  },
+  {
+    "name": "Spyder IDE",
+    "description": "Python IDE optimized for ML with AI analysis",
+    "category": "Data Science & Analytics"
+  },
+  {
+    "name": "CodeWP",
+    "description": "WordPress-specific AI coding tool",
+    "category": "Web Development"
+  },
+  {
+    "name": "Webflow AI",
+    "description": "Visual development with AI-powered design",
+    "category": "Web Development"
+  },
+  {
+    "name": "Vercel AI",
+    "description": "Next.js and React optimization",
+    "category": "Web Development"
+  },
+  {
+    "name": "Android Studio AI",
+    "description": "Google's AI integration for Android",
+    "category": "Mobile Development"
+  },
+  {
+    "name": "React Native AI Tools",
+    "description": "Cross-platform mobile development assistance",
+    "category": "Mobile Development"
+  },
+  {
+    "name": "Snyk DeepCode AI",
+    "description": "Security vulnerability detection",
+    "category": "Security-Focused"
+  },
+  {
+    "name": "CodeQL AI",
+    "description": "Semantic code analysis for security",
+    "category": "Security-Focused"
+  },
+  {
+    "name": "Veracode AI",
+    "description": "Application security testing with ML",
+    "category": "Security-Focused"
+  }
+]

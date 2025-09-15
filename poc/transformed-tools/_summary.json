@@ -1,0 +1,167 @@
+{
+  "generatedAt": "2025-09-14T01:34:25.803Z",
+  "totalCategories": 32,
+  "totalTools": 208,
+  "categories": {
+    "Code Completion and Generation": {
+      "fileName": "code-completion-and-generation.json",
+      "toolCount": 9,
+      "filePath": "./code-completion-and-generation.json"
+    },
+    "Open Source Language Models": {
+      "fileName": "open-source-language-models.json",
+      "toolCount": 10,
+      "filePath": "./open-source-language-models.json"
+    },
+    "Self-Hosted Platforms": {
+      "fileName": "self-hosted-platforms.json",
+      "toolCount": 7,
+      "filePath": "./self-hosted-platforms.json"
+    },
+    "Code Completion Assistants": {
+      "fileName": "code-completion-assistants.json",
+      "toolCount": 11,
+      "filePath": "./code-completion-assistants.json"
+    },
+    "Code Review and Analysis": {
+      "fileName": "code-review-and-analysis.json",
+      "toolCount": 4,
+      "filePath": "./code-review-and-analysis.json"
+    },
+    "Monthly/Annual Subscriptions": {
+      "fileName": "monthly-annual-subscriptions.json",
+      "toolCount": 8,
+      "filePath": "./monthly-annual-subscriptions.json"
+    },
+    "Large-Scale Enterprise Solutions": {
+      "fileName": "large-scale-enterprise-solutions.json",
+      "toolCount": 8,
+      "filePath": "./large-scale-enterprise-solutions.json"
+    },
+    "Primary AI Extensions (Beyond GitHub Copilot)": {
+      "fileName": "primary-ai-extensions-beyond-github-copilot-.json",
+      "toolCount": 12,
+      "filePath": "./primary-ai-extensions-beyond-github-copilot-.json"
+    },
+    "Official and Third-Party Plugins": {
+      "fileName": "official-and-third-party-plugins.json",
+      "toolCount": 7,
+      "filePath": "./official-and-third-party-plugins.json"
+    },
+    "Major Plugins": {
+      "fileName": "major-plugins.json",
+      "toolCount": 19,
+      "filePath": "./major-plugins.json"
+    },
+    "Chrome Extensions": {
+      "fileName": "chrome-extensions.json",
+      "toolCount": 7,
+      "filePath": "./chrome-extensions.json"
+    },
+    "Cross-Browser Extensions": {
+      "fileName": "cross-browser-extensions.json",
+      "toolCount": 2,
+      "filePath": "./cross-browser-extensions.json"
+    },
+    "Standalone Desktop IDEs": {
+      "fileName": "standalone-desktop-ides.json",
+      "toolCount": 5,
+      "filePath": "./standalone-desktop-ides.json"
+    },
+    "Desktop AI Assistants": {
+      "fileName": "desktop-ai-assistants.json",
+      "toolCount": 4,
+      "filePath": "./desktop-ai-assistants.json"
+    },
+    "Full Development Environments": {
+      "fileName": "full-development-environments.json",
+      "toolCount": 6,
+      "filePath": "./full-development-environments.json"
+    },
+    "Specialized Web Tools": {
+      "fileName": "specialized-web-tools.json",
+      "toolCount": 6,
+      "filePath": "./specialized-web-tools.json"
+    },
+    "Terminal AI Assistants": {
+      "fileName": "terminal-ai-assistants.json",
+      "toolCount": 5,
+      "filePath": "./terminal-ai-assistants.json"
+    },
+    "Command-Line Utilities": {
+      "fileName": "command-line-utilities.json",
+      "toolCount": 6,
+      "filePath": "./command-line-utilities.json"
+    },
+    "Terminal Enhancement Tools": {
+      "fileName": "terminal-enhancement-tools.json",
+      "toolCount": 3,
+      "filePath": "./terminal-enhancement-tools.json"
+    },
+    "Direct Code Generation": {
+      "fileName": "direct-code-generation.json",
+      "toolCount": 6,
+      "filePath": "./direct-code-generation.json"
+    },
+    "AI-Assisted Testing Platforms": {
+      "fileName": "ai-assisted-testing-platforms.json",
+      "toolCount": 9,
+      "filePath": "./ai-assisted-testing-platforms.json"
+    },
+    "Self-Healing Test Tools": {
+      "fileName": "self-healing-test-tools.json",
+      "toolCount": 3,
+      "filePath": "./self-healing-test-tools.json"
+    },
+    "AI-Powered Documentation Generators": {
+      "fileName": "ai-powered-documentation-generators.json",
+      "toolCount": 5,
+      "filePath": "./ai-powered-documentation-generators.json"
+    },
+    "AI-Powered Debuggers": {
+      "fileName": "ai-powered-debuggers.json",
+      "toolCount": 8,
+      "filePath": "./ai-powered-debuggers.json"
+    },
+    "AI Refactoring Platforms": {
+      "fileName": "ai-refactoring-platforms.json",
+      "toolCount": 7,
+      "filePath": "./ai-refactoring-platforms.json"
+    },
+    "Enterprise Commercial Solutions": {
+      "fileName": "enterprise-commercial-solutions.json",
+      "toolCount": 6,
+      "filePath": "./enterprise-commercial-solutions.json"
+    },
+    "Open-Source Self-Hosted": {
+      "fileName": "open-source-self-hosted.json",
+      "toolCount": 4,
+      "filePath": "./open-source-self-hosted.json"
+    },
+    "Hybrid and Private Cloud": {
+      "fileName": "hybrid-and-private-cloud.json",
+      "toolCount": 10,
+      "filePath": "./hybrid-and-private-cloud.json"
+    },
+    "Data Science & Analytics": {
+      "fileName": "data-science-analytics.json",
+      "toolCount": 3,
+      "filePath": "./data-science-analytics.json"
+    },
+    "Web Development": {
+      "fileName": "web-development.json",
+      "toolCount": 3,
+      "filePath": "./web-development.json"
+    },
+    "Mobile Development": {
+      "fileName": "mobile-development.json",
+      "toolCount": 2,
+      "filePath": "./mobile-development.json"
+    },
+    "Security-Focused": {
+      "fileName": "security-focused.json",
+      "toolCount": 3,
+      "filePath": "./security-focused.json"
+    }
+  }
+}
