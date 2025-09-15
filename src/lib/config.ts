@@ -28,6 +28,7 @@ export const SORT_OPTIONS = {
   POPULARITY: 'popularity',
   RATING: 'rating',
   REVIEW_COUNT: 'reviewCount',
+  NAME: 'name',
   CREATED_AT: 'createdAt',
   RELEVANCE: 'relevance',
 } as const;

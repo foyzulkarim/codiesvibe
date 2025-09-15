@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: AI Tools Search API
+  description: API for searching and sorting AI tools directory
+  version: 1.0.0
+  contact:
+    name: CodiesVibe API Team
+
+paths:
+  /api/tools/search:
+    get:
+      summary: Search and sort AI tools
+      description: |
+        Search AI tools by name, description, and tags with sorting and pagination.
+        Supports button-triggered search with text highlighting and result counting.
+      operationId: searchTools
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          description: Search query (minimum 2 characters for meaningful results)
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+            example: "GitHub Copilot"
+        - name: sortBy
+          in: query
+          description: Field to sort results by
+          required: false
+          schema:
+            type: string
+            enum: [popularity, name, rating, price]
+            default: popularity
+          example: popularity
+        - name: sortOrder
+          in: query
+          description: Sort direction
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          example: desc
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Number of results per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+
+      responses:
+        '200':
+          description: Search results with pagination and metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              examples:
+                successful_search:
+                  summary: Successful search with results
+                  value:
+                    data:
+                      - id: "64a1b2c3d4e5f6789abc123"
+                        name: "GitHub Copilot"
+                        description: "AI pair programmer that suggests code and entire functions"
+                        tags:
+                          primary: ["AI Assistant", "Code Completion"]
+                          secondary: ["IDE Integration", "Machine Learning"]
+                        popularity: 95.5
+                        rating: 4.6
+                        reviewCount: 12847
+                        price:
+                          type: "subscription"
+                          amount: 10.00
+                          currency: "USD"
+                          period: "monthly"
+                        lastUpdated: "2025-09-15T10:30:00Z"
+                    pagination:
+                      page: 1
+                      limit: 20
+                      total: 156
+                      pages: 8
+                      hasNext: true
+                      hasPrevious: false
+                    searchMetadata:
+                      query: "GitHub Copilot"
+                      sortBy: "popularity"
+                      executionTime: 234
+                      resultCount: 156
+                empty_results:
+                  summary: No results found
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 20
+                      total: 0
+                      pages: 0
+                      hasNext: false
+                      hasPrevious: false
+                    searchMetadata:
+                      query: "nonexistent tool"
+                      sortBy: "popularity"
+                      executionTime: 45
+                      resultCount: 0
+
+        '400':
+          description: Bad request - invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 400
+                message: "Validation failed"
+                errors:
+                  - field: "q"
+                    constraints:
+                      minLength: "Search query must be at least 2 characters"
+                    value: "a"
+
+        '422':
+          description: Unprocessable entity - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                statusCode: 500
+                message: "Internal server error"
+                error: "Database connection failed"
+
+components:
+  schemas:
+    SearchResponse:
+      type: object
+      required:
+        - data
+        - pagination
+        - searchMetadata
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolResponseDto'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+        searchMetadata:
+          $ref: '#/components/schemas/SearchMetadata'
+
+    ToolResponseDto:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - tags
+        - reviewCount
+        - lastUpdated
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the tool
+          example: "64a1b2c3d4e5f6789abc123"
+        name:
+          type: string
+          description: Display name of the AI tool
+          minLength: 1
+          maxLength: 100
+          example: "GitHub Copilot"
+        description:
+          type: string
+          description: Short description of the tool
+          minLength: 10
+          maxLength: 500
+          example: "AI pair programmer that suggests code and entire functions"
+        tags:
+          $ref: '#/components/schemas/TagStructure'
+        popularity:
+          type: number
+          nullable: true
+          description: Popularity score (0-100)
+          minimum: 0
+          maximum: 100
+          example: 95.5
+        rating:
+          type: number
+          nullable: true
+          description: Average user rating (1-5 stars)
+          minimum: 0
+          maximum: 5
+          example: 4.6
+        reviewCount:
+          type: integer
+          description: Number of reviews
+          minimum: 0
+          example: 12847
+        price:
+          $ref: '#/components/schemas/PriceStructure'
+          nullable: true
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2025-09-15T10:30:00Z"
+
+    TagStructure:
+      type: object
+      required:
+        - primary
+        - secondary
+      properties:
+        primary:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 10
+          description: Primary category tags
+          example: ["AI Assistant", "Code Completion"]
+        secondary:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
+          description: Secondary feature tags
+          example: ["IDE Integration", "Machine Learning"]
+
+    PriceStructure:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [free, freemium, subscription, one_time]
+          example: "subscription"
+        amount:
+          type: number
+          nullable: true
+          minimum: 0
+          description: Price amount (null for free tools)
+          example: 10.00
+        currency:
+          type: string
+          nullable: true
+          description: Currency code (ISO 4217)
+          example: "USD"
+        period:
+          type: string
+          nullable: true
+          enum: [monthly, yearly, one_time]
+          description: Billing period (null for free/one-time)
+          example: "monthly"
+
+    PaginationMetadata:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - pages
+        - hasNext
+        - hasPrevious
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Results per page
+          example: 20
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of results
+          example: 156
+        pages:
+          type: integer
+          minimum: 0
+          description: Total number of pages
+          example: 8
+        hasNext:
+          type: boolean
+          description: Whether next page exists
+          example: true
+        hasPrevious:
+          type: boolean
+          description: Whether previous page exists
+          example: false
+
+    SearchMetadata:
+      type: object
+      required:
+        - query
+        - sortBy
+        - executionTime
+        - resultCount
+      properties:
+        query:
+          type: string
+          description: The search query used
+          example: "GitHub Copilot"
+        sortBy:
+          type: string
+          enum: [popularity, name, rating, price]
+          description: Sort field applied
+          example: "popularity"
+        executionTime:
+          type: integer
+          description: Query execution time in milliseconds
+          example: 234
+        resultCount:
+          type: integer
+          minimum: 0
+          description: Number of results found (before pagination)
+          example: 156
+
+    ErrorResponse:
+      type: object
+      required:
+        - statusCode
+        - message
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        message:
+          type: string
+          description: Error message
+          example: "Validation failed"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "q"
+              constraints:
+                type: object
+                additionalProperties:
+                  type: string
+                example:
+                  minLength: "Search query must be at least 2 characters"
+              value:
+                description: The invalid value that was provided
+                example: "a"
+        error:
+          type: string
+          description: Technical error details (for 500 errors)
+          example: "Database connection failed"
+
+  examples:
+    PopularitySort:
+      summary: Sort by popularity (default)
+      value:
+        q: "AI assistant"
+        sortBy: "popularity"
+        sortOrder: "desc"
+
+    NameSort:
+      summary: Sort alphabetically by name
+      value:
+        q: "code completion"
+        sortBy: "name"
+        sortOrder: "asc"
+
+    RatingSort:
+      summary: Sort by highest rated tools
+      value:
+        sortBy: "rating"
+        sortOrder: "desc"
+        page: 1
+        limit: 10
+
+    PaginatedSearch:
+      summary: Search with pagination
+      value:
+        q: "GitHub"
+        page: 2
+        limit: 20

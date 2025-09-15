@@ -13,13 +13,13 @@ export class GetToolsQueryDto {
 
   @ApiPropertyOptional({
     description: 'Sort by field',
-    enum: ['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance'],
+    enum: ['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance', 'name'],
     example: 'popularity',
     default: 'createdAt'
   })
   @IsOptional()
   @IsString()
-  @IsIn(['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance'])
+  @IsIn(['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance', 'name'])
   sortBy?: string = 'createdAt';
 
   @ApiPropertyOptional({
@@ -74,4 +74,22 @@ export class GetToolsQueryDto {
   @IsOptional()
   @IsString()
   deployment?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by pricing options (comma-separated)',
+    example: 'Free,Paid',
+    type: String
+  })
+  @IsOptional()
+  @IsString()
+  pricing?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by interface types (comma-separated)',
+    example: 'Web,API',
+    type: String
+  })
+  @IsOptional()
+  @IsString()
+  interface?: string;
 }

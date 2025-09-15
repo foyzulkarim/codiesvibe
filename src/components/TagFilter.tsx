@@ -4,7 +4,7 @@ import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
 
 interface TagFilterProps {
   activeFilters: Record<string, string[]>;
-  onFilterChange: (category: string, value: string) => void;
+  onFilterChange: (category: string, values: string[]) => void;
   onClearAll: () => void;
 }
 
@@ -104,7 +104,14 @@ export const TagFilter = ({
                   <button
                     key={option}
                     className={getChipClassName(category, option)}
-                    onClick={() => onFilterChange(category, option)}
+                    onClick={() => {
+                      const currentValues = activeFilters[category] || [];
+                      const isActive = currentValues.includes(option);
+                      const newValues = isActive 
+                        ? currentValues.filter(v => v !== option)
+                        : [...currentValues, option];
+                      onFilterChange(category, newValues);
+                    }}
                   >
                     {isTagActive(category, option) && (
                       <Check className="w-3.5 h-3.5" />
@@ -127,8 +134,8 @@ export const TagFilter = ({
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("pricing", "Free");
-                onFilterChange("interface", "IDE");
+                onFilterChange("pricing", [...(activeFilters.pricing || []), "Free"]);
+                onFilterChange("interface", [...(activeFilters.interface || []), "IDE"]);
               }}
             >
               Free + IDE
@@ -136,8 +143,8 @@ export const TagFilter = ({
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("deployment", "Self-hosted");
-                onFilterChange("pricing", "Open Source");
+                onFilterChange("deployment", [...(activeFilters.deployment || []), "Self-hosted"]);
+                onFilterChange("pricing", [...(activeFilters.pricing || []), "Open Source"]);
               }}
             >
               Self-hosted + Open Source
@@ -145,8 +152,8 @@ export const TagFilter = ({
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("functionality", "Code Completion");
-                onFilterChange("pricing", "Freemium");
+                onFilterChange("functionality", [...(activeFilters.functionality || []), "Code Completion"]);
+                onFilterChange("pricing", [...(activeFilters.pricing || []), "Freemium"]);
               }}
             >
               Code Completion + Freemium

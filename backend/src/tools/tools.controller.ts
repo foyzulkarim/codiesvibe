@@ -47,6 +47,18 @@ export class ToolsController {
         : query.deployment;
     }
 
+    if (query.pricing) {
+      filters.pricing = typeof query.pricing === 'string'
+        ? query.pricing.split(',').map(s => s.trim())
+        : query.pricing;
+    }
+
+    if (query.interface) {
+      filters.interface = typeof query.interface === 'string'
+        ? query.interface.split(',').map(s => s.trim())
+        : query.interface;
+    }
+
     if (query.minRating !== undefined) {
       filters.minRating = query.minRating;
     }

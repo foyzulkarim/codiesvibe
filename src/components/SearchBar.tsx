@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { AITool } from "@/data/tools";
+import { Button } from "./ui/button";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
   tools: AITool[];
-  searchQuery: string;
+  value: string;
+  onChange: (value: string) => void;
+  showSearchButton?: boolean;
 }
 
 interface Suggestion {
@@ -14,37 +17,39 @@ interface Suggestion {
   subtitle?: string;
 }
 
-export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
+export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton = false }: SearchBarProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
   useEffect(() => {
-    if (searchQuery.length >= 2) {
-      generateSuggestions(searchQuery);
+    if (value && value.length >= 2) {
+      generateSuggestions(value);
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-  }, [searchQuery, tools]);
+  }, [value, tools]);
 
   const generateSuggestions = (query: string) => {
     const lowercaseQuery = query.toLowerCase();
     const newSuggestions: Suggestion[] = [];
 
     // Tool name suggestions
-    tools
-      .filter(tool => 
-        tool.name.toLowerCase().includes(lowercaseQuery) ||
-        tool.searchKeywords.some(keyword => keyword.toLowerCase().includes(lowercaseQuery))
-      )
-      .slice(0, 3)
-      .forEach(tool => {
-        newSuggestions.push({
-          type: "tool",
-          text: tool.name,
-          subtitle: tool.description
+    if (tools && tools.length > 0) {
+      tools
+        .filter(tool => 
+          tool.name && tool.name.toLowerCase().includes(lowercaseQuery) ||
+          (tool.searchKeywords && tool.searchKeywords.some(keyword => keyword.toLowerCase().includes(lowercaseQuery)))
+        )
+        .slice(0, 3)
+        .forEach(tool => {
+          newSuggestions.push({
+            type: "tool",
+            text: tool.name,
+            subtitle: tool.description
+          });
         });
-      });
+    }
 
     // Category suggestions
     const categories = [
@@ -79,68 +84,78 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
       .forEach(query => {
         newSuggestions.push({
           type: "query",
-          text: query,
-          subtitle: "Popular search"
+          text: query
         });
       });
 
-    setSuggestions(newSuggestions.slice(0, 6));
+    setSuggestions(newSuggestions);
   };
 
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    onSearch(suggestion.text);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onSearch(value);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSearchClick = () => {
+    onSearch(value);
     setShowSuggestions(false);
   };
 
-  const clearSearch = () => {
-    onSearch("");
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    onChange(suggestion.text);
+    onSearch(suggestion.text);
     setShowSuggestions(false);
   };
 
   const getSuggestionIcon = (type: string) => {
     switch (type) {
-      case "tool":
-        return "🔧";
-      case "category":
-        return "📂";
-      case "query":
-        return "🔍";
-      default:
-        return "💡";
+      case "tool": return "🔧";
+      case "category": return "📁";
+      case "query": return "🔍";
+      default: return "💡";
     }
   };
 
   return (
-    <div className="search-container">
+    <div className="relative w-full max-w-2xl mx-auto">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-6 h-6" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <input
           type="text"
-          placeholder="Search for AI tools... (e.g., 'free code completion for VS Code')"
-          className="search-input pl-14 pr-12"
-          value={searchQuery}
-          onChange={(e) => onSearch(e.target.value)}
-          onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)}
+          placeholder="Search AI coding tools..."
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyPress={handleKeyPress}
+          onFocus={() => value && value.length >= 2 && setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          className="w-full pl-10 pr-20 py-3 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground placeholder:text-muted-foreground"
         />
-        {searchQuery.length >= 1 && searchQuery.length < 2 && (
-          <div className="absolute top-full left-0 right-0 mt-1 p-3 bg-card border border-border rounded-lg shadow-lg z-50">
-            <p className="text-sm text-muted-foreground">
-              Type at least 2 characters to see suggestions...
-            </p>
-          </div>
-        )}
-        {searchQuery && (
+        {value && (
           <button
-            onClick={clearSearch}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-full"
+            onClick={() => {
+              onChange("");
+              setShowSuggestions(false);
+            }}
+            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
+        )}
+        {showSearchButton && (
+          <Button
+            onClick={handleSearchClick}
+            size="sm"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2"
+          >
+            Search
+          </Button>
         )}
       </div>
 
-      {showSuggestions && suggestions.length > 0 && (
+      {/* Suggestions Dropdown */}
+      {showSuggestions && suggestions && suggestions.length > 0 && (
         <div className="search-suggestions animate-fade-in">
           <div className="px-4 py-2 bg-muted/50 border-b border-border">
             <p className="text-xs text-muted-foreground">
@@ -172,11 +187,11 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
         </div>
       )}
       
-      {showSuggestions && searchQuery.length >= 2 && suggestions.length === 0 && (
+      {showSuggestions && value && value.length >= 2 && suggestions && suggestions.length === 0 && (
         <div className="search-suggestions animate-fade-in">
           <div className="px-4 py-6 text-center">
             <p className="text-sm text-muted-foreground mb-3">
-              No suggestions found for "{searchQuery}"
+              No suggestions found for "{value}"
             </p>
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">Try searching for:</p>
@@ -184,8 +199,12 @@ export const SearchBar = ({ onSearch, tools, searchQuery }: SearchBarProps) => {
                 {["free tools", "code completion", "open source", "VS Code"].map((suggestion) => (
                   <button
                     key={suggestion}
-                    onClick={() => onSearch(suggestion)}
-                    className="px-2 py-1 text-xs bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                    onClick={() => {
+                      onChange(suggestion);
+                      onSearch(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    className="px-3 py-1 text-xs bg-muted hover:bg-muted/80 rounded-full transition-colors"
                   >
                     {suggestion}
                   </button>

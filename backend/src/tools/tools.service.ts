@@ -59,13 +59,15 @@ class InputSanitizer {
 export interface SearchFilters {
   functionality?: string[];
   tags?: string[];
+  pricing?: string[];
+  interface?: string[];
   minRating?: number;
   maxRating?: number;
   deployment?: string[];
 }
 
 export interface SearchOptions {
-  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance';
+  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance' | 'name';
 }
 
 @Injectable()
@@ -236,6 +238,14 @@ export class ToolsService {
       query.functionality = { $in: filters.functionality };
     }
 
+    if (filters.pricing && filters.pricing.length > 0) {
+      query.pricing = { $in: filters.pricing };
+    }
+
+    if (filters.interface && filters.interface.length > 0) {
+      query.interface = { $in: filters.interface };
+    }
+
     if (filters.tags && filters.tags.length > 0) {
       query.$or = [
         { 'tags.primary': { $in: filters.tags } },
@@ -267,6 +277,8 @@ export class ToolsService {
         return { rating: -1, reviewCount: -1, createdAt: -1, _id: 1 };
       case 'reviewCount':
         return { reviewCount: -1, rating: -1, createdAt: -1, _id: 1 };
+      case 'name':
+        return { name: 1, rating: -1, createdAt: -1, _id: 1 };
       case 'createdAt':
         return { createdAt: -1, _id: 1 };
       case 'relevance':
