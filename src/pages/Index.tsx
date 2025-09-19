@@ -14,14 +14,15 @@ import { AITool, aiTools } from "@/data/tools";
 import { SORT_OPTIONS } from "@/lib/config";
 
 export default function Index() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [inputValue, setInputValue] = useState(""); // For the input field
+  const [searchQuery, setSearchQuery] = useState(""); // For the actual API search
   const [filters, setFilters] = useState<FilterState>({
     pricing: [],
     interface: [],
     functionality: [],
     deployment: [],
   });
-  const [sortBy, setSortBy] = useState<string>("popularity");
+  const [sortBy, setSortBy] = useState<string>("name");
   const [comparisonTools, setComparisonTools] = useState<AITool[]>([]);
   const [savedTools, setSavedTools] = useState<Set<string>>(new Set());
 
@@ -33,7 +34,7 @@ export default function Index() {
     'desc'
   );
 
-  // Handle search
+  // Handle search (only triggers on Enter/button press)
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
@@ -91,6 +92,7 @@ export default function Index() {
       functionality: [],
       deployment: [],
     });
+    setInputValue("");
     setSearchQuery("");
   };
 
@@ -135,8 +137,8 @@ export default function Index() {
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto mb-8">
             <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
+              value={inputValue}
+              onChange={setInputValue}
               onSearch={handleSearch}
               showSearchButton={true}
               tools={aiTools}
@@ -172,6 +174,7 @@ export default function Index() {
                     searchQuery={searchQuery}
                     onRemoveFilter={(type, value) => {
                       if (type === 'search') {
+                        setInputValue("");
                         setSearchQuery("");
                       } else {
                         handleFilterChange(type as keyof FilterState, 
