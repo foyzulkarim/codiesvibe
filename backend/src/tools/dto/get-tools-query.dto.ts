@@ -13,13 +13,13 @@ export class GetToolsQueryDto {
 
   @ApiPropertyOptional({
     description: 'Sort by field',
-    enum: ['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance', 'name'],
-    example: 'popularity',
+    enum: ['name', 'createdAt'],
+    example: 'name',
     default: 'createdAt'
   })
   @IsOptional()
   @IsString()
-  @IsIn(['popularity', 'rating', 'reviewCount', 'createdAt', 'relevance', 'name'])
+  @IsIn(['name', 'createdAt'], { message: 'sortBy must be either "name" or "createdAt"' })
   sortBy?: string = 'createdAt';
 
   @ApiPropertyOptional({
@@ -30,41 +30,6 @@ export class GetToolsQueryDto {
   @IsOptional()
   @IsString()
   functionality?: string;
-
-  @ApiPropertyOptional({
-    description: 'Filter by tags (comma-separated)',
-    example: 'AI,Productivity',
-    type: String
-  })
-  @IsOptional()
-  @IsString()
-  tags?: string;
-
-  @ApiPropertyOptional({
-    description: 'Minimum rating filter',
-    example: 4.0,
-    minimum: 0,
-    maximum: 5
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  minRating?: number;
-
-  @ApiPropertyOptional({
-    description: 'Maximum rating filter',
-    example: 5.0,
-    minimum: 0,
-    maximum: 5
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  maxRating?: number;
 
   @ApiPropertyOptional({
     description: 'Filter by deployment options (comma-separated)',

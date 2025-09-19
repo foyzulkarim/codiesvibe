@@ -35,12 +35,6 @@ export class ToolsController {
         : query.functionality;
     }
 
-    if (query.tags) {
-      filters.tags = typeof query.tags === 'string'
-        ? query.tags.split(',').map(s => s.trim())
-        : query.tags;
-    }
-
     if (query.deployment) {
       filters.deployment = typeof query.deployment === 'string'
         ? query.deployment.split(',').map(s => s.trim())
@@ -59,23 +53,10 @@ export class ToolsController {
         : query.interface;
     }
 
-    if (query.minRating !== undefined) {
-      filters.minRating = query.minRating;
-    }
-
-    if (query.maxRating !== undefined) {
-      filters.maxRating = query.maxRating;
-    }
-
     // Use a default user ID for public access or extract from auth if available
     const userId = req.user?.id || 'public';
 
-    let tools;
-    if (query.search) {
-      tools = await this.toolsService.search(query.search, userId, options, filters);
-    } else {
-      tools = await this.toolsService.findAll(userId, options, filters);
-    }
+    const tools = await this.toolsService.findTools(userId, options, filters, query.search);
 
     return tools.map(tool => ToolResponseDto.fromDocument(tool));
   }

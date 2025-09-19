@@ -31,50 +31,43 @@ class InputSanitizer {
 
   static sanitizeFilters(filters: SearchFilters): SearchFilters {
     const sanitized: SearchFilters = {};
-    
-    if (filters.functionality) {
-      sanitized.functionality = this.sanitizeArray(filters.functionality);
-    }
-    
-    if (filters.tags) {
-      sanitized.tags = this.sanitizeArray(filters.tags);
-    }
-    
+
     if (filters.deployment) {
       sanitized.deployment = this.sanitizeArray(filters.deployment);
     }
-    
-    if (filters.minRating !== undefined) {
-      sanitized.minRating = this.sanitizeNumber(filters.minRating);
+
+    if (filters.functionality) {
+      sanitized.functionality = this.sanitizeArray(filters.functionality);
     }
-    
-    if (filters.maxRating !== undefined) {
-      sanitized.maxRating = this.sanitizeNumber(filters.maxRating);
+
+    if (filters.interface) {
+      sanitized.interface = this.sanitizeArray(filters.interface);
     }
-    
+
+    if (filters.pricing) {
+      sanitized.pricing = this.sanitizeArray(filters.pricing);
+    }
+
     return sanitized;
   }
 }
 
 export interface SearchFilters {
-  functionality?: string[];
-  tags?: string[];
-  pricing?: string[];
-  interface?: string[];
-  minRating?: number;
-  maxRating?: number;
   deployment?: string[];
+  functionality?: string[];
+  interface?: string[];
+  pricing?: string[];
 }
 
 export interface SearchOptions {
-  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance' | 'name';
+  sortBy?: 'name' | 'createdAt';
 }
 
 @Injectable()
 export class ToolsService {
   constructor(
     @InjectModel(Tool.name) private toolModel: Model<ToolDocument>,
-  ) {}
+  ) { }
 
   async create(createToolDto: CreateToolDto, userId: string): Promise<ToolDocument> {
     // Apply default values for enhanced fields
@@ -96,21 +89,39 @@ export class ToolsService {
     return createdTool.save();
   }
 
-  async findAll(
-    userId: string, 
+  async findTools(
+    userId: string,
     options: SearchOptions = {},
-    filters: SearchFilters = {}
+    filters: SearchFilters = {},
+    searchQuery?: string
   ): Promise<ToolDocument[]> {
     const { sortBy = 'createdAt' } = options;
 
     // Sanitize filters to prevent NoSQL injection
     const sanitizedFilters = InputSanitizer.sanitizeFilters(filters);
-    const query = this.buildFilterQuery(userId, sanitizedFilters);
-    const sortOrder = this.buildSortOrder(sortBy);
-    
-    // Fetch all documents since we have a small dataset
+
+    // Build base MongoDB query with filters
+    let mongoQuery = this.buildFilterQuery(userId, sanitizedFilters);
+
+    // Add text search if query provided
+    if (searchQuery && searchQuery.trim()) {
+      const sanitizedQuery = InputSanitizer.sanitizeString(searchQuery);
+      const searchRegex = new RegExp(sanitizedQuery, 'i'); // Case-insensitive search
+      mongoQuery = {
+        ...mongoQuery,
+        $or: [
+          { name: { $regex: searchRegex } },
+          { description: { $regex: searchRegex } },
+          { searchKeywords: { $in: [searchRegex] } },
+        ]
+      };
+    }
+
+    // Apply sorting and execute
+    const sortOrder = this.buildSimplifiedSortOrder(sortBy);
+
     const data = await this.toolModel
-      .find(query)
+      .find(mongoQuery)
       .sort(sortOrder)
       .lean()
       .exec();
@@ -118,14 +129,15 @@ export class ToolsService {
     return data as ToolDocument[];
   }
 
+
   async findOne(id: string, userId: string): Promise<ToolDocument> {
     const query: any = { _id: id };
-    
+
     // Only filter by user if not public access
     if (userId && userId !== 'public') {
       query.createdBy = userId;
     }
-    
+
     const tool = await this.toolModel.findOne(query).lean().exec();
     if (!tool) {
       throw new NotFoundException('Tool not found');
@@ -136,14 +148,14 @@ export class ToolsService {
   async update(id: string, updateToolDto: UpdateToolDto, userId: string): Promise<ToolDocument> {
     // Handle partial updates for complex fields
     const updateData: any = { ...updateToolDto };
-    
+
     // Remove version from updateData as it's used for concurrency control
     const expectedVersion = updateData.version;
     delete updateData.version;
-    
+
     // Update lastUpdated timestamp
     updateData.lastUpdated = new Date();
-    
+
     // Handle partial tags update
     if (updateToolDto.tags) {
       const existingTool = await this.toolModel.findOne({ _id: id, createdBy: userId });
@@ -169,7 +181,7 @@ export class ToolsService {
       updateData,
       { new: true }
     ).lean().exec();
-    
+
     if (!tool) {
       if (expectedVersion !== undefined) {
         // Check if document exists but version mismatch
@@ -190,45 +202,10 @@ export class ToolsService {
     }
   }
 
-  async search(
-    query: string,
-    userId: string,
-    options: SearchOptions = {},
-    filters: SearchFilters = {}
-  ): Promise<ToolDocument[]> {
-    const { sortBy = 'createdAt' } = options;
-    
-    // Sanitize inputs to prevent NoSQL injection
-    const sanitizedQuery = query ? InputSanitizer.sanitizeString(query) : '';
-    const sanitizedFilters = InputSanitizer.sanitizeFilters(filters);
-    
-    if (!sanitizedQuery || sanitizedQuery.trim() === '') {
-      return this.findAll(userId, options, sanitizedFilters);
-    }
-
-    const baseQuery = this.buildFilterQuery(userId, sanitizedFilters);
-    const searchQuery = {
-      ...baseQuery,
-      $text: { $search: sanitizedQuery }
-    };
-
-    const sortOrder = sortBy === 'relevance' 
-      ? { score: { $meta: 'textScore' } }
-      : this.buildSortOrder(sortBy);
-
-    // Fetch all matching documents since we have a small dataset
-    const data = await this.toolModel
-      .find(searchQuery, { score: { $meta: 'textScore' } })
-      .sort(sortOrder)
-      .lean()
-      .exec();
-
-    return data as ToolDocument[];
-  }
 
   private buildFilterQuery(userId: string, filters: SearchFilters): FilterQuery<ToolDocument> {
     const query: FilterQuery<ToolDocument> = {};
-    
+
     // Only filter by user if not public access
     if (userId && userId !== 'public') {
       query.createdBy = userId;
@@ -246,21 +223,6 @@ export class ToolsService {
       query.interface = { $in: filters.interface };
     }
 
-    if (filters.tags && filters.tags.length > 0) {
-      query.$or = [
-        { 'tags.primary': { $in: filters.tags } },
-        { 'tags.secondary': { $in: filters.tags } }
-      ];
-    }
-
-    if (filters.minRating !== undefined) {
-      query.rating = { ...query.rating, $gte: filters.minRating };
-    }
-
-    if (filters.maxRating !== undefined) {
-      query.rating = { ...query.rating, $lte: filters.maxRating };
-    }
-
     if (filters.deployment && filters.deployment.length > 0) {
       query.deployment = { $in: filters.deployment };
     }
@@ -268,21 +230,14 @@ export class ToolsService {
     return query;
   }
 
-  private buildSortOrder(sortBy: string): Record<string, SortOrder> {
-    // Add secondary sort criteria for consistent results
+
+  private buildSimplifiedSortOrder(sortBy: string): Record<string, SortOrder> {
+    // Simplified sorting options only
     switch (sortBy) {
-      case 'popularity':
-        return { popularity: -1, rating: -1, createdAt: -1, _id: 1 };
-      case 'rating':
-        return { rating: -1, reviewCount: -1, createdAt: -1, _id: 1 };
-      case 'reviewCount':
-        return { reviewCount: -1, rating: -1, createdAt: -1, _id: 1 };
       case 'name':
-        return { name: 1, rating: -1, createdAt: -1, _id: 1 };
+        return { name: 1, _id: 1 };
       case 'createdAt':
         return { createdAt: -1, _id: 1 };
-      case 'relevance':
-        return { score: { $meta: 'textScore' } as any, rating: -1, createdAt: -1, _id: 1 };
       default:
         return { createdAt: -1, _id: 1 };
     }
@@ -293,7 +248,7 @@ export class ToolsService {
     if (updateData.rating !== undefined || updateData.reviewCount !== undefined) {
       const rating = updateData.rating;
       const reviewCount = updateData.reviewCount;
-      
+
       if (rating !== undefined && reviewCount !== undefined) {
         // Both fields are being updated - validate consistency
         if (reviewCount === 0 && rating !== 0) {
