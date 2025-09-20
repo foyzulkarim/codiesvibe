@@ -24,24 +24,53 @@
 ## Phase 0: Critical Configuration Fixes (MUST DO FIRST)
 
 ### Port Configuration Standardization
-- [ ] **T001** Fix port configuration in `vite.config.ts` (change from 8080 to 3000) - **CRITICAL: Will cause container communication failure**
-- [ ] **T002** Fix port configuration in `backend/src/main.ts` (change default from 3000 to 4000) - **CRITICAL: Port conflicts**
-- [ ] **T003** Update `backend/.env.example` PORT variable (change from 3000 to 4000) - **CRITICAL: Configuration mismatch**
+- [x] **T001** Fix port configuration in `vite.config.ts` (change from 8080 to 3000) - **CRITICAL: Will cause container communication failure**
+- [x] **T002** Fix port configuration in `backend/src/main.ts` (change default from 3000 to 4000) - **CRITICAL: Port conflicts**
+- [x] **T003** Update `backend/.env.example` PORT variable (change from 3000 to 4000) - **CRITICAL: Configuration mismatch**
 
 ### Health Check Implementation
-- [ ] **T004** Create `backend/healthcheck.js` script for container health checks - **CRITICAL: Health checks will fail without this**
-- [ ] **T005** Create `frontend/healthcheck.js` script for container health checks - **CRITICAL: Container orchestration requires this**
-- [ ] **T006** Verify/add health check endpoint `/health` in backend - **CRITICAL: Health endpoint must exist**
+- [x] **T004** Create `backend/healthcheck.js` script for container health checks - **CRITICAL: Health checks will fail without this**
+- [x] **T005** Create `frontend/healthcheck.js` script for container health checks - **CRITICAL: Container orchestration requires this**
+- [x] **T006** Verify/add health check endpoint `/health` in backend - **CRITICAL: Health endpoint must exist**
 
 ### Core Configuration Files
-- [ ] **T007** Create `nginx.conf` with complete production configuration - **CRITICAL: Production deployment will fail**
-- [ ] **T008** Create `monitoring/prometheus.yml` basic configuration - **CRITICAL: Monitoring containers won't start**
-- [ ] **T009** Create `monitoring/grafana/datasources.yml` configuration - **CRITICAL: Grafana will have no data sources**
+- [x] **T007** Create `nginx.conf` with complete production configuration - **CRITICAL: Production deployment will fail**
+- [x] **T008** Create `monitoring/prometheus.yml` basic configuration - **CRITICAL: Monitoring containers won't start**
+- [x] **T009** Create `monitoring/grafana/datasources.yml` configuration - **CRITICAL: Grafana will have no data sources**
 
 ### Environment Variables and Mounting Strategy
-- [ ] **T010** Add missing environment variables to `.env.example` (VITE_APP_VERSION, COOKIE_SECRET, CSRF_SECRET, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX, TRUST_PROXY, SHUTDOWN_TIMEOUT) - **CRITICAL: Application may fail to start**
-- [ ] **T011** Create `docker-compose.override.yml.example` for local development customizations - **CRITICAL: Developer experience**
-- [ ] **T012** Fix shared code mounting strategy in Dockerfile specs (use COPY --from=backend-builder instead of bind mount) - **CRITICAL: TypeScript compilation will break**
+- [x] **T010** Add missing environment variables to `.env.example` (VITE_APP_VERSION, COOKIE_SECRET, CSRF_SECRET, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX, TRUST_PROXY, SHUTDOWN_TIMEOUT) - **CRITICAL: Application may fail to start**
+- [x] **T011** Create `docker-compose.override.yml.example` for local development customizations - **CRITICAL: Developer experience**
+- [x] **T012** Fix shared code mounting strategy in Dockerfile specs (use COPY --from=backend-builder instead of bind mount) - **CRITICAL: TypeScript compilation will break**
+
+---
+
+## Phase 0.5: Development Infrastructure Setup
+
+### Comprehensive Infrastructure Stack
+- [x] **T046** Create `docker-compose.infra.yml` for comprehensive development infrastructure - **COMPLETED: Single-command startup for MongoDB, Redis, Prometheus, Grafana, Loki, Mongo Express, MailHog**
+- [x] **T047** Create `scripts/mongo-init.js` for MongoDB initialization with sample data - **COMPLETED: Database seeding with development data**
+- [x] **T048** Create `monitoring/loki-config.yml` for log aggregation configuration - **COMPLETED: Centralized logging setup**
+- [x] **T049** Create `monitoring/grafana/dashboards/dashboard.yml` for dashboard provisioning - **COMPLETED: Automated dashboard configuration**
+- [x] **T050** Create `README-infra.md` with infrastructure setup and usage instructions - **COMPLETED: Complete documentation for infrastructure stack**
+
+### Foundation Integration (Added for Complete Phase 1 Readiness)
+- [x] **T051** Verify and document network naming strategy for Phase 1 integration - **CRITICAL: Ensure consistent networking across all compose files**
+- [x] **T052** Update `backend/.env.example` with infrastructure connection strings (MongoDB, Redis, monitoring endpoints) - **CRITICAL: Align connection strings with infrastructure services**  
+- [x] **T053** Create port allocation documentation to prevent conflicts - **CRITICAL: Avoid port collisions between infra and application**
+- [x] **T054** Update main `CLAUDE.md` with infrastructure setup references - Documentation consistency
+- [x] **T055** Add infrastructure integration notes to T015 (dev), T016 (production), T017 (Cloudflare), T018 (monitoring) compose file tasks - **CRITICAL: Clear guidance for infrastructure connectivity in specific Phase 1 tasks**
+
+### Infrastructure Features
+✅ **Single Command Startup**: `docker-compose -f docker-compose.infra.yml up -d`  
+✅ **Core Services**: MongoDB with initialization, Redis for caching  
+✅ **Monitoring Stack**: Prometheus metrics, Grafana dashboards, Loki logging  
+✅ **Development Tools**: Mongo Express (DB admin), MailHog (email testing)  
+✅ **Health Checks**: All services include health monitoring  
+✅ **Data Persistence**: Volumes for MongoDB, Prometheus, Grafana data  
+✅ **Network Isolation**: Dedicated `infra-network` for service communication  
+
+**Usage**: This infrastructure stack provides all supporting services needed for development. It complements the main application containers and can be used alongside any of the docker-compose files in Phase 1.
 
 ---
 
@@ -52,14 +81,54 @@
 - [ ] **T014** Create `Dockerfile.backend` with multi-stage build (development + production stages) - Ref: `dockerfile-contract.yml (backend-dockerfile-contract)`
 
 ### Docker Compose Files
-- [ ] **T015** Create `docker-compose.dev.yml` for development environment - Ref: `docker-compose-schema.yml (development-contract)`
-- [ ] **T016** Create `docker-compose.production.yml` for production deployment - Ref: `docker-compose-schema.yml (production-contract)`
-- [ ] **T017** Create `docker-compose.cloudflare.yml` for Cloudflare tunnel deployment - Ref: `docker-compose-schema.yml (cloudflare-contract)`
-- [ ] **T018** Create `docker-compose.monitoring.yml` for monitoring stack - Ref: `docker-compose-schema.yml (monitoring-contract)`
+- [ ] **T015** Create `docker-compose.dev.yml` for development environment - Ref: `docker-compose-schema.yml (development-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to infrastructure services (mongodb:27017, redis:6379), use ports 3000/4000 per allocation docs
+- [ ] **T016** Create `docker-compose.production.yml` for production deployment - Ref: `docker-compose-schema.yml (production-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring stack (prometheus:9090, loki:3100), use nginx on port 80/443 per allocation docs
+- [ ] **T017** Create `docker-compose.cloudflare.yml` for Cloudflare tunnel deployment - Ref: `docker-compose-schema.yml (cloudflare-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring services, no host port exposure (tunnel-only) per allocation docs
+- [ ] **T018** Create `docker-compose.monitoring.yml` for monitoring stack - Ref: `docker-compose-schema.yml (monitoring-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, extend existing infrastructure monitoring, use offset ports (3002, 9093, 9100) per allocation docs
 
 ### CI/CD and Documentation
 - [ ] **T019** Create GitHub Actions workflow file `.github/workflows/deploy.yml` - Ref: `research.md (CI/CD and Image Registry Strategy)`
 - [ ] **T020** Create comprehensive `README.md` with setup instructions for all environments - Ref: `spec.md (User Story)`
+
+### Phase 1 Infrastructure Integration Requirements
+
+**All Phase 1 compose files (T015-T018) must implement the following infrastructure integration patterns:**
+
+#### Network Configuration
+```yaml
+networks:
+  codiesvibe-network:
+    external: true
+    name: codiesvibe-network
+```
+
+#### Service Network Assignment
+```yaml
+services:
+  frontend:
+    networks:
+      - codiesvibe-network
+  backend:
+    networks:
+      - codiesvibe-network
+```
+
+#### Environment Variables (Reference backend/.env.example)
+- **MongoDB**: `mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin`
+- **Redis**: `redis://:redis123@redis:6379`
+- **Monitoring**: `prometheus:9090`, `grafana:3000`, `loki:3100`
+
+#### Port Allocation (Reference docs/PORT-ALLOCATION.md)
+- **T015 (Dev)**: Frontend 3000, Backend 4000, Debug 9229
+- **T016 (Prod)**: Nginx 80/443, internal services no host exposure
+- **T017 (Cloudflare)**: No host ports, tunnel-only access
+- **T018 (Monitoring)**: Offset ports 3002, 9093, 9100
+
+#### Documentation References
+- **Network Strategy**: `docs/NETWORK-STRATEGY.md`
+- **Port Allocation**: `docs/PORT-ALLOCATION.md`
+- **Infrastructure Setup**: `README-infra.md`
+- **Environment Config**: `backend/.env.example`
 
 ---
 
@@ -183,11 +252,21 @@ SHUTDOWN_TIMEOUT=30000
 ```
 
 ### Shared Code Fix
-In `Dockerfile.frontend`, replace bind mount with:
+**Problem**: Bind mounting `./backend/shared` would break TypeScript compilation in containers.
+
+**Solution**: Use multi-stage build with COPY from backend builder stage.
+
+In `Dockerfile.frontend`, use this approach:
 ```dockerfile
-# Copy shared types from backend build stage
+# Copy shared types from backend build stage (not bind mount)
 COPY --from=backend-builder /app/shared ./shared
 ```
+
+**Implementation Notes for Phase 1**:
+- Backend Dockerfile must have a named stage: `FROM node:18-alpine AS backend-builder`
+- Shared code must be built/compiled in backend stage first
+- Frontend stage can then copy the compiled shared code
+- This ensures TypeScript compilation works correctly in containers
 
 ---
 
