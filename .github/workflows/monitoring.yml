@@ -1,0 +1,365 @@
+# Continuous Monitoring and Health Check Workflow
+# Runs scheduled health checks and alerts on failures
+
+name: Monitoring & Health Checks
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to monitor'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+        - staging
+        - production
+        - both
+
+env:
+  STAGING_URL: https://staging.codiesvibe.com
+  PRODUCTION_URL: https://codiesvibe.com
+
+jobs:
+  health-check-staging:
+    name: Monitor Staging Environment
+    runs-on: ubuntu-latest
+    if: inputs.environment == 'staging' || inputs.environment == 'both' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Health Check - Staging Frontend
+        id: staging-frontend
+        run: |
+          echo "Checking staging frontend health..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.STAGING_URL }}/health)
+          HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
+          RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
+          
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Staging frontend health check failed: HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
+            echo "⚠️ Staging frontend response time slow: ${RESPONSE_TIME}s"
+          fi
+          
+          echo "✅ Staging frontend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+      - name: Health Check - Staging Backend
+        id: staging-backend
+        run: |
+          echo "Checking staging backend health..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.STAGING_URL }}/api/health)
+          HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
+          RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
+          
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Staging backend health check failed: HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "⚠️ Staging backend response time slow: ${RESPONSE_TIME}s"
+          fi
+          
+          echo "✅ Staging backend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+      - name: Functional Test - Staging Search API
+        run: |
+          echo "Testing staging search functionality..."
+          RESPONSE=$(curl -s "${{ env.STAGING_URL }}/api/tools/search?query=test")
+          
+          # Check if response is valid JSON
+          echo "$RESPONSE" | jq . > /dev/null || {
+            echo "❌ Invalid JSON response from search API"
+            exit 1
+          }
+          
+          echo "✅ Staging search API functional"
+
+      - name: Alert on Staging Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '🚨 STAGING ENVIRONMENT DOWN - Immediate attention required!'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  health-check-production:
+    name: Monitor Production Environment
+    runs-on: ubuntu-latest
+    if: inputs.environment == 'production' || inputs.environment == 'both' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Health Check - Production Frontend
+        id: production-frontend
+        run: |
+          echo "Checking production frontend health..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.PRODUCTION_URL }}/health)
+          HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
+          RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
+          
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Production frontend health check failed: HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "⚠️ Production frontend response time slow: ${RESPONSE_TIME}s"
+          fi
+          
+          echo "✅ Production frontend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+      - name: Health Check - Production Backend
+        id: production-backend
+        run: |
+          echo "Checking production backend health..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.PRODUCTION_URL }}/api/health)
+          HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
+          RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
+          
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Production backend health check failed: HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "⚠️ Production backend response time slow: ${RESPONSE_TIME}s"
+          fi
+          
+          echo "✅ Production backend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+      - name: SSL Certificate Check
+        run: |
+          echo "Checking SSL certificate..."
+          SSL_INFO=$(echo | openssl s_client -servername codiesvibe.com -connect codiesvibe.com:443 2>/dev/null | openssl x509 -noout -dates)
+          
+          NOT_AFTER=$(echo "$SSL_INFO" | grep notAfter | cut -d= -f2)
+          EXPIRY_DATE=$(date -d "$NOT_AFTER" +%s)
+          CURRENT_DATE=$(date +%s)
+          DAYS_TO_EXPIRY=$(( (EXPIRY_DATE - CURRENT_DATE) / 86400 ))
+          
+          echo "SSL certificate expires in $DAYS_TO_EXPIRY days"
+          
+          if [ $DAYS_TO_EXPIRY -lt 30 ]; then
+            echo "⚠️ SSL certificate expires in less than 30 days!"
+            # Don't fail the job, but send alert
+          fi
+          
+          if [ $DAYS_TO_EXPIRY -lt 7 ]; then
+            echo "❌ SSL certificate expires in less than 7 days!"
+            exit 1
+          fi
+
+      - name: Cloudflare Integration Check
+        run: |
+          echo "Checking Cloudflare integration..."
+          CF_RAY_ID=$(curl -s -I ${{ env.PRODUCTION_URL }}/ | grep -i cf-ray | cut -d' ' -f2)
+          
+          if [ -z "$CF_RAY_ID" ]; then
+            echo "❌ Cloudflare integration not working"
+            exit 1
+          fi
+          
+          echo "✅ Cloudflare integration working: Ray ID $CF_RAY_ID"
+
+      - name: Functional Test - Production Search API
+        run: |
+          echo "Testing production search functionality..."
+          RESPONSE=$(curl -s "${{ env.PRODUCTION_URL }}/api/tools/search?query=test")
+          
+          # Check if response is valid JSON
+          echo "$RESPONSE" | jq . > /dev/null || {
+            echo "❌ Invalid JSON response from search API"
+            exit 1
+          }
+          
+          # Check if we get some results
+          RESULT_COUNT=$(echo "$RESPONSE" | jq '.length // 0')
+          if [ "$RESULT_COUNT" -eq 0 ]; then
+            echo "⚠️ Search API returned no results - possible data issue"
+          fi
+          
+          echo "✅ Production search API functional ($RESULT_COUNT results)"
+
+      - name: Performance Check
+        run: |
+          echo "Running basic performance check..."
+          
+          # Frontend performance
+          FRONTEND_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/)
+          echo "Frontend response time: ${FRONTEND_TIME}s"
+          
+          # API performance
+          API_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/api/health)
+          echo "API response time: ${API_TIME}s"
+          
+          # Search API performance
+          SEARCH_TIME=$(curl -o /dev/null -s -w '%{time_total}' "${{ env.PRODUCTION_URL }}/api/tools/search?query=test")
+          echo "Search API response time: ${SEARCH_TIME}s"
+          
+          # Alert if any service is too slow
+          if (( $(echo "$FRONTEND_TIME > 3.0" | bc -l) )) || (( $(echo "$API_TIME > 2.0" | bc -l) )) || (( $(echo "$SEARCH_TIME > 2.0" | bc -l) )); then
+            echo "⚠️ Performance degradation detected"
+          fi
+
+      - name: Alert on Production Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '🚨 PRODUCTION ENVIRONMENT CRITICAL FAILURE - IMMEDIATE ACTION REQUIRED!'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  weekly-security-scan:
+    name: Weekly Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '*/15 * * * *' && (github.event.schedule == '0 2 * * 1')  # Monday 2 AM
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run dependency security scan
+        run: |
+          echo "Running security audit..."
+          
+          # Frontend audit
+          cd frontend && npm audit --audit-level=moderate || echo "Frontend vulnerabilities found"
+          
+          # Backend audit  
+          cd ../backend && npm audit --audit-level=moderate || echo "Backend vulnerabilities found"
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "Checking for outdated dependencies..."
+          
+          # Frontend
+          cd frontend && npm outdated || echo "Frontend has outdated packages"
+          
+          # Backend
+          cd ../backend && npm outdated || echo "Backend has outdated packages"
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-security-scan
+          path: |
+            frontend/npm-audit.log
+            backend/npm-audit.log
+          retention-days: 90
+
+  monthly-performance-baseline:
+    name: Monthly Performance Baseline
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && (github.event.schedule == '0 3 1 * *')  # First day of month at 3 AM
+    
+    steps:
+      - name: Install performance tools
+        run: |
+          npm install -g lighthouse artillery
+
+      - name: Run Lighthouse audit
+        run: |
+          lighthouse ${{ env.PRODUCTION_URL }} \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --output=json \
+            --output-path=./monthly-lighthouse-report.json \
+            --only-categories=performance,accessibility,best-practices
+
+      - name: Upload performance baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: monthly-performance-baseline
+          path: monthly-lighthouse-report.json
+          retention-days: 365
+
+      - name: Create performance summary
+        run: |
+          node -e "
+            const report = require('./monthly-lighthouse-report.json');
+            const performance = Math.round(report.categories.performance.score * 100);
+            const accessibility = Math.round(report.categories.accessibility.score * 100);
+            const bestPractices = Math.round(report.categories['best-practices'].score * 100);
+            
+            console.log('=== Monthly Performance Baseline ===');
+            console.log('Date: $(date)');
+            console.log('Performance Score: ' + performance + '%');
+            console.log('Accessibility Score: ' + accessibility + '%');
+            console.log('Best Practices Score: ' + bestPractices + '%');
+            
+            const summary = {
+              date: new Date().toISOString(),
+              performance,
+              accessibility,
+              bestPractices,
+              url: '${{ env.PRODUCTION_URL }}'
+            };
+            
+            require('fs').writeFileSync('performance-summary.json', JSON.stringify(summary, null, 2));
+          "
+
+      - name: Notify monthly report
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: 'Monthly Performance Baseline Report Available',
+              attachments: [{
+                color: 'good',
+                fields: [
+                  { title: 'Environment', value: 'Production', short: true },
+                  { title: 'Date', value: '$(date)', short: true }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  summary:
+    name: Monitoring Summary
+    runs-on: ubuntu-latest
+    needs: [health-check-staging, health-check-production]
+    if: always() && (inputs.environment == 'both' || github.event_name == 'schedule')
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "=== Monitoring Summary ==="
+          echo "Timestamp: $(date)"
+          echo "Staging Status: ${{ needs.health-check-staging.result }}"
+          echo "Production Status: ${{ needs.health-check-production.result }}"
+          
+          if [ "${{ needs.health-check-staging.result }}" == "success" ] && [ "${{ needs.health-check-production.result }}" == "success" ]; then
+            echo "✅ All systems operational"
+          else
+            echo "❌ Some systems have issues"
+            exit 1
+          fi
+
+      - name: Update status badge
+        if: success()
+        run: |
+          # This could update a status badge or external monitoring system
+          echo "All systems operational at $(date)"

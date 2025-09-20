@@ -1,0 +1,434 @@
+# Automated Dependency Updates and Security Patches
+# Runs weekly to check for dependency updates and security patches
+
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of updates to apply'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+        - security-only
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  security-updates:
+    name: Apply Security Updates
+    runs-on: ubuntu-latest
+    if: inputs.update_type == 'security-only' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install npm-check-updates
+        run: npm install -g npm-check-updates npm-audit-resolver
+
+      - name: Check for security vulnerabilities
+        id: security-check
+        run: |
+          echo "Checking for security vulnerabilities..."
+          
+          # Frontend security check
+          cd frontend
+          FRONTEND_VULNERABILITIES=$(npm audit --audit-level=high --json | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical')
+          echo "frontend_vulnerabilities=$FRONTEND_VULNERABILITIES" >> $GITHUB_OUTPUT
+          
+          # Backend security check
+          cd ../backend
+          BACKEND_VULNERABILITIES=$(npm audit --audit-level=high --json | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical')
+          echo "backend_vulnerabilities=$BACKEND_VULNERABILITIES" >> $GITHUB_OUTPUT
+          
+          cd ..
+          
+          if [ "$FRONTEND_VULNERABILITIES" -gt 0 ] || [ "$BACKEND_VULNERABILITIES" -gt 0 ]; then
+            echo "security_updates_needed=true" >> $GITHUB_OUTPUT
+            echo "❌ Security vulnerabilities found"
+            echo "Frontend: $FRONTEND_VULNERABILITIES high/critical"
+            echo "Backend: $BACKEND_VULNERABILITIES high/critical"
+          else
+            echo "security_updates_needed=false" >> $GITHUB_OUTPUT
+            echo "✅ No high/critical security vulnerabilities found"
+          fi
+
+      - name: Apply security fixes
+        if: steps.security-check.outputs.security_updates_needed == 'true'
+        run: |
+          echo "Applying security fixes..."
+          
+          # Frontend security fixes
+          cd frontend
+          npm audit fix --force || echo "Some frontend vulnerabilities could not be auto-fixed"
+          
+          # Backend security fixes
+          cd ../backend
+          npm audit fix --force || echo "Some backend vulnerabilities could not be auto-fixed"
+          
+          cd ..
+
+      - name: Run tests after security updates
+        if: steps.security-check.outputs.security_updates_needed == 'true'
+        run: |
+          echo "Running tests to verify security updates..."
+          
+          # Frontend tests
+          cd frontend
+          npm ci
+          npm run test || exit 1
+          
+          # Backend tests
+          cd ../backend
+          npm ci
+          npm run test || exit 1
+
+      - name: Create security update PR
+        if: steps.security-check.outputs.security_updates_needed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'security: update dependencies to fix vulnerabilities'
+          title: '🔒 Security Updates - Automated Vulnerability Fixes'
+          body: |
+            ## Security Updates
+            
+            This PR contains automated security updates to fix vulnerabilities.
+            
+            ### Vulnerabilities Fixed
+            - Frontend: ${{ steps.security-check.outputs.frontend_vulnerabilities }} high/critical vulnerabilities
+            - Backend: ${{ steps.security-check.outputs.backend_vulnerabilities }} high/critical vulnerabilities
+            
+            ### Changes Made
+            - Applied `npm audit fix` to both frontend and backend
+            - All tests passed after updates
+            
+            ### Review Notes
+            ⚠️ **Important**: Please review these changes carefully as they may include breaking changes.
+            
+            ### Testing
+            - [ ] Verify application still works correctly
+            - [ ] Check for any breaking changes
+            - [ ] Run full test suite
+            - [ ] Deploy to staging first
+            
+            ---
+            🤖 This PR was created automatically by the dependency update workflow.
+          branch: security-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            security
+            dependencies
+            automated
+
+  dependency-updates:
+    name: Check for Dependency Updates
+    runs-on: ubuntu-latest
+    if: inputs.update_type != 'security-only'
+    
+    strategy:
+      matrix:
+        update_type: 
+          - ${{ inputs.update_type || 'patch' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install tools
+        run: npm install -g npm-check-updates
+
+      - name: Check for updates
+        id: check-updates
+        run: |
+          echo "Checking for ${{ matrix.update_type }} updates..."
+          
+          UPDATE_TARGET=""
+          case "${{ matrix.update_type }}" in
+            patch)
+              UPDATE_TARGET="--target patch"
+              ;;
+            minor)
+              UPDATE_TARGET="--target minor"
+              ;;
+            major)
+              UPDATE_TARGET="--target latest"
+              ;;
+          esac
+          
+          # Frontend updates
+          cd frontend
+          FRONTEND_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded)
+          echo "frontend_updates<<EOF" >> $GITHUB_OUTPUT
+          echo "$FRONTEND_UPDATES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Backend updates
+          cd ../backend
+          BACKEND_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded)
+          echo "backend_updates<<EOF" >> $GITHUB_OUTPUT
+          echo "$BACKEND_UPDATES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          cd ..
+          
+          # Check if any updates are available
+          if [ "$FRONTEND_UPDATES" != "{}" ] || [ "$BACKEND_UPDATES" != "{}" ]; then
+            echo "updates_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "updates_available=false" >> $GITHUB_OUTPUT
+            echo "✅ All dependencies are up to date"
+          fi
+
+      - name: Apply updates
+        if: steps.check-updates.outputs.updates_available == 'true'
+        run: |
+          echo "Applying ${{ matrix.update_type }} updates..."
+          
+          UPDATE_TARGET=""
+          case "${{ matrix.update_type }}" in
+            patch)
+              UPDATE_TARGET="--target patch"
+              ;;
+            minor)
+              UPDATE_TARGET="--target minor"
+              ;;
+            major)
+              UPDATE_TARGET="--target latest"
+              ;;
+          esac
+          
+          # Frontend updates
+          cd frontend
+          ncu $UPDATE_TARGET -u
+          npm install
+          
+          # Backend updates
+          cd ../backend
+          ncu $UPDATE_TARGET -u
+          npm install
+
+      - name: Run tests after updates
+        if: steps.check-updates.outputs.updates_available == 'true'
+        run: |
+          echo "Running tests after dependency updates..."
+          
+          # Frontend tests
+          cd frontend
+          npm run lint || echo "Frontend linting issues found"
+          npm run typecheck || echo "Frontend type checking issues found"
+          npm run test || echo "Frontend tests failed"
+          
+          # Backend tests
+          cd ../backend
+          npm run lint || echo "Backend linting issues found"
+          npm run type-check || echo "Backend type checking issues found"
+          npm run test || echo "Backend tests failed"
+
+      - name: Generate update summary
+        if: steps.check-updates.outputs.updates_available == 'true'
+        id: summary
+        run: |
+          cat > update-summary.md << 'EOF'
+          ## Dependency Updates Summary
+          
+          ### Frontend Updates
+          ```json
+          ${{ steps.check-updates.outputs.frontend_updates }}
+          ```
+          
+          ### Backend Updates
+          ```json
+          ${{ steps.check-updates.outputs.backend_updates }}
+          ```
+          
+          ### Update Type
+          - **${{ matrix.update_type }}** updates applied
+          
+          ### Testing Status
+          - Frontend: Tests completed (check logs for details)
+          - Backend: Tests completed (check logs for details)
+          
+          ### Review Checklist
+          - [ ] Review changelog for breaking changes
+          - [ ] Test application functionality
+          - [ ] Deploy to staging environment
+          - [ ] Monitor for any issues
+          EOF
+
+      - name: Create dependency update PR
+        if: steps.check-updates.outputs.updates_available == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'deps: update ${{ matrix.update_type }} dependencies'
+          title: '⬆️ Dependency Updates - ${{ matrix.update_type }} updates'
+          body-path: update-summary.md
+          branch: dependency-updates-${{ matrix.update_type }}-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            ${{ matrix.update_type }}
+            automated
+
+  docker-base-updates:
+    name: Check Docker Base Image Updates
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for base image updates
+        id: docker-check
+        run: |
+          echo "Checking for Docker base image updates..."
+          
+          # Check Node.js image updates
+          CURRENT_NODE_VERSION=$(grep "FROM node:" Dockerfile.frontend | head -1 | cut -d':' -f2 | cut -d'-' -f1)
+          echo "Current Node.js version: $CURRENT_NODE_VERSION"
+          
+          # Check for latest stable Node.js version
+          LATEST_NODE_VERSION=$(curl -s https://api.github.com/repos/nodejs/node/releases/latest | jq -r '.tag_name' | sed 's/v//')
+          echo "Latest Node.js version: $LATEST_NODE_VERSION"
+          
+          if [ "$CURRENT_NODE_VERSION" != "$LATEST_NODE_VERSION" ]; then
+            echo "node_update_available=true" >> $GITHUB_OUTPUT
+            echo "latest_node_version=$LATEST_NODE_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "node_update_available=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check Alpine image updates
+          CURRENT_ALPINE_VERSION=$(grep "FROM alpine:" Dockerfile.frontend | head -1 | cut -d':' -f2 || echo "latest")
+          echo "Current Alpine version: $CURRENT_ALPINE_VERSION"
+
+      - name: Create Docker update issue
+        if: steps.docker-check.outputs.node_update_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🐳 Docker Base Image Update Available',
+              body: `## Docker Base Image Updates Available
+              
+              ### Node.js Update
+              - Current version: ${{ steps.docker-check.outputs.current_node_version }}
+              - Latest version: ${{ steps.docker-check.outputs.latest_node_version }}
+              
+              ### Action Required
+              Please review and update the base images in:
+              - \`Dockerfile.frontend\`
+              - \`Dockerfile.backend\`
+              
+              ### Steps
+              1. Update Node.js version in Dockerfiles
+              2. Test with new base images
+              3. Update CI/CD pipeline if needed
+              4. Deploy to staging first
+              
+              ---
+              🤖 This issue was created automatically by the dependency update workflow.`,
+              labels: ['docker', 'dependencies', 'automated']
+            })
+
+  cleanup:
+    name: Cleanup Old PRs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Close stale dependency PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            
+            const dependencyPRs = pulls.filter(pr => 
+              pr.head.ref.startsWith('dependency-updates-') || 
+              pr.head.ref.startsWith('security-updates-')
+            );
+            
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            for (const pr of dependencyPRs) {
+              const prDate = new Date(pr.created_at);
+              if (prDate < oneWeekAgo) {
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  state: 'closed'
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: '🤖 This automated dependency update PR has been closed due to age. A new PR will be created in the next scheduled run if updates are still needed.'
+                });
+                
+                console.log(`Closed stale PR #${pr.number}: ${pr.title}`);
+              }
+            }
+
+  notify-summary:
+    name: Notify Summary
+    runs-on: ubuntu-latest
+    needs: [security-updates, dependency-updates, docker-base-updates]
+    if: always() && github.event_name == 'schedule'
+    
+    steps:
+      - name: Send weekly summary
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: 'Weekly Dependency Update Summary',
+              attachments: [{
+                color: '${{ needs.security-updates.result == 'success' && needs.dependency-updates.result == 'success' && 'good' || 'warning' }}',
+                fields: [
+                  { title: 'Security Updates', value: '${{ needs.security-updates.result }}', short: true },
+                  { title: 'Dependency Updates', value: '${{ needs.dependency-updates.result }}', short: true },
+                  { title: 'Docker Updates', value: '${{ needs.docker-base-updates.result }}', short: true },
+                  { title: 'Date', value: '$(date)', short: true }
+                ]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

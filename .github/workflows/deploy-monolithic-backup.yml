@@ -80,16 +80,13 @@ jobs:
         run: npm run test
         env:
           NODE_ENV: test
-        if: matrix.service == 'backend'
 
       - name: Generate test coverage
         working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
         run: npm run test:coverage
-        if: matrix.service == 'backend'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.service == 'backend'
         with:
           file: ${{ matrix.service == 'frontend' && 'coverage/lcov.info' || 'backend/coverage/lcov.info' }}
           flags: ${{ matrix.service }}
@@ -124,6 +121,10 @@ jobs:
         run: |
           cd frontend && npm audit --audit-level=high
           cd ../backend && npm audit --audit-level=high
+          
+      - name: License compliance check
+        run: |
+          npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense' --excludePrivatePackages --production --summary
 
   # Stage 3: Build and Push Docker Images
   build-frontend:
@@ -332,12 +333,243 @@ jobs:
           path: backend-sbom.spdx.json
           retention-days: 30
 
-  # Stage 4: Deploy to Staging
+  # Stage 4: Performance Testing
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+        ports:
+          - 27017:27017
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test environment
+        run: |
+          # Build images for testing
+          docker build -f Dockerfile.frontend --target production -t test-frontend:latest .
+          docker build -f Dockerfile.backend --target production -t test-backend:latest .
+
+      - name: Start test environment
+        run: |
+          # Create test docker-compose
+          cat > docker-compose.test.yml << EOF
+          version: '3.8'
+          services:
+            frontend:
+              image: test-frontend:latest
+              ports:
+                - "3000:80"
+              environment:
+                - NODE_ENV=production
+              depends_on:
+                - backend
+            
+            backend:
+              image: test-backend:latest
+              ports:
+                - "4000:4000"
+              environment:
+                - NODE_ENV=production
+                - MONGODB_URI=mongodb://admin:password123@host.docker.internal:27017/codiesvibe?authSource=admin
+                - REDIS_URL=redis://host.docker.internal:6379
+              depends_on:
+                - mongodb-seed
+              extra_hosts:
+                - "host.docker.internal:host-gateway"
+            
+            mongodb-seed:
+              image: mongo:7
+              environment:
+                - MONGO_INITDB_ROOT_USERNAME=admin
+                - MONGO_INITDB_ROOT_PASSWORD=password123
+              command: |
+                sh -c "
+                  sleep 10 &&
+                  mongosh mongodb://admin:password123@host.docker.internal:27017/codiesvibe?authSource=admin --eval '
+                    db.tools.insertMany([
+                      { name: \"Test Tool 1\", description: \"Test description 1\", category: \"AI\", url: \"https://example1.com\" },
+                      { name: \"Test Tool 2\", description: \"Test description 2\", category: \"ML\", url: \"https://example2.com\" }
+                    ])
+                  '
+                "
+              extra_hosts:
+                - "host.docker.internal:host-gateway"
+          EOF
+          
+          # Start test environment
+          docker-compose -f docker-compose.test.yml up -d
+          
+          # Wait for services to be ready
+          sleep 60
+
+      - name: Install performance testing tools
+        run: |
+          npm install -g lighthouse artillery autocannon
+          
+      - name: Run Lighthouse performance audit
+        run: |
+          # Wait for frontend to be ready
+          timeout 300 bash -c 'until curl -f http://localhost:3000/health; do echo "Waiting for frontend..."; sleep 5; done'
+          
+          # Run Lighthouse audit
+          lighthouse http://localhost:3000 \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --output=json \
+            --output-path=./lighthouse-report.json \
+            --only-categories=performance,accessibility,best-practices \
+            --throttling-method=simulate3G
+
+      - name: API load testing with Artillery
+        run: |
+          # Wait for backend to be ready
+          timeout 300 bash -c 'until curl -f http://localhost:4000/health; do echo "Waiting for backend..."; sleep 5; done'
+          
+          # Create Artillery config
+          cat > artillery-config.yml << EOF
+          config:
+            target: 'http://localhost:4000'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 50
+              - duration: 60
+                arrivalRate: 10
+          scenarios:
+            - name: "API Health Check"
+              weight: 30
+              flow:
+                - get:
+                    url: "/health"
+            - name: "Search Tools"
+              weight: 50
+              flow:
+                - get:
+                    url: "/api/tools/search?query=test"
+            - name: "Get All Tools"
+              weight: 20
+              flow:
+                - get:
+                    url: "/api/tools"
+          EOF
+          
+          # Run load test
+          artillery run artillery-config.yml --output artillery-report.json
+
+      - name: Database performance test
+        run: |
+          # Create database load test
+          cat > db-test.js << 'EOF'
+          const { MongoClient } = require('mongodb');
+          
+          async function runTest() {
+            const client = new MongoClient('mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin');
+            await client.connect();
+            const db = client.db('codiesvibe');
+            const collection = db.collection('tools');
+            
+            console.log('Starting database performance test...');
+            const start = Date.now();
+            
+            // Insert test
+            const insertPromises = [];
+            for (let i = 0; i < 1000; i++) {
+              insertPromises.push(collection.insertOne({
+                name: `Performance Test Tool ${i}`,
+                description: `Description for tool ${i}`,
+                category: 'Performance',
+                url: `https://example${i}.com`,
+                createdAt: new Date()
+              }));
+            }
+            await Promise.all(insertPromises);
+            console.log('Insert test completed:', Date.now() - start, 'ms');
+            
+            // Search test
+            const searchStart = Date.now();
+            for (let i = 0; i < 100; i++) {
+              await collection.find({ $text: { $search: 'Performance' } }).toArray();
+            }
+            console.log('Search test completed:', Date.now() - searchStart, 'ms');
+            
+            await client.close();
+          }
+          
+          runTest().catch(console.error);
+          EOF
+          
+          cd backend && npm install mongodb
+          node ../db-test.js
+
+      - name: Analyze performance results
+        run: |
+          # Parse Lighthouse results
+          node -e "
+            const report = require('./lighthouse-report.json');
+            const performance = report.categories.performance.score * 100;
+            const accessibility = report.categories.accessibility.score * 100;
+            const bestPractices = report.categories['best-practices'].score * 100;
+            
+            console.log('=== Performance Results ===');
+            console.log('Performance Score:', performance);
+            console.log('Accessibility Score:', accessibility);
+            console.log('Best Practices Score:', bestPractices);
+            
+            if (performance < 70) {
+              console.error('❌ Performance score below 70');
+              process.exit(1);
+            }
+            if (accessibility < 80) {
+              console.error('❌ Accessibility score below 80');
+              process.exit(1);
+            }
+            if (bestPractices < 80) {
+              console.error('❌ Best practices score below 80');
+              process.exit(1);
+            }
+            console.log('✅ All performance benchmarks passed');
+          "
+
+      - name: Upload performance artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            lighthouse-report.json
+            artillery-report.json
+          retention-days: 30
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker-compose -f docker-compose.test.yml down -v
+          docker rmi test-frontend:latest test-backend:latest || true
+
+  # Stage 5: Deploy to Staging
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [build-frontend, build-backend]
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging' || inputs.environment == 'staging'
+    needs: [build-frontend, build-backend, performance-test]
+    if: always() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging' || inputs.environment == 'staging') && (needs.performance-test.result == 'success' || needs.performance-test.result == 'skipped')
     environment:
       name: staging
       url: https://staging.codiesvibe.com
@@ -441,6 +673,27 @@ jobs:
           
           # Check backend health
           curl -f https://staging.codiesvibe.com/api/health || exit 1
+          
+          # Extended health checks
+          echo "Running extended health checks..."
+          
+          # Check if search API is working
+          curl -f "https://staging.codiesvibe.com/api/tools/search?query=test" || exit 1
+          
+          # Check response times
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://staging.codiesvibe.com/)
+          echo "Frontend response time: ${RESPONSE_TIME}s"
+          if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
+            echo "❌ Frontend response time too slow: ${RESPONSE_TIME}s"
+            exit 1
+          fi
+          
+          API_RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://staging.codiesvibe.com/api/health)
+          echo "API response time: ${API_RESPONSE_TIME}s"
+          if (( $(echo "$API_RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "❌ API response time too slow: ${API_RESPONSE_TIME}s"
+            exit 1
+          fi
 
       - name: Notify deployment status
         if: always()
@@ -557,6 +810,39 @@ jobs:
           # Check application health through Cloudflare
           curl -f https://codiesvibe.com/health || exit 1
           curl -f https://codiesvibe.com/api/health || exit 1
+          
+          # Extended production health checks
+          echo "Running extended production health checks..."
+          
+          # Check SSL certificate
+          SSL_EXPIRY=$(echo | openssl s_client -servername codiesvibe.com -connect codiesvibe.com:443 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d= -f2)
+          echo "SSL certificate expires: $SSL_EXPIRY"
+          
+          # Check if search API is working
+          curl -f "https://codiesvibe.com/api/tools/search?query=test" || exit 1
+          
+          # Check response times (stricter for production)
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://codiesvibe.com/)
+          echo "Production frontend response time: ${RESPONSE_TIME}s"
+          if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "❌ Production frontend response time too slow: ${RESPONSE_TIME}s"
+            exit 1
+          fi
+          
+          API_RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' https://codiesvibe.com/api/health)
+          echo "Production API response time: ${API_RESPONSE_TIME}s"
+          if (( $(echo "$API_RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "❌ Production API response time too slow: ${API_RESPONSE_TIME}s"
+            exit 1
+          fi
+          
+          # Check Cloudflare integration
+          CF_RAY_ID=$(curl -s -I https://codiesvibe.com/ | grep -i cf-ray | cut -d' ' -f2)
+          if [ -z "$CF_RAY_ID" ]; then
+            echo "❌ Cloudflare integration not working"
+            exit 1
+          fi
+          echo "✅ Cloudflare Ray ID: $CF_RAY_ID"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')

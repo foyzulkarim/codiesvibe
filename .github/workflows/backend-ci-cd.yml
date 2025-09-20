@@ -1,0 +1,513 @@
+# Backend CI/CD Pipeline
+# Handles backend testing, building, and deployment
+
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, staging, develop, 005-i-am-thinking]
+    paths: 
+      - 'backend/**'
+      - 'Dockerfile.backend'
+      - '.github/workflows/backend-ci-cd.yml'
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'Dockerfile.backend'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip test stage'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-backend
+  NODE_VERSION: '18'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1: Test and Lint Backend
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh --eval "db.adminCommand('ping')"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint backend code
+        working-directory: backend
+        run: npm run lint
+
+      - name: Type check backend
+        working-directory: backend
+        run: npm run type-check
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm run test
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/codiesvibe-test?authSource=admin
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
+
+      - name: Generate test coverage
+        working-directory: backend
+        run: npm run test:coverage
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://admin:password123@localhost:27017/codiesvibe-test?authSource=admin
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  # Stage 2: Backend Security Scanning
+  security-backend:
+    name: Backend Security
+    runs-on: ubuntu-latest
+    needs: test-backend
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Audit backend dependencies
+        working-directory: backend
+        run: npm audit --audit-level=high
+
+      - name: License compliance check
+        working-directory: backend
+        run: npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense' --excludePrivatePackages --production --summary
+
+      - name: Run Trivy vulnerability scanner on source
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './backend'
+          format: 'sarif'
+          output: 'backend-trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'backend-trivy-results.sarif'
+
+  # Stage 3: Build and Push Backend Image
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    needs: [test-backend, security-backend]
+    if: always() && (needs.test-backend.result == 'success' || inputs.skip_tests) && (needs.security-backend.result == 'success' || inputs.skip_tests)
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ steps.meta.outputs.tags }}@${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodiesVibe Backend
+            org.opencontainers.image.description=Backend API for CodiesVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodiesVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodiesVibe Team
+            component=backend
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+      - name: Build and push Backend
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.backend
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on Backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'backend-image-trivy.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Backend image scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'backend-image-trivy.sarif'
+          category: 'backend-image-security'
+
+      - name: Generate Backend SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'spdx-json'
+          output: 'backend-sbom.spdx.json'
+
+      - name: Upload Backend SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-sbom-${{ github.sha }}
+          path: backend-sbom.spdx.json
+          retention-days: 30
+
+  # Stage 4: Backend API Testing
+  api-test-backend:
+    name: Backend API Testing
+    runs-on: ubuntu-latest
+    needs: build-backend
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    services:
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+        ports:
+          - 27017:27017
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup test data
+        run: |
+          # Wait for MongoDB to be ready
+          timeout 60 bash -c 'until nc -z localhost 27017; do sleep 1; done'
+          
+          # Insert test data
+          docker run --rm --network host mongo:7 mongosh \
+            "mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin" \
+            --eval 'db.tools.insertMany([
+              { name: "Test Tool 1", description: "Test description 1", category: "AI", url: "https://example1.com" },
+              { name: "Test Tool 2", description: "Test description 2", category: "ML", url: "https://example2.com" }
+            ])'
+
+      - name: Start test backend
+        run: |
+          # Use the built image for testing
+          docker run -d --name test-backend \
+            -p 4000:4000 \
+            --network host \
+            -e NODE_ENV=production \
+            -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
+            -e REDIS_URL=redis://localhost:6379 \
+            -e JWT_SECRET=test-secret \
+            ${{ needs.build-backend.outputs.image }}
+          
+          # Wait for backend to be ready
+          timeout 300 bash -c 'until curl -f http://localhost:4000/health; do echo "Waiting for backend..."; sleep 5; done'
+
+      - name: Install testing tools
+        run: npm install -g artillery newman
+
+      - name: Run API load testing
+        run: |
+          # Create Artillery config for comprehensive API testing
+          cat > api-test-config.yml << EOF
+          config:
+            target: 'http://localhost:4000'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 25
+              - duration: 60
+                arrivalRate: 5
+            http:
+              timeout: 30
+          scenarios:
+            - name: "Health Check"
+              weight: 20
+              flow:
+                - get:
+                    url: "/health"
+                    expect:
+                      - statusCode: 200
+            - name: "Search Tools"
+              weight: 40
+              flow:
+                - get:
+                    url: "/api/tools/search?query=test"
+                    expect:
+                      - statusCode: 200
+                      - hasHeader: "content-type"
+            - name: "Get All Tools"
+              weight: 30
+              flow:
+                - get:
+                    url: "/api/tools"
+                    expect:
+                      - statusCode: 200
+            - name: "API Documentation"
+              weight: 10
+              flow:
+                - get:
+                    url: "/api/docs"
+                    expect:
+                      - statusCode: 200
+          EOF
+          
+          # Run load test
+          artillery run api-test-config.yml --output backend-load-test.json
+
+      - name: Performance analysis
+        run: |
+          # Analyze API response times
+          echo "=== API Performance Analysis ==="
+          
+          # Test individual endpoints
+          HEALTH_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:4000/health)
+          echo "Health endpoint: ${HEALTH_TIME}s"
+          
+          SEARCH_TIME=$(curl -o /dev/null -s -w '%{time_total}' "http://localhost:4000/api/tools/search?query=test")
+          echo "Search endpoint: ${SEARCH_TIME}s"
+          
+          TOOLS_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:4000/api/tools)
+          echo "Tools endpoint: ${TOOLS_TIME}s"
+          
+          # Fail if any endpoint is too slow
+          if (( $(echo "$HEALTH_TIME > 1.0" | bc -l) )); then
+            echo "❌ Health endpoint too slow: ${HEALTH_TIME}s"
+            exit 1
+          fi
+          
+          if (( $(echo "$SEARCH_TIME > 2.0" | bc -l) )); then
+            echo "❌ Search endpoint too slow: ${SEARCH_TIME}s"
+            exit 1
+          fi
+          
+          if (( $(echo "$TOOLS_TIME > 2.0" | bc -l) )); then
+            echo "❌ Tools endpoint too slow: ${TOOLS_TIME}s"
+            exit 1
+          fi
+          
+          echo "✅ All API performance benchmarks passed"
+
+      - name: Database performance test
+        run: |
+          # Test database operations
+          node -e "
+            const { MongoClient } = require('mongodb');
+            
+            async function testDatabase() {
+              const client = new MongoClient('mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin');
+              await client.connect();
+              const db = client.db('codiesvibe');
+              const collection = db.collection('tools');
+              
+              console.log('=== Database Performance Test ===');
+              
+              // Test search performance
+              const searchStart = Date.now();
+              const results = await collection.find({ name: /Test/ }).toArray();
+              const searchTime = Date.now() - searchStart;
+              console.log('Search performance: ' + searchTime + 'ms');
+              console.log('Results found: ' + results.length);
+              
+              if (searchTime > 1000) {
+                console.error('❌ Database search too slow: ' + searchTime + 'ms');
+                process.exit(1);
+              }
+              
+              console.log('✅ Database performance acceptable');
+              await client.close();
+            }
+            
+            testDatabase().catch(console.error);
+          "
+
+      - name: Upload API test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-api-tests-${{ github.sha }}
+          path: |
+            backend-load-test.json
+            api-test-config.yml
+          retention-days: 30
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker stop test-backend || true
+          docker rm test-backend || true
+
+  # Stage 5: Trigger Deployment
+  trigger-deployment:
+    name: Trigger Deployment
+    runs-on: ubuntu-latest
+    needs: [build-backend, api-test-backend]
+    if: always() && needs.build-backend.result == 'success' && (needs.api-test-backend.result == 'success' || needs.api-test-backend.result == 'skipped')
+    
+    steps:
+      - name: Trigger deployment workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deployment.yml',
+              ref: context.ref,
+              inputs: {
+                service: 'backend',
+                image: '${{ needs.build-backend.outputs.image }}',
+                environment: "${{ inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}"
+              }
+            });
+
+  # Cleanup Job
+  cleanup:
+    name: Cleanup Backend Packages
+    runs-on: ubuntu-latest
+    needs: [build-backend]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Delete old backend packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: 'container'
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notification
+  notify:
+    name: Notify Backend Build Status
+    runs-on: ubuntu-latest
+    needs: [test-backend, build-backend, api-test-backend]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Notify build status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Backend build ${{ job.status }} for commit ${{ github.sha }}'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
