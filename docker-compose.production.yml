@@ -1,0 +1,166 @@
+# CodiesVibe Production Environment
+# Docker Compose configuration for production deployment with Nginx reverse proxy
+# Integrates with infrastructure stack (docker-compose.infra.yml)
+
+services:
+  # Nginx Reverse Proxy and Static File Server
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: codiesvibe-nginx
+    # Install curl for health checks
+    command: sh -c "apk add --no-cache curl && nginx -g 'daemon off;'"
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS (for future SSL termination)
+    volumes:
+      # Nginx configuration
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Static files from frontend build
+      - frontend_dist:/usr/share/nginx/html:ro
+      # SSL certificates (for future use)
+      - nginx_ssl:/etc/nginx/ssl:ro
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
+      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=4000
+    networks:
+      - codiesvibe-network
+    depends_on:
+      frontend:
+        condition: service_completed_successfully
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # Frontend Production Service (Pre-built from GHCR, build artifacts served by Nginx)
+  frontend:
+    # Use pre-built GHCR image for production deployments
+    image: ghcr.io/foyzulkarim/codiesvibe-frontend:${VERSION:-latest}
+    # Fallback: Build locally if GHCR image unavailable
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-latest}
+    container_name: codiesvibe-frontend-prod
+    volumes:
+      # Share built files with Nginx
+      - frontend_dist:/shared/dist
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=/api  # Served through Nginx proxy
+      - VITE_APP_VERSION=${VERSION:-production}
+      - VITE_BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+      - VITE_GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+    networks:
+      - codiesvibe-network
+    restart: "no"  # One-time build container
+    user: root  # Need root to write to volume
+    # Copy built files to shared volume and exit
+    command: sh -c "mkdir -p /shared/dist && cp -r /app/dist/* /shared/dist/ && echo 'Frontend build copied to volume'"
+
+  # Backend Production Service
+  backend:
+    # Use pre-built GHCR image for production deployments
+    image: ghcr.io/foyzulkarim/codiesvibe-backend:${VERSION:-latest}
+    # Fallback: Build locally if GHCR image unavailable
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-latest}
+    container_name: codiesvibe-backend-prod
+    # No host ports exposed - accessed through Nginx reverse proxy
+    expose:
+      - "4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      # Infrastructure service connections (from docker-compose.infra.yml)
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+      # Production secrets (use Docker secrets or external secret management in real production)
+      - JWT_SECRET=${JWT_SECRET:-production-jwt-secret-change-immediately}
+      - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
+      - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
+      # CORS configuration for production domain
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://your-domain.com}
+      # Production rate limiting
+      - RATE_LIMIT_WINDOW=900000  # 15 minutes
+      - RATE_LIMIT_MAX=100        # Stricter than development
+      # Production settings
+      - TRUST_PROXY=true
+      - SHUTDOWN_TIMEOUT=30000
+      # GitHub OAuth (configure with production values)
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL:-https://your-domain.com/api/auth/github/callback}
+      # Monitoring endpoints (available from infrastructure)
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+      - LOKI_URL=http://loki:3100
+      # Logging configuration
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - codiesvibe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Security: read-only filesystem with specific writable paths
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100M,mode=1777
+      - /app/logs:rw,size=50M,mode=0755
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # Security: Drop all capabilities except required ones
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    # Security: Prevent privilege escalation
+    security_opt:
+      - no-new-privileges:true
+
+# External network configuration (must be created by docker-compose.infra.yml first)
+networks:
+  codiesvibe-network:
+    external: true
+    name: codiesvibe-network
+
+# Volume definitions for production data
+volumes:
+  # Frontend build artifacts shared between frontend build and nginx
+  frontend_dist:
+    driver: local
+  # SSL certificates for Nginx
+  nginx_ssl:
+    driver: local
+  # Nginx cache and temporary files
+  nginx_cache:
+    driver: local

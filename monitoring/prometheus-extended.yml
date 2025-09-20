@@ -5,9 +5,12 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  scrape_timeout: 10s
   external_labels:
     monitor: 'codiesvibe-extended'
-    environment: 'extended'
+    environment: '${ENVIRONMENT:-development}'
+    cluster: 'codiesvibe-cluster'
+    region: 'local'
 
 # Rule files for alerting
 rule_files:
@@ -27,6 +30,11 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
     scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'prometheus-extended'
 
   # Node Exporter (system metrics)
   - job_name: 'node-exporter'
@@ -34,21 +42,70 @@ scrape_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 15s
     metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'codiesvibe-host'
+    metric_relabel_configs:
+      # Drop unnecessary filesystem metrics
+      - source_labels: [mountpoint]
+        regex: '/var/lib/docker/.*'
+        action: drop
 
-  # Application Metrics Exporter (custom)
+  # Application Metrics Exporter (custom business metrics)
   - job_name: 'app-metrics'
     static_configs:
       - targets: ['app-metrics-exporter:8080']
     scrape_interval: 30s
     metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'app-metrics-exporter'
+    metric_relabel_configs:
+      # Add application labels
+      - source_labels: [__name__]
+        target_label: component
+        replacement: 'application'
 
-  # CodiesVibe Backend Application Metrics
+  # CodiesVibe Backend Application Metrics (NestJS with Prometheus)
   - job_name: 'codiesvibe-backend'
     static_configs:
       - targets: ['backend:4000']
-    metrics_path: /metrics
+    metrics_path: /api/metrics
     scrape_interval: 15s
     scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'codiesvibe-backend'
+    metric_relabel_configs:
+      # Add service labels
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'backend'
+      - source_labels: [__name__]
+        target_label: component
+        replacement: 'api'
+
+  # CodiesVibe Frontend Metrics (if available via nginx)
+  - job_name: 'codiesvibe-frontend'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'codiesvibe-frontend'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'frontend'
+      - source_labels: [__name__]
+        target_label: component
+        replacement: 'nginx'
 
   # Infrastructure Prometheus (federation)
   - job_name: 'infrastructure-prometheus'
@@ -57,41 +114,133 @@ scrape_configs:
     metrics_path: /federate
     params:
       'match[]':
-        - '{job=~"mongodb|redis|grafana|loki"}'
+        - '{job=~"mongodb|redis|grafana|loki|mailhog"}'
+        - '{__name__=~"up|prometheus_build_info"}'
     scrape_interval: 30s
     honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'infrastructure-prometheus'
 
-  # MongoDB metrics (if mongodb-exporter is available)
-  - job_name: 'mongodb'
+  # MongoDB Exporter (if available in infrastructure)
+  - job_name: 'mongodb-exporter'
     static_configs:
-      - targets: ['mongodb:27017']
+      - targets: ['mongodb-exporter:9216']
     metrics_path: /metrics
     scrape_interval: 30s
     scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'mongodb'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'database'
 
-  # Redis metrics (if redis-exporter is available)
-  - job_name: 'redis'
+  # Redis Exporter (if available in infrastructure)
+  - job_name: 'redis-exporter'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['redis-exporter:9121']
     metrics_path: /metrics
     scrape_interval: 30s
     scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'cache'
 
-  # Nginx metrics (if nginx-prometheus-exporter is available)
-  - job_name: 'nginx'
+  # Nginx Prometheus Exporter (for reverse proxy metrics)
+  - job_name: 'nginx-exporter'
     static_configs:
-      - targets: ['nginx:9113']
+      - targets: ['nginx-exporter:9113']
     metrics_path: /metrics
     scrape_interval: 30s
     scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'nginx-proxy'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'proxy'
 
-  # Docker daemon metrics (if available)
+  # Docker daemon metrics (host system)
   - job_name: 'docker'
     static_configs:
       - targets: ['host.docker.internal:9323']
     metrics_path: /metrics
     scrape_interval: 30s
     scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'docker-daemon'
+
+  # Cloudflare Tunnel metrics (if running)
+  - job_name: 'cloudflared'
+    static_configs:
+      - targets: ['cloudflared:8081']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cloudflare-tunnel'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        target_label: service
+        replacement: 'tunnel'
+
+  # AlertManager metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Grafana metrics
+  - job_name: 'grafana-extended'
+    static_configs:
+      - targets: ['grafana-extended:3000']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'grafana-extended'
+
+  # Loki Extended metrics
+  - job_name: 'loki-extended'
+    static_configs:
+      - targets: ['loki-extended:3100']
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+# Remote write configuration (for long-term storage if needed)
+remote_write:
+  # Uncomment and configure for external TSDB
+  # - url: "https://prometheus-remote-write-endpoint/api/v1/write"
+  #   queue_config:
+  #     max_samples_per_send: 1000
+  #     max_shards: 200
+  #     capacity: 10000
+
+# Remote read configuration
+remote_read:
+  # Uncomment and configure for external TSDB
+  # - url: "https://prometheus-remote-read-endpoint/api/v1/read"
+  #   read_recent: true
 
 # Storage configuration
 storage:
@@ -100,6 +249,9 @@ storage:
     retention.time: 30d
     retention.size: 10GB
     wal-compression: true
+    compress-head: true
+    # Optimize for Docker environment
+    head-chunks-write-queue-size: 10000
 
 # Web configuration
 web:
@@ -107,3 +259,5 @@ web:
   enable-admin-api: true
   external-url: http://localhost:9091
   route-prefix: /
+  max-connections: 512
+  read-timeout: 30s

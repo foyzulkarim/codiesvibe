@@ -87,7 +87,7 @@ jobs:
         if: matrix.service == 'backend'
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         if: matrix.service == 'backend'
         with:
           file: ${{ matrix.service }}/coverage/lcov.info
@@ -124,22 +124,16 @@ jobs:
           cd frontend && npm audit --audit-level=high
           cd ../backend && npm audit --audit-level=high
 
-  # Stage 3: Build Docker Images
-  build:
-    name: Build Images
+  # Stage 3: Build and Push Docker Images
+  build-frontend:
+    name: Build and Push Frontend Image
     runs-on: ubuntu-latest
     needs: [test, security]
     if: always() && (needs.test.result == 'success' || inputs.skip_tests) && (needs.security.result == 'success' || inputs.skip_tests)
-    
-    strategy:
-      matrix:
-        service: [frontend, backend]
-    
     outputs:
-      frontend-image: ${{ steps.meta-frontend.outputs.tags }}
-      backend-image: ${{ steps.meta-backend.outputs.tags }}
-      frontend-digest: ${{ steps.build-frontend.outputs.digest }}
-      backend-digest: ${{ steps.build-backend.outputs.digest }}
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ steps.meta.outputs.tags }}@${{ steps.build.outputs.digest }}
     
     steps:
       - name: Checkout code
@@ -157,9 +151,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (Frontend)
-        if: matrix.service == 'frontend'
-        id: meta-frontend
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
@@ -168,12 +161,101 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodeVibe Frontend
+            org.opencontainers.image.description=Frontend application for CodeVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodeVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodeVibe Team
+            component=frontend
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
-      - name: Extract metadata (Backend)
-        if: matrix.service == 'backend'
-        id: meta-backend
+      - name: Build and push Frontend
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on Frontend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          format: 'sarif'
+          output: 'trivy-frontend-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Frontend scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend-results.sarif'
+          category: 'frontend-security'
+
+      - name: Generate Frontend SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          format: 'spdx-json'
+          output: 'frontend-sbom.spdx.json'
+
+      - name: Upload Frontend SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-sbom
+          path: frontend-sbom.spdx.json
+          retention-days: 30
+
+  build-backend:
+    name: Build and Push Backend Image
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: always() && (needs.test.result == 'success' || inputs.skip_tests) && (needs.security.result == 'success' || inputs.skip_tests)
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ steps.meta.outputs.tags }}@${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
@@ -182,65 +264,78 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Frontend
-        if: matrix.service == 'frontend'
-        id: build-frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.frontend
-          target: production
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            BUILD_DATE=${{ fromJSON(steps.meta-frontend.outputs.json).labels['org.opencontainers.image.created'] }}
-            GIT_COMMIT=${{ github.sha }}
-            VERSION=${{ fromJSON(steps.meta-frontend.outputs.json).labels['org.opencontainers.image.version'] }}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodeVibe Backend
+            org.opencontainers.image.description=Backend API for CodeVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodeVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodeVibe Team
+            component=backend
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
       - name: Build and push Backend
-        if: matrix.service == 'backend'
-        id: build-backend
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.backend
           target: production
           push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           build-args: |
-            BUILD_DATE=${{ fromJSON(steps.meta-backend.outputs.json).labels['org.opencontainers.image.created'] }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             GIT_COMMIT=${{ github.sha }}
-            VERSION=${{ fromJSON(steps.meta-backend.outputs.json).labels['org.opencontainers.image.version'] }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
-      - name: Run Trivy scan on images
+      - name: Run Trivy scan on Backend image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ matrix.service == 'frontend' && steps.meta-frontend.outputs.tags || steps.meta-backend.outputs.tags }}
+          image-ref: ${{ steps.meta.outputs.tags }}
           format: 'sarif'
-          output: 'trivy-image-results.sarif'
+          output: 'trivy-backend-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+          ignore-unfixed: true
 
-      - name: Upload image scan results
+      - name: Upload Backend scan results
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
-          sarif_file: 'trivy-image-results.sarif'
+          sarif_file: 'trivy-backend-results.sarif'
+          category: 'backend-security'
+
+      - name: Generate Backend SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          format: 'spdx-json'
+          output: 'backend-sbom.spdx.json'
+
+      - name: Upload Backend SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-sbom
+          path: backend-sbom.spdx.json
+          retention-days: 30
 
   # Stage 4: Deploy to Staging
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build-frontend, build-backend]
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging' || inputs.environment == 'staging'
     environment:
       name: staging
@@ -256,37 +351,84 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
 
       - name: Deploy to staging server
+        id: deploy-staging
         run: |
+          set -e  # Exit on any error
+          
+          # Function to rollback on failure
+          rollback_staging() {
+            echo "🔄 Rolling back staging deployment..."
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }} << 'ROLLBACK_EOF'
+              cd ~/codiesvibe
+              if [ -f backup-compose-*.yml ]; then
+                LATEST_BACKUP=$(ls -t backup-compose-*.yml | head -n1)
+                echo "Rolling back to: $LATEST_BACKUP"
+                docker-compose -f "$LATEST_BACKUP" up -d --force-recreate
+                sleep 30
+                # Verify rollback worked
+                if curl -f https://staging.codiesvibe.com/health && curl -f https://staging.codiesvibe.com/api/health; then
+                  echo "✅ Rollback successful"
+                else
+                  echo "❌ Rollback failed - manual intervention required"
+                  exit 1
+                fi
+              else
+                echo "❌ No backup found for rollback"
+                exit 1
+              fi
+          ROLLBACK_EOF
+          }
+          
+          # Trap errors and rollback
+          trap 'rollback_staging' ERR
+          
           # Copy docker-compose files to server
           scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
           
           # Deploy with docker-compose
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }} << 'EOF'
+            set -e
             cd ~/codiesvibe
+            
+            # Create backup of current deployment
+            if docker-compose -f docker-compose.production.yml ps -q | grep -q .; then
+              docker-compose -f docker-compose.production.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
+              echo "✅ Backup created"
+            fi
             
             # Set environment variables
             export VERSION=${{ github.sha }}
             export ENVIRONMENT=staging
-            export FRONTEND_IMAGE=${{ needs.build.outputs.frontend-image }}
-            export BACKEND_IMAGE=${{ needs.build.outputs.backend-image }}
+            export FRONTEND_IMAGE=${{ needs.build-frontend.outputs.image }}
+            export BACKEND_IMAGE=${{ needs.build-backend.outputs.image }}
             
             # Start infrastructure if not running
             docker-compose -f docker-compose.infra.yml up -d
             
             # Wait for infrastructure to be healthy
+            echo "⏳ Waiting for infrastructure..."
             sleep 30
             
             # Deploy application with zero-downtime
+            echo "🚀 Deploying application..."
             docker-compose -f docker-compose.production.yml pull
             docker-compose -f docker-compose.production.yml up -d --force-recreate
             
-            # Wait for services to be healthy
-            timeout 300 bash -c 'until docker-compose -f docker-compose.production.yml ps | grep -q "healthy"; do sleep 5; done'
+            # Wait for services to be healthy with timeout
+            echo "⏳ Waiting for services to be healthy..."
+            timeout 300 bash -c 'until docker-compose -f docker-compose.production.yml ps | grep -q "healthy"; do echo "Waiting..."; sleep 5; done' || {
+              echo "❌ Services failed to become healthy within 5 minutes"
+              exit 1
+            }
             
-            # Clean up old images
-            docker image prune -f
+            echo "✅ Deployment completed successfully"
+            
+            # Clean up old images (keep last 3 versions)
+            docker image prune -f --filter "until=72h"
           EOF
+          
+          echo "✅ Staging deployment completed successfully"
 
       - name: Health check
         run: |
@@ -312,7 +454,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [build, deploy-staging]
+    needs: [build-frontend, build-backend, deploy-staging]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.environment == 'production'
     environment:
       name: production
@@ -328,41 +470,83 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PRODUCTION }}
 
       - name: Deploy to production server
+        id: deploy-production
         run: |
+          set -e  # Exit on any error
+          
+          # Function to rollback on failure
+          rollback_production() {
+            echo "🔄 Rolling back production deployment..."
+            ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }} << 'ROLLBACK_EOF'
+            cd ~/codiesvibe
+            if [ -f backup-compose-*.yml ]; then
+              LATEST_BACKUP=$(ls -t backup-compose-*.yml | head -n1)
+              echo "Rolling back to: $LATEST_BACKUP"
+              docker-compose -f "$LATEST_BACKUP" up -d --force-recreate
+              sleep 60
+              # Verify rollback worked
+              if curl -f https://codiesvibe.com/health && curl -f https://codiesvibe.com/api/health; then
+                echo "✅ Production rollback successful"
+              else
+                echo "❌ Production rollback failed - CRITICAL: manual intervention required"
+                exit 1
+              fi
+            else
+              echo "❌ No backup found for rollback - CRITICAL: manual intervention required"
+              exit 1
+            fi
+          ROLLBACK_EOF
+          }
+          
+          # Trap errors and rollback
+          trap 'rollback_production' ERR
+          
           # Copy docker-compose files to server
           scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no docker-compose.cloudflare.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
           
           # Deploy with zero-downtime strategy
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }} << 'EOF'
-            cd ~/codiesvibe
-            
-            # Set environment variables
-            export VERSION=${{ github.sha }}
-            export ENVIRONMENT=production
-            export FRONTEND_IMAGE=${{ needs.build.outputs.frontend-image }}
-            export BACKEND_IMAGE=${{ needs.build.outputs.backend-image }}
-            
-            # Backup current deployment
-            docker-compose -f docker-compose.production.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
-            
-            # Start infrastructure if not running
-            docker-compose -f docker-compose.infra.yml up -d
-            
-            # Wait for infrastructure to be healthy
-            sleep 30
-            
-            # Deploy with Cloudflare tunnels
-            docker-compose -f docker-compose.cloudflare.yml pull
-            docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate
-            
-            # Wait for services to be healthy
-            timeout 300 bash -c 'until docker-compose -f docker-compose.cloudflare.yml ps | grep -q "healthy"; do sleep 5; done'
-            
-            # Clean up old images (keep last 3 versions)
-            docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep codiesvibe | tail -n +4 | awk '{print $1}' | xargs -r docker rmi
-          EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }} << 'DEPLOY_EOF'
+          set -e
+          cd ~/codiesvibe
+          
+          # Set environment variables
+          export VERSION=${{ github.sha }}
+          export ENVIRONMENT=production
+          export FRONTEND_IMAGE=${{ needs.build-frontend.outputs.image }}
+          export BACKEND_IMAGE=${{ needs.build-backend.outputs.image }}
+          
+          # Create backup of current deployment
+          if docker-compose -f docker-compose.cloudflare.yml ps -q | grep -q .; then
+            docker-compose -f docker-compose.cloudflare.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
+            echo "✅ Production backup created"
+          fi
+          
+          # Start infrastructure if not running
+          docker-compose -f docker-compose.infra.yml up -d
+          
+          # Wait for infrastructure to be healthy
+          echo "⏳ Waiting for infrastructure..."
+          sleep 30
+          
+          # Deploy with Cloudflare tunnels
+          echo "🚀 Deploying to production with Cloudflare tunnels..."
+          docker-compose -f docker-compose.cloudflare.yml pull
+          docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate
+          
+          # Wait for services to be healthy with extended timeout for production
+          echo "⏳ Waiting for services to be healthy..."
+          timeout 600 bash -c 'until docker-compose -f docker-compose.cloudflare.yml ps | grep -q "healthy"; do echo "Waiting..."; sleep 10; done' || {
+            echo "❌ Services failed to become healthy within 10 minutes"
+            exit 1
+          }
+          
+          echo "✅ Production deployment completed successfully"
+          
+          # Clean up old images (keep last 3 versions)
+          docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep codiesvibe | tail -n +4 | awk '{print $1}' | xargs -r docker rmi || echo "No old images to clean"
+          DEPLOY_EOF
 
       - name: Health check
         run: |
@@ -375,16 +559,14 @@ jobs:
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: |
             ## Changes in this Release
-            - Frontend Image: ${{ needs.build.outputs.frontend-image }}
-            - Backend Image: ${{ needs.build.outputs.backend-image }}
+            - Frontend Image: ${{ needs.build-frontend.outputs.image }}
+            - Backend Image: ${{ needs.build-backend.outputs.image }}
             - Commit: ${{ github.sha }}
             
             ## Deployment Status
@@ -393,8 +575,8 @@ jobs:
             
             ## Docker Images
             ```bash
-            docker pull ${{ needs.build.outputs.frontend-image }}
-            docker pull ${{ needs.build.outputs.backend-image }}
+            docker pull ${{ needs.build-frontend.outputs.image }}
+            docker pull ${{ needs.build-backend.outputs.image }}
             ```
           draft: false
           prerelease: false
@@ -416,16 +598,16 @@ jobs:
     if: always()
     
     steps:
-      - name: Delete old GitHub packages
-        uses: actions/delete-package-versions@v4
+      - name: Delete old GitHub packages - Frontend
+        uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ env.IMAGE_NAME_FRONTEND }}
           package-type: 'container'
           min-versions-to-keep: 5
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete old GitHub packages
-        uses: actions/delete-package-versions@v4
+      - name: Delete old GitHub packages - Backend
+        uses: actions/delete-package-versions@v5
         with:
           package-name: ${{ env.IMAGE_NAME_BACKEND }}
           package-type: 'container'

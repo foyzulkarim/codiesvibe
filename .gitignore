@@ -180,8 +180,8 @@ vite.config.ts.timestamp-*
 
 # Docker
 .dockerignore
-Dockerfile
-docker-compose*.yml
+# Only ignore generic Dockerfile, not named ones like Dockerfile.backend
+/Dockerfile
 
 # Serverless
 .serverless/

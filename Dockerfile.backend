@@ -30,8 +30,18 @@ RUN npm run build
 # Development stage - Hot reload development environment with debugging
 FROM dependencies AS development
 
+# Install development tools globally for better performance
+RUN npm install -g nodemon ts-node
+
 # Copy backend source code for development
 COPY backend/ ./
+
+# Create non-root user for security (even in development)
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
 
 # Expose development server port and debug port
 EXPOSE 4000 9229
@@ -43,57 +53,86 @@ LABEL org.opencontainers.image.version="${VERSION:-dev}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
 
-# Set environment variables
+# Set environment variables for development
 ENV NODE_ENV=development
 ENV PORT=4000
+ENV DEBUG_PORT=9229
 
-# Start development server with watch mode and debugging
+# Health check for development environment
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD node healthcheck.js || exit 1
+
+# Start development server with watch mode and debugging enabled
 CMD ["npm", "run", "start:debug"]
 
-# Production stage - Optimized production image with health checks
+# Production stage - Optimized production image with health checks and security
 FROM node:18-alpine AS production
 
-# Create non-root user for security
-RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+# Install security updates, ca-certificates, and dumb-init
+RUN apk update && apk upgrade && \
+    apk add --no-cache ca-certificates dumb-init && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user with secure home directory
+RUN addgroup -g 1001 nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs -h /home/nodejs -s /bin/ash && \
+    mkdir -p /home/nodejs && \
+    chown -R nodejs:nodejs /home/nodejs
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY backend/package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install only production dependencies with security optimizations
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force && \
+    rm -rf ~/.npm
 
-# Copy built application from builder stage
+# Copy built application from builder stage with proper ownership
 COPY --from=backend-builder --chown=nodejs:nodejs /app/dist ./dist
 
 # Copy shared types directory for runtime if needed
 COPY --from=backend-builder --chown=nodejs:nodejs /app/shared ./shared
 
-# Copy health check script
+# Copy health check script with proper ownership
 COPY --chown=nodejs:nodejs backend/healthcheck.js ./healthcheck.js
+
+# Create necessary directories with secure permissions
+RUN mkdir -p /app/logs /app/temp && \
+    chown -R nodejs:nodejs /app && \
+    chmod -R 755 /app && \
+    chmod 644 /app/healthcheck.js
 
 # Switch to non-root user
 USER nodejs
 
-# Expose production port
+# Expose production port only
 EXPOSE 4000
 
-# Add image metadata
+# Add comprehensive image metadata
 LABEL org.opencontainers.image.title="CodiesVibe Backend (Production)"
-LABEL org.opencontainers.image.description="NestJS production build with health checks and security"
+LABEL org.opencontainers.image.description="NestJS production build with enhanced security, health checks, and monitoring"
 LABEL org.opencontainers.image.version="${VERSION:-latest}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+LABEL org.opencontainers.image.vendor="CodiesVibe"
+LABEL org.opencontainers.image.licenses="MIT"
 
-# Set environment variables
+# Set optimized environment variables for production
 ENV NODE_ENV=production
 ENV PORT=4000
+ENV NODE_OPTIONS="--max-old-space-size=512"
+ENV UV_THREADPOOL_SIZE=4
 
-# Health check using our custom script
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Comprehensive health check with optimized timing
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD node healthcheck.js || exit 1
 
-# Start production server
-CMD ["node", "dist/src/main.js"]
+# Use dumb-init for proper signal handling and zombie reaping
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start production server with optimized node flags
+CMD ["node", "--enable-source-maps", "dist/src/main.js"]
