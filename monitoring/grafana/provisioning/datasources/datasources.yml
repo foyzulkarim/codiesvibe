@@ -1,0 +1,88 @@
+# Grafana Extended Datasources Configuration
+# Connects to extended monitoring services with offset ports
+
+apiVersion: 1
+
+datasources:
+  # Extended Prometheus (offset port 9091)
+  - name: Prometheus-Extended
+    type: prometheus
+    access: proxy
+    url: http://prometheus-extended:9090
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "300s"
+      httpMethod: "POST"
+      customQueryParameters: ""
+      # Enable exemplars for tracing integration
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: jaeger
+    uid: prometheus-extended
+
+  # Extended Loki (offset port 3101)
+  - name: Loki-Extended
+    type: loki
+    access: proxy
+    url: http://loki-extended:3100
+    version: 1
+    editable: true
+    jsonData:
+      timeout: 60
+      maxLines: 1000
+      # Derived fields for log correlation
+      derivedFields:
+        - matcherRegex: "traceID=(\\w+)"
+          name: "TraceID"
+          url: "$${__value.raw}"
+          datasourceUid: "jaeger"
+    uid: loki-extended
+
+  # Infrastructure Prometheus (federation from base infrastructure)
+  - name: Prometheus-Infrastructure
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    version: 1
+    editable: true
+    jsonData:
+      timeInterval: "30s"
+      queryTimeout: "300s"
+      httpMethod: "GET"
+    uid: prometheus-infrastructure
+
+  # Infrastructure Loki
+  - name: Loki-Infrastructure
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    version: 1
+    editable: true
+    jsonData:
+      timeout: 60
+      maxLines: 1000
+    uid: loki-infrastructure
+
+  # AlertManager
+  - name: AlertManager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    version: 1
+    editable: true
+    jsonData:
+      implementation: prometheus
+    uid: alertmanager
+
+  # Jaeger (if tracing is enabled)
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    version: 1
+    editable: true
+    isDefault: false
+    uid: jaeger

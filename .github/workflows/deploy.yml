@@ -1,0 +1,433 @@
+# GitHub Actions CI/CD Pipeline for CodiesVibe
+# Multi-stage pipeline: test → build → deploy with GitHub Container Registry
+# Supports multiple deployment targets and zero-downtime deployment
+
+name: Deploy CodiesVibe
+
+on:
+  push:
+    branches: [main, staging, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip test stage'
+        required: false
+        default: false
+        type: boolean
+
+# Environment variables
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}-frontend
+  IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
+  NODE_VERSION: '18'
+
+# Concurrency control - cancel previous runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1: Test and Lint
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    
+    strategy:
+      matrix:
+        service: [frontend, backend]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better caching
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm ci
+
+      - name: Lint code
+        working-directory: ${{ matrix.service }}
+        run: npm run lint
+
+      - name: Type check
+        working-directory: ${{ matrix.service }}
+        run: npm run type-check
+        if: matrix.service == 'frontend'
+
+      - name: Run tests
+        working-directory: ${{ matrix.service }}
+        run: npm run test
+        env:
+          NODE_ENV: test
+
+      - name: Generate test coverage
+        working-directory: ${{ matrix.service }}
+        run: npm run test:coverage
+        if: matrix.service == 'backend'
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.service == 'backend'
+        with:
+          file: ${{ matrix.service }}/coverage/lcov.info
+          flags: ${{ matrix.service }}
+          name: ${{ matrix.service }}-coverage
+
+  # Stage 2: Security Scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Audit npm dependencies
+        run: |
+          cd frontend && npm audit --audit-level=high
+          cd ../backend && npm audit --audit-level=high
+
+  # Stage 3: Build Docker Images
+  build:
+    name: Build Images
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: always() && (needs.test.result == 'success' || inputs.skip_tests) && (needs.security.result == 'success' || inputs.skip_tests)
+    
+    strategy:
+      matrix:
+        service: [frontend, backend]
+    
+    outputs:
+      frontend-image: ${{ steps.meta-frontend.outputs.tags }}
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+      frontend-digest: ${{ steps.build-frontend.outputs.digest }}
+      backend-digest: ${{ steps.build-backend.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (Frontend)
+        if: matrix.service == 'frontend'
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract metadata (Backend)
+        if: matrix.service == 'backend'
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Frontend
+        if: matrix.service == 'frontend'
+        id: build-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          target: production
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta-frontend.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta-frontend.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Build and push Backend
+        if: matrix.service == 'backend'
+        id: build-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.backend
+          target: production
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta-backend.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta-backend.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on images
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.service == 'frontend' && steps.meta-frontend.outputs.tags || steps.meta-backend.outputs.tags }}
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+
+      - name: Upload image scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+
+  # Stage 4: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging' || inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.codiesvibe.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
+
+      - name: Deploy to staging server
+        run: |
+          # Copy docker-compose files to server
+          scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
+          scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
+          
+          # Deploy with docker-compose
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }} << 'EOF'
+            cd ~/codiesvibe
+            
+            # Set environment variables
+            export VERSION=${{ github.sha }}
+            export ENVIRONMENT=staging
+            export FRONTEND_IMAGE=${{ needs.build.outputs.frontend-image }}
+            export BACKEND_IMAGE=${{ needs.build.outputs.backend-image }}
+            
+            # Start infrastructure if not running
+            docker-compose -f docker-compose.infra.yml up -d
+            
+            # Wait for infrastructure to be healthy
+            sleep 30
+            
+            # Deploy application with zero-downtime
+            docker-compose -f docker-compose.production.yml pull
+            docker-compose -f docker-compose.production.yml up -d --force-recreate
+            
+            # Wait for services to be healthy
+            timeout 300 bash -c 'until docker-compose -f docker-compose.production.yml ps | grep -q "healthy"; do sleep 5; done'
+            
+            # Clean up old images
+            docker image prune -f
+          EOF
+
+      - name: Health check
+        run: |
+          # Wait for deployment to be ready
+          sleep 60
+          
+          # Check frontend health
+          curl -f https://staging.codiesvibe.com/health || exit 1
+          
+          # Check backend health
+          curl -f https://staging.codiesvibe.com/api/health || exit 1
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Staging deployment ${{ job.status }} for commit ${{ github.sha }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Stage 5: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://codiesvibe.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PRODUCTION }}
+
+      - name: Deploy to production server
+        run: |
+          # Copy docker-compose files to server
+          scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
+          scp -o StrictHostKeyChecking=no docker-compose.cloudflare.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
+          scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
+          
+          # Deploy with zero-downtime strategy
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }} << 'EOF'
+            cd ~/codiesvibe
+            
+            # Set environment variables
+            export VERSION=${{ github.sha }}
+            export ENVIRONMENT=production
+            export FRONTEND_IMAGE=${{ needs.build.outputs.frontend-image }}
+            export BACKEND_IMAGE=${{ needs.build.outputs.backend-image }}
+            
+            # Backup current deployment
+            docker-compose -f docker-compose.production.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
+            
+            # Start infrastructure if not running
+            docker-compose -f docker-compose.infra.yml up -d
+            
+            # Wait for infrastructure to be healthy
+            sleep 30
+            
+            # Deploy with Cloudflare tunnels
+            docker-compose -f docker-compose.cloudflare.yml pull
+            docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate
+            
+            # Wait for services to be healthy
+            timeout 300 bash -c 'until docker-compose -f docker-compose.cloudflare.yml ps | grep -q "healthy"; do sleep 5; done'
+            
+            # Clean up old images (keep last 3 versions)
+            docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep codiesvibe | tail -n +4 | awk '{print $1}' | xargs -r docker rmi
+          EOF
+
+      - name: Health check
+        run: |
+          # Wait for deployment to be ready
+          sleep 90
+          
+          # Check application health through Cloudflare
+          curl -f https://codiesvibe.com/health || exit 1
+          curl -f https://codiesvibe.com/api/health || exit 1
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## Changes in this Release
+            - Frontend Image: ${{ needs.build.outputs.frontend-image }}
+            - Backend Image: ${{ needs.build.outputs.backend-image }}
+            - Commit: ${{ github.sha }}
+            
+            ## Deployment Status
+            - ✅ Staging: Deployed successfully
+            - ✅ Production: Deployed successfully
+            
+            ## Docker Images
+            ```bash
+            docker pull ${{ needs.build.outputs.frontend-image }}
+            docker pull ${{ needs.build.outputs.backend-image }}
+            ```
+          draft: false
+          prerelease: false
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Production deployment ${{ job.status }} for commit ${{ github.sha }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Cleanup Job
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Delete old GitHub packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: ${{ env.IMAGE_NAME_FRONTEND }}
+          package-type: 'container'
+          min-versions-to-keep: 5
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old GitHub packages
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: ${{ env.IMAGE_NAME_BACKEND }}
+          package-type: 'container'
+          min-versions-to-keep: 5
+          token: ${{ secrets.GITHUB_TOKEN }}

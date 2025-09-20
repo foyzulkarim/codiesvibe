@@ -1,0 +1,102 @@
+# CodiesVibe Frontend Dockerfile
+# Multi-stage build for React + Vite application with development and production targets
+
+# Build arguments for image metadata
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG VERSION
+
+# Dependencies stage - Install all dependencies for caching
+FROM node:18-alpine AS dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY package*.json ./
+
+# Install dependencies using npm ci for reproducible builds
+RUN npm ci
+
+# Builder stage - Build the TypeScript application  
+FROM dependencies AS builder
+
+# Copy source code first
+COPY . .
+
+# Copy only the shared types directory that already exists (after source to override any potential conflicts)
+COPY backend/shared ./backend/shared
+
+# Build the application
+RUN npm run build
+
+# Development stage - Hot reload development environment
+FROM dependencies AS development
+
+# Copy source code for development
+COPY . .
+
+# Expose development server port
+EXPOSE 3000
+
+# Add image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Frontend (Development)"
+LABEL org.opencontainers.image.description="React + Vite development environment with hot reload"
+LABEL org.opencontainers.image.version="${VERSION:-dev}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV VITE_API_URL=http://backend:4000
+
+# Start development server with hot reload
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+# Production stage - Optimized production image with static file serving
+FROM node:18-alpine AS production
+
+# Create non-root user for security
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Install serve globally for static file serving
+RUN npm install -g serve
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Copy health check script
+COPY --chown=nodejs:nodejs frontend/healthcheck.js ./healthcheck.js
+
+# Switch to non-root user
+USER nodejs
+
+# Expose production port
+EXPOSE 3000
+
+# Add image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Frontend (Production)"
+LABEL org.opencontainers.image.description="React + Vite production build served with serve"
+LABEL org.opencontainers.image.version="${VERSION:-latest}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV VITE_API_URL=http://backend:4000
+
+# Health check using our custom script
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node healthcheck.js || exit 1
+
+# Start production server
+CMD ["serve", "-s", "dist", "-l", "3000"]

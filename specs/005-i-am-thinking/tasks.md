@@ -77,18 +77,18 @@
 ## Phase 1: Docker File Creation
 
 ### Core Docker Files
-- [ ] **T013** Create `Dockerfile.frontend` with multi-stage build (development + production stages) - Ref: `dockerfile-contract.yml (frontend-dockerfile-contract)`
-- [ ] **T014** Create `Dockerfile.backend` with multi-stage build (development + production stages) - Ref: `dockerfile-contract.yml (backend-dockerfile-contract)`
+- [x] **T013** Create `Dockerfile.frontend` with multi-stage build (development + production stages) - Ref: `dockerfile-contract.yml (frontend-dockerfile-contract)`
+- [x] **T014** Create `Dockerfile.backend` with multi-stage build (development + production stages) - Ref: `dockerfile-contract.yml (backend-dockerfile-contract)`
 
 ### Docker Compose Files
-- [ ] **T015** Create `docker-compose.dev.yml` for development environment - Ref: `docker-compose-schema.yml (development-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to infrastructure services (mongodb:27017, redis:6379), use ports 3000/4000 per allocation docs
-- [ ] **T016** Create `docker-compose.production.yml` for production deployment - Ref: `docker-compose-schema.yml (production-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring stack (prometheus:9090, loki:3100), use nginx on port 80/443 per allocation docs
-- [ ] **T017** Create `docker-compose.cloudflare.yml` for Cloudflare tunnel deployment - Ref: `docker-compose-schema.yml (cloudflare-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring services, no host port exposure (tunnel-only) per allocation docs
-- [ ] **T018** Create `docker-compose.monitoring.yml` for monitoring stack - Ref: `docker-compose-schema.yml (monitoring-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, extend existing infrastructure monitoring, use offset ports (3002, 9093, 9100) per allocation docs
+- [x] **T015** Create `docker-compose.dev.yml` for development environment - Ref: `docker-compose-schema.yml (development-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to infrastructure services (mongodb:27017, redis:6379), use ports 3000/4000 per allocation docs
+- [x] **T016** Create `docker-compose.production.yml` for production deployment - Ref: `docker-compose-schema.yml (production-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring stack (prometheus:9090, loki:3100), use nginx on port 80/443 per allocation docs
+- [x] **T017** Create `docker-compose.cloudflare.yml` for Cloudflare tunnel deployment - Ref: `docker-compose-schema.yml (cloudflare-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, connect to monitoring services, no host port exposure (tunnel-only) per allocation docs
+- [x] **T018** Create `docker-compose.monitoring.yml` for monitoring stack - Ref: `docker-compose-schema.yml (monitoring-contract)` | **INFRASTRUCTURE INTEGRATION**: Must use external network `codiesvibe-network`, extend existing infrastructure monitoring, use offset ports (3002, 9093, 9100) per allocation docs
 
 ### CI/CD and Documentation
-- [ ] **T019** Create GitHub Actions workflow file `.github/workflows/deploy.yml` - Ref: `research.md (CI/CD and Image Registry Strategy)`
-- [ ] **T020** Create comprehensive `README.md` with setup instructions for all environments - Ref: `spec.md (User Story)`
+- [x] **T019** Create GitHub Actions workflow file `.github/workflows/deploy.yml` - Ref: `research.md (CI/CD and Image Registry Strategy)`
+- [x] **T020** Create comprehensive `README.md` with setup instructions for all environments - Ref: `spec.md (User Story)`
 
 ### Phase 1 Infrastructure Integration Requirements
 
