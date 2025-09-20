@@ -6,7 +6,7 @@ name: Deploy CodiesVibe
 
 on:
   push:
-    branches: [main, staging, develop]
+    branches: [main, staging, develop, 005-i-am-thinking]
     tags: ['v*']
   pull_request:
     branches: [main]
