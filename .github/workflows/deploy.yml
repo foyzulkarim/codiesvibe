@@ -60,29 +60,30 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: ${{ matrix.service }}/package-lock.json
+          cache-dependency-path: ${{ matrix.service == 'frontend' && 'package-lock.json' || 'backend/package-lock.json' }}
 
       - name: Install dependencies
-        working-directory: ${{ matrix.service }}
+        working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
         run: npm ci
 
       - name: Lint code
-        working-directory: ${{ matrix.service }}
+        working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
         run: npm run lint
 
       - name: Type check
-        working-directory: ${{ matrix.service }}
-        run: npm run type-check
+        working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
+        run: ${{ matrix.service == 'frontend' && 'npm run typecheck' || 'npm run type-check' }}
         if: matrix.service == 'frontend'
 
       - name: Run tests
-        working-directory: ${{ matrix.service }}
+        working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
         run: npm run test
         env:
           NODE_ENV: test
+        if: matrix.service == 'backend'
 
       - name: Generate test coverage
-        working-directory: ${{ matrix.service }}
+        working-directory: ${{ matrix.service == 'frontend' && '.' || matrix.service }}
         run: npm run test:coverage
         if: matrix.service == 'backend'
 
@@ -90,7 +91,7 @@ jobs:
         uses: codecov/codecov-action@v4
         if: matrix.service == 'backend'
         with:
-          file: ${{ matrix.service }}/coverage/lcov.info
+          file: ${{ matrix.service == 'frontend' && 'coverage/lcov.info' || 'backend/coverage/lcov.info' }}
           flags: ${{ matrix.service }}
           name: ${{ matrix.service }}-coverage
 
