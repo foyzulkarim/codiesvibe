@@ -5,14 +5,14 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [main, staging, develop, 005-i-am-thinking]
+    branches: [main, staging]
     paths: 
       - 'backend/**'
       - 'Dockerfile.backend'
       - '.github/workflows/backend-ci-cd.yml'
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'backend/**'
       - 'Dockerfile.backend'

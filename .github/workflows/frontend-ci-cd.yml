@@ -5,7 +5,7 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: [main, staging, develop, 005-i-am-thinking]
+    branches: [main, staging]
     paths: 
       - 'frontend/**'
       - 'package.json'
@@ -14,7 +14,7 @@ on:
       - '.github/workflows/frontend-ci-cd.yml'
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     paths:
       - 'frontend/**'
       - 'package.json'
