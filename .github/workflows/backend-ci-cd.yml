@@ -10,12 +10,15 @@ on:
       - 'backend/**'
       - 'Dockerfile.backend'
       - '.github/workflows/backend-ci-cd.yml'
-    tags: ['v*']
+    tags: 
+      - 'v*'
+    # Tags will only trigger if backend files changed in the tagged commit
   pull_request:
     branches: [main, staging]
     paths:
       - 'backend/**'
       - 'Dockerfile.backend'
+      - '.github/workflows/backend-ci-cd.yml'
   workflow_dispatch:
     inputs:
       environment:

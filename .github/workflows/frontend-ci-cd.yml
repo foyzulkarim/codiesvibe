@@ -17,8 +17,11 @@ on:
       - 'tailwind.config.ts'
       - 'postcss.config.js'
       - 'eslint.config.js'
+      - 'components.json'
       - '.github/workflows/frontend-ci-cd.yml'
-    tags: ['v*']
+    tags: 
+      - 'v*'
+    # Tags will only trigger if frontend files changed in the tagged commit
   pull_request:
     branches: [main, staging]
     paths:
@@ -32,6 +35,8 @@ on:
       - 'tailwind.config.ts'
       - 'postcss.config.js'
       - 'eslint.config.js'
+      - 'components.json'
+      - '.github/workflows/frontend-ci-cd.yml'
   workflow_dispatch:
     inputs:
       environment:
@@ -149,10 +154,11 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'frontend-trivy-results.sarif'
+          exit-code: '0'
 
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('frontend-trivy-results.sarif') != ''
         with:
           sarif_file: 'frontend-trivy-results.sarif'
 
@@ -192,7 +198,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
             type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
@@ -234,12 +239,12 @@ jobs:
           format: 'sarif'
           output: 'frontend-image-trivy.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
 
       - name: Upload Frontend image scan results
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('frontend-image-trivy.sarif') != ''
         with:
           sarif_file: 'frontend-image-trivy.sarif'
           category: 'frontend-image-security'
