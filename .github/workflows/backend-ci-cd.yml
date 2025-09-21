@@ -255,15 +255,6 @@ jobs:
           --health-retries 3
           --health-start-period 40s
           
-      redis:
-        image: redis:7.2-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 3
     
     steps:
       - name: Checkout code
@@ -278,7 +269,6 @@ jobs:
             -e NODE_ENV=test \
             -e JWT_SECRET=test-secret \
             -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
-            -e REDIS_URL=redis://localhost:6379 \
             ${{ needs.build-backend.outputs.image }}
 
           # Wait for backend to be ready
