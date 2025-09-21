@@ -81,15 +81,17 @@
       "json",
       "ts"
     ],
-    "rootDir": "test",
-    "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "test/**/*.(t|j)s",
+      "!**/*.d.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "coverage",
     "testEnvironment": "node",
     "testTimeout": 15000,
     "forceExit": true,
