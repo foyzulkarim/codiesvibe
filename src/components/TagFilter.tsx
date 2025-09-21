@@ -44,7 +44,7 @@ export const TagFilter = ({
       }
       
       // Count tools that match the temporary filter state
-      let count = aiTools.filter(tool => {
+      const count = aiTools.filter(tool => {
         return Object.entries(tempFilters).every(([cat, values]) => {
           if (values.length === 0) return true;
           const toolValues = tool[cat as keyof typeof tool] as string[];

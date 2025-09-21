@@ -1,0 +1,33 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Frontend checks (root directory)
+echo "📱 Checking frontend..."
+if ! npm run lint; then
+    echo "❌ Frontend linting failed!"
+    exit 1
+fi
+
+if ! npm run typecheck; then
+    echo "❌ Frontend typecheck failed!"
+    exit 1
+fi
+
+# Backend checks
+echo "🔧 Checking backend..."
+cd backend
+
+if ! npm run lint; then
+    echo "❌ Backend linting failed!"
+    exit 1
+fi
+
+if ! npm run typecheck; then
+    echo "❌ Backend typecheck failed!"
+    exit 1
+fi
+
+cd ..
+
+echo "✅ All pre-commit checks passed!"

@@ -1,33 +1,33 @@
-import { 
-  IsString, 
-  Length, 
+import {
+  IsString,
+  Length,
   IsOptional,
-  IsArray, 
-  IsNumber, 
-  Min, 
-  Max, 
-  IsUrl, 
-  IsObject, 
-  ValidateNested
+  IsArray,
+  IsNumber,
+  Min,
+  Max,
+  IsUrl,
+  IsObject,
+  ValidateNested,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 class UpdateTagsDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Primary category tags',
     type: [String],
-    example: ['AI', 'Chatbot']
+    example: ['AI', 'Chatbot'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   primary?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Secondary category tags',
     type: [String],
-    example: ['Productivity', 'Communication']
+    example: ['Productivity', 'Communication'],
   })
   @IsOptional()
   @IsArray()
@@ -36,83 +36,83 @@ class UpdateTagsDto {
 }
 
 export class UpdateToolDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tool name',
     minLength: 1,
     maxLength: 100,
-    example: 'ChatGPT'
+    example: 'ChatGPT',
   })
   @IsOptional()
   @IsString()
   @Length(1, 100)
   name?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tool description',
     minLength: 1,
     maxLength: 500,
-    example: 'Advanced AI chatbot for natural conversations'
+    example: 'Advanced AI chatbot for natural conversations',
   })
   @IsOptional()
   @IsString()
   @Length(1, 500)
   description?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Detailed tool description',
     maxLength: 2000,
-    example: 'ChatGPT is an advanced language model...'
+    example: 'ChatGPT is an advanced language model...',
   })
   @IsOptional()
   @IsString()
   @Length(0, 2000)
   longDescription?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Pricing models',
     type: [String],
-    example: ['Free', 'Paid', 'API']
+    example: ['Free', 'Paid', 'API'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   pricing?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Interface types',
     type: [String],
-    example: ['Web', 'API', 'Mobile']
+    example: ['Web', 'API', 'Mobile'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   interface?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Functionality categories',
     type: [String],
-    example: ['Text Generation', 'Translation']
+    example: ['Text Generation', 'Translation'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   functionality?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Deployment options',
     type: [String],
-    example: ['Cloud', 'On-premise']
+    example: ['Cloud', 'On-premise'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   deployment?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Popularity score (0-1000000)',
     minimum: 0,
     maximum: 1000000,
-    example: 85000
+    example: 85000,
   })
   @IsOptional()
   @IsNumber()
@@ -120,11 +120,11 @@ export class UpdateToolDto {
   @Max(1000000)
   popularity?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'User rating (0-5)',
     minimum: 0,
     maximum: 5,
-    example: 4.5
+    example: 4.5,
   })
   @IsOptional()
   @IsNumber()
@@ -132,11 +132,11 @@ export class UpdateToolDto {
   @Max(5)
   rating?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Number of reviews (0-1000000)',
     minimum: 0,
     maximum: 1000000,
-    example: 1250
+    example: 1250,
   })
   @IsOptional()
   @IsNumber()
@@ -144,24 +144,24 @@ export class UpdateToolDto {
   @Max(1000000)
   reviewCount?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tool logo image URL',
-    example: 'https://example.com/logo.png'
+    example: 'https://example.com/logo.png',
   })
   @IsOptional()
   @IsString()
   @IsUrl({}, { message: 'logoUrl must be a valid URL' })
   logoUrl?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Feature flags with boolean values',
     type: 'object',
     additionalProperties: { type: 'boolean' },
     example: {
       apiAccess: true,
       freeTier: true,
-      multiLanguage: true
-    }
+      multiLanguage: true,
+    },
   })
   @IsOptional()
   @IsObject()
@@ -177,31 +177,33 @@ export class UpdateToolDto {
   })
   features?: Record<string, boolean>;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Search keywords for improved discoverability',
     type: [String],
-    example: ['chatbot', 'AI assistant', 'conversation']
+    example: ['chatbot', 'AI assistant', 'conversation'],
   })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => {
     if (Array.isArray(value)) {
-      return value.map(keyword => 
-        typeof keyword === 'string' ? keyword.substring(0, 256) : String(keyword).substring(0, 256)
+      return value.map((keyword) =>
+        typeof keyword === 'string'
+          ? keyword.substring(0, 256)
+          : String(keyword).substring(0, 256),
       );
     }
     return value;
   })
   searchKeywords?: string[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Categorization tags with primary and secondary arrays',
     type: UpdateTagsDto,
     example: {
       primary: ['AI', 'Chatbot'],
-      secondary: ['Productivity', 'Communication']
-    }
+      secondary: ['Productivity', 'Communication'],
+    },
   })
   @IsOptional()
   @IsObject()
@@ -209,9 +211,9 @@ export class UpdateToolDto {
   @Type(() => UpdateTagsDto)
   tags?: UpdateTagsDto;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Document version for optimistic concurrency control',
-    example: 0
+    example: 0,
   })
   @IsOptional()
   @IsNumber()

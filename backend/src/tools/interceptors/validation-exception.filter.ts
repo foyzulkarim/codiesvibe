@@ -42,18 +42,18 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
 
     const exceptionResponse = exception.getResponse() as any;
-    
+
     // Check if this is a validation error (has validation error structure)
     if (this.isValidationError(exceptionResponse)) {
       const validationErrors = this.extractValidationErrors(exceptionResponse);
-      
+
       const errorResponse: ValidationErrorResponse = {
         statusCode: status,
         error: 'Validation Failed',
         message: this.generateUserFriendlyMessage(validationErrors),
         timestamp: new Date().toISOString(),
         path: request.url,
-        details: this.formatValidationErrors(validationErrors)
+        details: this.formatValidationErrors(validationErrors),
       };
 
       response.status(status).json(errorResponse);
@@ -85,51 +85,64 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     return exceptionResponse.message || [];
   }
 
-  private generateUserFriendlyMessage(validationErrors: ValidationError[]): string[] {
+  private generateUserFriendlyMessage(
+    validationErrors: ValidationError[],
+  ): string[] {
     const messages: string[] = [];
-    
+
     for (const error of validationErrors) {
       if (error.constraints) {
         const fieldName = this.formatFieldName(error.property);
         const constraintMessages = Object.values(error.constraints);
-        
+
         for (const constraint of constraintMessages) {
           messages.push(this.humanizeConstraintMessage(fieldName, constraint));
         }
       }
-      
+
       // Handle nested validation errors
       if (error.children && error.children.length > 0) {
-        messages.push(...this.processNestedErrors(error.property, error.children));
+        messages.push(
+          ...this.processNestedErrors(error.property, error.children),
+        );
       }
     }
-    
+
     return messages.length > 0 ? messages : ['Validation failed'];
   }
 
-  private processNestedErrors(parentField: string, children: ValidationError[]): string[] {
+  private processNestedErrors(
+    parentField: string,
+    children: ValidationError[],
+  ): string[] {
     const messages: string[] = [];
-    
+
     for (const child of children) {
       const fullFieldName = `${parentField}.${child.property}`;
-      
+
       if (child.constraints) {
         const constraintMessages = Object.values(child.constraints);
         for (const constraint of constraintMessages) {
-          messages.push(this.humanizeConstraintMessage(fullFieldName, constraint));
+          messages.push(
+            this.humanizeConstraintMessage(fullFieldName, constraint),
+          );
         }
       }
-      
+
       if (child.children && child.children.length > 0) {
-        messages.push(...this.processNestedErrors(fullFieldName, child.children));
+        messages.push(
+          ...this.processNestedErrors(fullFieldName, child.children),
+        );
       }
     }
-    
+
     return messages;
   }
 
-  private formatValidationErrors(validationErrors: ValidationError[]): FieldValidationError[] {
-    return validationErrors.map(error => this.formatSingleError(error));
+  private formatValidationErrors(
+    validationErrors: ValidationError[],
+  ): FieldValidationError[] {
+    return validationErrors.map((error) => this.formatSingleError(error));
   }
 
   private formatSingleError(error: ValidationError): FieldValidationError {
@@ -140,7 +153,9 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     };
 
     if (error.children && error.children.length > 0) {
-      fieldError.children = error.children.map(child => this.formatSingleError(child));
+      fieldError.children = error.children.map((child) =>
+        this.formatSingleError(child),
+      );
     }
 
     return fieldError;
@@ -150,29 +165,32 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     // Convert camelCase to readable format
     return property
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
+      .replace(/^./, (str) => str.toUpperCase())
       .trim();
   }
 
-  private humanizeConstraintMessage(fieldName: string, constraint: string): string {
+  private humanizeConstraintMessage(
+    fieldName: string,
+    constraint: string,
+  ): string {
     // Replace generic constraint messages with more user-friendly ones
     const humanizedConstraints: Record<string, string> = {
-      'isNotEmpty': `${fieldName} cannot be empty`,
-      'isString': `${fieldName} must be a text value`,
-      'isNumber': `${fieldName} must be a number`,
-      'isArray': `${fieldName} must be a list`,
-      'isUrl': `${fieldName} must be a valid URL`,
-      'isObject': `${fieldName} must be a valid object`,
+      isNotEmpty: `${fieldName} cannot be empty`,
+      isString: `${fieldName} must be a text value`,
+      isNumber: `${fieldName} must be a number`,
+      isArray: `${fieldName} must be a list`,
+      isUrl: `${fieldName} must be a valid URL`,
+      isObject: `${fieldName} must be a valid object`,
       'length must be longer than or equal to': `${fieldName} is too short`,
       'length must be shorter than or equal to': `${fieldName} is too long`,
       'must be a positive number': `${fieldName} must be a positive number`,
       'must not be less than': `${fieldName} is below the minimum allowed value`,
       'must not be greater than': `${fieldName} exceeds the maximum allowed value`,
-      'arrayNotEmpty': `${fieldName} must contain at least one item`,
-      'isValidSearchKeywords': `${fieldName} must be valid search keywords (max 256 characters each)`,
-      'isFeaturesObject': `${fieldName} must contain only true/false values`,
-      'isTagsStructure': `${fieldName} must have valid primary and secondary tag categories`,
-      'isUpdateTagsStructure': `${fieldName} must have valid tag categories for update`,
+      arrayNotEmpty: `${fieldName} must contain at least one item`,
+      isValidSearchKeywords: `${fieldName} must be valid search keywords (max 256 characters each)`,
+      isFeaturesObject: `${fieldName} must contain only true/false values`,
+      isTagsStructure: `${fieldName} must have valid primary and secondary tag categories`,
+      isUpdateTagsStructure: `${fieldName} must have valid tag categories for update`,
     };
 
     // Try to find a humanized version
@@ -244,7 +262,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
  * Utility class for creating consistent error responses
  */
 export class ErrorResponseUtils {
-  static createValidationError(message: string, details?: any): ValidationErrorResponse {
+  static createValidationError(
+    message: string,
+    details?: any,
+  ): ValidationErrorResponse {
     return {
       statusCode: HttpStatus.BAD_REQUEST,
       error: 'Validation Failed',
@@ -259,7 +280,9 @@ export class ErrorResponseUtils {
     return {
       statusCode: HttpStatus.NOT_FOUND,
       error: 'Not Found',
-      message: id ? `${resource} with ID '${id}' not found` : `${resource} not found`,
+      message: id
+        ? `${resource} with ID '${id}' not found`
+        : `${resource} not found`,
       timestamp: new Date().toISOString(),
       path: '', // Will be set by the filter
     };

@@ -24,14 +24,14 @@ import { SeedingModule } from './database/seeding/seeding.module';
       },
     }),
     ThrottlerModule.forRootAsync({
-      useFactory: () => ([
+      useFactory: () => [
         {
           name: 'short',
           ttl: 1000, // 1 second
           limit: 10, // 10 requests per second
         },
         {
-          name: 'medium', 
+          name: 'medium',
           ttl: 60000, // 1 minute
           limit: 100, // 100 requests per minute per user
         },
@@ -40,7 +40,7 @@ import { SeedingModule } from './database/seeding/seeding.module';
           ttl: 3600000, // 1 hour
           limit: 1000, // 1000 requests per hour per IP
         },
-      ]),
+      ],
     }),
     DatabaseModule,
     ToolsModule,

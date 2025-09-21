@@ -9,6 +9,7 @@ export type { ApiResponse, PaginatedResponse } from '@shared/types';
 
 // Tool API Types
 // Use shared interface for consistency
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ToolResponseDto extends BaseTool {
   // Backend-specific fields can be added here if needed
 }

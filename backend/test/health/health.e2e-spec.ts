@@ -45,9 +45,7 @@ describe('Health Check (e2e)', () => {
     });
 
     it('should be accessible without authentication', () => {
-      return request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      return request(app.getHttpServer()).get('/health').expect(200);
     });
   });
 });

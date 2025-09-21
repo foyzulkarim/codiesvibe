@@ -3,6 +3,7 @@
 import { AITool as SharedAITool, FILTER_OPTIONS } from '@shared/types';
 
 // Use shared interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AITool extends SharedAITool {
   // Frontend-specific fields can be added here if needed
 }
