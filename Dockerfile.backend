@@ -50,7 +50,7 @@ EXPOSE 4000 9229
 LABEL org.opencontainers.image.title="CodiesVibe Backend (Development)"
 LABEL org.opencontainers.image.description="NestJS development environment with hot reload and debugging"
 LABEL org.opencontainers.image.version="${VERSION:-dev}"
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
 
 # Set environment variables for development
@@ -86,7 +86,8 @@ WORKDIR /app
 COPY backend/package*.json ./
 
 # Install only production dependencies with security optimizations
-RUN npm ci --omit=dev --no-audit --no-fund && \
+# Set HUSKY=0 to prevent husky from running during production builds
+RUN HUSKY=0 npm ci --omit=dev --no-audit --no-fund && \
     npm cache clean --force && \
     rm -rf ~/.npm
 
@@ -115,8 +116,8 @@ EXPOSE 4000
 LABEL org.opencontainers.image.title="CodiesVibe Backend (Production)"
 LABEL org.opencontainers.image.description="NestJS production build with enhanced security, health checks, and monitoring"
 LABEL org.opencontainers.image.version="${VERSION:-latest}"
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
-LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT:-unknown}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
 LABEL org.opencontainers.image.vendor="CodiesVibe"
 LABEL org.opencontainers.image.licenses="MIT"
