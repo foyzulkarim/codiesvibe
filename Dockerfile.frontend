@@ -66,10 +66,6 @@ ENV VITE_API_URL=http://backend:4000
 ENV VITE_HMR_HOST=0.0.0.0
 ENV VITE_HMR_PORT=5173
 
-# Health check for development environment
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD node frontend/healthcheck.js || exit 1
-
 # Start development server with hot reload and host binding
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 
@@ -98,9 +94,6 @@ RUN npm install -g serve@14
 # Copy built application from builder stage with proper ownership
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
-# Copy health check script with proper ownership
-COPY --chown=nodejs:nodejs frontend/healthcheck.js ./healthcheck.js
-
 # Create necessary directories and set permissions
 RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 
@@ -125,10 +118,6 @@ ENV NODE_ENV=production
 ENV VITE_API_URL=http://backend:4000
 ENV SERVE_STATIC=true
 ENV SERVE_SINGLE_PAGE=true
-
-# Enhanced health check with better timing for production
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node healthcheck.js || exit 1
 
 # Optimized production server configuration
 CMD ["serve", "-s", "dist", "-l", "3000", "--no-clipboard", "--no-port-switching"]
