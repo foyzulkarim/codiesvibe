@@ -21,7 +21,17 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typecheck": "tsc --noEmit",
     "seed": "npm run build && cross-env SEED_TOOLS=true EXIT_AFTER_SEED=true node dist/src/main.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ci:install": "npm ci",
+    "ci:lint": "npm run lint",
+    "ci:typecheck": "npm run typecheck",
+    "ci:test": "cross-env NODE_ENV=test JWT_SECRET=test-secret npm run test",
+    "ci:test:cov": "cross-env NODE_ENV=test JWT_SECRET=test-secret npm run test:cov",
+    "ci:audit": "npm audit --audit-level=high",
+    "ci:license": "npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary",
+    "ci:all": "npm run ci:install && npm run ci:lint && npm run ci:typecheck && npm run ci:test && npm run ci:test:cov && npm run ci:audit && npm run ci:license",
+    "ci:test-stage": "npm run ci:lint && npm run ci:typecheck && npm run ci:test && npm run ci:test:cov",
+    "ci:security-stage": "npm run ci:audit && npm run ci:license"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.0.1",
