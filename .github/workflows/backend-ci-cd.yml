@@ -138,9 +138,9 @@ jobs:
     needs: [test-backend, security-backend]
     if: always() && (needs.test-backend.result == 'success' || inputs.skip_tests) && (needs.security-backend.result == 'success' || inputs.skip_tests)
     outputs:
-      image: ${{ steps.meta.outputs.tags }}
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
       digest: ${{ steps.build.outputs.digest }}
-      image-id: ${{ steps.meta.outputs.tags }}@${{ steps.build.outputs.digest }}
+      image-id: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ steps.build.outputs.digest }}
     
     steps:
       - name: Checkout code
