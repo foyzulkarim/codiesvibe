@@ -124,7 +124,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
 
         {/* Tags Row */}
         <div className="flex flex-wrap gap-2">
-          {tool.pricing.slice(0, 2).map((price) => (
+          {(Array.isArray(tool.pricing) ? tool.pricing : []).slice(0, 2).map((price) => (
             <span
               key={price}
               className={`px-2 py-1 text-xs font-medium rounded-md bg-success/10 ${getPricingColor([price])}`}

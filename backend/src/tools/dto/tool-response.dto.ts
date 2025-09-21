@@ -178,7 +178,7 @@ export class ToolResponseDto implements BaseTool {
         primary: doc.tags?.primary || [],
         secondary: doc.tags?.secondary || [],
       },
-      createdBy: doc.createdBy.toString(),
+      createdBy: doc.createdBy?.toString() || 'unknown',
       createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString()
     };

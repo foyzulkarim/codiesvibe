@@ -112,44 +112,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # MongoDB Express (Database Admin UI)
-  mongo-express:
-    image: mongo-express:1.0.0
-    container_name: codiesvibe-mongo-express
-    restart: unless-stopped
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
-      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin123
-    networks:
-      - codiesvibe-network
-    depends_on:
-      - mongodb
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # Mailhog (Email testing)
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    container_name: codiesvibe-mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP
-      - "8025:8025"  # Web UI
-    networks:
-      - codiesvibe-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 volumes:
   mongodb_data:

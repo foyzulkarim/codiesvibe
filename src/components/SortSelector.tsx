@@ -7,11 +7,8 @@ interface SortSelectorProps {
 }
 
 const SORT_LABELS = {
-  [SORT_OPTIONS.POPULARITY]: "Popularity",
-  [SORT_OPTIONS.RATING]: "Rating", 
-  [SORT_OPTIONS.REVIEW_COUNT]: "Review Count",
-  [SORT_OPTIONS.CREATED_AT]: "Recently Added",
-  [SORT_OPTIONS.NAME]: "Name A-Z"
+  [SORT_OPTIONS.NAME]: "Name A-Z",
+  [SORT_OPTIONS.CREATED_AT]: "Recently Added"
 };
 
 export function SortSelector({ value, onChange }: SortSelectorProps) {
