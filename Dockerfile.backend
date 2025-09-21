@@ -87,7 +87,7 @@ COPY backend/package*.json ./
 
 # Install only production dependencies with security optimizations
 # Set HUSKY=0 to prevent husky from running during production builds
-RUN HUSKY=0 npm ci --omit=dev --no-audit --no-fund && \
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && \
     npm cache clean --force && \
     rm -rf /root/.npm
 
