@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const http = require('http');
 
 const options = {
@@ -9,13 +10,25 @@ const options = {
 };
 
 const req = http.request(options, (res) => {
-  console.log(`Backend health check: ${res.statusCode === 200 ? 'HEALTHY' : 'UNHEALTHY'} (status: ${res.statusCode})`);
-  process.exit(res.statusCode === 200 ? 0 : 1);
+  if (res.statusCode === 200) {
+    console.log('Health check passed');
+    process.exit(0);
+  } else {
+    console.log(`Health check failed with status: ${res.statusCode}`);
+    process.exit(1);
+  }
 });
 
 req.on('error', (err) => {
-  console.log(`Backend health check: UNHEALTHY (error: ${err.message})`);
+  console.log(`Health check failed: ${err.message}`);
   process.exit(1);
 });
 
+req.on('timeout', () => {
+  console.log('Health check timed out');
+  req.destroy();
+  process.exit(1);
+});
+
+req.setTimeout(5000);
 req.end();
