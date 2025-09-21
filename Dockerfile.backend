@@ -89,7 +89,7 @@ COPY backend/package*.json ./
 # Set HUSKY=0 to prevent husky from running during production builds
 RUN HUSKY=0 npm ci --omit=dev --no-audit --no-fund && \
     npm cache clean --force && \
-    rm -rf ~/.npm
+    rm -rf /root/.npm
 
 # Copy built application from builder stage with proper ownership
 COPY --from=backend-builder --chown=nodejs:nodejs /app/dist ./dist

@@ -11,6 +11,8 @@
     "lint:warn": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test": "echo 'No tests specified' && exit 0",
+    "test:coverage": "echo 'No test coverage configured' && exit 0",
     "prepare": "husky"
   },
   "dependencies": {
