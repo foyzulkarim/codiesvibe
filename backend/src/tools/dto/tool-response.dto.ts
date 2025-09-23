@@ -2,14 +2,14 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BaseTool } from '@shared/types/tool.types';
 
 class ResponseTagsDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Primary category tags',
     type: [String],
     example: ['AI', 'Chatbot'],
   })
   primary!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Secondary category tags',
     type: [String],
     example: ['Productivity', 'Communication', 'Language'],
@@ -18,59 +18,60 @@ class ResponseTagsDto {
 }
 
 export class ToolResponseDto implements BaseTool {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Tool unique identifier',
     example: '507f1f77bcf86cd799439011',
   })
   id!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Tool name',
     example: 'ChatGPT',
   })
   name!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Tool description',
     example: 'Advanced AI chatbot for natural conversations',
   })
   description!: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Detailed tool description',
-    example: 'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, answer questions, help with writing, coding, and many other tasks.',
+    example:
+      'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, answer questions, help with writing, coding, and many other tasks.',
   })
   longDescription?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Pricing models',
     type: [String],
     example: ['Free', 'Paid', 'API'],
   })
   pricing!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Interface types',
     type: [String],
     example: ['Web', 'API', 'Mobile'],
   })
   interface!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Functionality categories',
     type: [String],
     example: ['Text Generation', 'Translation', 'Code Generation'],
   })
   functionality!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Deployment options',
     type: [String],
     example: ['Cloud', 'On-premise'],
   })
   deployment!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Popularity score',
     example: 85000,
     minimum: 0,
@@ -78,7 +79,7 @@ export class ToolResponseDto implements BaseTool {
   })
   popularity!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'User rating',
     example: 4.5,
     minimum: 0,
@@ -86,7 +87,7 @@ export class ToolResponseDto implements BaseTool {
   })
   rating!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Number of reviews',
     example: 1250,
     minimum: 0,
@@ -94,19 +95,19 @@ export class ToolResponseDto implements BaseTool {
   })
   reviewCount!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Last metadata update timestamp',
     example: '2024-01-15T10:30:00.000Z',
   })
   lastUpdated!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Tool logo image URL',
     example: 'https://example.com/chatgpt-logo.png',
   })
   logoUrl!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Feature flags with boolean values',
     type: 'object',
     additionalProperties: { type: 'boolean' },
@@ -119,14 +120,14 @@ export class ToolResponseDto implements BaseTool {
   })
   features!: Record<string, boolean>;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Search keywords for improved discoverability',
     type: [String],
     example: ['chatbot', 'AI assistant', 'natural language', 'conversation'],
   })
   searchKeywords!: string[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Categorization tags with primary and secondary arrays',
     type: ResponseTagsDto,
     example: {
@@ -136,19 +137,19 @@ export class ToolResponseDto implements BaseTool {
   })
   tags!: ResponseTagsDto;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'User who created the tool',
     example: '507f1f77bcf86cd799439012',
   })
   createdBy!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Creation timestamp',
     example: '2024-01-10T08:15:30.000Z',
   })
   createdAt!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Last update timestamp',
     example: '2024-01-15T10:30:00.000Z',
   })
@@ -170,7 +171,10 @@ export class ToolResponseDto implements BaseTool {
       popularity: doc.popularity || 0,
       rating: doc.rating || 0,
       reviewCount: doc.reviewCount || 0,
-      lastUpdated: doc.lastUpdated?.toISOString() || doc.updatedAt?.toISOString() || new Date().toISOString(),
+      lastUpdated:
+        doc.lastUpdated?.toISOString() ||
+        doc.updatedAt?.toISOString() ||
+        new Date().toISOString(),
       logoUrl: doc.logoUrl,
       features: doc.features || {},
       searchKeywords: doc.searchKeywords || [],
@@ -178,9 +182,9 @@ export class ToolResponseDto implements BaseTool {
         primary: doc.tags?.primary || [],
         secondary: doc.tags?.secondary || [],
       },
-      createdBy: doc.createdBy.toString(),
+      createdBy: doc.createdBy?.toString() || 'unknown',
       createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt.toISOString()
+      updatedAt: doc.updatedAt.toISOString(),
     };
   }
 }

@@ -1,0 +1,217 @@
+# CodiesVibe Cloudflare Environment
+# Docker Compose configuration for Cloudflare tunnel deployment
+# Integrates with infrastructure stack (docker-compose.infra.yml)
+# No host ports exposed - all traffic through Cloudflare tunnel
+
+services:
+  # Cloudflare Tunnel Service
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: codiesvibe-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - TUNNEL_METRICS=0.0.0.0:8081
+      - TUNNEL_LOGFILE=/var/log/cloudflared.log
+      - TUNNEL_LOGLEVEL=${TUNNEL_LOGLEVEL:-info}
+      - TUNNEL_TRANSPORT_LOGLEVEL=${TUNNEL_TRANSPORT_LOGLEVEL:-warn}
+      - TUNNEL_RETRIES=${TUNNEL_RETRIES:-5}
+      - TUNNEL_MAX_UPSTREAM_CONNS=${TUNNEL_MAX_UPSTREAM_CONNS:-100}
+    networks:
+      - codiesvibe-network
+    restart: unless-stopped
+    depends_on:
+      nginx:
+        condition: service_healthy
+    # Tunnel metrics and logs
+    volumes:
+      - cloudflared_logs:/var/log
+    # Enhanced security for tunnel
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=10M,mode=1777
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits for tunnel
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8081/metrics || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # Nginx Internal Load Balancer (no external ports)
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: codiesvibe-nginx-cf
+    # Install wget for health checks (cloudflared uses wget)
+    command: sh -c "apk add --no-cache wget && nginx -g 'daemon off;'"
+    # NO HOST PORTS - internal only, accessed via Cloudflare tunnel
+    expose:
+      - "80"
+    volumes:
+      # Nginx configuration for Cloudflare
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Static files from frontend build
+      - frontend_dist:/usr/share/nginx/html:ro
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
+      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=4000
+    networks:
+      - codiesvibe-network
+    depends_on:
+      frontend:
+        condition: service_completed_successfully
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # Frontend Production Service (Pre-built from GHCR, build artifacts served by Nginx)
+  frontend:
+    # Use pre-built GHCR image for Cloudflare deployments
+    image: ghcr.io/foyzulkarim/codiesvibe-frontend:${VERSION:-latest}
+    # Fallback: Build locally if GHCR image unavailable
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-cloudflare}
+    container_name: codiesvibe-frontend-cf
+    volumes:
+      # Share built files with Nginx
+      - frontend_dist:/shared/dist
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=/api  # Served through Nginx proxy
+      - VITE_APP_VERSION=${VERSION:-cloudflare}
+      - VITE_BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+      - VITE_GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+      # Cloudflare-specific environment variables
+      - VITE_DEPLOYMENT_TYPE=cloudflare
+      - VITE_CDN_URL=${CLOUDFLARE_CDN_URL:-}
+    networks:
+      - codiesvibe-network
+    restart: "no"  # One-time build container
+    user: root  # Need root to write to volume
+    # Copy built files to shared volume and exit
+    command: sh -c "mkdir -p /shared/dist && cp -r /app/dist/* /shared/dist/ && echo 'Frontend build copied to volume for Cloudflare'"
+
+  # Backend Production Service (internal only)
+  backend:
+    # Use pre-built GHCR image for Cloudflare deployments
+    image: ghcr.io/foyzulkarim/codiesvibe-backend:${VERSION:-latest}
+    # Fallback: Build locally if GHCR image unavailable
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-cloudflare}
+    container_name: codiesvibe-backend-cf
+    # NO HOST PORTS - internal only, accessed via Nginx/Cloudflare
+    expose:
+      - "4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      # Infrastructure service connections (from docker-compose.infra.yml)
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+      # Production secrets (use Cloudflare environment variables or external secret management)
+      - JWT_SECRET=${JWT_SECRET:-cloudflare-jwt-secret-change-immediately}
+      - COOKIE_SECRET=${COOKIE_SECRET:-cloudflare-cookie-secret-min-32-chars}
+      - CSRF_SECRET=${CSRF_SECRET:-cloudflare-csrf-secret-min-32-chars}
+      # CORS configuration for Cloudflare domain
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://your-cloudflare-domain.com}
+      # Production rate limiting (stricter for public access)
+      - RATE_LIMIT_WINDOW=900000  # 15 minutes
+      - RATE_LIMIT_MAX=50         # More restrictive for public tunnel
+      # Cloudflare-specific settings
+      - TRUST_PROXY=true  # Trust Cloudflare proxy headers
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID:-}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      # Production settings
+      - SHUTDOWN_TIMEOUT=30000
+      # GitHub OAuth (configure with Cloudflare domain)
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL:-https://your-cloudflare-domain.com/api/auth/github/callback}
+      # Monitoring endpoints (available from infrastructure)
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+      - LOKI_URL=http://loki:3100
+      # Logging configuration for Cloudflare
+      - LOG_LEVEL=${LOG_LEVEL:-warn}  # Less verbose for production tunnel
+      - LOG_FORMAT=json              # Structured logs for Cloudflare
+    networks:
+      - codiesvibe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Enhanced security for public tunnel exposure
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=50M,mode=1777  # Smaller temp space
+      - /app/logs:rw,size=25M,mode=0755  # Restricted log space
+    # Resource limits for public-facing deployment
+    deploy:
+      resources:
+        limits:
+          memory: 256M              # More restrictive for public access
+          cpus: '0.3'
+        reservations:
+          memory: 128M
+          cpus: '0.15'
+    # Security: Drop all capabilities except required ones
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    # Prevent privilege escalation
+    security_opt:
+      - no-new-privileges:true
+
+# External network configuration (must be created by docker-compose.infra.yml first)
+networks:
+  codiesvibe-network:
+    external: true
+    name: codiesvibe-network
+
+# Volume definitions for Cloudflare deployment
+volumes:
+  # Frontend build artifacts shared between frontend build and nginx
+  frontend_dist:
+    driver: local
+  # Cloudflare tunnel logs
+  cloudflared_logs:
+    driver: local

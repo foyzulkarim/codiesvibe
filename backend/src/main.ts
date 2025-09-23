@@ -13,23 +13,26 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://yourdomain.com'] // Replace with actual frontend URLs in production
-      : true,
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? ['https://yourdomain.com'] // Replace with actual frontend URLs in production
+        : true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
   // Global validation pipe with enhanced error messages
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
-    errorHttpStatusCode: 400,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      errorHttpStatusCode: 400,
+    }),
+  );
 
   // Set global prefix for all routes
   app.setGlobalPrefix('api', {
@@ -39,33 +42,41 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('NestJS REST API Backend')
-    .setDescription('Secure REST API with GitHub OAuth authentication and Tool management')
+    .setDescription(
+      'Secure REST API with GitHub OAuth authentication and Tool management',
+    )
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
   // Optionally run tools seeding on startup when SEED_TOOLS=true
-  const shouldSeed = (process.env.SEED_TOOLS || configService.get<string>('SEED_TOOLS')) === 'true';
-  const exitAfterSeed = (process.env.EXIT_AFTER_SEED || configService.get<string>('EXIT_AFTER_SEED')) === 'true';
+  const shouldSeed =
+    (process.env.SEED_TOOLS || configService.get<string>('SEED_TOOLS')) ===
+    'true';
+  const exitAfterSeed =
+    (process.env.EXIT_AFTER_SEED ||
+      configService.get<string>('EXIT_AFTER_SEED')) === 'true';
   if (shouldSeed) {
     const seedService = app.get(EnhancedSeedService);
     await seedService.seedTools();
 
     // If EXIT_AFTER_SEED=true, do not start HTTP server; exit cleanly
     if (exitAfterSeed) {
-      console.log('✅ Seeding finished. EXIT_AFTER_SEED=true => exiting without starting server.');
+      console.log(
+        '✅ Seeding finished. EXIT_AFTER_SEED=true => exiting without starting server.',
+      );
       await app.close();
       process.exit(0);
       return;
     }
   }
 
-  const port = configService.get<number>('port') || 3000;
+  const port = configService.get<number>('port') || 4000;
   await app.listen(port);
-  
+
   console.log(`🚀 Application is running on: http://localhost:${port}`);
   console.log(`📚 Swagger documentation: http://localhost:${port}/docs`);
   console.log(`🏥 Health check: http://localhost:${port}/health`);

@@ -1,0 +1,84 @@
+# docker-compose.override.yml.example
+# Copy this file to docker-compose.override.yml and customize for your local development environment
+# This file is automatically loaded by docker-compose and takes precedence over docker-compose.dev.yml
+
+version: '3.8'
+
+services:
+  frontend:
+    # Override frontend port if needed
+    ports:
+      - "3001:3000"  # Change left port if 3000 is in use locally
+    
+    # Add additional environment variables for local development
+    environment:
+      - VITE_API_URL=http://localhost:4001/api  # Match backend override port
+      - VITE_DEBUG=true
+      - VITE_LOCAL_DEV=true
+    
+    # Override volume mounts if needed (e.g., for different source code location)
+    # volumes:
+    #   - /custom/path/to/frontend:/app
+    #   - /app/node_modules
+    
+    # Add additional development tools or debugging
+    # command: npm run dev -- --host 0.0.0.0 --port 3000
+
+  backend:
+    # Override backend port if needed
+    ports:
+      - "4001:4000"  # Change left port if 4000 is in use locally
+      - "9229:9229"  # Debug port override
+    
+    # Add additional environment variables for local development
+    environment:
+      - NODE_ENV=development
+      - DEBUG=*
+      - MONGODB_URI=mongodb://host.docker.internal:27017/nestjs-api-dev  # Use local MongoDB
+      - JWT_SECRET=local-development-secret-not-for-production
+      - GITHUB_CLIENT_ID=your-local-github-client-id
+      - GITHUB_CLIENT_SECRET=your-local-github-client-secret
+      - GITHUB_CALLBACK_URL=http://localhost:4001/api/auth/github/callback
+    
+    # Override volume mounts if needed
+    # volumes:
+    #   - /custom/path/to/backend:/app
+    #   - /app/node_modules
+    
+    # Override command for debugging
+    # command: npm run start:debug
+
+  # Add local services that might not be needed in all environments
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+
+  # mailhog:
+  #   image: mailhog/mailhog:latest
+  #   ports:
+  #     - "1025:1025"  # SMTP server
+  #     - "8025:8025"  # Web UI
+
+  # Add database GUI for local development
+  # mongo-express:
+  #   image: mongo-express:latest
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     - ME_CONFIG_MONGODB_URL=mongodb://host.docker.internal:27017
+  #     - ME_CONFIG_BASICAUTH_USERNAME=admin
+  #     - ME_CONFIG_BASICAUTH_PASSWORD=admin
+  #   depends_on:
+  #     - backend
+
+# Local development volumes
+# volumes:
+#   redis_data:
+
+# Local development networks
+# networks:
+#   local-dev:
+#     driver: bridge

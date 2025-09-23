@@ -1,0 +1,34 @@
+apiVersion: 1
+
+datasources:
+  # Prometheus datasource for metrics
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+    secureJsonData: {}
+
+  # Loki datasource for logs (if implemented later)
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      maxLines: 1000
+      timeout: "60s"
+    secureJsonData: {}
+
+deleteDatasources:
+  # Remove any existing datasources with these names to avoid conflicts
+  - name: Prometheus
+    orgId: 1
+  - name: Loki
+    orgId: 1

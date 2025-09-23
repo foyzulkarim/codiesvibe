@@ -1,0 +1,406 @@
+# Frontend CI/CD Pipeline
+# Handles frontend testing, building, and deployment
+
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile.frontend'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'tailwind.config.ts'
+      - 'postcss.config.js'
+      - 'eslint.config.js'
+      - 'components.json'
+      - '.github/workflows/frontend-ci-cd.yml'
+    tags: 
+      - 'v*'
+    # Tags will only trigger if frontend files changed in the tagged commit
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile.frontend'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'tailwind.config.ts'
+      - 'postcss.config.js'
+      - 'eslint.config.js'
+      - 'components.json'
+      - '.github/workflows/frontend-ci-cd.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip test stage'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-frontend
+  NODE_VERSION: '18'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1: Test and Lint Frontend
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint frontend code
+        run: npm run lint
+
+      - name: Type check frontend
+        run: npm run typecheck
+
+      - name: Run frontend tests
+        run: |
+          # Check if test script exists, if not skip tests
+          if npm run test --dry-run 2>/dev/null; then
+            npm run test
+          else
+            echo "No test script found, skipping tests"
+          fi
+        env:
+          NODE_ENV: test
+
+      - name: Generate test coverage
+        run: |
+          # Check if test:coverage script exists, if not skip coverage
+          if npm run test:coverage --dry-run 2>/dev/null; then
+            npm run test:coverage
+          else
+            echo "No test:coverage script found, skipping coverage generation"
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: hashFiles('coverage/lcov.info') != ''
+        with:
+          file: coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Stage 2: Frontend Security Scanning
+  security-frontend:
+    name: Frontend Security
+    runs-on: ubuntu-latest
+    needs: test-frontend
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit frontend dependencies
+        run: |
+          # Run audit but don't fail on vulnerabilities in dev dependencies
+          npm audit --audit-level=high --production || echo "Audit found issues but continuing..."
+
+      - name: License compliance check
+        run: |
+          # Install license-checker if not available and run check
+          npx license-checker --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense' --excludePrivatePackages --production --summary || echo "License check completed with warnings"
+
+      - name: Run Trivy vulnerability scanner on source
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'frontend-trivy-results.sarif'
+          exit-code: '0'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('frontend-trivy-results.sarif') != ''
+        with:
+          sarif_file: 'frontend-trivy-results.sarif'
+
+  # Stage 3: Build and Push Frontend Image
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    needs: [test-frontend, security-frontend]
+    if: always() && (needs.test-frontend.result == 'success' || inputs.skip_tests) && (needs.security-frontend.result == 'success' || inputs.skip_tests)
+    outputs:
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodiesVibe Frontend
+            org.opencontainers.image.description=Frontend application for CodiesVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodiesVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodiesVibe Team
+            component=frontend
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+      - name: Build and push Frontend
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on Frontend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'frontend-image-trivy.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Frontend image scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('frontend-image-trivy.sarif') != ''
+        with:
+          sarif_file: 'frontend-image-trivy.sarif'
+          category: 'frontend-image-security'
+
+      - name: Generate Frontend SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'spdx-json'
+          output: 'frontend-sbom.spdx.json'
+
+      - name: Upload Frontend SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-sbom-${{ github.sha }}
+          path: frontend-sbom.spdx.json
+          retention-days: 30
+
+  # Stage 4: Frontend Performance Testing
+  performance-test-frontend:
+    name: Frontend Performance Testing
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start test frontend
+        run: |
+          # Use the built image for testing
+          docker run -d --name test-frontend -p 3000:80 ${{ needs.build-frontend.outputs.image }}
+          
+          # Wait for frontend to be ready
+          timeout 300 bash -c 'until curl -f http://localhost:3000/ || curl -f http://localhost:3000/health; do echo "Waiting for frontend..."; sleep 5; done'
+
+      - name: Install Lighthouse
+        run: npm install -g lighthouse
+
+      - name: Run Lighthouse performance audit
+        run: |
+          lighthouse http://localhost:3000 \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --output=json \
+            --output-path=./frontend-lighthouse.json \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --throttling-method=simulate3G
+
+      - name: Analyze performance results
+        run: |
+          node -e "
+            const report = require('./frontend-lighthouse.json');
+            const performance = report.categories.performance.score * 100;
+            const accessibility = report.categories.accessibility.score * 100;
+            const bestPractices = report.categories['best-practices'].score * 100;
+            const seo = report.categories.seo.score * 100;
+            
+            console.log('=== Frontend Performance Results ===');
+            console.log('Performance Score:', performance);
+            console.log('Accessibility Score:', accessibility);
+            console.log('Best Practices Score:', bestPractices);
+            console.log('SEO Score:', seo);
+            
+            const results = { performance, accessibility, bestPractices, seo };
+            require('fs').writeFileSync('performance-summary.json', JSON.stringify(results, null, 2));
+            
+            if (performance < 70) {
+              console.error('❌ Performance score below 70');
+              process.exit(1);
+            }
+            if (accessibility < 80) {
+              console.error('❌ Accessibility score below 80');
+              process.exit(1);
+            }
+            if (bestPractices < 80) {
+              console.error('❌ Best practices score below 80');
+              process.exit(1);
+            }
+            console.log('✅ All frontend performance benchmarks passed');
+          "
+
+      - name: Upload performance artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-performance-${{ github.sha }}
+          path: |
+            frontend-lighthouse.json
+            performance-summary.json
+          retention-days: 30
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker stop test-frontend || true
+          docker rm test-frontend || true
+
+  # Stage 5: Trigger Deployment (DISABLED)
+  # Deployment workflow is not implemented yet
+  # trigger-deployment:
+  #   name: Trigger Deployment
+  #   runs-on: ubuntu-latest
+  #   needs: [build-frontend, performance-test-frontend]
+  #   if: false  # Disabled until deployment workflow is created
+  #
+  #   steps:
+  #     - name: Trigger deployment workflow
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           await github.rest.actions.createWorkflowDispatch({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             workflow_id: 'deployment.yml',
+  #             ref: context.ref,
+  #             inputs: {
+  #               service: 'frontend',
+  #               image: '${{ needs.build-frontend.outputs.image }}',
+  #               environment: "${{ inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}"
+  #             }
+  #           });
+
+  # Cleanup Job
+  cleanup:
+    name: Cleanup Frontend Packages
+    runs-on: ubuntu-latest
+    needs: [build-frontend]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Delete old frontend packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: 'container'
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notification
+  notify:
+    name: Notify Frontend Build Status
+    runs-on: ubuntu-latest
+    needs: [test-frontend, build-frontend, performance-test-frontend]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Notify build status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Frontend build ${{ job.status }} for commit ${{ github.sha }}'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,9 +1,9 @@
-import { 
-  ValidatorConstraint, 
-  ValidatorConstraintInterface, 
+import {
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
   ValidationArguments,
   registerDecorator,
-  ValidationOptions 
+  ValidationOptions,
 } from 'class-validator';
 
 /**
@@ -11,23 +11,25 @@ import {
  * Ensures all values in the features object are boolean
  */
 @ValidatorConstraint({ name: 'isFeaturesObject', async: false })
-export class IsFeaturesObjectConstraint implements ValidatorConstraintInterface {
+export class IsFeaturesObjectConstraint
+  implements ValidatorConstraintInterface
+{
   validate(value: any, args: ValidationArguments) {
     if (value === null || value === undefined) {
       return true; // Allow null/undefined, will be handled by @IsOptional
     }
-    
+
     if (typeof value !== 'object' || Array.isArray(value)) {
       return false; // Must be an object, not array
     }
-    
+
     // Check that all values are boolean (after transformation)
     for (const [key, val] of Object.entries(value)) {
       if (typeof val !== 'boolean') {
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -46,36 +48,36 @@ export class IsTagsStructureConstraint implements ValidatorConstraintInterface {
     if (value === null || value === undefined) {
       return false; // Tags are required
     }
-    
+
     if (typeof value !== 'object' || Array.isArray(value)) {
       return false; // Must be an object
     }
-    
+
     // Must have primary property
     if (!value.hasOwnProperty('primary') || !Array.isArray(value.primary)) {
       return false;
     }
-    
+
     // Must have secondary property
     if (!value.hasOwnProperty('secondary') || !Array.isArray(value.secondary)) {
       return false;
     }
-    
+
     // Primary must be non-empty array of strings
     if (value.primary.length === 0) {
       return false;
     }
-    
+
     // All primary elements must be strings
     if (!value.primary.every((item: any) => typeof item === 'string')) {
       return false;
     }
-    
+
     // All secondary elements must be strings (can be empty array)
     if (!value.secondary.every((item: any) => typeof item === 'string')) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -89,16 +91,18 @@ export class IsTagsStructureConstraint implements ValidatorConstraintInterface {
  * Allows partial updates of tags object
  */
 @ValidatorConstraint({ name: 'isUpdateTagsStructure', async: false })
-export class IsUpdateTagsStructureConstraint implements ValidatorConstraintInterface {
+export class IsUpdateTagsStructureConstraint
+  implements ValidatorConstraintInterface
+{
   validate(value: any, args: ValidationArguments) {
     if (value === null || value === undefined) {
       return true; // Allow null/undefined for optional updates
     }
-    
+
     if (typeof value !== 'object' || Array.isArray(value)) {
       return false; // Must be an object
     }
-    
+
     // If primary is provided, it must be array of strings
     if (value.hasOwnProperty('primary')) {
       if (!Array.isArray(value.primary)) {
@@ -108,7 +112,7 @@ export class IsUpdateTagsStructureConstraint implements ValidatorConstraintInter
         return false;
       }
     }
-    
+
     // If secondary is provided, it must be array of strings
     if (value.hasOwnProperty('secondary')) {
       if (!Array.isArray(value.secondary)) {
@@ -118,7 +122,7 @@ export class IsUpdateTagsStructureConstraint implements ValidatorConstraintInter
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -132,16 +136,18 @@ export class IsUpdateTagsStructureConstraint implements ValidatorConstraintInter
  * Ensures each keyword is a string with max length 256
  */
 @ValidatorConstraint({ name: 'isValidSearchKeywords', async: false })
-export class IsValidSearchKeywordsConstraint implements ValidatorConstraintInterface {
+export class IsValidSearchKeywordsConstraint
+  implements ValidatorConstraintInterface
+{
   validate(value: any, args: ValidationArguments) {
     if (!Array.isArray(value)) {
       return false;
     }
-    
+
     if (value.length === 0) {
       return false; // Must be non-empty
     }
-    
+
     // Each element must be string with max length 256
     for (const keyword of value) {
       if (typeof keyword !== 'string') {
@@ -151,7 +157,7 @@ export class IsValidSearchKeywordsConstraint implements ValidatorConstraintInter
         return false;
       }
     }
-    
+
     return true;
   }
 
@@ -165,14 +171,16 @@ export class IsValidSearchKeywordsConstraint implements ValidatorConstraintInter
  * Provides more detailed validation for rating, popularity, reviewCount
  */
 @ValidatorConstraint({ name: 'isValidBusinessRange', async: false })
-export class IsValidBusinessRangeConstraint implements ValidatorConstraintInterface {
+export class IsValidBusinessRangeConstraint
+  implements ValidatorConstraintInterface
+{
   validate(value: any, args: ValidationArguments) {
     const [fieldName] = args.constraints;
-    
+
     if (typeof value !== 'number') {
       return false;
     }
-    
+
     switch (fieldName) {
       case 'popularity':
         return value >= 0 && value <= 1000000 && Number.isInteger(value);
@@ -187,7 +195,7 @@ export class IsValidBusinessRangeConstraint implements ValidatorConstraintInterf
 
   defaultMessage(args: ValidationArguments) {
     const [fieldName] = args.constraints;
-    
+
     switch (fieldName) {
       case 'popularity':
         return 'popularity must be an integer between 0 and 1,000,000';
@@ -207,7 +215,7 @@ export class IsValidBusinessRangeConstraint implements ValidatorConstraintInterf
  * Validates that the value is a proper features object with boolean values
  */
 export function IsFeaturesObject(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
@@ -222,7 +230,7 @@ export function IsFeaturesObject(validationOptions?: ValidationOptions) {
  * Validates that the value is a proper tags structure for create operations
  */
 export function IsTagsStructure(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
@@ -237,7 +245,7 @@ export function IsTagsStructure(validationOptions?: ValidationOptions) {
  * Validates that the value is a proper tags structure for update operations
  */
 export function IsUpdateTagsStructure(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
@@ -252,7 +260,7 @@ export function IsUpdateTagsStructure(validationOptions?: ValidationOptions) {
  * Validates search keywords array with business rules
  */
 export function IsValidSearchKeywords(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
@@ -266,8 +274,11 @@ export function IsValidSearchKeywords(validationOptions?: ValidationOptions) {
 /**
  * Validates business numeric ranges (popularity, rating, reviewCount)
  */
-export function IsValidBusinessRange(fieldName: 'popularity' | 'rating' | 'reviewCount', validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+export function IsValidBusinessRange(
+  fieldName: 'popularity' | 'rating' | 'reviewCount',
+  validationOptions?: ValidationOptions,
+) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

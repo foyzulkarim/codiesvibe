@@ -22,11 +22,11 @@ export class HealthController {
     const healthResult = await this.health.check([
       () => this.db.pingCheck('database'),
     ]);
-    
+
     return {
       ...healthResult,
       timestamp: new Date().toISOString(),
-      database: healthResult.info?.database || healthResult.details?.database
+      database: healthResult.info?.database || healthResult.details?.database,
     };
   }
 }

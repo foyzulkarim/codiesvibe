@@ -1,0 +1,291 @@
+# Environment Configuration Contract
+# Defines required environment variables and their validation rules
+
+# Development Environment Variables
+development-environment:
+  required_variables:
+    NODE_ENV:
+      value: development
+      validation: literal
+      description: Node.js environment setting
+
+    MONGODB_URI:
+      pattern: "mongodb://.*"
+      validation: connection-test
+      description: MongoDB connection string
+      example: "mongodb://localhost:27017/codiesvibe_dev"
+
+    VITE_API_URL:
+      pattern: "https?://.*"
+      validation: url-format
+      description: Backend API URL for Vite frontend
+      example: "http://localhost:4000"
+
+    LOG_LEVEL:
+      default: debug
+      allowed_values: [error, warn, info, debug]
+      description: Application logging level
+
+    JWT_SECRET:
+      required: false
+      pattern: ".{32,}"
+      validation: min-length
+      description: JWT signing secret (dev only)
+      security: low-entropy-acceptable
+
+  optional_variables:
+    PORT:
+      default: 4000
+      validation: port-number
+      description: Backend server port
+
+    CORS_ORIGIN:
+      default: "http://localhost:3000"
+      pattern: "https?://.*"
+      description: Allowed CORS origins for development
+
+    DEBUG_PORT:
+      default: 9229
+      validation: port-number
+      description: Node.js debugger port
+
+    TRUST_PROXY:
+      default: false
+      type: boolean
+      description: Trust proxy headers in development
+
+# Production Environment Variables
+production-environment:
+  required_variables:
+    NODE_ENV:
+      value: production
+      validation: literal
+      description: Node.js environment setting
+
+    MONGODB_URI:
+      pattern: "mongodb://.*"
+      validation: connection-test
+      description: MongoDB connection string
+      security: secret
+      example: "mongodb://username:password@mongo.example.com:27017/codiesvibe"
+
+    JWT_SECRET:
+      required: true
+      pattern: ".{64,}"
+      validation: min-length
+      security: secret
+      description: JWT signing secret
+      requirements: high-entropy
+
+    API_URL:
+      pattern: "https://.*"
+      validation: url-format
+      description: Production API URL
+      example: "https://api.codiesvibe.com"
+
+    FRONTEND_URL:
+      pattern: "https://.*"
+      validation: url-format
+      description: Production frontend URL
+      example: "https://codiesvibe.com"
+
+    LOG_LEVEL:
+      default: info
+      allowed_values: [error, warn, info]
+      description: Application logging level
+
+    CORS_ORIGIN:
+      pattern: "https://.*"
+      validation: url-format
+      description: Allowed CORS origins
+
+  ssl_variables:
+    SSL_CERT_EMAIL:
+      pattern: ".*@.*\\..*"
+      validation: email-format
+      description: Email for Let's Encrypt certificates
+
+    DOMAIN_NAME:
+      pattern: "[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+      validation: domain-format
+      description: Primary domain name
+
+  optional_variables:
+    RATE_LIMIT_REQUESTS:
+      default: 100
+      type: integer
+      description: Rate limiting requests per minute
+
+    SESSION_TIMEOUT:
+      default: 3600
+      type: integer
+      description: Session timeout in seconds
+
+# Cloudflare Environment Variables
+cloudflare-environment:
+  inherits: production-environment
+
+  additional_required:
+    TUNNEL_TOKEN:
+      pattern: "[a-zA-Z0-9._-]+"
+      validation: cloudflare-token
+      security: secret
+      description: Cloudflare tunnel authentication token
+
+    CF_ZONE_ID:
+      pattern: "[a-f0-9]{32}"
+      validation: hex-32
+      description: Cloudflare zone identifier
+
+  overrides:
+    API_URL:
+      pattern: "https://.*\\..*\\.com"
+      description: Cloudflare tunneled API URL
+
+    FRONTEND_URL:
+      pattern: "https://.*\\..*\\.com"
+      description: Cloudflare tunneled frontend URL
+
+# Pre-built Images Environment
+prebuilt-environment:
+  inherits: production-environment
+
+  additional_required:
+    DOCKER_REGISTRY:
+      pattern: "[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+      validation: registry-url
+      description: Docker registry URL
+      example: "registry.codiesvibe.com"
+
+    IMAGE_TAG:
+      pattern: "[a-zA-Z0-9.-]+"
+      validation: docker-tag
+      description: Docker image tag
+      example: "v1.0.0"
+
+    REGISTRY_USERNAME:
+      security: secret
+      description: Docker registry username
+
+    REGISTRY_PASSWORD:
+      security: secret
+      description: Docker registry password
+
+# Monitoring Environment Variables
+monitoring-environment:
+  required_variables:
+    PROMETHEUS_PORT:
+      default: 9090
+      validation: port-number
+      description: Prometheus metrics port
+
+    GRAFANA_ADMIN_PASSWORD:
+      pattern: ".{12,}"
+      validation: min-length
+      security: secret
+      description: Grafana admin password
+
+    GRAFANA_PORT:
+      default: 3000
+      validation: port-number
+      description: Grafana dashboard port
+
+    LOKI_PORT:
+      default: 3100
+      validation: port-number
+      description: Loki log aggregation port
+
+  optional_variables:
+    ALERTMANAGER_WEBHOOK:
+      pattern: "https://.*"
+      validation: url-format
+      description: Webhook for alerts
+
+    RETENTION_PERIOD:
+      default: "15d"
+      pattern: "[0-9]+[dwmy]"
+      description: Metrics retention period
+
+# Security Requirements
+security-requirements:
+  secret_variables:
+    storage: docker-secrets
+    rotation: recommended
+    audit: required
+    encryption: at-rest-and-in-transit
+
+  validation_rules:
+    connection_tests:
+      mongodb: required
+      external_apis: recommended
+
+    format_validation:
+      urls: strict
+      emails: strict
+      domains: strict
+
+    length_requirements:
+      passwords: minimum-12-chars
+      secrets: minimum-32-chars
+      tokens: minimum-16-chars
+
+# Validation Schema
+environment-validation:
+  startup_checks:
+    required:
+      - All required variables present
+      - MongoDB connection successful
+      - Port availability verified
+      - File permissions correct
+
+  runtime_checks:
+    recommended:
+      - Periodic connection health
+      - Certificate expiration monitoring
+      - Secret rotation alerts
+
+  failure_behavior:
+    missing_required: fail-fast
+    invalid_format: fail-fast
+    connection_failure: fail-fast
+    missing_optional: warn-and-continue
+
+# Environment File Templates
+env-file-templates:
+  development:
+    file: .env.development
+    template: |
+      NODE_ENV=development
+      MONGODB_URI=mongodb://localhost:27017/codiesvibe_dev
+      REACT_APP_API_URL=http://localhost:3001
+      LOG_LEVEL=debug
+      HOT_RELOAD=true
+      DEBUG_PORT=9229
+
+  production:
+    file: .env.production
+    template: |
+      NODE_ENV=production
+      MONGODB_URI=<MONGODB_CONNECTION_STRING>
+      JWT_SECRET=<GENERATED_SECRET_64_CHARS>
+      API_URL=https://api.codiesvibe.com
+      FRONTEND_URL=https://codiesvibe.com
+      SSL_CERT_EMAIL=admin@codiesvibe.com
+      DOMAIN_NAME=codiesvibe.com
+      LOG_LEVEL=info
+
+  example:
+    file: .env.example
+    template: |
+      # Environment Configuration Example
+      # Copy to .env.development or .env.production and fill in values
+
+      NODE_ENV=development
+      MONGODB_URI=mongodb://localhost:27017/codiesvibe
+      REACT_APP_API_URL=http://localhost:3001
+      LOG_LEVEL=info
+
+      # Production only
+      # JWT_SECRET=your-secret-key-here
+      # SSL_CERT_EMAIL=your-email@domain.com
+      # DOMAIN_NAME=your-domain.com

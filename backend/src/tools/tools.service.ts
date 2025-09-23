@@ -19,7 +19,7 @@ class InputSanitizer {
     if (!Array.isArray(input)) {
       throw new Error('Input must be an array');
     }
-    return input.map(item => this.sanitizeString(item));
+    return input.map((item) => this.sanitizeString(item));
   }
 
   static sanitizeNumber(input: number): number {
@@ -31,52 +31,46 @@ class InputSanitizer {
 
   static sanitizeFilters(filters: SearchFilters): SearchFilters {
     const sanitized: SearchFilters = {};
-    
-    if (filters.functionality) {
-      sanitized.functionality = this.sanitizeArray(filters.functionality);
-    }
-    
-    if (filters.tags) {
-      sanitized.tags = this.sanitizeArray(filters.tags);
-    }
-    
+
     if (filters.deployment) {
       sanitized.deployment = this.sanitizeArray(filters.deployment);
     }
-    
-    if (filters.minRating !== undefined) {
-      sanitized.minRating = this.sanitizeNumber(filters.minRating);
+
+    if (filters.functionality) {
+      sanitized.functionality = this.sanitizeArray(filters.functionality);
     }
-    
-    if (filters.maxRating !== undefined) {
-      sanitized.maxRating = this.sanitizeNumber(filters.maxRating);
+
+    if (filters.interface) {
+      sanitized.interface = this.sanitizeArray(filters.interface);
     }
-    
+
+    if (filters.pricing) {
+      sanitized.pricing = this.sanitizeArray(filters.pricing);
+    }
+
     return sanitized;
   }
 }
 
 export interface SearchFilters {
-  functionality?: string[];
-  tags?: string[];
-  pricing?: string[];
-  interface?: string[];
-  minRating?: number;
-  maxRating?: number;
   deployment?: string[];
+  functionality?: string[];
+  interface?: string[];
+  pricing?: string[];
 }
 
 export interface SearchOptions {
-  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance' | 'name';
+  sortBy?: 'name' | 'createdAt';
 }
 
 @Injectable()
 export class ToolsService {
-  constructor(
-    @InjectModel(Tool.name) private toolModel: Model<ToolDocument>,
-  ) {}
+  constructor(@InjectModel(Tool.name) private toolModel: Model<ToolDocument>) {}
 
-  async create(createToolDto: CreateToolDto, userId: string): Promise<ToolDocument> {
+  async create(
+    createToolDto: CreateToolDto,
+    userId: string,
+  ): Promise<ToolDocument> {
     // Apply default values for enhanced fields
     const toolData = {
       ...createToolDto,
@@ -87,30 +81,48 @@ export class ToolsService {
       features: createToolDto.features ?? {},
       tags: {
         primary: createToolDto.tags?.primary ?? [],
-        secondary: createToolDto.tags?.secondary ?? []
+        secondary: createToolDto.tags?.secondary ?? [],
       },
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
 
     const createdTool = new this.toolModel(toolData);
     return createdTool.save();
   }
 
-  async findAll(
-    userId: string, 
+  async findTools(
+    userId: string,
     options: SearchOptions = {},
-    filters: SearchFilters = {}
+    filters: SearchFilters = {},
+    searchQuery?: string,
   ): Promise<ToolDocument[]> {
     const { sortBy = 'createdAt' } = options;
 
     // Sanitize filters to prevent NoSQL injection
     const sanitizedFilters = InputSanitizer.sanitizeFilters(filters);
-    const query = this.buildFilterQuery(userId, sanitizedFilters);
-    const sortOrder = this.buildSortOrder(sortBy);
-    
-    // Fetch all documents since we have a small dataset
+
+    // Build base MongoDB query with filters
+    let mongoQuery = this.buildFilterQuery(userId, sanitizedFilters);
+
+    // Add text search if query provided
+    if (searchQuery && searchQuery.trim()) {
+      const sanitizedQuery = InputSanitizer.sanitizeString(searchQuery);
+      const searchRegex = new RegExp(sanitizedQuery, 'i'); // Case-insensitive search
+      mongoQuery = {
+        ...mongoQuery,
+        $or: [
+          { name: { $regex: searchRegex } },
+          { description: { $regex: searchRegex } },
+          { searchKeywords: { $in: [searchRegex] } },
+        ],
+      };
+    }
+
+    // Apply sorting and execute
+    const sortOrder = this.buildSimplifiedSortOrder(sortBy);
+
     const data = await this.toolModel
-      .find(query)
+      .find(mongoQuery)
       .sort(sortOrder)
       .lean()
       .exec();
@@ -120,12 +132,12 @@ export class ToolsService {
 
   async findOne(id: string, userId: string): Promise<ToolDocument> {
     const query: any = { _id: id };
-    
+
     // Only filter by user if not public access
     if (userId && userId !== 'public') {
       query.createdBy = userId;
     }
-    
+
     const tool = await this.toolModel.findOne(query).lean().exec();
     if (!tool) {
       throw new NotFoundException('Tool not found');
@@ -133,24 +145,32 @@ export class ToolsService {
     return tool as ToolDocument;
   }
 
-  async update(id: string, updateToolDto: UpdateToolDto, userId: string): Promise<ToolDocument> {
+  async update(
+    id: string,
+    updateToolDto: UpdateToolDto,
+    userId: string,
+  ): Promise<ToolDocument> {
     // Handle partial updates for complex fields
     const updateData: any = { ...updateToolDto };
-    
+
     // Remove version from updateData as it's used for concurrency control
     const expectedVersion = updateData.version;
     delete updateData.version;
-    
+
     // Update lastUpdated timestamp
     updateData.lastUpdated = new Date();
-    
+
     // Handle partial tags update
     if (updateToolDto.tags) {
-      const existingTool = await this.toolModel.findOne({ _id: id, createdBy: userId });
+      const existingTool = await this.toolModel.findOne({
+        _id: id,
+        createdBy: userId,
+      });
       if (existingTool) {
         updateData.tags = {
           primary: updateToolDto.tags.primary ?? existingTool.tags.primary,
-          secondary: updateToolDto.tags.secondary ?? existingTool.tags.secondary
+          secondary:
+            updateToolDto.tags.secondary ?? existingTool.tags.secondary,
         };
       }
     }
@@ -164,18 +184,22 @@ export class ToolsService {
       query.__v = expectedVersion;
     }
 
-    const tool = await this.toolModel.findOneAndUpdate(
-      query,
-      updateData,
-      { new: true }
-    ).lean().exec();
-    
+    const tool = await this.toolModel
+      .findOneAndUpdate(query, updateData, { new: true })
+      .lean()
+      .exec();
+
     if (!tool) {
       if (expectedVersion !== undefined) {
         // Check if document exists but version mismatch
-        const existingTool = await this.toolModel.findOne({ _id: id, createdBy: userId });
+        const existingTool = await this.toolModel.findOne({
+          _id: id,
+          createdBy: userId,
+        });
         if (existingTool) {
-          throw new Error('Document has been modified by another process. Please refresh and try again.');
+          throw new Error(
+            'Document has been modified by another process. Please refresh and try again.',
+          );
         }
       }
       throw new NotFoundException('Tool not found');
@@ -184,51 +208,20 @@ export class ToolsService {
   }
 
   async remove(id: string, userId: string): Promise<void> {
-    const result = await this.toolModel.deleteOne({ _id: id, createdBy: userId }).exec();
+    const result = await this.toolModel
+      .deleteOne({ _id: id, createdBy: userId })
+      .exec();
     if (result.deletedCount === 0) {
       throw new NotFoundException('Tool not found');
     }
   }
 
-  async search(
-    query: string,
+  private buildFilterQuery(
     userId: string,
-    options: SearchOptions = {},
-    filters: SearchFilters = {}
-  ): Promise<ToolDocument[]> {
-    const { sortBy = 'createdAt' } = options;
-    
-    // Sanitize inputs to prevent NoSQL injection
-    const sanitizedQuery = query ? InputSanitizer.sanitizeString(query) : '';
-    const sanitizedFilters = InputSanitizer.sanitizeFilters(filters);
-    
-    if (!sanitizedQuery || sanitizedQuery.trim() === '') {
-      return this.findAll(userId, options, sanitizedFilters);
-    }
-
-    const baseQuery = this.buildFilterQuery(userId, sanitizedFilters);
-    const searchQuery = {
-      ...baseQuery,
-      $text: { $search: sanitizedQuery }
-    };
-
-    const sortOrder = sortBy === 'relevance' 
-      ? { score: { $meta: 'textScore' } }
-      : this.buildSortOrder(sortBy);
-
-    // Fetch all matching documents since we have a small dataset
-    const data = await this.toolModel
-      .find(searchQuery, { score: { $meta: 'textScore' } })
-      .sort(sortOrder)
-      .lean()
-      .exec();
-
-    return data as ToolDocument[];
-  }
-
-  private buildFilterQuery(userId: string, filters: SearchFilters): FilterQuery<ToolDocument> {
+    filters: SearchFilters,
+  ): FilterQuery<ToolDocument> {
     const query: FilterQuery<ToolDocument> = {};
-    
+
     // Only filter by user if not public access
     if (userId && userId !== 'public') {
       query.createdBy = userId;
@@ -246,21 +239,6 @@ export class ToolsService {
       query.interface = { $in: filters.interface };
     }
 
-    if (filters.tags && filters.tags.length > 0) {
-      query.$or = [
-        { 'tags.primary': { $in: filters.tags } },
-        { 'tags.secondary': { $in: filters.tags } }
-      ];
-    }
-
-    if (filters.minRating !== undefined) {
-      query.rating = { ...query.rating, $gte: filters.minRating };
-    }
-
-    if (filters.maxRating !== undefined) {
-      query.rating = { ...query.rating, $lte: filters.maxRating };
-    }
-
     if (filters.deployment && filters.deployment.length > 0) {
       query.deployment = { $in: filters.deployment };
     }
@@ -268,21 +246,13 @@ export class ToolsService {
     return query;
   }
 
-  private buildSortOrder(sortBy: string): Record<string, SortOrder> {
-    // Add secondary sort criteria for consistent results
+  private buildSimplifiedSortOrder(sortBy: string): Record<string, SortOrder> {
+    // Simplified sorting options only
     switch (sortBy) {
-      case 'popularity':
-        return { popularity: -1, rating: -1, createdAt: -1, _id: 1 };
-      case 'rating':
-        return { rating: -1, reviewCount: -1, createdAt: -1, _id: 1 };
-      case 'reviewCount':
-        return { reviewCount: -1, rating: -1, createdAt: -1, _id: 1 };
       case 'name':
-        return { name: 1, rating: -1, createdAt: -1, _id: 1 };
+        return { name: 1, _id: 1 };
       case 'createdAt':
         return { createdAt: -1, _id: 1 };
-      case 'relevance':
-        return { score: { $meta: 'textScore' } as any, rating: -1, createdAt: -1, _id: 1 };
       default:
         return { createdAt: -1, _id: 1 };
     }
@@ -290,26 +260,40 @@ export class ToolsService {
 
   private async validateFieldConsistency(updateData: any): Promise<void> {
     // Validate rating and reviewCount consistency
-    if (updateData.rating !== undefined || updateData.reviewCount !== undefined) {
+    if (
+      updateData.rating !== undefined ||
+      updateData.reviewCount !== undefined
+    ) {
       const rating = updateData.rating;
       const reviewCount = updateData.reviewCount;
-      
+
       if (rating !== undefined && reviewCount !== undefined) {
         // Both fields are being updated - validate consistency
         if (reviewCount === 0 && rating !== 0) {
           throw new Error('Rating must be 0 when reviewCount is 0');
         }
         if (reviewCount > 0 && (rating < 0.1 || rating > 5)) {
-          throw new Error('Rating must be between 0.1 and 5 when reviews exist');
+          throw new Error(
+            'Rating must be between 0.1 and 5 when reviews exist',
+          );
         }
       }
     }
 
     // Validate array fields are not empty if provided
-    const arrayFields = ['pricing', 'interface', 'functionality', 'deployment', 'searchKeywords'];
+    const arrayFields = [
+      'pricing',
+      'interface',
+      'functionality',
+      'deployment',
+      'searchKeywords',
+    ];
     for (const field of arrayFields) {
       if (updateData[field] !== undefined) {
-        if (!Array.isArray(updateData[field]) || updateData[field].length === 0) {
+        if (
+          !Array.isArray(updateData[field]) ||
+          updateData[field].length === 0
+        ) {
           throw new Error(`${field} must be a non-empty array`);
         }
       }
@@ -322,7 +306,9 @@ export class ToolsService {
         throw new Error('Tags must have both primary and secondary arrays');
       }
       if (tags.primary.length === 0 && tags.secondary.length === 0) {
-        throw new Error('At least one tag array (primary or secondary) must be non-empty');
+        throw new Error(
+          'At least one tag array (primary or secondary) must be non-empty',
+        );
       }
     }
 
@@ -330,7 +316,9 @@ export class ToolsService {
     if (updateData.logoUrl !== undefined) {
       const urlPattern = /^https?:\/\/.+/;
       if (!urlPattern.test(updateData.logoUrl)) {
-        throw new Error('logoUrl must be a valid URL starting with http:// or https://');
+        throw new Error(
+          'logoUrl must be a valid URL starting with http:// or https://',
+        );
       }
     }
   }

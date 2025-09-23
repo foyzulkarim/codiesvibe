@@ -16,17 +16,24 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
   Validate,
-  ArrayMinSize
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiExtraModels,
+  getSchemaPath,
+} from '@nestjs/swagger';
 
 @ValidatorConstraint({ async: false })
 class TagsAtLeastOneNonEmptyConstraint implements ValidatorConstraintInterface {
   validate(tags: any): boolean {
     if (!tags || typeof tags !== 'object') return false;
-    const primaryNotEmpty = Array.isArray(tags.primary) && tags.primary.length > 0;
-    const secondaryNotEmpty = Array.isArray(tags.secondary) && tags.secondary.length > 0;
+    const primaryNotEmpty =
+      Array.isArray(tags.primary) && tags.primary.length > 0;
+    const secondaryNotEmpty =
+      Array.isArray(tags.secondary) && tags.secondary.length > 0;
     return primaryNotEmpty || secondaryNotEmpty;
   }
 
@@ -39,7 +46,7 @@ class TagsAtLeastOneNonEmptyConstraint implements ValidatorConstraintInterface {
 class FeaturesBooleanValuesConstraint implements ValidatorConstraintInterface {
   validate(features: any): boolean {
     if (!features || typeof features !== 'object') return true; // optional field
-    return Object.values(features).every(value => typeof value === 'boolean');
+    return Object.values(features).every((value) => typeof value === 'boolean');
   }
 
   defaultMessage(): string {
@@ -48,23 +55,35 @@ class FeaturesBooleanValuesConstraint implements ValidatorConstraintInterface {
 }
 
 class PricingTierDto {
-  @ApiPropertyOptional({ description: 'Price amount for this tier', minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Price amount for this tier',
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   price?: number;
 
-  @ApiPropertyOptional({ description: 'Billing cadence (e.g., monthly, yearly, one-time, per user/month)' })
+  @ApiPropertyOptional({
+    description:
+      'Billing cadence (e.g., monthly, yearly, one-time, per user/month)',
+  })
   @IsOptional()
   @IsString()
   billing?: string;
 
-  @ApiProperty({ description: 'Included features for this tier', type: [String] })
+  @ApiProperty({
+    description: 'Included features for this tier',
+    type: [String],
+  })
   @IsArray()
   @IsString({ each: true })
   features!: string[];
 
-  @ApiPropertyOptional({ description: 'Limitations of this tier', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Limitations of this tier',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -80,7 +99,10 @@ class PricingTierDto {
   @IsBoolean()
   customPricing?: boolean;
 
-  @ApiPropertyOptional({ description: 'Maximum number of users included in this tier', minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Maximum number of users included in this tier',
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -101,7 +123,10 @@ class TagsDto {
 
 @ApiExtraModels(PricingTierDto)
 export class CreateToolEnhancedDto {
-  @ApiProperty({ description: 'Unique identifier in kebab-case', pattern: '^[a-z0-9-]+$' })
+  @ApiProperty({
+    description: 'Unique identifier in kebab-case',
+    pattern: '^[a-z0-9-]+$',
+  })
   @IsString()
   @Matches(/^[a-z0-9-]+$/)
   id!: string;
@@ -112,12 +137,18 @@ export class CreateToolEnhancedDto {
   @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ description: 'Short description (under 500 characters)', maxLength: 500 })
+  @ApiProperty({
+    description: 'Short description (under 500 characters)',
+    maxLength: 500,
+  })
   @IsString()
   @MaxLength(500)
   description!: string;
 
-  @ApiPropertyOptional({ description: 'Detailed description (at least 50 characters)', minLength: 50 })
+  @ApiPropertyOptional({
+    description: 'Detailed description (at least 50 characters)',
+    minLength: 50,
+  })
   @IsOptional()
   @IsString()
   @MinLength(50)
@@ -147,14 +178,22 @@ export class CreateToolEnhancedDto {
   @IsString({ each: true })
   deployment!: string[];
 
-  @ApiPropertyOptional({ description: 'Popularity score (0-100)', minimum: 0, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Popularity score (0-100)',
+    minimum: 0,
+    maximum: 100,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
   popularity?: number;
 
-  @ApiPropertyOptional({ description: 'User rating (0-5)', minimum: 0, maximum: 5 })
+  @ApiPropertyOptional({
+    description: 'User rating (0-5)',
+    minimum: 0,
+    maximum: 5,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -167,7 +206,9 @@ export class CreateToolEnhancedDto {
   @Min(0)
   reviewCount?: number;
 
-  @ApiPropertyOptional({ description: 'Last updated date (YYYY-MM-DD or ISO8601)' })
+  @ApiPropertyOptional({
+    description: 'Last updated date (YYYY-MM-DD or ISO8601)',
+  })
   @IsOptional()
   @IsDateString()
   lastUpdated?: string;
@@ -177,7 +218,11 @@ export class CreateToolEnhancedDto {
   @IsUrl()
   logoUrl!: string;
 
-  @ApiPropertyOptional({ description: 'Feature flags with boolean values', type: 'object', additionalProperties: { type: 'boolean' } })
+  @ApiPropertyOptional({
+    description: 'Feature flags with boolean values',
+    type: 'object',
+    additionalProperties: { type: 'boolean' },
+  })
   @IsOptional()
   @IsObject()
   @Validate(FeaturesBooleanValuesConstraint)
@@ -196,13 +241,19 @@ export class CreateToolEnhancedDto {
   @Validate(TagsAtLeastOneNonEmptyConstraint)
   tags!: TagsDto;
 
-  @ApiPropertyOptional({ description: 'Supported integrations', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Supported integrations',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   integrations?: string[];
 
-  @ApiPropertyOptional({ description: 'Supported programming languages', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Supported programming languages',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -211,7 +262,7 @@ export class CreateToolEnhancedDto {
   @ApiPropertyOptional({
     description: 'Detailed pricing per tier keyed by tier name',
     type: 'object',
-    additionalProperties: { $ref: getSchemaPath(PricingTierDto) }
+    additionalProperties: { $ref: getSchemaPath(PricingTierDto) },
   })
   @IsOptional()
   @IsObject()

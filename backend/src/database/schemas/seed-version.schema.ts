@@ -21,4 +21,7 @@ export class SeedVersion {
 export const SeedVersionSchema = SchemaFactory.createForClass(SeedVersion);
 
 // Ensure unique index on component field
-SeedVersionSchema.index({ component: 1 }, { unique: true, name: 'unique_component' });
+SeedVersionSchema.index(
+  { component: 1 },
+  { unique: true, name: 'unique_component' },
+);

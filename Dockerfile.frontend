@@ -1,0 +1,124 @@
+# CodiesVibe Frontend Dockerfile
+# Multi-stage build for React + Vite application with development and production targets
+
+# Build arguments for image metadata
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG VERSION
+
+# Dependencies stage - Install all dependencies for caching
+FROM node:18-alpine AS dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY package*.json ./
+
+# Install dependencies using npm ci for reproducible builds
+RUN npm ci
+
+# Builder stage - Build the TypeScript application  
+FROM dependencies AS builder
+
+# Copy source code first
+COPY . .
+
+# Copy only the shared types directory that already exists (after source to override any potential conflicts)
+COPY backend/shared ./backend/shared
+
+# Build the application
+RUN npm run build
+
+# Development stage - Hot reload development environment
+FROM dependencies AS development
+
+# Install development dependencies globally for better performance
+RUN npm install -g nodemon
+
+# Copy source code for development
+COPY . .
+
+# Copy shared types from backend directory for development
+COPY backend/shared ./backend/shared
+
+# Create non-root user for security (even in development)
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose development server port and HMR websocket port
+EXPOSE 3000
+EXPOSE 5173
+
+# Add image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Frontend (Development)"
+LABEL org.opencontainers.image.description="React + Vite development environment with hot reload"
+LABEL org.opencontainers.image.version="${VERSION:-dev}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV VITE_API_URL=http://backend:4000
+ENV VITE_HMR_HOST=0.0.0.0
+ENV VITE_HMR_PORT=5173
+
+# Start development server with hot reload and host binding
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+
+# Production stage - Optimized production image with static file serving
+FROM node:18-alpine AS production
+
+# Install security updates and ca-certificates
+RUN apk update && apk upgrade && apk add --no-cache ca-certificates && rm -rf /var/cache/apk/*
+
+# Create non-root user for security
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better layer caching
+COPY package*.json ./
+
+# Install only production dependencies with optimizations
+# Skip husky which is in devDependencies and shouldn't run in production
+RUN npm ci --only=production --no-audit --no-fund --ignore-scripts && \
+    npm cache clean --force
+
+# Install serve globally for static file serving
+RUN npm install -g serve@14
+
+# Copy built application from builder stage with proper ownership
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose production port only
+EXPOSE 3000
+
+# Add comprehensive image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Frontend (Production)"
+LABEL org.opencontainers.image.description="React + Vite production build served with serve - optimized and secure"
+LABEL org.opencontainers.image.version="${VERSION:-latest}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT:-}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+LABEL org.opencontainers.image.vendor="CodiesVibe"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Set optimized environment variables
+ENV NODE_ENV=production
+ENV VITE_API_URL=http://backend:4000
+ENV SERVE_STATIC=true
+ENV SERVE_SINGLE_PAGE=true
+
+# Optimized production server configuration
+CMD ["serve", "-s", "dist", "-l", "3000", "--no-clipboard", "--no-port-switching"]

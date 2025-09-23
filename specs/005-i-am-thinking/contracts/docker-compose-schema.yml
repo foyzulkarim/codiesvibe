@@ -1,0 +1,296 @@
+# Docker Compose Configuration Contract
+# Defines the expected structure and validation rules for all Docker Compose files
+
+version: '3.8'
+
+# Development Environment Contract
+x-development-contract: &development-contract
+  services:
+    frontend-dev:
+      required: true
+      properties:
+        build:
+          required: true
+          target: development
+          dockerfile: Dockerfile.frontend
+        volumes:
+          required: true
+          type: bind-mount
+          paths: [., /app/node_modules, /app/dist]
+        ports:
+          required: true
+          range: [3000, 3000]
+        environment:
+          required:
+            - NODE_ENV=development
+            - VITE_API_URL=http://localhost:4000
+        networks:
+          required: [app-network]
+        container_name: react-frontend-dev
+        stdin_open: true
+        tty: true
+
+    backend-dev:
+      required: true
+      properties:
+        build:
+          required: true
+          target: development
+          context: ./backend
+        volumes:
+          required: true
+          type: bind-mount
+          paths: [./backend:/app, /app/node_modules, /app/dist]
+        ports:
+          required: true
+          range: [4000, 4000]
+          debug_port: 9229
+        environment:
+          required:
+            - NODE_ENV=development
+            - PORT=4000
+            - MONGODB_URI
+            - JWT_SECRET
+            - CORS_ORIGIN=http://localhost:3000
+        networks:
+          required: [app-network]
+        container_name: nestjs-backend-dev
+        stdin_open: true
+        tty: true
+
+  networks:
+    app-network:
+      required: true
+      driver: bridge
+
+# Production Environment Contract (with GitHub Container Registry images)
+x-production-contract: &production-contract
+  services:
+    frontend:
+      required: true
+      properties:
+        image:
+          pattern: "ghcr.io/*/codiesvibe-frontend:*"
+          fallback: build
+        ports:
+          required: true
+          values: [3000:80] # Nginx serves on port 80 internally
+        environment:
+          required:
+            - NODE_ENV=production
+            - VITE_API_URL=https://api.your-domain.com
+        networks:
+          required: [app-network]
+        restart: unless-stopped
+        container_name: react-frontend
+
+    backend:
+      required: true
+      properties:
+        image:
+          pattern: "ghcr.io/*/codiesvibe-backend:*"
+          fallback: build
+        ports:
+          required: true
+          values: [4000:4000]
+        environment:
+          required:
+            - NODE_ENV=production
+            - PORT=4000
+            - MONGODB_URI
+            - JWT_SECRET
+            - CORS_ORIGIN=https://your-domain.com
+            - TRUST_PROXY=true
+        networks:
+          required: [app-network]
+        restart: unless-stopped
+        healthcheck:
+          required: true
+          test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+        container_name: nestjs-backend
+
+    cloudflared:
+      required: true
+      properties:
+        image: cloudflare/cloudflared:latest
+        command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+        environment:
+          required:
+            - TUNNEL_TOKEN
+        networks:
+          required: [app-network]
+        restart: unless-stopped
+        container_name: cloudflared
+
+  networks:
+    app-network:
+      required: true
+      driver: bridge
+
+# Cloudflare Environment Contract
+x-cloudflare-contract: &cloudflare-contract
+  services:
+    cloudflared:
+      required: true
+      properties:
+        image: cloudflare/cloudflared:latest
+        command: tunnel --no-autoupdate run
+        environment:
+          required:
+            - TUNNEL_TOKEN
+        restart: unless-stopped
+        networks:
+          required: [app-network]
+
+    frontend:
+      properties:
+        networks:
+          required: [app-network]
+        labels:
+          forbidden: [traefik.*] # No Traefik labels in Cloudflare mode
+
+    backend:
+      properties:
+        networks:
+          required: [app-network]
+
+  networks:
+    app-network:
+      required: true
+      driver: bridge
+
+# Pre-built Images Contract
+x-prebuilt-contract: &prebuilt-contract
+  services:
+    frontend:
+      properties:
+        image:
+          required: true
+          pattern: "registry.domain.com/codiesvibe/frontend:*"
+        build:
+          forbidden: true
+
+    backend:
+      properties:
+        image:
+          required: true
+          pattern: "registry.domain.com/codiesvibe/backend:*"
+        build:
+          forbidden: true
+
+# Monitoring Environment Contract
+x-monitoring-contract: &monitoring-contract
+  services:
+    prometheus:
+      required: true
+      properties:
+        image: prom/prometheus:latest
+        ports:
+          required: true
+          range: [9090, 9090]
+        volumes:
+          required:
+            - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+        networks:
+          required: [monitoring-network]
+
+    grafana:
+      required: true
+      properties:
+        image: grafana/grafana:latest
+        ports:
+          required: true
+          range: [3000, 3000]
+        environment:
+          required:
+            - GF_SECURITY_ADMIN_PASSWORD
+        networks:
+          required: [monitoring-network]
+
+    loki:
+      required: true
+      properties:
+        image: grafana/loki:latest
+        networks:
+          required: [monitoring-network]
+
+  networks:
+    monitoring-network:
+      required: true
+      driver: bridge
+
+# Common Validation Rules
+x-common-rules:
+  healthcheck:
+    properties:
+      test:
+        required: true
+        type: array
+      interval:
+        required: true
+        pattern: "[0-9]+s"
+      timeout:
+        required: true
+        pattern: "[0-9]+s"
+      retries:
+        required: true
+        type: integer
+        range: [1, 10]
+      start_period:
+        required: true
+        pattern: "[0-9]+s"
+
+  restart_policy:
+    allowed_values:
+      - "no"
+      - always
+      - on-failure
+      - unless-stopped
+
+  environment_variables:
+    mongodb_uri:
+      required: true
+      pattern: "mongodb://*"
+      validation: connection-test
+    node_env:
+      required: true
+      allowed_values: [development, production, test]
+
+  security:
+    user:
+      required: true
+      forbidden_values: [root, "0"]
+    read_only:
+      recommended: true
+      value: true
+    cap_drop:
+      recommended: true
+      value: ["ALL"]
+    security_opt:
+      recommended: true
+      value: ["no-new-privileges:true"]
+
+# File Structure Contract
+x-file-structure:
+  required_files:
+    - docker-compose.dev.yml
+    - docker-compose.yml # Production
+    - docker-compose.cloudflare.yml
+    - docker-compose.production.yml
+    - docker-compose.monitoring.yml
+    - .env.example
+    - .dockerignore
+    - Dockerfile.frontend
+    - Dockerfile.backend
+
+  configuration_files:
+    - monitoring/prometheus.yml
+    - monitoring/grafana/datasources.yml
+    - monitoring/grafana/dashboards.json
+    - traefik/dynamic.yml
+    - nginx/default.conf (if using nginx)
+
+  documentation:
+    - README.md
+    - docs/deployment.md
+    - docs/troubleshooting.md

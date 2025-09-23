@@ -1,0 +1,195 @@
+# Prometheus Alerting Rules for CodiesVibe Application
+# Application-specific monitoring rules
+
+groups:
+  # Application Health Rules
+  - name: application.health
+    rules:
+      # Backend service down
+      - alert: BackendServiceDown
+        expr: up{job="codiesvibe-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+          component: backend
+        annotations:
+          summary: "CodiesVibe Backend service is down"
+          description: "The CodiesVibe backend service has been down for more than 1 minute."
+
+      # Frontend service down
+      - alert: FrontendServiceDown
+        expr: up{job="codiesvibe-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+          component: frontend
+        annotations:
+          summary: "CodiesVibe Frontend service is down"
+          description: "The CodiesVibe frontend service has been down for more than 1 minute."
+
+      # Health check failures
+      - alert: HealthCheckFailing
+        expr: up{job=~"codiesvibe-.*"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: application
+        annotations:
+          summary: "Health check failing for {{ $labels.job }}"
+          description: "Health check for {{ $labels.job }} has been failing for 30 seconds."
+
+  # Performance Rules
+  - name: application.performance
+    rules:
+      # High response times
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="codiesvibe-backend"}[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: application
+          component: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s, which is above 1s threshold."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="codiesvibe-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="codiesvibe-backend"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: application
+          component: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}, which is above 5% threshold."
+
+      # Memory usage
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{name=~"codiesvibe-.*"} / container_spec_memory_limit_bytes{name=~"codiesvibe-.*"}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+        annotations:
+          summary: "High memory usage for {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit."
+
+      # CPU usage
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name=~"codiesvibe-.*"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+        annotations:
+          summary: "High CPU usage for {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using {{ $value | humanizePercentage }} CPU."
+
+  # Database Rules
+  - name: application.database
+    rules:
+      # MongoDB connection failures
+      - alert: MongoDBConnectionFailing
+        expr: mongodb_up{job="mongodb"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+          component: database
+        annotations:
+          summary: "MongoDB connection failing"
+          description: "Unable to connect to MongoDB for more than 1 minute."
+
+      # High database query time
+      - alert: HighDatabaseQueryTime
+        expr: histogram_quantile(0.95, rate(mongodb_op_latencies_histogram_bucket[5m])) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: application
+          component: database
+        annotations:
+          summary: "High database query latency"
+          description: "95th percentile MongoDB query time is {{ $value }}ms, which is above 100ms threshold."
+
+      # Redis connection failures
+      - alert: RedisConnectionFailing
+        expr: redis_up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+          component: cache
+        annotations:
+          summary: "Redis connection failing"
+          description: "Unable to connect to Redis for more than 1 minute."
+
+  # Business Logic Rules
+  - name: application.business
+    rules:
+      # Too many failed authentication attempts
+      - alert: HighAuthenticationFailures
+        expr: rate(auth_failures_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: application
+          component: authentication
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures/second, which may indicate a security issue."
+
+      # Low tool search success rate
+      - alert: LowSearchSuccessRate
+        expr: rate(search_results_total{status="success"}[5m]) / rate(search_requests_total[5m]) < 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+          component: search
+        annotations:
+          summary: "Low search success rate"
+          description: "Search success rate is {{ $value | humanizePercentage }}, which is below 90% threshold."
+
+      # Tool catalog not updated
+      - alert: ToolCatalogStale
+        expr: time() - tool_catalog_last_update_timestamp > 86400
+        for: 0s
+        labels:
+          severity: warning
+          service: application
+          component: catalog
+        annotations:
+          summary: "Tool catalog is stale"
+          description: "Tool catalog hasn't been updated in {{ $value | humanizeDuration }}."
+
+  # Security Rules
+  - name: application.security
+    rules:
+      # Rate limiting triggered
+      - alert: RateLimitingTriggered
+        expr: rate(rate_limit_exceeded_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+          service: application
+          component: security
+        annotations:
+          summary: "Rate limiting frequently triggered"
+          description: "Rate limiting is being triggered {{ $value }} times/second, which may indicate abuse."
+
+      # Suspicious request patterns
+      - alert: SuspiciousRequestPatterns
+        expr: rate(http_requests_total{job="codiesvibe-backend",status="404"}[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: application
+          component: security
+        annotations:
+          summary: "High 404 error rate detected"
+          description: "404 error rate is {{ $value }} requests/second, which may indicate scanning attempts."

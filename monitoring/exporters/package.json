@@ -1,0 +1,32 @@
+{
+  "name": "codiesvibe-app-metrics-exporter",
+  "version": "1.0.0",
+  "description": "Custom metrics exporter for CodiesVibe application",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "prom-client": "^15.1.0",
+    "express": "^4.18.2",
+    "mongodb": "^6.3.0",
+    "redis": "^4.6.12",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "CodiesVibe Team",
+  "license": "MIT"
+}

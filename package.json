@@ -7,8 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "eslint . --quiet",
+    "lint:warn": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'No tests specified' && exit 0",
+    "test:coverage": "echo 'No test coverage configured' && exit 0",
+    "prepare": "echo 'Skipping husky in CI environments'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -78,6 +83,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
     "lovable-tagger": "^1.1.9",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",

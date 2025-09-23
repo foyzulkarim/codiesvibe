@@ -7,7 +7,10 @@ import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { Tool, ToolDocument } from '../../tools/schemas/tool.schema';
 import { CreateToolEnhancedDto } from '../../tools/dto/create-tool-enhanced.dto';
-import { SeedVersion, SeedVersionDocument } from '../schemas/seed-version.schema';
+import {
+  SeedVersion,
+  SeedVersionDocument,
+} from '../schemas/seed-version.schema';
 
 interface SeedFileShape {
   version: number;
@@ -29,7 +32,8 @@ export class EnhancedSeedService {
 
   constructor(
     @InjectModel(Tool.name) private readonly toolModel: Model<ToolDocument>,
-    @InjectModel(SeedVersion.name) private readonly seedVersionModel: Model<SeedVersionDocument>,
+    @InjectModel(SeedVersion.name)
+    private readonly seedVersionModel: Model<SeedVersionDocument>,
   ) {}
 
   async seedTools(): Promise<void> {
@@ -37,10 +41,14 @@ export class EnhancedSeedService {
       const currentVersion = await this.getCurrentSeedVersion();
       const seedFiles = await this.loadAllSeedFiles();
 
-      this.logger.log(`Current version: ${currentVersion}, Found ${seedFiles.length} seed file(s)`);
+      this.logger.log(
+        `Current version: ${currentVersion}, Found ${seedFiles.length} seed file(s)`,
+      );
 
       // Filter files that need processing (version > currentVersion)
-      const filesToProcess = seedFiles.filter(file => file.fileVersion > currentVersion);
+      const filesToProcess = seedFiles.filter(
+        (file) => file.fileVersion > currentVersion,
+      );
 
       if (filesToProcess.length === 0) {
         this.logger.log('Database is up to date, skipping seed');
@@ -48,7 +56,7 @@ export class EnhancedSeedService {
       }
 
       this.logger.log(`Processing ${filesToProcess.length} file(s):`);
-      filesToProcess.forEach(file => {
+      filesToProcess.forEach((file) => {
         this.logger.log(`  - ${file.filename} (v${file.fileVersion})`);
       });
 
@@ -56,18 +64,23 @@ export class EnhancedSeedService {
       for (const seedFile of filesToProcess) {
         await this.processSeedFile(seedFile);
         await this.updateSeedVersion(seedFile.fileVersion);
-        this.logger.log(`Processed ${seedFile.filename} successfully. Version updated to ${seedFile.fileVersion}`);
+        this.logger.log(
+          `Processed ${seedFile.filename} successfully. Version updated to ${seedFile.fileVersion}`,
+        );
       }
 
-      this.logger.log(`Seeding completed successfully. Final version: ${filesToProcess[filesToProcess.length - 1].fileVersion}`);
+      this.logger.log(
+        `Seeding completed successfully. Final version: ${filesToProcess[filesToProcess.length - 1].fileVersion}`,
+      );
     } catch (error: any) {
       this.logger.error(`Seeding failed: ${error?.message || error}`);
       throw error;
     }
   }
 
-
-  private async validateTools(tools: any[]): Promise<{ validTools: CreateToolEnhancedDto[]; errors: string[] }> {
+  private async validateTools(
+    tools: any[],
+  ): Promise<{ validTools: CreateToolEnhancedDto[]; errors: string[] }> {
     const validTools: CreateToolEnhancedDto[] = [];
     const errors: string[] = [];
 
@@ -80,23 +93,41 @@ export class EnhancedSeedService {
       const label = toolData?.name || toolData?.id || `#${i + 1}`;
       try {
         const dto = plainToInstance(CreateToolEnhancedDto, toolData);
-        const validationErrors = await validate(dto, { whitelist: true, forbidUnknownValues: false });
+        const validationErrors = await validate(dto, {
+          whitelist: true,
+          forbidUnknownValues: false,
+        });
 
         // Additional checks to ensure compatibility with our Mongoose schema
         const additionalErrors: string[] = [];
         if (!dto.logoUrl) additionalErrors.push('logoUrl is required');
-        if (dto.features && Object.keys(dto.features).length === 0) additionalErrors.push('features object must not be empty if provided');
-        if (!dto.searchKeywords || dto.searchKeywords.length === 0) additionalErrors.push('searchKeywords must be a non-empty array');
-        const hasPrimary = Array.isArray(dto.tags?.primary) && dto.tags!.primary.length > 0;
-        const hasSecondary = Array.isArray(dto.tags?.secondary) && dto.tags!.secondary.length > 0;
-        if (!(hasPrimary || hasSecondary)) additionalErrors.push('tags must have at least one non-empty array (primary or secondary)');
+        if (dto.features && Object.keys(dto.features).length === 0)
+          additionalErrors.push(
+            'features object must not be empty if provided',
+          );
+        if (!dto.searchKeywords || dto.searchKeywords.length === 0)
+          additionalErrors.push('searchKeywords must be a non-empty array');
+        const hasPrimary =
+          Array.isArray(dto.tags?.primary) && dto.tags.primary.length > 0;
+        const hasSecondary =
+          Array.isArray(dto.tags?.secondary) && dto.tags.secondary.length > 0;
+        if (!(hasPrimary || hasSecondary))
+          additionalErrors.push(
+            'tags must have at least one non-empty array (primary or secondary)',
+          );
 
         if (validationErrors.length > 0 || additionalErrors.length > 0) {
           const classValidatorMsgs = validationErrors
-            .map((e) => (e.constraints ? Object.values(e.constraints).join(', ') : 'invalid'))
+            .map((e) =>
+              e.constraints
+                ? Object.values(e.constraints).join(', ')
+                : 'invalid',
+            )
             .filter(Boolean)
             .join('; ');
-          const msg = [classValidatorMsgs, ...additionalErrors].filter(Boolean).join('; ');
+          const msg = [classValidatorMsgs, ...additionalErrors]
+            .filter(Boolean)
+            .join('; ');
           errors.push(`Tool ${label}: ${msg}`);
           continue;
         }
@@ -110,10 +141,15 @@ export class EnhancedSeedService {
     return { validTools, errors };
   }
 
-  private mapSeedToToolDoc(dto: CreateToolEnhancedDto, createdBy: Types.ObjectId) {
+  private mapSeedToToolDoc(
+    dto: CreateToolEnhancedDto,
+    createdBy: Types.ObjectId,
+  ) {
     // Ensure rating consistency with reviewCount (see Tool schema validator)
-    const reviewCount = typeof dto.reviewCount === 'number' ? dto.reviewCount : 0;
-    const rating = reviewCount === 0 ? 0 : (typeof dto.rating === 'number' ? dto.rating : 0);
+    const reviewCount =
+      typeof dto.reviewCount === 'number' ? dto.reviewCount : 0;
+    const rating =
+      reviewCount === 0 ? 0 : typeof dto.rating === 'number' ? dto.rating : 0;
 
     return {
       name: dto.name,
@@ -141,16 +177,19 @@ export class EnhancedSeedService {
 
     for (const seedsDir of seedsDirs) {
       if (fs.existsSync(seedsDir)) {
-        const files = fs.readdirSync(seedsDir)
-          .filter(filename => filename.endsWith('.json'))
-          .map(filename => path.join(seedsDir, filename));
+        const files = fs
+          .readdirSync(seedsDir)
+          .filter((filename) => filename.endsWith('.json'))
+          .map((filename) => path.join(seedsDir, filename));
 
         for (const filePath of files) {
           try {
             const seedFile = await this.loadAndValidateSeedFile(filePath);
             allFiles.push(seedFile);
           } catch (error: any) {
-            this.logger.warn(`Skipping invalid seed file ${filePath}: ${error.message}`);
+            this.logger.warn(
+              `Skipping invalid seed file ${filePath}: ${error.message}`,
+            );
           }
         }
 
@@ -161,7 +200,9 @@ export class EnhancedSeedService {
     }
 
     if (allFiles.length === 0) {
-      throw new Error(`No valid seed files found in directories: ${seedsDirs.join(', ')}`);
+      throw new Error(
+        `No valid seed files found in directories: ${seedsDirs.join(', ')}`,
+      );
     }
 
     // Sort by version number
@@ -187,13 +228,19 @@ export class EnhancedSeedService {
     return [seedsDirDist, seedsDirSrcBackend, seedsDirSrc];
   }
 
-  private async loadAndValidateSeedFile(filePath: string): Promise<SeedFileInfo> {
+  private async loadAndValidateSeedFile(
+    filePath: string,
+  ): Promise<SeedFileInfo> {
     const filename = path.basename(filePath);
 
     // Parse version from filename (e.g., tools-v1.2.json -> 1.2)
-    const versionMatch = filename.match(/^tools-v(\d+(?:\.\d+)?(?:\.\d+)?)\.json$/);
+    const versionMatch = filename.match(
+      /^tools-v(\d+(?:\.\d+)?(?:\.\d+)?)\.json$/,
+    );
     if (!versionMatch) {
-      throw new Error(`Invalid filename format. Expected: tools-v<version>.json, got: ${filename}`);
+      throw new Error(
+        `Invalid filename format. Expected: tools-v<version>.json, got: ${filename}`,
+      );
     }
 
     const fileVersion = parseFloat(versionMatch[1]);
@@ -206,22 +253,28 @@ export class EnhancedSeedService {
 
     // Validate that file content version matches filename version
     if (typeof data.version !== 'number') {
-      throw new Error(`File content must have numeric version field, got: ${typeof data.version}`);
+      throw new Error(
+        `File content must have numeric version field, got: ${typeof data.version}`,
+      );
     }
 
     if (data.version !== fileVersion) {
-      throw new Error(`Version mismatch: filename has v${fileVersion} but content has v${data.version}`);
+      throw new Error(
+        `Version mismatch: filename has v${fileVersion} but content has v${data.version}`,
+      );
     }
 
     if (!Array.isArray(data.tools)) {
-      throw new Error(`File content must have 'tools' array, got: ${typeof data.tools}`);
+      throw new Error(
+        `File content must have 'tools' array, got: ${typeof data.tools}`,
+      );
     }
 
     return {
       filePath,
       filename,
       fileVersion,
-      data
+      data,
     };
   }
 
@@ -235,10 +288,14 @@ export class EnhancedSeedService {
         const toolName = tool.name?.toLowerCase?.();
 
         if (toolId && seenIds.has(toolId)) {
-          throw new Error(`Duplicate tool ID '${tool.id}' found in ${seedFile.filename}`);
+          throw new Error(
+            `Duplicate tool ID '${tool.id}' found in ${seedFile.filename}`,
+          );
         }
         if (toolName && seenNames.has(toolName)) {
-          throw new Error(`Duplicate tool name '${tool.name}' found in ${seedFile.filename}`);
+          throw new Error(
+            `Duplicate tool name '${tool.name}' found in ${seedFile.filename}`,
+          );
         }
 
         if (toolId) seenIds.add(toolId);
@@ -248,15 +305,23 @@ export class EnhancedSeedService {
   }
 
   private async processSeedFile(seedFile: SeedFileInfo): Promise<void> {
-    this.logger.log(`Processing ${seedFile.filename} (v${seedFile.fileVersion})...`);
+    this.logger.log(
+      `Processing ${seedFile.filename} (v${seedFile.fileVersion})...`,
+    );
 
-    const { validTools, errors } = await this.validateTools(seedFile.data.tools);
+    const { validTools, errors } = await this.validateTools(
+      seedFile.data.tools,
+    );
     if (errors.length > 0) {
-      throw new Error(`Validation failed for ${seedFile.filename}: ${errors.join(' | ')}`);
+      throw new Error(
+        `Validation failed for ${seedFile.filename}: ${errors.join(' | ')}`,
+      );
     }
 
     const createdBy = this.getSeedOwnerObjectId();
-    const docs = validTools.map((tool) => this.mapSeedToToolDoc(tool, createdBy));
+    const docs = validTools.map((tool) =>
+      this.mapSeedToToolDoc(tool, createdBy),
+    );
 
     if (docs.length === 0) {
       this.logger.warn(`No tools found in ${seedFile.filename}`);
@@ -264,14 +329,17 @@ export class EnhancedSeedService {
     }
 
     await this.toolModel.insertMany(docs, { ordered: false });
-    this.logger.log(`Inserted ${docs.length} tool(s) from ${seedFile.filename}`);
+    this.logger.log(
+      `Inserted ${docs.length} tool(s) from ${seedFile.filename}`,
+    );
   }
 
   private async getCurrentSeedVersion(): Promise<number> {
-    const versionDoc = await this.seedVersionModel.findOne({ component: 'tools' }).lean();
+    const versionDoc = await this.seedVersionModel
+      .findOne({ component: 'tools' })
+      .lean();
     return versionDoc?.version || 0;
   }
-
 
   private async updateSeedVersion(version: number): Promise<void> {
     const toolCount = await this.toolModel.countDocuments();

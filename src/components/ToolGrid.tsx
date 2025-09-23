@@ -95,16 +95,7 @@ export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, save
             onSave={onSave}
           />
         ))}
-      </div>
-
-      {/* Load More Button (for future pagination) */}
-      {tools.length >= 12 && (
-        <div className="text-center pt-8">
-          <button className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground rounded-xl font-medium transition-colors hover:scale-105 transform">
-            Load more tools
-          </button>
-        </div>
-      )}
+      </div>      
     </div>
   );
 };
