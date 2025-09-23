@@ -6,7 +6,7 @@ name: Frontend CI/CD
 on:
   push:
     branches: [main, staging]
-    paths: 
+    paths:
       - 'src/**'
       - 'public/**'
       - 'package.json'
@@ -169,9 +169,9 @@ jobs:
     needs: [test-frontend, security-frontend]
     if: always() && (needs.test-frontend.result == 'success' || inputs.skip_tests) && (needs.security-frontend.result == 'success' || inputs.skip_tests)
     outputs:
-      image: ${{ steps.meta.outputs.tags }}
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
       digest: ${{ steps.build.outputs.digest }}
-      image-id: ${{ steps.meta.outputs.tags }}@${{ steps.build.outputs.digest }}
+      image-id: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ steps.build.outputs.digest }}
     
     steps:
       - name: Checkout code
