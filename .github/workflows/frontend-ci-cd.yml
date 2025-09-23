@@ -346,30 +346,30 @@ jobs:
           docker stop test-frontend || true
           docker rm test-frontend || true
 
-  # Stage 5: Trigger Deployment
-  trigger-deployment:
-    name: Trigger Deployment
-    runs-on: ubuntu-latest
-    needs: [build-frontend, performance-test-frontend]
-    if: always() && needs.build-frontend.result == 'success' && (needs.performance-test-frontend.result == 'success' || needs.performance-test-frontend.result == 'skipped')
-    
-    steps:
-      - name: Trigger deployment workflow
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deployment.yml',
-              ref: context.ref,
-              inputs: {
-                service: 'frontend',
-                image: '${{ needs.build-frontend.outputs.image }}',
-                environment: "${{ inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}"
-
-              }
-            });
+  # Stage 5: Trigger Deployment (DISABLED)
+  # Deployment workflow is not implemented yet
+  # trigger-deployment:
+  #   name: Trigger Deployment
+  #   runs-on: ubuntu-latest
+  #   needs: [build-frontend, performance-test-frontend]
+  #   if: false  # Disabled until deployment workflow is created
+  #
+  #   steps:
+  #     - name: Trigger deployment workflow
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           await github.rest.actions.createWorkflowDispatch({
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             workflow_id: 'deployment.yml',
+  #             ref: context.ref,
+  #             inputs: {
+  #               service: 'frontend',
+  #               image: '${{ needs.build-frontend.outputs.image }}',
+  #               environment: "${{ inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}"
+  #             }
+  #           });
 
   # Cleanup Job
   cleanup:
