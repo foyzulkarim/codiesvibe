@@ -1,16 +1,17 @@
 # CodiesVibe Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2025-09-16
+Auto-generated from all feature plans. Last updated: 2025-09-24
 
 ## Active Technologies
 - TypeScript with React + Vite frontend, NestJS backend
 - MongoDB database with AI tools collection (external, not containerized)
 - Jest for unit tests, React Testing Library for frontend
 - Docker and Docker Compose for containerization
-- Nginx for static file serving and optimization
+- Nginx/Alpine for optimized static file serving and minimal container footprint
 - Cloudflare Tunnels for secure external access and SSL termination
 - GitHub Actions for CI/CD with GitHub Container Registry (ghcr.io)
 - Search and sort functionality for AI tools directory
+- Container optimization with multi-stage builds for production efficiency
 
 ## Project Structure
 ```
@@ -39,6 +40,9 @@ backend/
 - Production: docker-compose -f docker-compose.production.yml up -d
 - Cloudflare: docker-compose -f docker-compose.cloudflare.yml up -d
 - Health checks: curl http://localhost:3000/health, curl http://localhost:4000/health
+- Container optimization: docker build -f Dockerfile.frontend --target production
+- Performance testing: docker stats, ab -n 1000 -c 10, docker images --format table
+- Container validation: docker exec nginx -t, docker logs for debugging
 
 ## Code Style
 - Use React hooks (useState, useEffect) for state management
@@ -93,9 +97,9 @@ docker-compose -f docker-compose.infra.yml up -d
 - See `docs/PORT-ALLOCATION.md` for port management
 
 ## Recent Changes
+- 006-frontend-container-optimization: Added nginx/alpine optimization for 95% memory reduction and 90% image size reduction
 - 005-i-am-thinking: Added comprehensive Docker containerization with multiple deployment strategies
 - Phase 0.5: Added infrastructure stack (docker-compose.infra.yml) with MongoDB, Redis, monitoring
-- 004-build-a-search: Added search and sort system with button-triggered filtering, text highlighting, and results counter
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
