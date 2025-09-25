@@ -203,3 +203,4 @@ vite.config.ts.timestamp-*
 .cache/
 .temp/
 .tmp/
+.env.production
