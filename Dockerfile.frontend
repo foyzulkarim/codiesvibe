@@ -8,7 +8,6 @@ ARG VERSION
 
 # Build arguments for Vite environment variables
 ARG VITE_API_URL=/api
-ARG VITE_API_BASE_URL
 ARG NODE_ENV=production
 
 # Dependencies stage - Install all dependencies for caching
@@ -28,12 +27,10 @@ FROM dependencies AS builder
 
 # Re-declare ARGs needed in this stage
 ARG VITE_API_URL=/api
-ARG VITE_API_BASE_URL
 ARG NODE_ENV=production
 
 # Set environment variables from build arguments for Vite
 ENV VITE_API_URL=${VITE_API_URL}
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ENV NODE_ENV=${NODE_ENV}
 
 # Copy source code first

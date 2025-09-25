@@ -48,7 +48,9 @@ fi
 # Load production environment variables
 if [ -f ".env.production" ]; then
     print_status "Loading production environment variables..."
-    export $(cat .env.production | grep -v '^#' | xargs)
+    set -a  # Automatically export variables
+    source .env.production
+    set +a  # Stop auto-exporting
 fi
 
 # Check if infrastructure is running
@@ -60,7 +62,9 @@ fi
 
 # Check if MongoDB is accessible
 print_status "Checking MongoDB connection..."
-if ! docker exec mongodb mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+# Try mongosh first, fall back to mongo for older versions
+if ! docker exec mongodb mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1 && \
+   ! docker exec mongodb mongo --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
     print_error "MongoDB is not accessible. Please check infrastructure services."
     exit 1
 fi
