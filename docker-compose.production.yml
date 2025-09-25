@@ -52,13 +52,16 @@ services:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
+        # Vite build-time environment variables
+        - VITE_API_URL=/api
+        - NODE_ENV=production
     container_name: codiesvibe-frontend-prod
     volumes:
       # Share built files with Nginx
       - frontend_dist:/shared/dist
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=/api  # Served through Nginx proxy
+      # Note: VITE_* vars are embedded at build time, these are for container metadata only
       - VITE_APP_VERSION=${VERSION:-production}
       - VITE_BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
       - VITE_GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
