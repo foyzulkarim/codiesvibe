@@ -62,7 +62,7 @@ LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe
 
 # Set environment variables for development
 ENV NODE_ENV=development
-ENV VITE_API_URL=http://backend:4000
+ENV VITE_API_URL=http://backend:4000/api
 ENV VITE_HMR_HOST=0.0.0.0
 ENV VITE_HMR_PORT=5173
 
@@ -72,8 +72,9 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 # Production stage - Nginx/Alpine optimized image with minimal footprint
 FROM nginx:alpine AS production
 
-# Copy built application from builder stage
+# Copy built application from builder stage to both locations
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /shared/dist
 
 # Create nginx config for SPA routing
 RUN echo 'server { \

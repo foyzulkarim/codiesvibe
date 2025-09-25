@@ -28,7 +28,7 @@ services:
       - codiesvibe-network
     depends_on:
       frontend:
-        condition: service_completed_successfully
+        condition: service_healthy
       backend:
         condition: service_healthy
     restart: unless-stopped
@@ -42,7 +42,7 @@ services:
   # Frontend Production Service (Pre-built from GHCR, build artifacts served by Nginx)
   frontend:
     # Use pre-built GHCR image for production deployments
-    image: ghcr.io/foyzulkarim/codiesvibe-frontend:${VERSION:-latest}
+    # image: ghcr.io/foyzulkarim/codiesvibe-frontend:${VERSION:-latest}
     # Fallback: Build locally if GHCR image unavailable
     build:
       context: .
@@ -66,8 +66,13 @@ services:
       - codiesvibe-network
     restart: "no"  # One-time build container
     user: root  # Need root to write to volume
-    # Copy built files to shared volume and exit
-    command: sh -c "mkdir -p /shared/dist && cp -r /app/dist/* /shared/dist/ && echo 'Frontend build copied to volume'"
+    # Files are copied during Docker build process - no additional command needed
+    healthcheck:
+      test: ["CMD", "test", "-f", "/shared/dist/index.html"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
 
   # Backend Production Service
   backend:
