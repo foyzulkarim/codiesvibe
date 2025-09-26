@@ -25,11 +25,11 @@ RUN npm ci
 # Builder stage - Build the TypeScript application
 FROM dependencies AS builder
 
-# Re-declare ARGs needed in this stage
+# Build arguments must be declared before they can be used
 ARG VITE_API_URL=/api
 ARG NODE_ENV=production
 
-# Set environment variables from build arguments for Vite
+# Set environment variables from build arguments BEFORE copying files
 ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_ENV=${NODE_ENV}
 
@@ -38,6 +38,9 @@ COPY . .
 
 # Copy only the shared types directory that already exists (after source to override any potential conflicts)
 COPY backend/shared ./backend/shared
+
+# Debug: Verify environment variables are set correctly
+RUN echo "Building with VITE_API_URL=${VITE_API_URL}" && echo "NODE_ENV=${NODE_ENV}"
 
 # Build the application with environment variables available
 RUN npm run build

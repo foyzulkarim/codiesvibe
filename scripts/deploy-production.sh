@@ -63,8 +63,8 @@ fi
 # Check if MongoDB is accessible
 print_status "Checking MongoDB connection..."
 # Try mongosh first, fall back to mongo for older versions
-if ! docker exec mongodb mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1 && \
-   ! docker exec mongodb mongo --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
+if ! docker exec codiesvibe-mongodb mongosh --eval "db.adminCommand('ping')" >/dev/null 2>&1 && \
+   ! docker exec codiesvibe-mongodb mongo --eval "db.adminCommand('ping')" >/dev/null 2>&1; then
     print_error "MongoDB is not accessible. Please check infrastructure services."
     exit 1
 fi
