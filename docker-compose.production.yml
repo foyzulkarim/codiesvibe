@@ -53,7 +53,7 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
         # Vite build-time environment variables
-        - VITE_API_URL=/api
+        - VITE_API_URL=http://api.localhost
         - NODE_ENV=production
     container_name: codiesvibe-frontend-prod
     volumes:
@@ -104,8 +104,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-production-jwt-secret-change-immediately}
       - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
       - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
-      # CORS configuration for production domain
-      - CORS_ORIGIN=${CORS_ORIGIN:-https://your-domain.com}
+      # CORS configuration for subdomain architecture
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://api.localhost}
       # Production rate limiting
       - RATE_LIMIT_WINDOW=900000  # 15 minutes
       - RATE_LIMIT_MAX=100        # Stricter than development
