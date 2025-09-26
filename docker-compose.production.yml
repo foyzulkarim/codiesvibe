@@ -27,8 +27,8 @@ services:
     networks:
       - codiesvibe-network
     depends_on:
-      frontend:
-        condition: service_healthy
+      frontend-init:
+        condition: service_completed_successfully
       backend:
         condition: service_healthy
     restart: unless-stopped
@@ -39,8 +39,8 @@ services:
       start_period: 10s
       retries: 3
 
-  # Frontend Production Service (Pre-built from GHCR, build artifacts served by Nginx)
-  frontend:
+  # Frontend Init Container - Builds and copies assets, then exits
+  frontend-init:
     # Use pre-built GHCR image for production deployments
     # image: ghcr.io/foyzulkarim/codiesvibe-frontend:${VERSION:-latest}
     # Fallback: Build locally if GHCR image unavailable
@@ -55,10 +55,11 @@ services:
         # Vite build-time environment variables
         - VITE_API_URL=http://api.localhost
         - NODE_ENV=production
-    container_name: codiesvibe-frontend-prod
+    container_name: codiesvibe-frontend-init
     volumes:
       # Share built files with Nginx
       - frontend_dist:/shared/dist
+    command: sh -c "echo 'Copying frontend assets...' && cp -r /usr/share/nginx/html/* /shared/dist/ && echo 'Frontend assets copied successfully' && ls -la /shared/dist/"
     environment:
       - NODE_ENV=production
       # Note: VITE_* vars are embedded at build time, these are for container metadata only
@@ -67,15 +68,8 @@ services:
       - VITE_GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
     networks:
       - codiesvibe-network
-    restart: "no"  # One-time build container
+    restart: "no"  # One-time init container
     user: root  # Need root to write to volume
-    # Files are copied during Docker build process - no additional command needed
-    healthcheck:
-      test: ["CMD", "test", "-f", "/shared/dist/index.html"]
-      interval: 10s
-      timeout: 5s
-      start_period: 30s
-      retries: 3
 
   # Backend Production Service
   backend:

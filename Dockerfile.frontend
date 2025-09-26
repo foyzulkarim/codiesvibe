@@ -7,7 +7,7 @@ ARG GIT_COMMIT
 ARG VERSION
 
 # Build arguments for Vite environment variables
-ARG VITE_API_URL=/api
+ARG VITE_API_URL=http://localhost:4000/api
 ARG NODE_ENV=production
 
 # Dependencies stage - Install all dependencies for caching
@@ -26,7 +26,7 @@ RUN npm ci
 FROM dependencies AS builder
 
 # Build arguments must be declared before they can be used
-ARG VITE_API_URL=/api
+ARG VITE_API_URL=http://localhost:4000/api
 ARG NODE_ENV=production
 
 # Set environment variables from build arguments BEFORE copying files
