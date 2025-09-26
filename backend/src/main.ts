@@ -12,9 +12,11 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   // Enable CORS with support for subdomain architecture
-  const corsOrigins = process.env.NODE_ENV === 'production'
-    ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost', 'http://api.localhost'])
-    : ['http://localhost:3000', 'http://localhost', 'http://api.localhost'];
+  const corsOrigins =
+    (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.split(',')) ||
+    (process.env.NODE_ENV === 'production'
+      ? ['http://localhost', 'http://api.localhost']
+      : ['http://localhost:3000', 'http://localhost', 'http://api.localhost']);
 
   app.enableCors({
     origin: corsOrigins,

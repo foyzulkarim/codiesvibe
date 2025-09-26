@@ -53,12 +53,13 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
         # Vite build-time environment variables
-        - VITE_API_URL=http://api.localhost
+        - VITE_API_URL=http://api.localhost/api
         - NODE_ENV=production
     container_name: codiesvibe-frontend-prod
     volumes:
       # Share built files with Nginx
       - frontend_dist:/shared/dist
+    command: sh -c "cp -r /usr/share/nginx/html/* /shared/dist/"
     environment:
       - NODE_ENV=production
       # Note: VITE_* vars are embedded at build time, these are for container metadata only

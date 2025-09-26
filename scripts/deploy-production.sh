@@ -71,7 +71,7 @@ fi
 
 # Stop existing production services
 print_status "Stopping existing production services..."
-docker-compose -f docker-compose.production.yml down --remove-orphans
+docker-compose -f docker-compose.production.yml down --volumes
 
 # Build and start production services
 print_status "Building and starting production services..."
