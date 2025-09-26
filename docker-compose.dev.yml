@@ -20,7 +20,7 @@ services:
       - /app/dist          # Prevent overwriting build output
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://backend:4000/api  # Internal service communication
+      - VITE_API_URL=http://api.localhost  # Subdomain routing via nginx
       - VITE_APP_VERSION=${npm_package_version:-dev}
       - VITE_BUILD_DATE=${BUILD_DATE:-$(date)}
       - VITE_GIT_COMMIT=${GIT_COMMIT:-dev}
@@ -61,8 +61,8 @@ services:
       - JWT_SECRET=dev-jwt-secret-key-change-in-production
       - COOKIE_SECRET=dev-cookie-secret-min-32-chars-dev
       - CSRF_SECRET=dev-csrf-secret-min-32-chars-dev
-      # CORS configuration for development
-      - CORS_ORIGIN=http://frontend:3000,http://localhost:3000
+      # CORS configuration for subdomain architecture
+      - CORS_ORIGIN=http://localhost:3000,http://localhost,http://api.localhost
       # Rate limiting (relaxed for development)
       - RATE_LIMIT_WINDOW=900000
       - RATE_LIMIT_MAX=1000

@@ -77,7 +77,7 @@ LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe
 
 # Set environment variables for development
 ENV NODE_ENV=development
-ENV VITE_API_URL=http://backend:4000/api
+ENV VITE_API_URL=http://api.localhost
 ENV VITE_HMR_HOST=0.0.0.0
 ENV VITE_HMR_PORT=5173
 
