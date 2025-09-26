@@ -231,6 +231,7 @@ jobs:
             BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             GIT_COMMIT=${{ github.sha }}
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            VITE_API_URL=http://api.localhost
 
       - name: Run Trivy scan on Frontend image
         uses: aquasecurity/trivy-action@master
