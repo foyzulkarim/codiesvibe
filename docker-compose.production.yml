@@ -17,7 +17,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       # Cloudflare IP ranges script and configuration
       - ./scripts:/scripts:ro
-      - nginx_includes:/etc/nginx/includes
+      - ./includes:/etc/nginx/includes:ro
       # Static files from frontend build
       - frontend_dist:/usr/share/nginx/html:ro
       # SSL certificates (for future use)
