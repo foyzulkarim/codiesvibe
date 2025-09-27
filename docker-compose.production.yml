@@ -71,6 +71,33 @@ services:
     restart: "no"  # One-time init container
     user: root  # Need root to write to volume
 
+  # Backend Seed Init Container - Seeds database and then exits
+  backend-seed:
+    # Use the seeding stage which includes source files
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: seeding
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-latest}
+    container_name: codiesvibe-backend-seed
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      # Infrastructure service connections (from docker-compose.infra.yml)
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+      # Minimal environment for seeding
+      - JWT_SECRET=${JWT_SECRET:-production-jwt-secret-change-immediately}
+      - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
+      - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
+    networks:
+      - codiesvibe-network
+    command: sh -c "echo 'Starting database seeding...' && npm run seed:production && echo 'Database seeding completed successfully'"
+    restart: "no"  # One-time init container
+
   # Backend Production Service
   backend:
     # Use pre-built GHCR image for production deployments
@@ -118,6 +145,9 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
     networks:
       - codiesvibe-network
+    depends_on:
+      backend-seed:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]

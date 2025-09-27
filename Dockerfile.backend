@@ -137,3 +137,12 @@ ENTRYPOINT ["dumb-init", "--"]
 
 # Start production server with optimized node flags
 CMD ["node", "--enable-source-maps", "dist/src/main.js"]
+
+# Seeding stage - Includes source files for database seeding
+FROM production AS seeding
+
+# Copy source files needed for seeding (particularly the seed data files)
+COPY --from=backend-builder --chown=nodejs:nodejs /app/src ./src
+
+# Override command for seeding stage - will be overridden by docker-compose
+CMD ["npm", "run", "seed"]
