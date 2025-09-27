@@ -27,8 +27,6 @@ services:
       - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
       - BACKEND_HOST=backend
       - BACKEND_PORT=4000
-      - MAIN_DOMAIN=${MAIN_DOMAIN:-codiesvibe.com}
-      - API_DOMAIN=${API_DOMAIN:-api.codiesvibe.com}
     networks:
       - codiesvibe-network
     depends_on:
@@ -58,7 +56,7 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
         # Vite build-time environment variables
-        - VITE_API_URL=${VITE_API_URL:-http://api.codiesvibe.com/api}
+        - VITE_API_URL=${VITE_API_URL:-https://api.codiesvibe.com/api}
         - NODE_ENV=production
     container_name: codiesvibe-frontend-init
     volumes:
@@ -117,7 +115,9 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
     container_name: codiesvibe-backend-prod
-    # No host ports exposed - accessed through Nginx reverse proxy
+    # Expose port 4000 for troubleshooting (accessed through Nginx reverse proxy normally)
+    ports:
+      - "4000:4000"  # Direct backend access for troubleshooting
     expose:
       - "4000"
     environment:

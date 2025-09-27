@@ -91,7 +91,7 @@ else
     print_error "Nginx health check failed"
 fi
 
-# Check backend through nginx
+# Check backend through nginx (local HTTP check since we're testing the proxy)
 if curl -f http://localhost/api/health >/dev/null 2>&1; then
     print_success "Backend is accessible through nginx"
 else
@@ -110,12 +110,15 @@ print_status "Production deployment status:"
 docker-compose -f docker-compose.production.yml ps
 
 print_success "🎉 Production deployment completed!"
-print_status "Application is available at: http://localhost"
-print_status "API documentation: http://localhost/docs"
-print_status "Health endpoints:"
-print_status "  Frontend: http://localhost/"
-print_status "  Backend: http://localhost/api/health"
-print_status "  Nginx: http://localhost/nginx-health"
+print_status "Local testing endpoints:"
+print_status "  Application: http://localhost"
+print_status "  API: http://localhost/api/health"
+print_status "  Nginx health: http://localhost/nginx-health"
+print_status "  Direct backend: http://localhost:4000 (troubleshooting)"
+print_warning "Note: These are local HTTP endpoints for testing."
+print_warning "In production, use HTTPS with your domain:"
+print_warning "  Application: https://codiesvibe.com"
+print_warning "  API: https://api.codiesvibe.com/api"
 
 # Display container logs for debugging
 print_status "Recent logs from services:"
