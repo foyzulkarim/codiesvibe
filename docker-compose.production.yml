@@ -15,6 +15,9 @@ services:
     volumes:
       # Nginx configuration
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Cloudflare IP ranges script and configuration
+      - ./scripts:/scripts:ro
+      - nginx_includes:/etc/nginx/includes
       # Static files from frontend build
       - frontend_dist:/usr/share/nginx/html:ro
       # SSL certificates (for future use)
@@ -24,6 +27,8 @@ services:
       - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
       - BACKEND_HOST=backend
       - BACKEND_PORT=4000
+      - MAIN_DOMAIN=${MAIN_DOMAIN:-codiesvibe.com}
+      - API_DOMAIN=${API_DOMAIN:-api.codiesvibe.com}
     networks:
       - codiesvibe-network
     depends_on:
@@ -53,7 +58,7 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
         # Vite build-time environment variables
-        - VITE_API_URL=http://api.codiesvibe.com/api
+        - VITE_API_URL=${VITE_API_URL:-http://api.codiesvibe.com/api}
         - NODE_ENV=production
     container_name: codiesvibe-frontend-init
     volumes:
@@ -126,7 +131,7 @@ services:
       - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
       - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
       # CORS configuration for subdomain architecture
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,http://codiesvibe.com,http://api.codiesvibe.com}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,https://codiesvibe.com,https://api.codiesvibe.com}
       # Production rate limiting
       - RATE_LIMIT_WINDOW=900000  # 15 minutes
       - RATE_LIMIT_MAX=100        # Stricter than development
@@ -192,6 +197,9 @@ volumes:
     driver: local
   # SSL certificates for Nginx
   nginx_ssl:
+    driver: local
+  # Nginx includes for dynamic configurations
+  nginx_includes:
     driver: local
   # Nginx cache and temporary files
   nginx_cache:

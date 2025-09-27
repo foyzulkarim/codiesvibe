@@ -655,6 +655,12 @@ echo ".env" >> .gitignore
 cp backend/.env.example backend/.env                # Development
 cp backend/.env.example backend/.env.production     # Production
 # For Cloudflare tunnel setup, see TUNNEL-SETUP.md
+
+### Cloudflare Tunnel Credentials
+
+**Security Note**: Cloudflare tunnel credentials should be stored securely in the cloudflared configuration directory (`~/.cloudflared/`) rather than in your project files. Never commit tunnel credentials to version control.
+
+For detailed tunnel setup instructions, refer to [TUNNEL-SETUP.md](TUNNEL-SETUP.md).
 ```
 
 ---

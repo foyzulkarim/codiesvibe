@@ -2,6 +2,64 @@
 
 Simple guide for managing your Cloudflare tunnel to expose CodiesVibe to the world.
 
+## 📋 Prerequisites
+
+Before setting up your tunnel, ensure you have:
+
+### Cloudflared Installation
+
+**macOS (Homebrew)**:
+```bash
+brew install cloudflared
+```
+
+**macOS (Direct)**:
+```bash
+# Download the latest release
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz -o cloudflared.tgz
+tar -xzf cloudflared.tgz
+sudo cp cloudflared /usr/local/bin/
+```
+
+**Linux (Ubuntu/Debian)**:
+```bash
+# Add Cloudflare repository
+sudo apt install -y gpg curl
+curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloudflare-archive-keyring.gpg
+echo 'deb [signed-by=/usr/share/keyrings/cloudflare-archive-keyring.gpg] https://pkg.cloudflare.com/cloudflared focal main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+
+# Install cloudflared
+sudo apt update
+sudo apt install cloudflared
+```
+
+**Linux (Direct)**:
+```bash
+# Download the latest release
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
+sudo dpkg -i cloudflared.deb
+```
+
+**Windows**:
+```bash
+# Using Winget
+winget install --id Cloudflare.cloudflared
+
+# Or download from GitHub releases
+# https://github.com/cloudflare/cloudflared/releases
+```
+
+**Verify Installation**:
+```bash
+cloudflared --version
+```
+
+### System Requirements
+- **Docker and Docker Compose** installed
+- **Domain name** managed by Cloudflare DNS
+- **Cloudflare account** with Zero Trust access
+- **Local ports 80 and 4000** available
+
 ## 🎯 Current Setup
 
 Your working architecture:
@@ -98,8 +156,12 @@ sudo journalctl -u cloudflared -f
 
 2. **Check CORS settings** in backend environment:
    ```bash
-   # Should include your domain
-   CORS_ORIGIN=http://localhost,http://api.codiesvibe.com
+   # Should include your domains (use environment variables for flexibility)
+   CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,https://codiesvibe.com,https://api.codiesvibe.com}
+
+   # For production deployment, set these in your environment:
+   # export CORS_ORIGIN=https://codiesvibe.com,https://api.codiesvibe.com
+   # Or in docker-compose.production.yml
    ```
 
 ### Tunnel Disconnecting
