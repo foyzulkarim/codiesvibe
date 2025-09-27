@@ -88,7 +88,7 @@ docker-compose -f docker-compose.infra.yml ps
 |-------------|---------|----------|
 | **Development** | `docker-compose -f docker-compose.dev.yml up -d` | Local development with hot reload |
 | **Production** | `docker-compose -f docker-compose.production.yml up -d` | Production deployment with Nginx |
-| **Cloudflare** | `docker-compose -f docker-compose.cloudflare.yml up -d` | Secure public access via tunnels |
+| **Cloudflare** | See `TUNNEL-SETUP.md` | Secure public access via local tunnel |
 | **Monitoring** | `docker-compose -f docker-compose.monitoring.yml up -d` | Extended observability stack |
 
 ---
@@ -102,7 +102,7 @@ docker-compose -f docker-compose.infra.yml ps
 | `docker-compose.infra.yml` | Infrastructure services | All environments | 27017, 6379, 9090, 3001 |
 | `docker-compose.dev.yml` | Development environment | Developers | 3000, 4000, 9229 |
 | `docker-compose.production.yml` | Production deployment | Production servers | 80, 443 |
-| `docker-compose.cloudflare.yml` | Cloudflare tunnel setup | Public deployment | None (tunneled) |
+| Local cloudflared tunnel | Simple tunnel setup | Public deployment | None (tunneled) |
 | `docker-compose.monitoring.yml` | Extended monitoring | Ops teams | 3002, 9091, 9093 |
 
 ### 🎯 Infrastructure First Approach
@@ -376,14 +376,15 @@ RATE_LIMIT_MAX=200
 # 1. Start infrastructure
 docker-compose -f docker-compose.infra.yml up -d
 
-# 2. Deploy with Cloudflare tunnel
-docker-compose -f docker-compose.cloudflare.yml --env-file .env.cloudflare up -d
+# 2. Start production stack
+docker-compose -f docker-compose.production.yml up -d
 
-# 3. Check tunnel status
-docker-compose -f docker-compose.cloudflare.yml logs cloudflared
+# 3. Start Cloudflare tunnel (see TUNNEL-SETUP.md for details)
+cloudflared tunnel run
 
 # 4. Verify deployment
 curl https://your-domain.com/health
+curl https://api.your-domain.com/api/tools
 ```
 
 ### Configure Cloudflare DNS
@@ -405,6 +406,8 @@ curl https://your-domain.com/health
 - ✅ **SSL/TLS Management**: Automatic certificate provisioning and renewal
 - ✅ **Enhanced Security**: WAF, bot protection, and threat intelligence
 - ✅ **Analytics**: Detailed traffic and performance insights
+
+📖 **For complete tunnel setup instructions, see [`TUNNEL-SETUP.md`](TUNNEL-SETUP.md)**
 
 ---
 
@@ -651,7 +654,13 @@ echo ".env" >> .gitignore
 # Copy and customize environment templates
 cp backend/.env.example backend/.env                # Development
 cp backend/.env.example backend/.env.production     # Production
-cp backend/.env.example .env.cloudflare            # Cloudflare
+# For Cloudflare tunnel setup, see TUNNEL-SETUP.md
+
+### Cloudflare Tunnel Credentials
+
+**Security Note**: Cloudflare tunnel credentials should be stored securely in the cloudflared configuration directory (`~/.cloudflared/`) rather than in your project files. Never commit tunnel credentials to version control.
+
+For detailed tunnel setup instructions, refer to [TUNNEL-SETUP.md](TUNNEL-SETUP.md).
 ```
 
 ---
