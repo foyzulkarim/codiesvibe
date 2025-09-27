@@ -3,7 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { EnhancedSeedService } from './database/seeding/enhanced-seed.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -55,27 +54,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  // Optionally run tools seeding on startup when SEED_TOOLS=true
-  const shouldSeed =
-    (process.env.SEED_TOOLS || configService.get<string>('SEED_TOOLS')) ===
-    'true';
-  const exitAfterSeed =
-    (process.env.EXIT_AFTER_SEED ||
-      configService.get<string>('EXIT_AFTER_SEED')) === 'true';
-  if (shouldSeed) {
-    const seedService = app.get(EnhancedSeedService);
-    await seedService.seedTools();
-
-    // If EXIT_AFTER_SEED=true, do not start HTTP server; exit cleanly
-    if (exitAfterSeed) {
-      console.log(
-        '✅ Seeding finished. EXIT_AFTER_SEED=true => exiting without starting server.',
-      );
-      await app.close();
-      process.exit(0);
-      return;
-    }
-  }
+  // Database seeding is now handled by a separate seed script (src/seed.ts)
 
   const port = configService.get<number>('port') || 4000;
   await app.listen(port);
