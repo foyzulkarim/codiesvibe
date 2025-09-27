@@ -16,6 +16,7 @@ bun.lockb
 .env.test.local
 .env.production.local
 .env.*.local
+backend/.env
 
 # Build outputs
 dist/
