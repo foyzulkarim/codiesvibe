@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { filterOptions, aiTools } from "@/data/tools";
-import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { useState } from "react";
+import { filterOptions } from "@/data/tools";
+import { ChevronDown, Check } from "lucide-react";
 
 interface TagFilterProps {
   activeFilters: Record<string, string[]>;
@@ -28,34 +28,6 @@ export const TagFilter = ({
       [section]: !prev[section]
     }));
   };
-
-  // Calculate filter counts
-  const getFilterCount = useMemo(() => {
-    return (category: string, value: string) => {
-      // Create a temporary filter state with just this filter active
-      const tempFilters = { ...activeFilters };
-      
-      // If this filter is already active, we want to count tools without it
-      if (activeFilters[category]?.includes(value)) {
-        tempFilters[category] = activeFilters[category].filter(v => v !== value);
-      } else {
-        // If not active, add it to see how many tools would match
-        tempFilters[category] = [...(activeFilters[category] || []), value];
-      }
-      
-      // Count tools that match the temporary filter state
-      const count = aiTools.filter(tool => {
-        return Object.entries(tempFilters).every(([cat, values]) => {
-          if (values.length === 0) return true;
-          const toolValues = tool[cat as keyof typeof tool] as string[];
-          return values.some(val => toolValues.includes(val));
-        });
-      }).length;
-      
-      return count;
-    };
-  }, [activeFilters]);
-
   const isTagActive = (category: string, value: string) => {
     return activeFilters[category]?.includes(value) || false;
   };
@@ -117,9 +89,6 @@ export const TagFilter = ({
                       <Check className="w-3.5 h-3.5" />
                     )}
                     {option}
-                    <span className="text-xs opacity-75">
-                      ({getFilterCount(category, option)})
-                    </span>
                   </button>
                 ))}
               </div>

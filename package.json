@@ -13,7 +13,12 @@
     "typecheck": "tsc --noEmit",
     "test": "echo 'No tests specified' && exit 0",
     "test:coverage": "echo 'No test coverage configured' && exit 0",
-    "prepare": "echo 'Skipping husky in CI environments'"
+    "prepare": "echo 'Skipping husky in CI environments'",
+    "infra:start": "./scripts/infra.sh start",
+    "infra:stop": "./scripts/infra.sh stop",
+    "infra:restart": "./scripts/infra.sh restart",
+    "infra:status": "./scripts/infra.sh status",
+    "infra:logs": "./scripts/infra.sh logs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

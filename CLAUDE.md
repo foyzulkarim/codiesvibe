@@ -34,15 +34,14 @@ backend/
 - Search API: GET /api/tools/search with query and sort parameters
 - Frontend components: SearchBar, ToolCard with highlighting
 - Database queries: Text search with MongoDB indexes
-- Docker commands: docker-compose up/down, build, logs
-- Infrastructure: docker-compose -f docker-compose.infra.yml up -d
-- Development: docker-compose -f docker-compose.dev.yml up -d
+- Infrastructure: npm run infra:start, npm run infra:stop, npm run infra:status
+- Development: npm run dev (frontend), cd backend && npm run dev (backend)
 - Production: docker-compose -f docker-compose.production.yml up -d
 - Cloudflare: docker-compose -f docker-compose.cloudflare.yml up -d
 - Health checks: curl http://localhost:3000/health, curl http://localhost:4000/health
 - Container optimization: docker build -f Dockerfile.frontend --target production
 - Performance testing: docker stats, ab -n 1000 -c 10, docker images --format table
-- Container validation: docker exec nginx -t, docker logs for debugging
+- Database seeding: cd backend && npm run seed
 
 ## Code Style
 - Use React hooks (useState, useEffect) for state management
@@ -54,23 +53,23 @@ backend/
 - Non-root user execution in containers
 - Environment-based configuration with Docker secrets
 
-## Docker Development Workflow
+## Development Workflow
 
-**Infrastructure First Approach:**
-1. Start infrastructure: `docker-compose -f docker-compose.infra.yml up -d`
+**Local Development Approach:**
+1. Start infrastructure: `npm run infra:start`
 2. Verify services are healthy via health checks
-3. Use infrastructure connection strings from `backend/.env.example`
-4. Connect application containers to `codiesvibe-network`
+3. Configure backend environment from `backend/.env.example`
+4. Start development servers natively for maximum speed
 
 **Environment Variables:**
-- Use container network addresses (mongodb:27017, redis:6379)
-- Reference `backend/.env.example` for infrastructure integration examples
-- Override with `docker-compose.override.yml` for local customization
+- Use localhost addresses for local development (localhost:27017, localhost:6379)
+- Reference `backend/.env.example` for configuration examples
+- Infrastructure services run in Docker, applications run natively
 
 **Port Strategy:**
 - Infrastructure: Standard ports (27017, 6379, 9090, etc.)
-- Applications: 3000 (frontend), 4000 (backend)
-- Development overrides available (3010, 4010) if conflicts occur
+- Applications: 3000 (frontend), 4000 (backend) running natively
+- No port conflicts as applications run outside containers
 
 ## Infrastructure Setup
 

@@ -24,10 +24,15 @@ CodiesVibe is a full-stack AI tools directory application with TypeScript + Reac
 
 ## Essential Commands
 
-### Backend Development
+### Development Setup
 ```bash
+# 1. Start infrastructure services first
+npm run infra:start     # From root directory
+
+# 2. Backend Development (in backend/ directory)
 cd backend
-npm run dev              # Start development server with hot reload
+npm install             # Install backend dependencies
+npm run dev             # Start development server with hot reload
 npm run build           # Build for production
 npm run start:prod      # Start production server
 npm run test            # Run unit tests
@@ -36,10 +41,9 @@ npm run test:cov        # Run tests with coverage
 npm run lint            # Run ESLint
 npm run typecheck       # TypeScript type checking
 npm run seed            # Seed database with sample data
-```
 
-### Frontend Development
-```bash
+# 3. Frontend Development (from root directory)
+npm install             # Install frontend dependencies
 npm run dev             # Start Vite development server
 npm run build           # Build for production
 npm run build:dev       # Build in development mode
@@ -51,17 +55,18 @@ npm run typecheck       # TypeScript type checking
 ## Database & Environment
 
 **MongoDB Setup:**
-- Default connection: `mongodb://localhost:27017/nestjs-api`
+- Infrastructure connection: `mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin`
 - Tools collection with comprehensive schema validation
 - Text search indexes for search functionality
 - Seeding system with versioned data migrations
+- Started via: `npm run infra:start` (from root directory)
 
 **Environment Variables (.env in backend):**
-- `PORT`: Server port (default: 3000)
-- `MONGODB_URI`: MongoDB connection string
+- `PORT`: Server port (default: 4000)
+- `MONGODB_URI`: MongoDB connection string (use localhost for local dev)
 - `JWT_SECRET`: JWT signing secret
 - `GITHUB_CLIENT_ID/SECRET`: OAuth configuration
-- `NODE_ENV`: Environment mode
+- `NODE_ENV`: Environment mode (development for local dev)
 
 ## Key Architecture Patterns
 
@@ -128,10 +133,12 @@ npm run typecheck       # TypeScript type checking
 
 ## Development Workflow
 
-1. **Backend Changes:** Modify in `./backend/src`, run tests, check types
-2. **Frontend Changes:** Modify in `./src`, ensure components follow shadcn patterns
-3. **API Changes:** Update DTOs, run backend tests, verify frontend integration
-4. **Database Changes:** Update schemas, create new seed versions if needed
+1. **Setup:** Start infrastructure with `npm run infra:start` (from root)
+2. **Backend Changes:** Modify in `./backend/src`, run tests, check types
+3. **Frontend Changes:** Modify in `./src`, ensure components follow shadcn patterns
+4. **API Changes:** Update DTOs, run backend tests, verify frontend integration
+5. **Database Changes:** Update schemas, create new seed versions if needed
+6. **Local Development:** Run `npm run dev` (frontend) and `cd backend && npm run dev` (backend) in separate terminals
 
 ## Important Notes
 
