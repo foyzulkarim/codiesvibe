@@ -8,17 +8,13 @@
 ToolsDatabase
 ├── metadata (version, schema, lastUpdated)
 └── tools[] (Tool)
-    ├── identity (id, name, slug, descriptions)
+    ├── identity (id, name, slug, description, longDescription, tagline)
     ├── categorization (categories)
     ├── pricing (pricingSummary, pricingDetails)
     ├── capabilities (core, aiFeatures, technical, integrations)
     ├── useCases[]
     ├── searchOptimization (searchKeywords, semanticTags, aliases)
-    ├── technicalSpecs (deployment, languages, compliance, performance)
-    ├── metrics (popularity, rating, reviews)
-    ├── comparison (pros, cons, bestFor, alternatives)
-    ├── metadata (urls, status, dates)
-    └── ragOptimization (contextWeight, relevance, types, expertise)
+    └── metadata (logoUrl, website, pricingUrl, documentation, status, contributor, dates)
 ```
 
 ## Detailed Entity Relationships
@@ -68,14 +64,13 @@ erDiagram
         boolean hasFreeTier
         boolean hasCustomPricing
         string[] billingPeriods
-        string pricingModel
+        string[] pricingModel
     }
     PricingDetails {
         string id
         string name
         number price
         string billing
-        number annualDiscount
         string[] features
         string[] limitations
         number maxUsers
@@ -89,7 +84,7 @@ erDiagram
 - `currency` must be valid ISO 4217 code
 - `pricingDetails` must have at least one entry
 - `sortOrder` must be unique within a tool's pricing plans
-- `annualDiscount` only applies when `billing` is "year"
+- `pricingModel` is now an array to support multiple models
 
 ### 4. Capabilities Structure
 
@@ -108,6 +103,7 @@ erDiagram
         boolean dataAnalysis
         boolean voiceInteraction
         boolean multimodal
+        boolean thinkingMode
     }
     TechnicalFeatures {
         boolean apiAccess
@@ -126,6 +122,7 @@ erDiagram
 - `core` capabilities must have at least one entry
 - All boolean flags in `aiFeatures` and `technical` must be explicitly set
 - `platforms` must include at least one supported platform
+- Added `thinkingMode` to AI features
 
 ### 5. Use Cases Entity
 
@@ -147,65 +144,6 @@ erDiagram
 - `industries` and `userTypes` arrays cannot be empty
 - `scenarios` should provide specific usage examples
 - Each use case must have a unique `name` within the tool
-
-### 6. Technical Specifications
-
-```mermaid
-erDiagram
-    Tool ||--|| TechnicalSpecs : has
-    TechnicalSpecs {
-        string[] deployment
-        string[] languages
-        string[] compliance
-        number uptime
-        string latency
-    }
-```
-
-**Business Rules:**
-- `deployment` must include at least one deployment option
-- `languages` must include at least one supported language
-- `uptime` must be between 0 and 100 if provided
-- `latency` must be one of: low, medium, high
-
-### 7. Metrics Entity
-
-```mermaid
-erDiagram
-    Tool ||--|| Metrics : has
-    Metrics {
-        number popularity
-        number rating
-        number reviewCount
-        string userCount
-        string adoptionRate
-    }
-```
-
-**Business Rules:**
-- `popularity` must be between 0 and 100
-- `rating` must be between 0 and 5
-- `reviewCount` cannot be negative
-- `adoptionRate` must be one of: low, medium, high
-
-### 8. RAG Optimization Entity
-
-```mermaid
-erDiagram
-    Tool ||--|| RAGOptimization : has
-    RAGOptimization {
-        number contextWeight
-        string[] searchRelevance
-        string[] contentTypes
-        string[] domainExpertise
-    }
-```
-
-**Business Rules:**
-- `contextWeight` must be between 0 and 1
-- `searchRelevance` must include at least one relevance level
-- `contentTypes` must include at least one content type
-- `domainExpertise` must include at least one domain area
 
 ## Field-by-Field Documentation
 
@@ -326,10 +264,10 @@ erDiagram
 - **Usage**: Billing options display, filtering
 
 #### pricingSummary.pricingModel
-- **Type**: string
-- **Format**: Single pricing model identifier
+- **Type**: string[]
+- **Format**: Array of pricing model identifiers
 - **Validation**: Predefined values only
-- **Allowed Values**: "subscription", "one-time", "freemium", "usage-based", "custom"
+- **Allowed Values**: "subscription", "one-time", "freemium", "usage-based", "token based", "custom"
 - **Usage**: Business model categorization, filtering
 
 #### pricingDetails[]
@@ -349,16 +287,19 @@ erDiagram
 #### capabilities.aiFeatures
 - **Type**: object with boolean properties
 - **Validation**: All properties must be explicitly set
+- **Properties**: codeGeneration, imageGeneration, dataAnalysis, voiceInteraction, multimodal, thinkingMode
 - **Usage**: AI-specific feature filtering, technical comparison
 
 #### capabilities.technical
 - **Type**: object with boolean properties
 - **Validation**: All properties must be explicitly set
+- **Properties**: apiAccess, webHooks, sdkAvailable, offlineMode
 - **Usage**: Technical requirement filtering, integration planning
 
 #### capabilities.integrations
 - **Type**: object with array properties
 - **Validation**: All arrays must have at least one entry
+- **Properties**: platforms, thirdParty, protocols
 - **Usage**: Integration compatibility, ecosystem planning
 
 ### Use Cases Fields
@@ -426,110 +367,6 @@ erDiagram
 - **Example**: ["OpenAI ChatGPT", "GPT-4", "Chat GPT"]
 - **Usage**: Search expansion, user flexibility
 
-### Technical Specification Fields
-
-#### technical.deployment
-- **Type**: string[]
-- **Format**: Array of deployment options
-- **Validation**: 1-5 entries, predefined deployment types
-- **Allowed Values**: "Cloud", "On-premise", "Hybrid", "Self-hosted"
-- **Usage**: Deployment filtering, infrastructure planning
-
-#### technical.languages
-- **Type**: string[]
-- **Format**: Array of language codes or names
-- **Validation**: 1-20 entries, standardized language names
-- **Example**: ["English", "Spanish", "French"]
-- **Usage**: Language filtering, localization
-
-#### technical.compliance
-- **Type**: string[]
-- **Format**: Array of compliance standards
-- **Validation**: 0-10 entries, standard compliance names
-- **Example**: ["GDPR", "SOC2", "HIPAA"]
-- **Usage**: Compliance filtering, enterprise requirements
-
-#### technical.uptime
-- **Type**: number
-- **Format**: Percentage with one decimal place
-- **Validation**: 0-100, optional
-- **Example**: 99.9
-- **Usage**: Reliability assessment, SLA considerations
-
-#### technical.latency
-- **Type**: string
-- **Format**: Single latency level
-- **Validation**: Predefined values only, optional
-- **Allowed Values**: "low", "medium", "high"
-- **Usage**: Performance filtering, user experience
-
-### Metrics Fields
-
-#### metrics.popularity
-- **Type**: number
-- **Format**: Integer or decimal
-- **Validation**: 0-100
-- **Example**: 95
-- **Usage**: Popularity sorting, trending identification
-
-#### metrics.rating
-- **Type**: number
-- **Format**: Decimal with one place
-- **Validation**: 0-5
-- **Example**: 4.5
-- **Usage**: Quality assessment, sorting, filtering
-
-#### metrics.reviewCount
-- **Type**: number
-- **Format**: Integer
-- **Validation**: >= 0
-- **Example**: 2500
-- **Usage**: Review confidence, social proof
-
-#### metrics.userCount
-- **Type**: string
-- **Format**: String representation of user count
-- **Validation**: Optional, human-readable format
-- **Example**: "100M+", "50K-100K", "1K-5K"
-- **Usage**: Scale indication, market presence
-
-#### metrics.adoptionRate
-- **Type**: string
-- **Format**: Single adoption level
-- **Validation**: Predefined values only, optional
-- **Allowed Values**: "low", "medium", "high"
-- **Usage**: Market penetration assessment
-
-### Comparison Fields
-
-#### comparison.pros
-- **Type**: string[]
-- **Format**: Array of advantage statements
-- **Validation**: 1-10 entries, concise statements
-- **Example**: ["Easy to use", "Versatile", "Good responses"]
-- **Usage**: Decision making, feature highlighting
-
-#### comparison.cons
-- **Type**: string[]
-- **Format**: Array of disadvantage statements
-- **Validation**: 1-10 entries, concise statements
-- **Example**: ["Can be inaccurate", "Limited context"]
-- **Usage**: Decision making, risk assessment
-
-#### comparison.bestFor
-- **Type**: string[]
-- **Format**: Array of best use scenarios
-- **Validation**: 1-5 entries, specific recommendations
-- **Example**: ["General AI assistance", "Content creation"]
-- **Usage**: Recommendation engine, use case matching
-
-#### comparison.alternatives
-- **Type**: string[]
-- **Format**: Array of alternative tool IDs
-- **Validation**: 0-10 entries, valid tool references
-- **Example**: ["claude", "gemini", "copilot"]
-- **Usage**: Alternative suggestions, comparison flow
-
 ### Metadata Fields
 
 #### logoUrl
@@ -545,6 +382,13 @@ erDiagram
 - **Validation**: Must be accessible URL, optional
 - **Example**: "https://chat.openai.com"
 - **Usage**: External links, reference, verification
+
+#### pricingUrl
+- **Type**: string
+- **Format**: Valid URL
+- **Validation**: Must be accessible URL, optional
+- **Example**: "https://chatgpt.com/pricing"
+- **Usage**: Direct link to pricing information
 
 #### documentation
 - **Type**: string
@@ -581,36 +425,6 @@ erDiagram
 - **Example**: "2025-09-14T08:40:00Z"
 - **Usage**: Freshness indication, sorting, caching
 
-### RAG Optimization Fields
-
-#### rag.contextWeight
-- **Type**: number
-- **Format**: Decimal with three places
-- **Validation**: 0-1
-- **Example**: 0.9
-- **Usage**: RAG result ranking, context prioritization
-
-#### rag.searchRelevance
-- **Type**: string[]
-- **Format**: Array of relevance levels
-- **Validation**: 1-3 entries, predefined values
-- **Allowed Values**: "high", "medium", "low"
-- **Usage**: Search result filtering, relevance boosting
-
-#### rag.contentTypes
-- **Type**: string[]
-- **Format**: Array of content type identifiers
-- **Validation**: 1-5 entries, predefined values
-- **Allowed Values**: "conversational", "generative", "assistive", "analytical", "creative"
-- **Usage**: Content type filtering, RAG context matching
-
-#### rag.domainExpertise
-- **Type**: string[]
-- **Format**: Array of domain expertise areas
-- **Validation**: 1-5 entries, predefined values
-- **Allowed Values**: "general", "technical", "creative", "business", "academic"
-- **Usage**: Domain-specific filtering, expertise matching
-
 ## Data Integrity Constraints
 
 ### Unique Constraints
@@ -620,7 +434,6 @@ erDiagram
 - `useCases[].name` must be unique within each tool
 
 ### Referential Integrity
-- `comparison.alternatives` must reference valid tool IDs
 - All URLs must be accessible and return valid content
 - Currency codes must be valid ISO 4217 codes
 - Language codes must be valid ISO 639-1 codes
@@ -635,8 +448,6 @@ erDiagram
 ### Business Logic Constraints
 - `pricingSummary.lowestMonthlyPrice` <= `pricingSummary.highestMonthlyPrice`
 - `pricingSummary.hasFreeTier` must be consistent with `pricingDetails`
-- `metrics.rating` should be consistent with `metrics.reviewCount`
-- `rag.contextWeight` should reflect actual tool importance
 
 ## Indexing Strategy
 
@@ -651,18 +462,28 @@ erDiagram
 - **tools.categories.userTypes**: Index for user type filtering
 - **tools.pricingSummary.hasFreeTier**: Index for free tier filtering
 - **tools.capabilities.aiFeatures**: Index for AI feature filtering
-- **tools.technical.deployment**: Index for deployment filtering
-- **tools.metrics.popularity**: Index for popularity sorting
-- **tools.metrics.rating**: Index for rating sorting
-- **tools.rag.contextWeight**: Index for RAG prioritization
 
 ### Full-Text Search Indexes
-- **tools.name**: Full-text search index
-- **tools.description**: Full-text search index
-- **tools.longDescription**: Full-text search index
-- **tools.searchKeywords**: Full-text search index
-- **tools.semanticTags**: Full-text search index
-- **tools.aliases**: Full-text search index
+- **tools.searchKeywords**: Full-text index for keyword search
+- **tools.semanticTags**: Full-text index for semantic search
+- **tools.aliases**: Full-text index for alternative name search
+- **tools.description**: Full-text index for description search
+- **tools.longDescription**: Full-text index for detailed content search
+
+## Schema Evolution
+
+### Version 2.0 Changes
+- Simplified structure by removing technicalSpecs, metrics, comparison, and ragOptimization entities
+- Added `longDescription` and `tagline` to identity fields
+- Changed `pricingModel` from string to array to support multiple models
+- Added `thinkingMode` to AI features
+- Added `pricingUrl` to metadata fields
+- Removed `annualDiscount` from pricing details
+
+### Migration Strategy
+- Existing data should be migrated to remove obsolete fields
+- New fields should be populated with appropriate default values
+- Validation rules should be updated to match new constraints
 
 ### Composite Indexes
 - **(status, popularity)**: For active tools sorted by popularity
