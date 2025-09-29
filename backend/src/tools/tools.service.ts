@@ -95,8 +95,8 @@ export class ToolsService {
     userId: string,
   ): Promise<ToolDocument> {
     // Auto-generate id and slug from name if not provided
-    let toolId = createToolDto.slug || this.generateId(createToolDto.name);
-    let slug = createToolDto.slug || toolId;
+    const toolId = createToolDto.slug || this.generateId(createToolDto.name);
+    const slug = createToolDto.slug || toolId;
 
     // Ensure unique id and slug
     await this.ensureUniqueIdAndSlug(toolId, slug);

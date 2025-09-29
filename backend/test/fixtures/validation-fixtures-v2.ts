@@ -11,15 +11,17 @@ export const VALIDATION_FIXTURES_V2 = {
     id: 'claude-ai-v2',
     name: 'Claude AI',
     slug: 'claude-ai',
-    description: 'AI assistant by Anthropic for helpful, harmless, and honest conversations',
-    longDescription: 'Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest.',
+    description:
+      'AI assistant by Anthropic for helpful, harmless, and honest conversations',
+    longDescription:
+      'Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest.',
     tagline: 'Your thoughtful AI assistant for safe and helpful interactions',
 
     categories: {
       primary: ['AI', 'Assistant'],
       secondary: ['Productivity', 'Analysis'],
       industries: ['Technology', 'Education', 'Research'],
-      userTypes: ['Researchers', 'Writers', 'Students']
+      userTypes: ['Researchers', 'Writers', 'Students'],
     },
 
     pricingSummary: {
@@ -29,7 +31,7 @@ export const VALIDATION_FIXTURES_V2 = {
       hasFreeTier: true,
       hasCustomPricing: false,
       billingPeriods: ['month'],
-      pricingModel: ['freemium', 'subscription']
+      pricingModel: ['freemium', 'subscription'],
     },
 
     pricingDetails: [
@@ -40,7 +42,7 @@ export const VALIDATION_FIXTURES_V2 = {
         billing: 'month',
         features: ['Limited daily conversations', 'Claude 3 Haiku access'],
         limitations: ['Daily usage limits', 'Standard response time'],
-        sortOrder: 1
+        sortOrder: 1,
       },
       {
         id: 'pro',
@@ -49,8 +51,8 @@ export const VALIDATION_FIXTURES_V2 = {
         billing: 'month',
         features: ['5x more usage', 'Priority bandwidth'],
         isPopular: true,
-        sortOrder: 2
-      }
+        sortOrder: 2,
+      },
     ],
 
     capabilities: {
@@ -61,19 +63,19 @@ export const VALIDATION_FIXTURES_V2 = {
         dataAnalysis: true,
         voiceInteraction: false,
         multimodal: true,
-        thinkingMode: false
+        thinkingMode: false,
       },
       technical: {
         apiAccess: true,
         webHooks: false,
         sdkAvailable: true,
-        offlineMode: false
+        offlineMode: false,
       },
       integrations: {
         platforms: ['Web', 'API'],
         thirdParty: ['Slack', 'Discord'],
-        protocols: ['REST', 'JSON']
-      }
+        protocols: ['REST', 'JSON'],
+      },
     },
 
     useCases: [
@@ -83,7 +85,7 @@ export const VALIDATION_FIXTURES_V2 = {
         industries: ['Content Creation', 'Marketing'],
         userTypes: ['Writers', 'Content Creators'],
         scenarios: ['Article writing', 'Email composition'],
-        complexity: 'beginner'
+        complexity: 'beginner',
       },
       {
         name: 'Data Analysis',
@@ -91,12 +93,16 @@ export const VALIDATION_FIXTURES_V2 = {
         industries: ['Business', 'Research'],
         userTypes: ['Analysts', 'Researchers'],
         scenarios: ['Report analysis', 'Statistical interpretation'],
-        complexity: 'intermediate'
-      }
+        complexity: 'intermediate',
+      },
     ],
 
     searchKeywords: ['AI', 'assistant', 'claude', 'anthropic'],
-    semanticTags: ['constitutional ai', 'safety-focused ai', 'natural language processing'],
+    semanticTags: [
+      'constitutional ai',
+      'safety-focused ai',
+      'natural language processing',
+    ],
     aliases: ['Claude', 'Anthropic Claude'],
 
     // Legacy fields for backward compatibility
@@ -115,7 +121,7 @@ export const VALIDATION_FIXTURES_V2 = {
     status: 'active',
     contributor: 'system',
     dateAdded: '2025-09-14T09:17:00Z',
-    lastUpdated: '2025-09-29T08:40:00Z'
+    lastUpdated: '2025-09-29T08:40:00Z',
   },
 
   // Valid minimal tool data (only required v2.0 fields)
@@ -131,7 +137,7 @@ export const VALIDATION_FIXTURES_V2 = {
       primary: ['Utility'],
       secondary: [],
       industries: ['Technology'],
-      userTypes: ['Developers']
+      userTypes: ['Developers'],
     },
 
     pricingSummary: {
@@ -141,7 +147,7 @@ export const VALIDATION_FIXTURES_V2 = {
       hasFreeTier: true,
       hasCustomPricing: false,
       billingPeriods: ['month'],
-      pricingModel: ['free']
+      pricingModel: ['free'],
     },
 
     pricingDetails: [
@@ -151,8 +157,8 @@ export const VALIDATION_FIXTURES_V2 = {
         price: 0,
         billing: 'month',
         features: ['Basic functionality'],
-        sortOrder: 1
-      }
+        sortOrder: 1,
+      },
     ],
 
     capabilities: {
@@ -163,19 +169,19 @@ export const VALIDATION_FIXTURES_V2 = {
         dataAnalysis: false,
         voiceInteraction: false,
         multimodal: false,
-        thinkingMode: false
+        thinkingMode: false,
       },
       technical: {
         apiAccess: false,
         webHooks: false,
         sdkAvailable: false,
-        offlineMode: false
+        offlineMode: false,
       },
       integrations: {
         platforms: ['Web'],
         thirdParty: [],
-        protocols: ['HTTP']
-      }
+        protocols: ['HTTP'],
+      },
     },
 
     useCases: [
@@ -185,8 +191,8 @@ export const VALIDATION_FIXTURES_V2 = {
         industries: ['Technology'],
         userTypes: ['Developers'],
         scenarios: ['Simple tasks'],
-        complexity: 'beginner'
-      }
+        complexity: 'beginner',
+      },
     ],
 
     searchKeywords: ['simple', 'tool', 'basic'],
@@ -207,7 +213,7 @@ export const VALIDATION_FIXTURES_V2 = {
     status: 'active',
     contributor: 'test-user',
     dateAdded: '2025-09-29T10:00:00Z',
-    lastUpdated: '2025-09-29T10:00:00Z'
+    lastUpdated: '2025-09-29T10:00:00Z',
   },
 
   // Invalid data fixtures for testing validation failures
@@ -228,8 +234,8 @@ export const VALIDATION_FIXTURES_V2 = {
         hasFreeTier: true,
         hasCustomPricing: false,
         billingPeriods: ['month'],
-        pricingModel: ['free']
-      }
+        pricingModel: ['free'],
+      },
     },
 
     missingPricingSummary: {
@@ -243,8 +249,8 @@ export const VALIDATION_FIXTURES_V2 = {
         primary: ['Test'],
         secondary: [],
         industries: ['Technology'],
-        userTypes: ['Developers']
-      }
+        userTypes: ['Developers'],
+      },
       // pricingSummary: missing
     },
 
@@ -258,8 +264,8 @@ export const VALIDATION_FIXTURES_V2 = {
         primary: [], // Empty primary categories - should fail
         secondary: ['Test'],
         industries: ['Technology'],
-        userTypes: ['Developers']
-      }
+        userTypes: ['Developers'],
+      },
     },
 
     // Invalid pricing structure
@@ -273,8 +279,8 @@ export const VALIDATION_FIXTURES_V2 = {
         hasFreeTier: true,
         hasCustomPricing: false,
         billingPeriods: ['month'],
-        pricingModel: ['freemium']
-      }
+        pricingModel: ['freemium'],
+      },
     },
 
     // Invalid use case complexity
@@ -288,9 +294,9 @@ export const VALIDATION_FIXTURES_V2 = {
           industries: ['Technology'],
           userTypes: ['Developers'],
           scenarios: ['Test scenario'],
-          complexity: 'invalid-complexity' // Should be 'beginner', 'intermediate', or 'advanced'
-        }
-      ]
+          complexity: 'invalid-complexity', // Should be 'beginner', 'intermediate', or 'advanced'
+        },
+      ],
     },
 
     // Invalid pricing details
@@ -304,9 +310,9 @@ export const VALIDATION_FIXTURES_V2 = {
           price: 'not-a-number', // Should be number or null
           billing: 'invalid-billing', // Should be valid billing period
           features: 'not-an-array', // Should be array
-          sortOrder: 'not-a-number' // Should be number
-        }
-      ]
+          sortOrder: 'not-a-number', // Should be number
+        },
+      ],
     },
 
     // Invalid capabilities structure
@@ -317,14 +323,14 @@ export const VALIDATION_FIXTURES_V2 = {
         core: 'not-an-array', // Should be array
         aiFeatures: {
           codeGeneration: 'not-a-boolean', // Should be boolean
-          imageGeneration: false
+          imageGeneration: false,
         },
         technical: 'not-an-object', // Should be object
         integrations: {
-          platforms: 'not-an-array' // Should be array
-        }
-      }
-    }
+          platforms: 'not-an-array', // Should be array
+        },
+      },
+    },
   },
 
   // Edge cases for boundary testing
@@ -333,14 +339,14 @@ export const VALIDATION_FIXTURES_V2 = {
       primary: ['Cat1', 'Cat2', 'Cat3', 'Cat4', 'Cat5'], // Max 5 primary
       secondary: Array.from({ length: 10 }, (_, i) => `Secondary${i + 1}`), // Max 10 secondary
       industries: Array.from({ length: 10 }, (_, i) => `Industry${i + 1}`),
-      userTypes: Array.from({ length: 10 }, (_, i) => `UserType${i + 1}`)
+      userTypes: Array.from({ length: 10 }, (_, i) => `UserType${i + 1}`),
     },
 
     minimalCategories: {
       primary: ['Single'],
       secondary: [],
       industries: ['Technology'],
-      userTypes: ['Users']
+      userTypes: ['Users'],
     },
 
     maxPricingDetails: Array.from({ length: 10 }, (_, i) => ({
@@ -349,7 +355,7 @@ export const VALIDATION_FIXTURES_V2 = {
       price: i * 10,
       billing: 'month',
       features: [`Feature ${i + 1}`],
-      sortOrder: i + 1
+      sortOrder: i + 1,
     })),
 
     maxUseCases: Array.from({ length: 10 }, (_, i) => ({
@@ -358,15 +364,15 @@ export const VALIDATION_FIXTURES_V2 = {
       industries: ['Technology'],
       userTypes: ['Developers'],
       scenarios: [`Scenario ${i + 1}`],
-      complexity: ['beginner', 'intermediate', 'advanced'][i % 3]
+      complexity: ['beginner', 'intermediate', 'advanced'][i % 3],
     })),
 
     // String length boundaries for v2.0 fields
     maxLengthTagline: 'a'.repeat(200), // Max 200 characters
     maxLengthSlug: 'a'.repeat(100), // Max 100 characters
     longSemanticTags: Array.from({ length: 50 }, (_, i) => `semantic-tag-${i}`),
-    longAliases: Array.from({ length: 20 }, (_, i) => `Alias ${i + 1}`)
-  }
+    longAliases: Array.from({ length: 20 }, (_, i) => `Alias ${i + 1}`),
+  },
 };
 
 // Helper functions for generating v2.0 test data
@@ -375,7 +381,7 @@ export const TestDataGeneratorV2 = {
   generateValidTool(overrides = {}) {
     return {
       ...VALIDATION_FIXTURES_V2.validCompleteTool,
-      ...overrides
+      ...overrides,
     };
   },
 
@@ -383,7 +389,7 @@ export const TestDataGeneratorV2 = {
   generateToolWithField(field: string, value: any) {
     return {
       ...VALIDATION_FIXTURES_V2.validCompleteTool,
-      [field]: value
+      [field]: value,
     };
   },
 
@@ -391,7 +397,7 @@ export const TestDataGeneratorV2 = {
   generateMinimalTool(overrides = {}) {
     return {
       ...VALIDATION_FIXTURES_V2.validMinimalTool,
-      ...overrides
+      ...overrides,
     };
   },
 
@@ -409,8 +415,8 @@ export const TestDataGeneratorV2 = {
         primary: [`Category${(i % 3) + 1}`],
         secondary: [`Secondary${(i % 4) + 1}`],
         industries: [`Industry${(i % 5) + 1}`],
-        userTypes: [`UserType${(i % 3) + 1}`]
-      }
+        userTypes: [`UserType${(i % 3) + 1}`],
+      },
     }));
-  }
+  },
 };
