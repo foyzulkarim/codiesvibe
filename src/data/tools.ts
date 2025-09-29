@@ -3,10 +3,8 @@
 import { BaseTool, FILTER_OPTIONS } from '@shared/types';
 import { transformLegacyToV2 } from '@/lib/data-transforms';
 
-// Use shared interface directly for v2.0 compatibility
-export interface AITool extends BaseTool {
-  // Frontend-specific fields can be added here if needed
-}
+// Use shared type alias for v2.0 compatibility to avoid empty interface lint error
+export type AITool = BaseTool;
 
 // Legacy mock data for transformation
 const legacyMockData = [
