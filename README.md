@@ -129,9 +129,10 @@ Fast local development with native hot reload, instant debugging, and maximum vi
 # 1. Start infrastructure services
 npm run infra:start
 
-# 2. Configure backend environment
-cp backend/.env.example backend/.env
-# Edit backend/.env with your settings
+# 2. Configure environment files
+cp .env.example .env                    # Frontend environment
+cp backend/.env.example backend/.env   # Backend environment
+# Edit both files with your settings
 
 # 3. Install dependencies
 npm install                    # Frontend dependencies
@@ -149,11 +150,18 @@ open http://localhost:4000/api/health  # Backend health check
 ### Development Environment Variables
 
 ```env
-# backend/.env
+# .env (Frontend)
+VITE_API_URL=http://localhost:4000/api
+VITE_DEBUG=true
+VITE_LOCAL_DEV=true
+VITE_APP_NAME=CodiesVibe
+VITE_ENVIRONMENT=development
+
+# backend/.env (Backend)
 NODE_ENV=development
 PORT=4000
-MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
-REDIS_URL=redis://:redis123@redis:6379
+MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin
+REDIS_URL=redis://:redis123@localhost:6379
 JWT_SECRET=dev-jwt-secret-change-in-production
 CORS_ORIGIN=http://localhost:3000
 
@@ -662,9 +670,31 @@ echo ".env" >> .gitignore
 
 ```bash
 # Copy and customize environment templates
+
+# Frontend environment files
+cp .env.example .env                           # Development (required)
+cp .env.development.example .env.development   # Development-specific (optional)
+cp .env.production.example .env.production     # Production build (optional)
+
+# Backend environment files
 cp backend/.env.example backend/.env                # Development
 cp backend/.env.example backend/.env.production     # Production
+
 # For Cloudflare tunnel setup, see TUNNEL-SETUP.md
+```
+
+### Environment File Structure
+
+The project uses a clear separation of frontend and backend environment variables:
+
+- **Frontend (Vite)**: Uses `VITE_` prefixed variables that are embedded at build time
+  - `.env` - Default development settings
+  - `.env.development.example` - Development-specific template
+  - `.env.production.example` - Production build template
+
+- **Backend (NestJS)**: Traditional Node.js environment variables
+  - `backend/.env` - Development configuration
+  - `backend/.env.production` - Production configuration
 
 ### Cloudflare Tunnel Credentials
 
