@@ -308,7 +308,7 @@ export class EnhancedSeedService {
     const { validTools, errors } = await this.validateTools(
       seedFile.data.tools,
     );
-    
+
     // Log validation errors for debugging
     if (errors.length > 0) {
       this.logger.error(`Validation errors in ${seedFile.filename}:`);

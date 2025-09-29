@@ -154,7 +154,6 @@ export class CreateToolEnhancedDto {
   @MinLength(50)
   longDescription?: string;
 
-
   @ApiProperty({ description: 'Interface types', type: [String] })
   @IsArray()
   @ArrayMinSize(1)

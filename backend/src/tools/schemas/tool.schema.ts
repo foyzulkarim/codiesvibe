@@ -155,10 +155,17 @@ export class Tool {
         validate: {
           validator: (v: string[]) => {
             if (!Array.isArray(v) || v.length === 0) return false;
-            const validModels: PricingModelEnum[] = ['free', 'freemium', 'paid'];
-            return v.every(model => validModels.includes(model as PricingModelEnum));
+            const validModels: PricingModelEnum[] = [
+              'free',
+              'freemium',
+              'paid',
+            ];
+            return v.every((model) =>
+              validModels.includes(model as PricingModelEnum),
+            );
           },
-          message: 'pricingModel must be a non-empty array containing only: free, freemium, paid',
+          message:
+            'pricingModel must be a non-empty array containing only: free, freemium, paid',
         },
       },
     },
@@ -436,7 +443,6 @@ export class Tool {
     },
   })
   aliases!: string[];
-
 
   @Prop({
     type: [String],

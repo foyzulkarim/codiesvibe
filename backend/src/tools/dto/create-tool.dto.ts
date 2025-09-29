@@ -528,7 +528,6 @@ export class CreateToolDto {
   @Length(1, 256, { each: true })
   aliases!: string[];
 
-
   @ApiProperty({
     description: 'Legacy interface types',
     example: ['Web', 'API'],
