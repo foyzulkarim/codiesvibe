@@ -30,6 +30,34 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
     return "text-warning";
   };
 
+  // Helper to get pricing display from v2.0 structure
+  const getPricingDisplay = () => {
+    if (tool.pricingSummary) {
+      const { hasFreeTier, pricingModel } = tool.pricingSummary;
+      if (hasFreeTier) return ["Free"];
+      if (pricingModel.includes("freemium")) return ["Freemium"];
+      if (pricingModel.includes("subscription")) return ["Subscription"];
+      if (pricingModel.includes("enterprise")) return ["Enterprise"];
+    }
+    return tool.pricing || [];
+  };
+
+  // Helper to get interface display from v2.0 structure
+  const getInterfaceDisplay = () => {
+    if (tool.capabilities?.integrations?.platforms) {
+      return tool.capabilities.integrations.platforms;
+    }
+    return tool.interface || [];
+  };
+
+  // Helper to get functionality display from v2.0 structure
+  const getFunctionalityDisplay = () => {
+    if (tool.capabilities?.core) {
+      return tool.capabilities.core;
+    }
+    return tool.functionality || [];
+  };
+
   const formatLastUpdated = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -122,9 +150,9 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
           </div>
         </div>
 
-        {/* Tags Row */}
+        {/* Tags Row - Updated for v2.0 */}
         <div className="flex flex-wrap gap-2">
-          {(Array.isArray(tool.pricing) ? tool.pricing : []).slice(0, 2).map((price) => (
+          {getPricingDisplay().slice(0, 2).map((price) => (
             <span
               key={price}
               className={`px-2 py-1 text-xs font-medium rounded-md bg-success/10 ${getPricingColor([price])}`}
@@ -132,7 +160,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               {price}
             </span>
           ))}
-          {tool.interface.slice(0, 2).map((interface_) => (
+          {getInterfaceDisplay().slice(0, 2).map((interface_) => (
             <span
               key={interface_}
               className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary"
@@ -140,12 +168,22 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               {interface_}
             </span>
           ))}
-          {tool.functionality.slice(0, 2).map((func) => (
+          {getFunctionalityDisplay().slice(0, 2).map((func) => (
             <span
               key={func}
               className="px-2 py-1 text-xs font-medium rounded-md bg-secondary/10 text-secondary"
             >
               {func}
+            </span>
+          ))}
+
+          {/* v2.0 Categories */}
+          {tool.categories?.primary?.slice(0, 2).map((category) => (
+            <span
+              key={category}
+              className="px-2 py-1 text-xs font-medium rounded-md bg-accent/10 text-accent"
+            >
+              {category}
             </span>
           ))}
         </div>
@@ -181,39 +219,143 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               </p>
             )}
 
-            {/* Feature Matrix */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Key Features</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(tool.features).map(([feature, available]) => (
-                  <div key={feature} className="flex items-center gap-2 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${available ? 'bg-success' : 'bg-border'}`}></div>
-                    <span className={available ? 'text-foreground' : 'text-muted-foreground'}>
-                      {feature}
-                    </span>
-                  </div>
-                ))}
+            {/* AI Features Matrix (v2.0) */}
+            {tool.capabilities?.aiFeatures && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">AI Capabilities</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(tool.capabilities.aiFeatures).map(([feature, available]) => (
+                    <div key={feature} className="flex items-center gap-2 text-sm">
+                      <div className={`w-2 h-2 rounded-full ${available ? 'bg-success' : 'bg-border'}`}></div>
+                      <span className={available ? 'text-foreground' : 'text-muted-foreground'}>
+                        {feature.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* All Tags */}
+            {/* Legacy Feature Matrix (backward compatibility) */}
+            {tool.features && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Key Features</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(tool.features).map(([feature, available]) => (
+                    <div key={feature} className="flex items-center gap-2 text-sm">
+                      <div className={`w-2 h-2 rounded-full ${available ? 'bg-success' : 'bg-border'}`}></div>
+                      <span className={available ? 'text-foreground' : 'text-muted-foreground'}>
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pricing Details (v2.0) */}
+            {tool.pricingDetails && tool.pricingDetails.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Pricing Plans</h4>
+                <div className="space-y-2">
+                  {tool.pricingDetails.slice(0, 3).map((plan) => (
+                    <div key={plan.id} className="flex items-center justify-between p-2 rounded border">
+                      <div>
+                        <span className="font-medium text-sm">{plan.name}</span>
+                        {plan.isPopular && (
+                          <span className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+                            Popular
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">
+                        {plan.price === null ? 'Custom' : plan.price === 0 ? 'Free' : `$${plan.price}/${plan.billing}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Use Cases (v2.0) */}
+            {tool.useCases && tool.useCases.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Use Cases</h4>
+                <div className="space-y-2">
+                  {tool.useCases.slice(0, 3).map((useCase) => (
+                    <div key={useCase.name} className="p-2 rounded border">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">{useCase.name}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{useCase.complexity}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{useCase.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* All Categories - Updated for v2.0 */}
             <div>
               <h4 className="text-sm font-medium mb-2">All Categories</h4>
-              <div className="flex flex-wrap gap-1">
-                {[...tool.pricing, ...tool.interface, ...tool.functionality, ...tool.deployment].map((tag, index) => (
-                  <span
-                    key={`${tag}-${index}`}
-                    className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded border"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              <div className="space-y-2">
+                {/* v2.0 Categories */}
+                {tool.categories && (
+                  <div className="space-y-1">
+                    {tool.categories.primary && tool.categories.primary.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">Primary:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {tool.categories.primary.map((cat) => (
+                            <span key={cat} className="px-2 py-1 text-xs bg-primary/10 text-primary rounded">
+                              {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {tool.categories.industries && tool.categories.industries.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground">Industries:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {tool.categories.industries.map((industry) => (
+                            <span key={industry} className="px-2 py-1 text-xs bg-secondary/10 text-secondary rounded">
+                              {industry}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Legacy Categories (backward compatibility) */}
+                {(tool.pricing || tool.interface || tool.functionality || tool.deployment) && (
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      ...(getPricingDisplay() || []),
+                      ...(getInterfaceDisplay() || []),
+                      ...(getFunctionalityDisplay() || []),
+                      ...(tool.deployment || [])
+                    ].map((tag, index) => (
+                      <span
+                        key={`${tag}-${index}`}
+                        className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded border"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
-              <button className="flex-1 bg-primary text-primary-foreground hover:bg-primary-dark px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+              <button
+                onClick={() => window.open(tool.website || `https://example.com/${tool.id}`, '_blank')}
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary-dark px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
                 <ExternalLink className="w-4 h-4" />
                 Try Now
               </button>

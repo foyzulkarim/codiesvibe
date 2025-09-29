@@ -5,12 +5,29 @@ import { UseToolReturn, ToolResponseDto } from '@/api/types';
 import { AITool } from '@/data/tools';
 import { ToolResponseDto as ToolResponseType } from '@/api/types';
 
-// Transform API response to match AITool interface (duplicate since it's not exported from useTools)
+// Transform API response to match AITool interface (v2.0)
 const transformToolResponse = (tool: ToolResponseType): AITool => ({
+  // Core v2.0 fields
   id: tool.id,
   name: tool.name,
+  slug: tool.slug,
   description: tool.description,
   longDescription: tool.longDescription,
+  tagline: tool.tagline,
+
+  // v2.0 structured data
+  categories: tool.categories,
+  pricingSummary: tool.pricingSummary,
+  pricingDetails: tool.pricingDetails,
+  capabilities: tool.capabilities,
+  useCases: tool.useCases,
+
+  // Enhanced metadata
+  searchKeywords: tool.searchKeywords,
+  semanticTags: tool.semanticTags,
+  aliases: tool.aliases,
+
+  // Legacy fields for backward compatibility
   pricing: tool.pricing,
   interface: tool.interface,
   functionality: tool.functionality,
@@ -18,11 +35,20 @@ const transformToolResponse = (tool: ToolResponseType): AITool => ({
   popularity: tool.popularity,
   rating: tool.rating,
   reviewCount: tool.reviewCount,
-  lastUpdated: tool.lastUpdated,
+
+  // URLs and metadata
   logoUrl: tool.logoUrl,
-  features: tool.features,
-  searchKeywords: tool.searchKeywords,
-  tags: tool.tags,
+  website: tool.website,
+  documentation: tool.documentation,
+  pricingUrl: tool.pricingUrl,
+  status: tool.status,
+  contributor: tool.contributor,
+  dateAdded: tool.dateAdded,
+  lastUpdated: tool.lastUpdated,
+
+  // Legacy compatibility (if still needed)
+  ...(tool.features && { features: tool.features }),
+  ...(tool.tags && { tags: tool.tags })
 });
 
 // API function to fetch single tool

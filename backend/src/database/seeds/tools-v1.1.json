@@ -1,6 +1,7 @@
 {
   "version": 1.1,
-  "lastUpdated": "2025-09-14T09:17:00Z",
+  "schema": "tools-v2.0",
+  "lastUpdated": "2025-09-29T08:40:00Z",
   "contributors": {
     "system": {
       "name": "System Admin",
@@ -12,8 +13,105 @@
     {
       "id": "claude-ai",
       "name": "Claude AI",
+      "slug": "claude-ai",
       "description": "AI assistant by Anthropic for helpful, harmless, and honest conversations",
-      "longDescription": "Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest.",
+      "longDescription": "Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest, with a focus on safety and constitutional AI principles. It excels at complex reasoning, writing assistance, code generation, and thoughtful analysis across a wide range of topics.",
+      "tagline": "Your thoughtful AI assistant for safe and helpful interactions",
+
+      "categories": {
+        "primary": ["AI", "Assistant"],
+        "secondary": ["Productivity", "Analysis"],
+        "industries": ["Technology", "Education", "Research", "Business", "Content Creation"],
+        "userTypes": ["Researchers", "Writers", "Students", "Professionals", "Analysts"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 20,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": false,
+        "billingPeriods": ["month"],
+        "pricingModel": ["freemium", "subscription"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "free",
+          "name": "Free Plan",
+          "price": 0,
+          "billing": "month",
+          "features": ["Limited daily conversations", "Claude 3 Haiku access", "Web interface", "Basic chat functionality"],
+          "limitations": ["Daily usage limits", "Standard response time", "Limited model access"],
+          "sortOrder": 1
+        },
+        {
+          "id": "pro",
+          "name": "Claude Pro",
+          "price": 20,
+          "billing": "month",
+          "features": ["5x more usage", "Claude 3 Opus and Sonnet access", "Priority bandwidth", "Early access to new features"],
+          "isPopular": true,
+          "sortOrder": 2
+        }
+      ],
+
+      "pricingUrl": "https://claude.ai/pricing",
+
+      "capabilities": {
+        "core": ["Text Generation", "Analysis", "Code Generation", "Research Assistance", "Creative Writing"],
+        "aiFeatures": {
+          "codeGeneration": true,
+          "imageGeneration": false,
+          "dataAnalysis": true,
+          "voiceInteraction": false,
+          "multimodal": true,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": true,
+          "offlineMode": false
+        },
+        "integrations": {
+          "platforms": ["Web", "API"],
+          "thirdParty": ["Slack", "Discord"],
+          "protocols": ["REST", "JSON"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "Writing Assistance",
+          "description": "Professional writing help including drafting, editing, and content strategy",
+          "industries": ["Content Creation", "Marketing", "Publishing", "Education"],
+          "userTypes": ["Writers", "Content Creators", "Marketers", "Students"],
+          "scenarios": ["Article writing", "Email composition", "Creative storytelling", "Academic papers"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Data Analysis",
+          "description": "Complex data interpretation, analysis, and insights generation",
+          "industries": ["Business", "Research", "Finance", "Healthcare"],
+          "userTypes": ["Analysts", "Researchers", "Data Scientists", "Business Intelligence"],
+          "scenarios": ["Report analysis", "Market research", "Statistical interpretation", "Trend analysis"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "Research Help",
+          "description": "In-depth research assistance and knowledge synthesis across domains",
+          "industries": ["Education", "Research", "Academia", "Consulting"],
+          "userTypes": ["Researchers", "Students", "Academics", "Consultants"],
+          "scenarios": ["Literature reviews", "Fact checking", "Topic exploration", "Synthesis of complex information"],
+          "complexity": "advanced"
+        }
+      ],
+
+      "searchKeywords": ["AI", "assistant", "claude", "anthropic", "conversation"],
+      "semanticTags": ["constitutional ai", "safety-focused ai", "natural language processing", "reasoning", "analysis", "research assistant", "ethical ai", "helpful ai"],
+      "aliases": ["Claude", "Anthropic Claude", "Claude Assistant", "Claude AI Assistant"],
+
       "pricing": ["Free", "Paid"],
       "interface": ["Web", "API"],
       "functionality": ["Text Generation", "Analysis", "Code Generation"],
@@ -21,26 +119,14 @@
       "popularity": 85,
       "rating": 4.6,
       "reviewCount": 1200,
-      "lastUpdated": "2025-09-14T09:17:00Z",
+
       "logoUrl": "https://example.com/claude-logo.png",
-      "features": {
-        "apiAccess": true,
-        "freeTier": true,
-        "multiLanguage": true,
-        "safetyFocused": true
-      },
-      "searchKeywords": ["AI", "assistant", "claude", "anthropic", "conversation"],
-      "tags": {
-        "primary": ["AI", "Assistant"],
-        "secondary": ["Productivity", "Analysis"]
-      },
-      "integrations": ["API", "Web"],
-      "languages": ["English", "French", "Spanish", "German"],
-      "pros": ["Very helpful", "Safe responses", "Good reasoning"],
-      "cons": ["Limited free usage", "Newer than competitors"],
-      "useCases": ["Writing assistance", "Data analysis", "Research help"],
+      "website": "https://claude.ai",
+      "documentation": "https://docs.anthropic.com",
+      "status": "active",
       "contributor": "system",
-      "dateAdded": "2025-09-14T09:17:00Z"
+      "dateAdded": "2025-09-14T09:17:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
     }
   ]
 }

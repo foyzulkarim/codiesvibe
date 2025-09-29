@@ -14,10 +14,21 @@ export const TagFilter = ({
   onClearAll
 }: TagFilterProps) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    // Legacy filters
     pricing: true,
     functionality: false,
     interface: false,
-    deployment: false
+    deployment: false,
+    // v2.0 filters
+    primaryCategories: false,
+    secondaryCategories: false,
+    industries: false,
+    userTypes: false,
+    aiFeatures: false,
+    technicalFeatures: false,
+    status: false,
+    complexity: false,
+    pricingModels: false
   });
 
   const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
@@ -43,11 +54,41 @@ export const TagFilter = ({
     return `${baseClasses} bg-muted border border-border text-foreground hover:bg-muted/80 hover:border-border/80`;
   };
 
+  const getSectionDisplayName = (category: string) => {
+    const displayNames: Record<string, string> = {
+      pricing: "Pricing",
+      interface: "Interface",
+      functionality: "Functionality",
+      deployment: "Deployment",
+      primaryCategories: "Primary Categories",
+      secondaryCategories: "Secondary Categories",
+      industries: "Industries",
+      userTypes: "User Types",
+      aiFeatures: "AI Features",
+      technicalFeatures: "Technical Features",
+      status: "Status",
+      complexity: "Complexity",
+      pricingModels: "Pricing Models"
+    };
+    return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
   const sectionIcons = {
+    // Legacy filters
     pricing: "💰",
-    interface: "🖥️", 
+    interface: "🖥️",
     functionality: "⚡",
-    deployment: "🚀"
+    deployment: "🚀",
+    // v2.0 filters
+    primaryCategories: "🎯",
+    secondaryCategories: "🏷️",
+    industries: "🏢",
+    userTypes: "👥",
+    aiFeatures: "🤖",
+    technicalFeatures: "⚙️",
+    status: "📊",
+    complexity: "📈",
+    pricingModels: "💳"
   };
 
   return (
@@ -63,7 +104,7 @@ export const TagFilter = ({
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <span className="text-base">{sectionIcons[category as keyof typeof sectionIcons]}</span>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
+                {getSectionDisplayName(category)}
               </h3>
               {expandedSections[category] ? 
                 <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" /> : 

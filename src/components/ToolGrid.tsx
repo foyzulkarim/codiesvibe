@@ -17,8 +17,8 @@ export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, save
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const handleToggleExpanded = (toolName: string) => {
-    setExpandedCard(expandedCard === toolName ? null : toolName);
+  const handleToggleExpanded = (toolId: string) => {
+    setExpandedCard(expandedCard === toolId ? null : toolId);
   };
 
   if (tools.length === 0) {
@@ -86,11 +86,11 @@ export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, save
       }>
         {tools.map((tool) => (
           <ToolCard
-            key={tool.name}
+            key={tool.id}
             tool={tool}
             searchTerm={searchTerm}
-            isExpanded={expandedCard === tool.name}
-            onToggleExpanded={() => handleToggleExpanded(tool.name)}
+            isExpanded={expandedCard === tool.id}
+            onToggleExpanded={() => handleToggleExpanded(tool.id)}
             onCompare={onCompare}
             onSave={onSave}
           />

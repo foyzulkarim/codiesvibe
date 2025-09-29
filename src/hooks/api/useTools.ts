@@ -10,12 +10,29 @@ import {
 } from '@/api/types';
 import { AITool } from '@/data/tools';
 
-// Transform API response to match AITool interface
+// Transform API response to match AITool interface (v2.0)
 const transformToolResponse = (tool: ToolResponseDto): AITool => ({
+  // Core v2.0 fields
   id: tool.id,
   name: tool.name,
+  slug: tool.slug,
   description: tool.description,
   longDescription: tool.longDescription,
+  tagline: tool.tagline,
+
+  // v2.0 structured data
+  categories: tool.categories,
+  pricingSummary: tool.pricingSummary,
+  pricingDetails: tool.pricingDetails,
+  capabilities: tool.capabilities,
+  useCases: tool.useCases,
+
+  // Enhanced metadata
+  searchKeywords: tool.searchKeywords,
+  semanticTags: tool.semanticTags,
+  aliases: tool.aliases,
+
+  // Legacy fields for backward compatibility
   pricing: tool.pricing,
   interface: tool.interface,
   functionality: tool.functionality,
@@ -23,11 +40,20 @@ const transformToolResponse = (tool: ToolResponseDto): AITool => ({
   popularity: tool.popularity,
   rating: tool.rating,
   reviewCount: tool.reviewCount,
-  lastUpdated: tool.lastUpdated,
+
+  // URLs and metadata
   logoUrl: tool.logoUrl,
-  features: tool.features,
-  searchKeywords: tool.searchKeywords,
-  tags: tool.tags,
+  website: tool.website,
+  documentation: tool.documentation,
+  pricingUrl: tool.pricingUrl,
+  status: tool.status,
+  contributor: tool.contributor,
+  dateAdded: tool.dateAdded,
+  lastUpdated: tool.lastUpdated,
+
+  // Legacy compatibility (if still needed)
+  ...(tool.features && { features: tool.features }),
+  ...(tool.tags && { tags: tool.tags })
 });
 
 // Build query parameters from component state
@@ -47,6 +73,7 @@ const buildQueryParams = (
   // Add filters if any are selected
   Object.entries(filters).forEach(([key, values]) => {
     if (values.length > 0) {
+      // Legacy v1.x filters
       if (key === 'functionality') {
         params.functionality = values.join(',');
       } else if (key === 'deployment') {
@@ -55,6 +82,24 @@ const buildQueryParams = (
         params.pricing = values.join(',');
       } else if (key === 'interface') {
         params.interface = values.join(',');
+      }
+      // v2.0 category filters
+      else if (key === 'primaryCategories') {
+        params.primaryCategory = values.join(',');
+      } else if (key === 'secondaryCategories') {
+        params.secondaryCategory = values.join(',');
+      } else if (key === 'industries') {
+        params.industry = values.join(',');
+      } else if (key === 'userTypes') {
+        params.userType = values.join(',');
+      }
+      // v2.0 metadata filters
+      else if (key === 'status') {
+        params.status = values.join(',');
+      } else if (key === 'complexity') {
+        params.complexity = values.join(',');
+      } else if (key === 'pricingModels') {
+        params.pricingModel = values.join(',');
       }
     }
   });
@@ -137,28 +182,76 @@ export const useDebouncedSearch = (delay: number = 300) => {
   return debouncedSearch;
 };
 
-// Hook for getting unique filter options from API data
+// Hook for getting unique filter options from API data (v2.0)
 export const useFilterOptions = () => {
   const { data: tools } = useTools('', {
     pricing: [],
     interface: [],
     functionality: [],
     deployment: [],
+    primaryCategories: [],
+    secondaryCategories: [],
+    industries: [],
+    userTypes: [],
+    aiFeatures: [],
+    technicalFeatures: [],
+    status: [],
+    complexity: [],
+    pricingModels: [],
   });
 
   const filterOptions = useMemo(() => {
     if (!tools.length) return {
+      // Legacy filters
       pricing: [],
       interface: [],
       functionality: [],
       deployment: [],
+      // v2.0 filters
+      primaryCategories: [],
+      secondaryCategories: [],
+      industries: [],
+      userTypes: [],
+      aiFeatures: [],
+      technicalFeatures: [],
+      status: [],
+      complexity: [],
+      pricingModels: [],
     };
 
     return {
-      pricing: Array.from(new Set(tools.flatMap(tool => tool.pricing))),
-      interface: Array.from(new Set(tools.flatMap(tool => tool.interface))),
-      functionality: Array.from(new Set(tools.flatMap(tool => tool.functionality))),
-      deployment: Array.from(new Set(tools.flatMap(tool => tool.deployment))),
+      // Legacy filters
+      pricing: Array.from(new Set(tools.flatMap(tool => tool.pricing || []))),
+      interface: Array.from(new Set(tools.flatMap(tool => tool.interface || []))),
+      functionality: Array.from(new Set(tools.flatMap(tool => tool.functionality || []))),
+      deployment: Array.from(new Set(tools.flatMap(tool => tool.deployment || []))),
+
+      // v2.0 category filters
+      primaryCategories: Array.from(new Set(tools.flatMap(tool => tool.categories?.primary || []))),
+      secondaryCategories: Array.from(new Set(tools.flatMap(tool => tool.categories?.secondary || []))),
+      industries: Array.from(new Set(tools.flatMap(tool => tool.categories?.industries || []))),
+      userTypes: Array.from(new Set(tools.flatMap(tool => tool.categories?.userTypes || []))),
+
+      // v2.0 capability filters
+      aiFeatures: Array.from(new Set(tools.flatMap(tool =>
+        Object.entries(tool.capabilities?.aiFeatures || {})
+          .filter(([_, value]) => value === true)
+          .map(([key, _]) => key)
+      ))),
+      technicalFeatures: Array.from(new Set(tools.flatMap(tool =>
+        Object.entries(tool.capabilities?.technical || {})
+          .filter(([_, value]) => value === true)
+          .map(([key, _]) => key)
+      ))),
+
+      // v2.0 metadata filters
+      status: Array.from(new Set(tools.map(tool => tool.status).filter(Boolean))),
+      complexity: Array.from(new Set(tools.flatMap(tool =>
+        tool.useCases?.map(useCase => useCase.complexity) || []
+      ))),
+      pricingModels: Array.from(new Set(tools.flatMap(tool =>
+        tool.pricingSummary?.pricingModel || []
+      ))),
     };
   }, [tools]);
 

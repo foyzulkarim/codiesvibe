@@ -1,14 +1,15 @@
 // Mock data for AI coding tools
 // Import shared types
-import { AITool as SharedAITool, FILTER_OPTIONS } from '@shared/types';
+import { BaseTool, FILTER_OPTIONS } from '@shared/types';
+import { transformLegacyToV2 } from '@/lib/data-transforms';
 
-// Use shared interface
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AITool extends SharedAITool {
+// Use shared interface directly for v2.0 compatibility
+export interface AITool extends BaseTool {
   // Frontend-specific fields can be added here if needed
 }
 
-export const aiTools: AITool[] = [
+// Legacy mock data for transformation
+const legacyMockData = [
   {
     id: "github-copilot",
     name: "GitHub Copilot",
@@ -226,6 +227,9 @@ export const aiTools: AITool[] = [
     }
   }
 ];
+
+// Transform legacy data to v2.0 structure
+export const aiTools: AITool[] = legacyMockData.map(transformLegacyToV2);
 
 // Use shared filter options
 export const filterOptions = FILTER_OPTIONS;

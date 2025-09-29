@@ -21,13 +21,13 @@ This document provides a detailed breakdown of all tasks required to implement t
 **Task ID**: T1.1
 **Description**: Update shared TypeScript interfaces to reflect v2.0 schema changes
 **Action Items**:
-- Transform `ToolTags` to comprehensive `Categories` structure with industries/userTypes
-- Add `tagline`, `pricingUrl`, `semanticTags`, `aliases` fields
-- Replace simple `features` with structured `Capabilities` interface
-- Add comprehensive `PricingSummary` and enhanced `PricingDetails`
-- Add `status`, `contributor`, `dateAdded` metadata fields
+- [x] Transform `ToolTags` to comprehensive `Categories` structure with industries/userTypes
+- [x] Add `tagline`, `pricingUrl`, `semanticTags`, `aliases` fields
+- [x] Replace simple `features` with structured `Capabilities` interface
+- [x] Add comprehensive `PricingSummary` and enhanced `PricingDetails`
+- [x] Add `status`, `contributor`, `dateAdded` metadata fields
 **Files to Update**:
-- `backend/shared/types/tool.types.ts`
+- [x] `backend/shared/types/tool.types.ts`
 
 ---
 
@@ -35,15 +35,15 @@ This document provides a detailed breakdown of all tasks required to implement t
 **Task ID**: T1.2
 **Description**: Update database schema to match v2.0 structure with comprehensive validation
 **Action Items**:
-- Replace `tags` with `categories` structure (primary, secondary, industries, userTypes)
-- Add `tagline` (optional, max 100 chars), `pricingUrl` (optional URL)
-- Add `semanticTags` and `aliases` arrays with text indexing
-- Transform `features` to nested `capabilities` object with aiFeatures/technical/integrations
-- Add comprehensive `pricingSummary` with validation rules
-- Update text search indexes to include new fields
-- Add `status` enum validation, `contributor` and `dateAdded` timestamp fields
+- [x] Replace `tags` with `categories` structure (primary, secondary, industries, userTypes)
+- [x] Add `tagline` (optional, max 100 chars), `pricingUrl` (optional URL)
+- [x] Add `semanticTags` and `aliases` arrays with text indexing
+- [x] Transform `features` to nested `capabilities` object with aiFeatures/technical/integrations
+- [x] Add comprehensive `pricingSummary` with validation rules
+- [x] Update text search indexes to include new fields
+- [x] Add `status` enum validation, `contributor` and `dateAdded` timestamp fields
 **Files to Update**:
-- `backend/src/tools/schemas/tool.schema.ts`
+- [x] `backend/src/tools/schemas/tool.schema.ts`
 
 ---
 
@@ -51,14 +51,14 @@ This document provides a detailed breakdown of all tasks required to implement t
 **Task ID**: T1.3
 **Description**: Update class-validator DTOs for v2.0 structure
 **Action Items**:
-- Update CreateToolDto with new `categories` structure validation
-- Add validation decorators for `tagline`, `semanticTags`, `aliases`
-- Add `capabilities` nested validation with proper structure
-- Add `pricingSummary` validation with business rules
-- Update UpdateToolDto to handle partial updates of new structure
+- [x] Update CreateToolDto with new `categories` structure validation
+- [x] Add validation decorators for `tagline`, `semanticTags`, `aliases`
+- [x] Add `capabilities` nested validation with proper structure
+- [x] Add `pricingSummary` validation with business rules
+- [x] Update UpdateToolDto to handle partial updates of new structure
 **Files to Update**:
-- `backend/src/tools/dto/create-tool.dto.ts`
-- `backend/src/tools/dto/update-tool.dto.ts`
+- [x] `backend/src/tools/dto/create-tool.dto.ts`
+- [x] `backend/src/tools/dto/update-tool.dto.ts`
 
 ---
 
@@ -66,157 +66,114 @@ This document provides a detailed breakdown of all tasks required to implement t
 **Task ID**: T1.4
 **Description**: Update service methods to handle v2.0 field transformations
 **Action Items**:
-- Implement field mapping logic for v1.x to v2.0 data transformation
-- Update search methods to utilize `semanticTags` and `aliases`
-- Ensure proper response transformation for new field structure
-- Maintain backward compatibility during transition
+- [x] Implement field mapping logic for v1.x to v2.0 data transformation
+- [x] Update search methods to utilize `semanticTags` and `aliases`
+- [x] Ensure proper response transformation for new field structure
+- [x] Maintain backward compatibility during transition
 **Files to Update**:
-- `backend/src/tools/tools.service.ts`
+- [x] `backend/src/tools/tools.service.ts`
 
 ---
 
-### Phase 2: Data Seeding
+### Phase 2: Data Seeding & Migration
 
-#### 2.1 Transform tools-sample.json
+#### 2.1 Enhanced Seed Data Creation
 **Task ID**: T2.1
-**Description**: Transform tools-sample.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-sample.json`
+**Description**: Create comprehensive v2.0 seed data with rich metadata
+**Action Items**:
+- [ ] Transform existing 5 tools files to v2.0 structure with enhanced categorization
+- [ ] Add industry-specific groupings (Technology, Enterprise, Healthcare, etc.)
+- [ ] Add user-type targeting (Developers, Enterprise Teams, etc.)
+- [ ] Enrich with taglines, semantic tags, and aliases for better discoverability
+- [ ] Add comprehensive capabilities mapping (AI features, technical specs, integrations)
+- [ ] Include detailed pricing summaries with tier information
+- [ ] Add contributor metadata and proper status classification
+**Files to Update**:
+- [ ] `backend/src/database/seeds/tools-v1.0.json` (contains v2.0 schema data)
+- [ ] `backend/src/database/seeds/tools-v1.1.json` (contains v2.0 schema data)
+- [ ] `backend/src/database/seeds/tools-v1.2.json` (contains v2.0 schema data)
+- [ ] `backend/src/database/seeds/tools-v1.3.json` (contains v2.0 schema data)
+- [ ] `backend/src/database/seeds/tools-v1.4.json` (contains v2.0 schema data)
 
 ---
 
-#### 2.2 Transform tools-v1.0.json
-**Task ID**: T2.2
-**Description**: Transform tools-v1.0.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-v1.0.json`
-
----
-
-#### 2.3 Transform tools-v1.1.json
+#### 2.3 Seeding Service Updates
 **Task ID**: T2.3
-**Description**: Transform tools-v1.1.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-v1.1.json`
+**Description**: Update seeding service to handle v2.0 data structure
+**Action Items**:
+- [ ] Update seed service to process v2.0 JSON structure
+- [ ] Add validation before seeding to ensure data quality
+- [ ] Implement incremental seeding for development workflow
+- [ ] Add environment-specific seeding configurations
+- [ ] Create seed data verification and health checks
+**Files to Update**:
+- [ ] `backend/src/tools/tools.seed.service.ts`
 
 ---
 
-#### 2.4 Transform tools-v1.2.json
-**Task ID**: T2.4
-**Description**: Transform tools-v1.2.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-v1.2.json`
+### Common v2.0 Transformation Rules
 
----
-
-#### 2.5 Transform tools-v1.3.json
-**Task ID**: T2.5
-**Description**: Transform tools-v1.3.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-v1.3.json`
-
----
-
-#### 2.6 Transform tools-v1.4.json
-**Task ID**: T2.6
-**Description**: Transform tools-v1.4.json to v2.0 structure
-**Field Transformations**: Apply v2.0 schema transformation (see common transformations below)
-**Files to Update**: `backend/src/database/seeds/tools-v1.4.json`
-
----
-
-### Common v2.0 Transformation Rules (for all seed files)
-
-**Field transformations to apply to each tool entry:**
-- **Keep existing**: `id`, `name`, `description`, `longDescription`, `pricing[]`, `interface[]`, `functionality[]`, `deployment[]`, `popularity`, `rating`, `reviewCount`, `logoUrl`, `searchKeywords[]`
-- **Add missing identity fields**:
-  - `slug`: Generate from `id` (same value since IDs are already URL-friendly)
-  - `tagline`: Create meaningful 1-line descriptions (best guess based on tool)
-- **Transform categories**: `tags.primary/secondary` → `categories.primary/secondary` + add:
-  - `categories.industries[]`: Infer from tool functionality (e.g., "Technology", "Healthcare", "Education")
-  - `categories.userTypes[]`: Infer from tool purpose (e.g., "Developers", "Content Creators", "Students")
-- **Transform capabilities**: `features{}` → `capabilities{}` structure:
-  - `capabilities.core[]`: Extract key functionalities as array
-  - `capabilities.aiFeatures{}`: Map relevant features to boolean properties
-  - `capabilities.technical{}`: Map technical features to boolean properties
-  - `capabilities.integrations{}`: Create arrays for platforms/thirdParty/protocols
-- **Transform pricing**: `pricing[]` → comprehensive pricing structure:
-  - `pricingSummary{}`: Create summary with price ranges, free tier detection, etc.
-  - `pricingDetails[]`: Create detailed tier objects with features/limitations
-  - `pricingUrl`: Add best-guess URL (e.g., "https://toolname.com/pricing")
-- **Transform use cases**: `useCases[]` string → structured object array:
-  - Each use case gets: `name`, `description`, `industries[]`, `userTypes[]`, `scenarios[]`, `complexity`
-- **Add search optimization**:
-  - `semanticTags[]`: Add technical/domain tags (e.g., "machine learning", "api integration")
-  - `aliases[]`: Add common alternative names/variations
-- **Add metadata fields**:
-  - `website`: Add main tool website URL (best guess)
-  - `documentation`: Add docs URL if applicable
-  - `status`: Set to "active" for all current tools
-  - `contributor`: Set to "system" for seed data
-  - `dateAdded`: Use current timestamp
-  - `lastUpdated`: Keep existing or use current timestamp
-
-**Root-level metadata updates:**
-- Update `version` to 2.0
-- Update `schema` to "tools-v2.0"
-- Update `lastUpdated` timestamp
-
-**Note**: Focus on structural transformation. Use best-guess data for missing fields.
+**Field Transformations**:
+- [ ] `tags` → `categories.primary` (main category)
+- [ ] Add `categories.secondary` (subcategories)
+- [ ] Add `categories.industries` (target industries)
+- [ ] Add `categories.userTypes` (target user segments)
+- [ ] Add `tagline` (concise value proposition)
+- [ ] Add `pricingUrl` (direct link to pricing page)
+- [ ] Add `semanticTags` (searchable keywords)
+- [ ] Add `aliases` (alternative names/terms)
+- [ ] `features` → `capabilities.aiFeatures` + `capabilities.technical` + `capabilities.integrations`
+- [ ] Enhance `pricing` → `pricingSummary` with structured tiers
+- [ ] Add `status` (active/beta/deprecated)
+- [ ] Add `contributor` (data source attribution)
+- [ ] Add `dateAdded` (timestamp for tracking)
 
 ---
 
 ### Phase 3: Frontend Integration
 
-#### 3.1 API Types Updates
+#### 3.1 API Layer Updates
 **Task ID**: T3.1
-**Description**: Update frontend API types to match v2.0 structure
+**Description**: Update frontend API layer to handle v2.0 data structure
 **Action Items**:
-- Update `ToolResponseDto` to extend new v2.0 BaseTool interface
-- Update query parameter types for new filtering capabilities
-- Add type definitions for new field structures
+- [ ] Update tool interface definitions to match v2.0 schema
+- [ ] Modify API service methods to handle new field structure
+- [ ] Add type safety for new categories and capabilities structure
+- [ ] Update error handling for enhanced validation
 **Files to Update**:
-- `src/api/types.ts`
+- [ ] `frontend/src/types/tool.types.ts`
+- [ ] `frontend/src/services/api/tools.api.ts`
 
 ---
 
 #### 3.2 Data Layer Updates
 **Task ID**: T3.2
-**Description**: Update frontend data types and transformations
+**Description**: Update state management and data processing for v2.0
 **Action Items**:
-- Update `AITool` interface to match v2.0 structure
-- Update mock data to use new field structure for development
-- Ensure type compatibility across frontend components
+- [ ] Update Redux/Zustand stores to handle v2.0 structure
+- [ ] Modify data transformation utilities
+- [ ] Update caching strategies for new field structure
+- [ ] Add backward compatibility during transition
 **Files to Update**:
-- `src/data/tools.ts`
+- [ ] `frontend/src/store/tools.store.ts`
+- [ ] `frontend/src/utils/data-transform.utils.ts`
 
 ---
 
-#### 3.3 API Client Transformations
+#### 3.3 Component Display Updates
 **Task ID**: T3.3
-**Description**: Update API client to handle v2.0 data structure
+**Description**: Update UI components to display v2.0 enhanced data
 **Action Items**:
-- Update `transformToolResponse` function for new field mapping
-- Ensure proper handling of new nested structures
-- Update hook return types to match new structure
+- [ ] Update ToolCard component to show taglines and enhanced categories
+- [ ] Modify ToolDetail component to display comprehensive capabilities
+- [ ] Update search/filter components to utilize semantic tags and aliases
+- [ ] Add pricing summary display with tier information
+- [ ] Update category navigation to support industry/user-type filtering
 **Files to Update**:
-- `src/hooks/api/useTools.ts`
-- `src/hooks/api/useTool.ts`
-
----
-
-#### 3.4 Component Display Updates
-**Task ID**: T3.4
-**Description**: Update frontend components to display v2.0 fields
-**Action Items**:
-- Update ToolCard to display `tagline`, new `categories` structure
-- Add pricing URL link integration, enhanced capabilities display
-- Update filtering UI to utilize new `categories.industries/userTypes`
-- Enhance search to use `semanticTags` and `aliases`
-**Files to Update**:
-- `src/components/ToolCard.tsx`
-- `src/components/ToolGrid.tsx`
-- Search and filter components
+- [ ] `frontend/src/components/tools/ToolCard.tsx`
+- [ ] `frontend/src/components/tools/ToolDetail.tsx`
+- [ ] `frontend/src/components/search/SearchFilters.tsx`
+- [ ] `frontend/src/components/navigation/CategoryNav.tsx`
 
 ---
 
@@ -224,48 +181,82 @@ This document provides a detailed breakdown of all tasks required to implement t
 
 #### 4.1 Backend Testing Updates
 **Task ID**: T4.1
-**Description**: Update backend tests for v2.0 schema validation
+**Description**: Update backend tests for v2.0 schema and functionality
 **Action Items**:
-- Update unit tests for new schema validation rules
-- Add tests for field mapping and transformation logic
-- Ensure API endpoints properly handle new structure
+- [ ] Update unit tests for schema validation with new field structure
+- [ ] Add integration tests for v2.0 API endpoints
+- [ ] Test migration scripts with sample data
+- [ ] Validate search functionality with semantic tags and aliases
+- [ ] Test backward compatibility during transition period
 **Files to Update**:
-- Backend test files in `backend/test/` and `backend/src/**/*.spec.ts`
+- [ ] `backend/src/tools/tests/tools.service.spec.ts`
+- [ ] `backend/src/tools/tests/tools.controller.spec.ts`
+- [ ] `backend/src/tools/tests/migration.spec.ts`
 
 ---
 
-#### 4.2 Integration Testing
+#### 4.2 Frontend Testing Updates
 **Task ID**: T4.2
-**Description**: End-to-end testing of v2.0 implementation
+**Description**: Update frontend tests for v2.0 data structure
 **Action Items**:
-- Test complete data flow from database to frontend display
-- Verify search functionality with new fields
-- Confirm filtering works with new categories structure
-- Validate API responses match expected v2.0 format
+- [ ] Update component tests to handle new field structure
+- [ ] Add tests for enhanced filtering and search capabilities
+- [ ] Test API integration with v2.0 endpoints
+- [ ] Validate UI rendering of new fields (taglines, capabilities, etc.)
+- [ ] Test responsive design with enhanced data display
 **Files to Update**:
-- Integration test files
+- [ ] `frontend/src/components/tools/__tests__/ToolCard.test.tsx`
+- [ ] `frontend/src/components/tools/__tests__/ToolDetail.test.tsx`
+- [ ] `frontend/src/services/__tests__/tools.api.test.ts`
+
+---
+
+#### 4.3 End-to-End Testing
+**Task ID**: T4.3
+**Description**: Create comprehensive E2E tests for v2.0 functionality
+**Action Items**:
+- [ ] Test complete user journey with enhanced search and filtering
+- [ ] Validate data consistency across frontend and backend
+- [ ] Test performance with larger dataset and new field structure
+- [ ] Validate SEO and accessibility with new content structure
+- [ ] Test cross-browser compatibility with enhanced UI
+**Files to Update**:
+- [ ] `e2e/tests/tools-search.spec.ts`
+- [ ] `e2e/tests/tools-detail.spec.ts`
+- [ ] `e2e/tests/tools-filtering.spec.ts`
 
 ---
 
 ## Success Criteria
 
 ### Technical Requirements
-- ✅ All v2.0 fields properly integrated across backend and frontend
-- ✅ Existing functionality preserved during migration
-- ✅ Database schema updated with proper indexes for new search fields
-- ✅ Comprehensive validation for all new field structures
-- ✅ Search enhanced with semanticTags and aliases
-- ✅ Frontend displays all new fields appropriately
+- [ ] All v2.0 schema fields properly implemented and validated
+- [ ] Backward compatibility maintained during transition
+- [ ] Search performance improved with semantic tags and aliases
+- [ ] All tests passing with >90% code coverage
+- [ ] Migration scripts tested and validated
+- [ ] API documentation updated for v2.0 endpoints
 
 ### Business Requirements
-- ✅ Enhanced categorization enables better tool discovery
-- ✅ Improved pricing information with direct links
-- ✅ Better search capabilities through semantic tags
-- ✅ Structured capabilities for filtering and comparison
+- [ ] Enhanced categorization improves tool discoverability
+- [ ] Taglines and pricing URLs increase user engagement
+- [ ] Industry and user-type filtering provides better targeting
+- [ ] Comprehensive capabilities data supports informed decisions
+- [ ] Rich metadata enables better analytics and insights
+
+---
 
 ## Migration Notes
 
-- **No Backward Compatibility Required**: Fresh deployment approach since not live
-- **Field Mapping Strategy**: Systematic transformation of v1.x fields to v2.0 structure
-- **Validation Strategy**: Comprehensive validation at schema, DTO, and frontend levels
-- **Testing Strategy**: Progressive testing from unit → integration → end-to-end
+### Deployment Strategy
+- [ ] Phase 1: Deploy backend schema updates with backward compatibility
+- [ ] Phase 2: Run migration scripts to transform existing data
+- [ ] Phase 3: Deploy frontend updates to utilize v2.0 data
+- [ ] Phase 4: Monitor performance and user engagement metrics
+
+### Rollback Plan
+- [ ] Maintain v1.x schema compatibility during transition
+- [ ] Keep backup of original data before migration
+- [ ] Implement feature flags for gradual rollout
+- [ ] Monitor error rates and performance metrics
+- [ ] Prepare quick rollback procedures if issues arise

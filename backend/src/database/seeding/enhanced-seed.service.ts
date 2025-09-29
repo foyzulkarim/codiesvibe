@@ -6,7 +6,7 @@ import * as path from 'path';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { Tool, ToolDocument } from '../../tools/schemas/tool.schema';
-import { CreateToolEnhancedDto } from '../../tools/dto/create-tool-enhanced.dto';
+import { CreateToolDto } from '../../tools/dto/create-tool.dto';
 import {
   SeedVersion,
   SeedVersionDocument,
@@ -80,8 +80,8 @@ export class EnhancedSeedService {
 
   private async validateTools(
     tools: any[],
-  ): Promise<{ validTools: CreateToolEnhancedDto[]; errors: string[] }> {
-    const validTools: CreateToolEnhancedDto[] = [];
+  ): Promise<{ validTools: CreateToolDto[]; errors: string[] }> {
+    const validTools: CreateToolDto[] = [];
     const errors: string[] = [];
 
     if (!Array.isArray(tools)) {
@@ -92,7 +92,7 @@ export class EnhancedSeedService {
       const toolData = tools[i];
       const label = toolData?.name || toolData?.id || `#${i + 1}`;
       try {
-        const dto = plainToInstance(CreateToolEnhancedDto, toolData);
+        const dto = plainToInstance(CreateToolDto, toolData);
         const validationErrors = await validate(dto, {
           whitelist: true,
           forbidUnknownValues: false,
@@ -101,19 +101,17 @@ export class EnhancedSeedService {
         // Additional checks to ensure compatibility with our Mongoose schema
         const additionalErrors: string[] = [];
         if (!dto.logoUrl) additionalErrors.push('logoUrl is required');
-        if (dto.features && Object.keys(dto.features).length === 0)
-          additionalErrors.push(
-            'features object must not be empty if provided',
-          );
         if (!dto.searchKeywords || dto.searchKeywords.length === 0)
           additionalErrors.push('searchKeywords must be a non-empty array');
-        const hasPrimary =
-          Array.isArray(dto.tags?.primary) && dto.tags.primary.length > 0;
-        const hasSecondary =
-          Array.isArray(dto.tags?.secondary) && dto.tags.secondary.length > 0;
-        if (!(hasPrimary || hasSecondary))
+        const hasPrimaryCategories =
+          Array.isArray(dto.categories?.primary) &&
+          dto.categories.primary.length > 0;
+        const hasSecondaryCategories =
+          Array.isArray(dto.categories?.secondary) &&
+          dto.categories.secondary.length > 0;
+        if (!(hasPrimaryCategories || hasSecondaryCategories))
           additionalErrors.push(
-            'tags must have at least one non-empty array (primary or secondary)',
+            'categories must have at least one non-empty array (primary or secondary)',
           );
 
         if (validationErrors.length > 0 || additionalErrors.length > 0) {
@@ -141,17 +139,9 @@ export class EnhancedSeedService {
     return { validTools, errors };
   }
 
-  private mapSeedToToolDoc(
-    dto: CreateToolEnhancedDto,
-    createdBy: Types.ObjectId,
-  ) {
-    // Ensure rating consistency with reviewCount (see Tool schema validator)
-    const reviewCount =
-      typeof dto.reviewCount === 'number' ? dto.reviewCount : 0;
-    const rating =
-      reviewCount === 0 ? 0 : typeof dto.rating === 'number' ? dto.rating : 0;
-
+  private mapSeedToToolDoc(dto: CreateToolDto, createdBy: Types.ObjectId) {
     return {
+      id: dto.id,
       name: dto.name,
       description: dto.description,
       createdBy,
@@ -160,14 +150,21 @@ export class EnhancedSeedService {
       interface: dto.interface,
       functionality: dto.functionality,
       deployment: dto.deployment,
-      popularity: typeof dto.popularity === 'number' ? dto.popularity : 0,
-      rating,
-      reviewCount,
-      lastUpdated: dto.lastUpdated ? new Date(dto.lastUpdated) : new Date(),
       logoUrl: dto.logoUrl,
-      features: dto.features || {},
       searchKeywords: dto.searchKeywords,
-      tags: dto.tags,
+      categories: dto.categories,
+      capabilities: dto.capabilities,
+      semanticTags: dto.semanticTags,
+      aliases: dto.aliases,
+      pricingSummary: dto.pricingSummary,
+      pricingDetails: dto.pricingDetails,
+      pricingUrl: dto.pricingUrl,
+      useCases: dto.useCases,
+      slug: dto.slug,
+      tagline: dto.tagline,
+      website: dto.website,
+      documentation: dto.documentation,
+      status: dto.status,
     } as Partial<Tool>;
   }
 
@@ -328,10 +325,20 @@ export class EnhancedSeedService {
       return;
     }
 
-    await this.toolModel.insertMany(docs, { ordered: false });
-    this.logger.log(
-      `Inserted ${docs.length} tool(s) from ${seedFile.filename}`,
-    );
+    try {
+      const insertedCount = await this.toolModel.insertMany(docs, {
+        ordered: false,
+      });
+      this.logger.log(
+        `Inserted ${insertedCount.length} tool(s) from ${seedFile.filename}`,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to insert tools from ${seedFile.filename}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 
   private async getCurrentSeedVersion(): Promise<number> {

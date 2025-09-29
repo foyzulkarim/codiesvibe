@@ -23,13 +23,14 @@ export const DEFAULT_PAGINATION = {
   limit: 20,
 };
 
-// Default sorting options
+// Default sorting options - Updated for v2.0
 export const SORT_OPTIONS = {
   POPULARITY: 'popularity',
   RATING: 'rating',
   REVIEW_COUNT: 'reviewCount',
   NAME: 'name',
   CREATED_AT: 'createdAt',
+  DATE_ADDED: 'dateAdded',
   RELEVANCE: 'relevance',
 } as const;
 
