@@ -1,6 +1,7 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2025-09-14T08:40:00Z",
+  "version": "2.0",
+  "schema": "tools-v2.0",
+  "lastUpdated": "2025-09-29T08:40:00Z",
   "contributors": {
     "sample-contributor": {
       "name": "Sample Contributor",
@@ -12,46 +13,121 @@
     {
       "id": "sample-tool",
       "name": "Sample Tool",
+      "slug": "sample-tool",
       "description": "This is a sample tool description showing the required format",
-      "longDescription": "This is a longer description that provides more detailed information about the tool. It must be at least 50 characters long to meet the minimum requirement.",
+      "longDescription": "This is a longer description that provides more detailed information about the tool. It must be at least 50 characters long to meet the minimum requirement. This sample tool demonstrates the v2.0 data structure with enhanced categorization, pricing details, and capabilities mapping.",
+      "tagline": "Your sample productivity companion",
+
+      "categories": {
+        "primary": ["Productivity", "AI"],
+        "secondary": ["Development", "Analysis"],
+        "industries": ["Technology", "Business", "Education"],
+        "userTypes": ["Developers", "Analysts", "Content Creators"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 29.99,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": false,
+        "billingPeriods": ["month", "year"],
+        "pricingModel": ["freemium", "subscription"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "free",
+          "name": "Free Plan",
+          "price": 0,
+          "billing": "month",
+          "features": ["Basic functionality", "5 requests per day", "Community support"],
+          "limitations": ["Limited to 5 requests", "No priority support"],
+          "sortOrder": 1
+        },
+        {
+          "id": "pro",
+          "name": "Pro Plan",
+          "price": 29.99,
+          "billing": "month",
+          "features": ["Advanced functionality", "Unlimited requests", "Priority support", "API access"],
+          "maxUsers": 5,
+          "isPopular": true,
+          "sortOrder": 2
+        }
+      ],
+
+      "pricingUrl": "https://example.com/sample-tool/pricing",
+
+      "capabilities": {
+        "core": ["Text Generation", "Data Analysis", "Workflow Automation"],
+        "aiFeatures": {
+          "codeGeneration": false,
+          "imageGeneration": false,
+          "dataAnalysis": true,
+          "voiceInteraction": false,
+          "multimodal": false,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": true,
+          "offlineMode": false
+        },
+        "integrations": {
+          "platforms": ["Web", "API", "Mobile"],
+          "thirdParty": ["Slack", "Discord"],
+          "protocols": ["REST", "JSON"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "Content Creation",
+          "description": "Create and optimize content for various platforms and audiences",
+          "industries": ["Marketing", "Publishing", "E-commerce"],
+          "userTypes": ["Content Creators", "Marketers", "Writers"],
+          "scenarios": ["Blog writing", "Social media posts", "Product descriptions"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Data Analysis",
+          "description": "Analyze and visualize data to gain business insights",
+          "industries": ["Technology", "Finance", "Healthcare"],
+          "userTypes": ["Analysts", "Data Scientists", "Business Intelligence"],
+          "scenarios": ["Report generation", "Trend analysis", "Performance metrics"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "Workflow Automation",
+          "description": "Automate repetitive tasks and streamline business processes",
+          "industries": ["Technology", "Operations", "HR"],
+          "userTypes": ["Developers", "Operations Teams", "Managers"],
+          "scenarios": ["Task automation", "Process optimization", "System integration"],
+          "complexity": "advanced"
+        }
+      ],
+
+      "searchKeywords": ["sample", "tool", "example", "template", "productivity", "automation"],
+      "semanticTags": ["artificial intelligence", "productivity enhancement", "business automation", "data processing", "workflow optimization"],
+      "aliases": ["Sample Productivity Tool", "Example Tool", "Demo Tool"],
+
       "pricing": ["Free", "Paid"],
       "interface": ["Web", "API", "Mobile"],
       "functionality": ["Text Generation", "Data Analysis"],
       "deployment": ["Cloud", "On-Premise"],
-      "logoUrl": "https://example.com/sample-logo.png",
-      "searchKeywords": ["sample", "tool", "example", "template"],
-      "tags": {
-        "primary": ["Productivity", "AI"],
-        "secondary": ["Development", "Analysis"]
-      },
       "popularity": 75,
       "rating": 4.2,
       "reviewCount": 850,
-      "features": {
-        "apiAccess": true,
-        "freeTier": true,
-        "multiLanguage": false,
-        "realTimeProcessing": true
-      },
-      "integrations": ["Slack", "Discord", "API"],
-      "languages": ["English", "Spanish", "French"],
-      "pros": [
-        "Easy to use interface",
-        "Good documentation",
-        "Reliable performance"
-      ],
-      "cons": [
-        "Limited free tier",
-        "Learning curve for advanced features"
-      ],
-      "useCases": [
-        "Content creation",
-        "Data analysis",
-        "Workflow automation"
-      ],
+
+      "logoUrl": "https://example.com/sample-logo.png",
+      "website": "https://example.com/sample-tool",
+      "documentation": "https://docs.example.com/sample-tool",
+      "status": "active",
       "contributor": "sample-contributor",
       "dateAdded": "2025-09-14T08:40:00Z",
-      "lastUpdated": "2025-09-14T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z"
     }
   ]
 }

@@ -86,7 +86,7 @@ docker-compose -f docker-compose.infra.yml ps
 
 | Environment | Command | Use Case |
 |-------------|---------|----------|
-| **Development** | `docker-compose -f docker-compose.dev.yml up -d` | Local development with hot reload |
+| **Development** | `npm run infra:start` + local dev servers | Local development with native hot reload |
 | **Production** | `docker-compose -f docker-compose.production.yml up -d` | Production deployment with Nginx |
 | **Cloudflare** | See `TUNNEL-SETUP.md` | Secure public access via local tunnel |
 | **Monitoring** | `docker-compose -f docker-compose.monitoring.yml up -d` | Extended observability stack |
@@ -100,7 +100,6 @@ docker-compose -f docker-compose.infra.yml ps
 | File | Purpose | Target | Ports |
 |------|---------|---------|-------|
 | `docker-compose.infra.yml` | Infrastructure services | All environments | 27017, 6379, 9090, 3001 |
-| `docker-compose.dev.yml` | Development environment | Developers | 3000, 4000, 9229 |
 | `docker-compose.production.yml` | Production deployment | Production servers | 80, 443 |
 | Local cloudflared tunnel | Simple tunnel setup | Public deployment | None (tunneled) |
 | `docker-compose.monitoring.yml` | Extended monitoring | Ops teams | 3002, 9091, 9093 |
@@ -111,33 +110,40 @@ Always start with infrastructure services:
 
 ```bash
 # Start supporting services first
-docker-compose -f docker-compose.infra.yml up -d
+npm run infra:start
 
-# Then start your chosen environment
-docker-compose -f docker-compose.dev.yml up -d
+# Then start local development
+npm run dev                    # Frontend
+cd backend && npm run dev      # Backend (in separate terminal)
 ```
 
 ---
 
 ## 🔧 Development Environment
 
-Perfect for local development with hot reload, debugging, and rapid iteration.
+Fast local development with native hot reload, instant debugging, and maximum visibility into your code changes.
 
 ### Development Setup
 
 ```bash
-# 1. Start infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# 1. Start infrastructure services
+npm run infra:start
 
-# 2. Configure environment
+# 2. Configure backend environment
 cp backend/.env.example backend/.env
 # Edit backend/.env with your settings
 
-# 3. Start development environment
-docker-compose -f docker-compose.dev.yml up -d
+# 3. Install dependencies
+npm install                    # Frontend dependencies
+cd backend && npm install     # Backend dependencies
 
-# 4. Access your application
-open http://localhost:3000
+# 4. Start development servers (separate terminals)
+npm run dev                   # Frontend (Vite dev server)
+cd backend && npm run dev     # Backend (NestJS with hot reload)
+
+# 5. Access your application
+open http://localhost:3000    # Frontend
+open http://localhost:4000/api/health  # Backend health check
 ```
 
 ### Development Environment Variables
@@ -158,30 +164,34 @@ LOG_LEVEL=debug
 
 ### Development Features
 
-- ✅ **Hot Reload**: Both frontend and backend automatically reload on changes
-- ✅ **Debug Port**: Backend debugging available on port 9229
-- ✅ **Volume Mounts**: Direct file editing without container rebuilds
-- ✅ **Live Logs**: Real-time application and infrastructure logs
-- ✅ **Fast Iteration**: Changes reflect immediately
+- ✅ **Lightning Fast Hot Reload**: Native Vite HMR and NestJS watch mode
+- ✅ **Direct Debugging**: Full access to Node.js debugger and browser dev tools
+- ✅ **Instant Feedback**: See changes immediately without container rebuilds
+- ✅ **Full Visibility**: Direct access to processes, logs, and error messages
+- ✅ **Native Performance**: No Docker overhead during development
 
 ### Development Commands
 
 ```bash
-# Monitor logs
-docker-compose -f docker-compose.dev.yml logs -f
+# Infrastructure management
+npm run infra:start           # Start MongoDB, Redis, monitoring
+npm run infra:stop            # Stop infrastructure services
+npm run infra:status          # Check infrastructure status
+npm run infra:logs            # View infrastructure logs
 
-# Restart specific service
-docker-compose -f docker-compose.dev.yml restart backend
+# Development workflow
+npm run dev                   # Start frontend (root directory)
+cd backend && npm run dev     # Start backend with hot reload
+cd backend && npm run start:debug  # Start backend with debugging
 
-# Rebuild after dependency changes
-docker-compose -f docker-compose.dev.yml up -d --build
+# Code quality
+npm run lint                  # Frontend linting
+npm run typecheck            # Frontend type checking
+cd backend && npm run lint    # Backend linting
+cd backend && npm run test    # Backend tests
 
-# Access container for debugging
-docker exec -it codiesvibe-backend-dev sh
-docker exec -it codiesvibe-frontend-dev sh
-
-# Stop development environment
-docker-compose -f docker-compose.dev.yml down
+# Database management
+cd backend && npm run seed    # Seed database with sample data
 ```
 
 ---
@@ -861,13 +871,13 @@ docs/
 
 ```bash
 # Infrastructure management
-docker-compose -f docker-compose.infra.yml up -d     # Start infrastructure
-docker-compose -f docker-compose.infra.yml down      # Stop infrastructure
+npm run infra:start                                   # Start infrastructure
+npm run infra:stop                                    # Stop infrastructure
 
 # Development workflow
-docker-compose -f docker-compose.dev.yml up -d       # Start development
-docker-compose -f docker-compose.dev.yml logs -f     # Follow dev logs
-docker-compose -f docker-compose.dev.yml down        # Stop development
+npm run dev                                          # Start frontend
+cd backend && npm run dev                           # Start backend
+npm run infra:logs                                  # Follow infrastructure logs
 
 # Production deployment
 docker-compose -f docker-compose.production.yml up -d   # Deploy production
@@ -911,7 +921,7 @@ services:
 1. **Fork the repository**
 2. **Clone your fork** and set up development environment
 3. **Create feature branch**: `git checkout -b feature/amazing-feature`
-4. **Start development environment**: `docker-compose -f docker-compose.dev.yml up -d`
+4. **Start local development**: `npm run infra:start` + `npm run dev` + `cd backend && npm run dev`
 5. **Make your changes** with hot reload feedback
 6. **Run tests**: Ensure all tests pass in development environment
 7. **Commit changes**: Follow conventional commit messages
@@ -930,16 +940,16 @@ services:
 
 ```bash
 # Run frontend tests
-docker exec -it codiesvibe-frontend-dev npm test
+npm test
 
 # Run backend tests
-docker exec -it codiesvibe-backend-dev npm test
+cd backend && npm test
 
 # Run integration tests
-docker exec -it codiesvibe-backend-dev npm run test:integration
+cd backend && npm run test:integration
 
 # Run e2e tests
-docker exec -it codiesvibe-frontend-dev npm run test:e2e
+npm run test:e2e
 ```
 
 ---

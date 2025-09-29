@@ -5,6 +5,17 @@ export type ToolDocument = Tool & Document;
 
 @Schema({ timestamps: true })
 export class Tool {
+  // Identity fields
+  @Prop({
+    required: true,
+    unique: true,
+    minlength: 1,
+    maxlength: 100,
+    trim: true,
+    match: /^[a-z0-9-]+$/,
+  })
+  id!: string;
+
   @Prop({
     required: true,
     minlength: 1,
@@ -15,11 +26,34 @@ export class Tool {
 
   @Prop({
     required: true,
+    unique: true,
     minlength: 1,
-    maxlength: 500,
+    maxlength: 100,
+    trim: true,
+    match: /^[a-z0-9-]+$/,
+  })
+  slug!: string;
+
+  @Prop({
+    required: true,
+    minlength: 10,
+    maxlength: 200,
     trim: true,
   })
   description!: string;
+
+  @Prop({
+    minlength: 50,
+    maxlength: 2000,
+    trim: true,
+  })
+  longDescription?: string;
+
+  @Prop({
+    maxlength: 100,
+    trim: true,
+  })
+  tagline?: string;
 
   @Prop({
     type: Types.ObjectId,
@@ -29,15 +63,375 @@ export class Tool {
   })
   createdBy!: Types.ObjectId;
 
-  // Enhanced Fields (New - Optional with defaults)
+  // Categorization
+  @Prop({
+    type: {
+      primary: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) =>
+            Array.isArray(v) && v.length >= 1 && v.length <= 5,
+          message: 'primary categories must have 1-5 entries',
+        },
+      },
+      secondary: {
+        type: [String],
+        validate: {
+          validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 5),
+          message: 'secondary categories must have at most 5 entries',
+        },
+        default: [],
+      },
+      industries: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) =>
+            Array.isArray(v) && v.length >= 1 && v.length <= 10,
+          message: 'industries must have 1-10 entries',
+        },
+      },
+      userTypes: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) =>
+            Array.isArray(v) && v.length >= 1 && v.length <= 10,
+          message: 'userTypes must have 1-10 entries',
+        },
+      },
+    },
+    required: true,
+  })
+  categories!: {
+    primary: string[];
+    secondary: string[];
+    industries: string[];
+    userTypes: string[];
+  };
+
+  // Pricing
+  @Prop({
+    type: {
+      lowestMonthlyPrice: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      highestMonthlyPrice: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      currency: {
+        type: String,
+        required: true,
+        match: /^[A-Z]{3}$/,
+        default: 'USD',
+      },
+      hasFreeTier: {
+        type: Boolean,
+        required: true,
+      },
+      hasCustomPricing: {
+        type: Boolean,
+        required: true,
+      },
+      billingPeriods: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) =>
+            Array.isArray(v) && v.length >= 1 && v.length <= 3,
+          message: 'billingPeriods must have 1-3 entries',
+        },
+      },
+      pricingModel: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) => Array.isArray(v) && v.length > 0,
+          message: 'pricingModel must be non-empty',
+        },
+      },
+    },
+    required: true,
+  })
+  pricingSummary!: {
+    lowestMonthlyPrice: number;
+    highestMonthlyPrice: number;
+    currency: string;
+    hasFreeTier: boolean;
+    hasCustomPricing: boolean;
+    billingPeriods: string[];
+    pricingModel: string[];
+  };
 
   @Prop({
-    maxlength: 2000,
-    trim: true,
-    default: null,
+    type: [
+      {
+        id: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        billing: {
+          type: String,
+          required: true,
+        },
+        features: {
+          type: [String],
+          required: true,
+        },
+        limitations: {
+          type: [String],
+        },
+        maxUsers: {
+          type: Number,
+          min: 1,
+        },
+        isPopular: {
+          type: Boolean,
+          default: false,
+        },
+        sortOrder: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+    required: true,
+    validate: {
+      validator: (v: any[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 10,
+      message: 'pricingDetails must have 1-10 entries',
+    },
   })
-  longDescription?: string;
+  pricingDetails!: Array<{
+    id: string;
+    name: string;
+    price: number;
+    billing: string;
+    features: string[];
+    limitations?: string[];
+    maxUsers?: number;
+    isPopular?: boolean;
+    sortOrder: number;
+  }>;
 
+  @Prop({
+    validate: {
+      validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
+      message: 'pricingUrl must be a valid URL',
+    },
+  })
+  pricingUrl?: string;
+
+  // Capabilities
+  @Prop({
+    type: {
+      core: {
+        type: [String],
+        required: true,
+        validate: {
+          validator: (v: string[]) =>
+            Array.isArray(v) && v.length >= 1 && v.length <= 10,
+          message: 'core capabilities must have 1-10 entries',
+        },
+      },
+      aiFeatures: {
+        type: {
+          codeGeneration: { type: Boolean, required: true },
+          imageGeneration: { type: Boolean, required: true },
+          dataAnalysis: { type: Boolean, required: true },
+          voiceInteraction: { type: Boolean, required: true },
+          multimodal: { type: Boolean, required: true },
+          thinkingMode: { type: Boolean, required: true },
+        },
+        required: true,
+      },
+      technical: {
+        type: {
+          apiAccess: { type: Boolean, required: true },
+          webHooks: { type: Boolean, required: true },
+          sdkAvailable: { type: Boolean, required: true },
+          offlineMode: { type: Boolean, required: true },
+        },
+        required: true,
+      },
+      integrations: {
+        type: {
+          platforms: {
+            type: [String],
+            required: true,
+            validate: {
+              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
+              message: 'platforms must have at least one entry',
+            },
+          },
+          thirdParty: {
+            type: [String],
+            required: true,
+            validate: {
+              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
+              message: 'thirdParty must have at least one entry',
+            },
+          },
+          protocols: {
+            type: [String],
+            required: true,
+            validate: {
+              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
+              message: 'protocols must have at least one entry',
+            },
+          },
+        },
+        required: true,
+      },
+    },
+    required: true,
+  })
+  capabilities!: {
+    core: string[];
+    aiFeatures: {
+      codeGeneration: boolean;
+      imageGeneration: boolean;
+      dataAnalysis: boolean;
+      voiceInteraction: boolean;
+      multimodal: boolean;
+      thinkingMode: boolean;
+    };
+    technical: {
+      apiAccess: boolean;
+      webHooks: boolean;
+      sdkAvailable: boolean;
+      offlineMode: boolean;
+    };
+    integrations: {
+      platforms: string[];
+      thirdParty: string[];
+      protocols: string[];
+    };
+  };
+
+  // Use cases
+  @Prop({
+    type: [
+      {
+        name: {
+          type: String,
+          required: true,
+          maxlength: 50,
+        },
+        description: {
+          type: String,
+          required: true,
+          minlength: 10,
+          maxlength: 500,
+        },
+        industries: {
+          type: [String],
+          required: true,
+          validate: {
+            validator: (v: string[]) =>
+              Array.isArray(v) && v.length >= 1 && v.length <= 5,
+            message: 'industries must have 1-5 entries',
+          },
+        },
+        userTypes: {
+          type: [String],
+          required: true,
+          validate: {
+            validator: (v: string[]) =>
+              Array.isArray(v) && v.length >= 1 && v.length <= 5,
+            message: 'userTypes must have 1-5 entries',
+          },
+        },
+        scenarios: {
+          type: [String],
+          required: true,
+          validate: {
+            validator: (v: string[]) =>
+              Array.isArray(v) && v.length >= 1 && v.length <= 10,
+            message: 'scenarios must have 1-10 entries',
+          },
+        },
+        complexity: {
+          type: String,
+          required: true,
+          enum: ['beginner', 'intermediate', 'advanced'],
+        },
+      },
+    ],
+    required: true,
+  })
+  useCases!: Array<{
+    name: string;
+    description: string;
+    industries: string[];
+    userTypes: string[];
+    scenarios: string[];
+    complexity: 'beginner' | 'intermediate' | 'advanced';
+  }>;
+
+  // Search optimization
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) => {
+        if (!Array.isArray(v) || v.length < 5 || v.length > 20) return false;
+        return v.every(
+          (keyword) => typeof keyword === 'string' && keyword.length <= 256,
+        );
+      },
+      message:
+        'searchKeywords must have 5-20 entries with strings max 256 chars each',
+    },
+  })
+  searchKeywords!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) => {
+        if (!Array.isArray(v) || v.length < 5 || v.length > 20) return false;
+        return v.every((tag) => typeof tag === 'string' && tag.length <= 256);
+      },
+      message:
+        'semanticTags must have 5-20 entries with strings max 256 chars each',
+    },
+  })
+  semanticTags!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    default: [],
+    validate: {
+      validator: (v: string[]) => {
+        if (!Array.isArray(v) || v.length > 10) return false;
+        return v.every(
+          (alias) => typeof alias === 'string' && alias.length <= 256,
+        );
+      },
+      message:
+        'aliases must have at most 10 entries with strings max 256 chars each',
+    },
+  })
+  aliases!: string[];
+
+  // Legacy fields (maintained for compatibility)
   @Prop({
     type: [String],
     required: true,
@@ -124,92 +518,82 @@ export class Tool {
   })
   reviewCount!: number;
 
+  // Metadata
   @Prop({
-    type: Date,
-    default: Date.now,
-  })
-  lastUpdated?: Date;
-
-  @Prop({
-    required: true,
     validate: {
       validator: (v: string) => {
+        if (!v) return true;
         const urlPattern = /^https?:\/\/.+/;
         return urlPattern.test(v);
       },
       message: 'logoUrl must be a valid URL starting with http:// or https://',
     },
   })
-  logoUrl!: string;
+  logoUrl?: string;
 
   @Prop({
-    type: Object,
-    required: true,
-    default: () => ({}),
     validate: {
-      validator: (v: Record<string, any>) => {
-        if (typeof v !== 'object' || v === null) return false;
-        return Object.values(v).every((val) => typeof val === 'boolean');
+      validator: (v: string) => {
+        if (!v) return true;
+        const urlPattern = /^https?:\/\/.+/;
+        return urlPattern.test(v);
       },
-      message: 'features must be an object with boolean values only',
+      message: 'website must be a valid URL starting with http:// or https://',
     },
   })
-  features!: Record<string, boolean>;
+  website?: string;
 
   @Prop({
-    type: [String],
-    required: true,
     validate: {
-      validator: (v: string[]) => {
-        if (!Array.isArray(v) || v.length === 0) return false;
-        return v.every(
-          (keyword) => typeof keyword === 'string' && keyword.length <= 256,
-        );
+      validator: (v: string) => {
+        if (!v) return true;
+        const urlPattern = /^https?:\/\/.+/;
+        return urlPattern.test(v);
       },
       message:
-        'searchKeywords must be a non-empty array with strings max 256 chars each',
+        'documentation must be a valid URL starting with http:// or https://',
     },
   })
-  searchKeywords!: string[];
+  documentation?: string;
 
   @Prop({
-    type: {
-      primary: {
-        type: [String],
-        required: true,
-        default: [],
-      },
-      secondary: {
-        type: [String],
-        required: true,
-        default: [],
-      },
-    },
+    type: String,
     required: true,
-    default: () => ({ primary: [], secondary: [] }),
-    validate: {
-      validator: function (v: { primary: string[]; secondary: string[] }) {
-        if (!v || typeof v !== 'object') return false;
-        const hasNonEmptyPrimary =
-          Array.isArray(v.primary) && v.primary.length > 0;
-        const hasNonEmptySecondary =
-          Array.isArray(v.secondary) && v.secondary.length > 0;
-        return hasNonEmptyPrimary || hasNonEmptySecondary; // At least one must be non-empty
-      },
-      message:
-        'tags must have at least one non-empty array (primary or secondary)',
-    },
+    enum: ['active', 'beta', 'deprecated', 'discontinued'],
+    default: 'active',
   })
-  tags!: {
-    primary: string[];
-    secondary: string[];
-  };
+  status!: 'active' | 'beta' | 'deprecated' | 'discontinued';
+
+  @Prop({
+    type: String,
+    required: true,
+    default: 'system',
+  })
+  contributor!: string;
+
+  @Prop({
+    type: Date,
+    required: true,
+    default: Date.now,
+  })
+  dateAdded!: Date;
+
+  @Prop({
+    type: Date,
+    default: Date.now,
+  })
+  lastUpdated?: Date;
 }
 
 export const ToolSchema = SchemaFactory.createForClass(Tool);
 
 // Pre-save middleware for data transformation and validation
 ToolSchema.pre('save', function (next) {
+  // Auto-generate slug from id if not provided
+  if (!this.slug && this.id) {
+    this.slug = this.id;
+  }
+
   // Clamp numeric fields to bounds
   if (this.popularity < 0) this.popularity = 0;
   if (this.popularity > 1000000) this.popularity = 1000000;
@@ -220,22 +604,39 @@ ToolSchema.pre('save', function (next) {
   if (this.reviewCount < 0) this.reviewCount = 0;
   if (this.reviewCount > 1000000) this.reviewCount = 1000000;
 
-  // Ensure features object contains only boolean values
-  if (this.features && typeof this.features === 'object') {
-    for (const [key, value] of Object.entries(this.features)) {
-      if (typeof value !== 'boolean') {
-        // Convert to boolean using strict equality
-        this.features[key] = Boolean(value);
-      }
+  // Validate pricing summary consistency
+  if (this.pricingSummary) {
+    if (
+      this.pricingSummary.lowestMonthlyPrice >
+      this.pricingSummary.highestMonthlyPrice
+    ) {
+      this.pricingSummary.highestMonthlyPrice =
+        this.pricingSummary.lowestMonthlyPrice;
     }
   }
 
-  // Truncate searchKeywords elements to 256 characters
+  // Truncate search fields to max length
   if (Array.isArray(this.searchKeywords)) {
     this.searchKeywords = this.searchKeywords.map((keyword) =>
       typeof keyword === 'string'
         ? keyword.substring(0, 256)
         : String(keyword).substring(0, 256),
+    );
+  }
+
+  if (Array.isArray(this.semanticTags)) {
+    this.semanticTags = this.semanticTags.map((tag) =>
+      typeof tag === 'string'
+        ? tag.substring(0, 256)
+        : String(tag).substring(0, 256),
+    );
+  }
+
+  if (Array.isArray(this.aliases)) {
+    this.aliases = this.aliases.map((alias) =>
+      typeof alias === 'string'
+        ? alias.substring(0, 256)
+        : String(alias).substring(0, 256),
     );
   }
 
@@ -245,50 +646,101 @@ ToolSchema.pre('save', function (next) {
   next();
 });
 
-// Create indexes as specified in data-model.md for enhanced search and performance
-ToolSchema.index({ createdBy: 1 }); // User-specific queries
+// Primary indexes
+ToolSchema.index({ id: 1 }, { unique: true, name: 'tool_id_index' });
+ToolSchema.index({ slug: 1 }, { unique: true, name: 'tool_slug_index' });
+ToolSchema.index({ status: 1 }, { name: 'tool_status_index' });
+ToolSchema.index({ createdBy: 1 }, { name: 'tool_created_by_index' });
+
+// Secondary indexes for v2.0 categorization
+ToolSchema.index(
+  { 'categories.primary': 1 },
+  { name: 'tool_categories_primary_index' },
+);
+ToolSchema.index(
+  { 'categories.industries': 1 },
+  { name: 'tool_categories_industries_index' },
+);
+ToolSchema.index(
+  { 'categories.userTypes': 1 },
+  { name: 'tool_categories_user_types_index' },
+);
+
+// Pricing indexes
+ToolSchema.index(
+  { 'pricingSummary.hasFreeTier': 1 },
+  { name: 'tool_pricing_free_tier_index' },
+);
+ToolSchema.index(
+  { 'pricingSummary.lowestMonthlyPrice': 1 },
+  { name: 'tool_pricing_lowest_price_index' },
+);
+
+// Capabilities indexes
+ToolSchema.index(
+  { 'capabilities.aiFeatures.codeGeneration': 1 },
+  { name: 'tool_capabilities_code_gen_index' },
+);
+ToolSchema.index(
+  { 'capabilities.aiFeatures.imageGeneration': 1 },
+  { name: 'tool_capabilities_image_gen_index' },
+);
+
+// Full-text search indexes with enhanced v2.0 fields
 ToolSchema.index(
   {
     name: 'text',
     description: 'text',
     longDescription: 'text',
+    tagline: 'text',
     searchKeywords: 'text',
+    semanticTags: 'text',
+    aliases: 'text',
   },
   {
-    name: 'tool_enhanced_search_index',
+    name: 'tool_v2_search_index',
     weights: {
       name: 15,
+      tagline: 12,
       description: 8,
+      searchKeywords: 10,
+      semanticTags: 9,
+      aliases: 6,
       longDescription: 3,
-      searchKeywords: 12,
     },
   },
-); // Enhanced text search with optimized weights
+);
 
 // Performance indexes for filtering and sorting
-ToolSchema.index({ popularity: -1 }, { name: 'tool_popularity_index' }); // Popular tools first
-ToolSchema.index({ rating: -1 }, { name: 'tool_rating_index' }); // Top-rated tools first
-ToolSchema.index({ functionality: 1 }, { name: 'tool_functionality_index' }); // Filter by functionality
-ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' }); // Filter by deployment
-ToolSchema.index({ 'tags.primary': 1 }, { name: 'tool_tags_primary_index' }); // Filter by primary tags
-ToolSchema.index(
-  { 'tags.secondary': 1 },
-  { name: 'tool_tags_secondary_index' },
-); // Filter by secondary tags
+ToolSchema.index({ popularity: -1 }, { name: 'tool_popularity_index' });
+ToolSchema.index({ rating: -1 }, { name: 'tool_rating_index' });
+ToolSchema.index({ dateAdded: -1 }, { name: 'tool_date_added_index' });
+
+// Legacy indexes for backward compatibility
+ToolSchema.index({ functionality: 1 }, { name: 'tool_functionality_index' });
+ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' });
 
 // Compound indexes for common query patterns
 ToolSchema.index(
   {
-    functionality: 1,
-    rating: -1,
+    status: 1,
+    popularity: -1,
   },
-  { name: 'tool_functionality_rating_index' },
-); // Functionality with rating
+  { name: 'tool_status_popularity_index' },
+);
 
 ToolSchema.index(
   {
-    deployment: 1,
+    'categories.primary': 1,
+    rating: -1,
+  },
+  { name: 'tool_category_rating_index' },
+);
+
+ToolSchema.index(
+  {
+    'pricingSummary.hasFreeTier': 1,
     popularity: -1,
   },
-  { name: 'tool_deployment_popularity_index' },
-); // Deployment with popularity
+  { name: 'tool_free_tier_popularity_index' },
+);

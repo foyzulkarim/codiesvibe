@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { filterOptions, aiTools } from "@/data/tools";
-import { X, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { useState } from "react";
+import { filterOptions } from "@/data/tools";
+import { ChevronDown, Check } from "lucide-react";
 
 interface TagFilterProps {
   activeFilters: Record<string, string[]>;
@@ -14,10 +14,21 @@ export const TagFilter = ({
   onClearAll
 }: TagFilterProps) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    // Legacy filters
     pricing: true,
     functionality: false,
     interface: false,
-    deployment: false
+    deployment: false,
+    // v2.0 filters
+    primaryCategories: false,
+    secondaryCategories: false,
+    industries: false,
+    userTypes: false,
+    aiFeatures: false,
+    technicalFeatures: false,
+    status: false,
+    complexity: false,
+    pricingModels: false
   });
 
   const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
@@ -28,34 +39,6 @@ export const TagFilter = ({
       [section]: !prev[section]
     }));
   };
-
-  // Calculate filter counts
-  const getFilterCount = useMemo(() => {
-    return (category: string, value: string) => {
-      // Create a temporary filter state with just this filter active
-      const tempFilters = { ...activeFilters };
-      
-      // If this filter is already active, we want to count tools without it
-      if (activeFilters[category]?.includes(value)) {
-        tempFilters[category] = activeFilters[category].filter(v => v !== value);
-      } else {
-        // If not active, add it to see how many tools would match
-        tempFilters[category] = [...(activeFilters[category] || []), value];
-      }
-      
-      // Count tools that match the temporary filter state
-      const count = aiTools.filter(tool => {
-        return Object.entries(tempFilters).every(([cat, values]) => {
-          if (values.length === 0) return true;
-          const toolValues = tool[cat as keyof typeof tool] as string[];
-          return values.some(val => toolValues.includes(val));
-        });
-      }).length;
-      
-      return count;
-    };
-  }, [activeFilters]);
-
   const isTagActive = (category: string, value: string) => {
     return activeFilters[category]?.includes(value) || false;
   };
@@ -71,11 +54,41 @@ export const TagFilter = ({
     return `${baseClasses} bg-muted border border-border text-foreground hover:bg-muted/80 hover:border-border/80`;
   };
 
+  const getSectionDisplayName = (category: string) => {
+    const displayNames: Record<string, string> = {
+      pricing: "Pricing",
+      interface: "Interface",
+      functionality: "Functionality",
+      deployment: "Deployment",
+      primaryCategories: "Primary Categories",
+      secondaryCategories: "Secondary Categories",
+      industries: "Industries",
+      userTypes: "User Types",
+      aiFeatures: "AI Features",
+      technicalFeatures: "Technical Features",
+      status: "Status",
+      complexity: "Complexity",
+      pricingModels: "Pricing Models"
+    };
+    return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
   const sectionIcons = {
+    // Legacy filters
     pricing: "💰",
-    interface: "🖥️", 
+    interface: "🖥️",
     functionality: "⚡",
-    deployment: "🚀"
+    deployment: "🚀",
+    // v2.0 filters
+    primaryCategories: "🎯",
+    secondaryCategories: "🏷️",
+    industries: "🏢",
+    userTypes: "👥",
+    aiFeatures: "🤖",
+    technicalFeatures: "⚙️",
+    status: "📊",
+    complexity: "📈",
+    pricingModels: "💳"
   };
 
   return (
@@ -91,7 +104,7 @@ export const TagFilter = ({
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <span className="text-base">{sectionIcons[category as keyof typeof sectionIcons]}</span>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
+                {getSectionDisplayName(category)}
               </h3>
               {expandedSections[category] ? 
                 <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" /> : 
@@ -117,9 +130,6 @@ export const TagFilter = ({
                       <Check className="w-3.5 h-3.5" />
                     )}
                     {option}
-                    <span className="text-xs opacity-75">
-                      ({getFilterCount(category, option)})
-                    </span>
                   </button>
                 ))}
               </div>

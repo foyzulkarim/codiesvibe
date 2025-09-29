@@ -19,12 +19,11 @@ This document defines port allocation across all Docker environments to prevent 
 
 ### Application Services (Phase 1)
 
-#### Development Environment (docker-compose.dev.yml)
-| Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
-|---------|----------------|-----------|----------|---------|-----------|
-| Frontend | 3000 | 3000 | HTTP | React Dev Server | ⚠️ Grafana uses 3001 |
-| Backend | 4000 | 4000 | HTTP | NestJS API | ✅ Available |
-| Backend Debug | 9229 | 9229 | TCP | Node.js Debug | ✅ Available |
+#### Development Environment (Local Native)
+| Service | Port | Protocol | Purpose | Conflicts |
+|---------|------|----------|---------|-----------|
+| Frontend | 3000 | HTTP | Vite Dev Server (native) | ⚠️ Grafana uses 3001 |
+| Backend | 4000 | HTTP | NestJS API (native) | ✅ Available |
 
 #### Production Environment (docker-compose.production.yml)
 | Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
@@ -67,34 +66,32 @@ This document defines port allocation across all Docker environments to prevent 
 
 ### Current Conflicts Identified
 1. **Grafana Port Conflict**: Infrastructure Grafana uses 3001 (not 3000) to avoid frontend conflict
-2. **Development Override**: Frontend development uses 3000, Grafana shifted to 3001
+2. **Local Development**: Native applications run on standard ports, infrastructure offset where needed
 
 ### Resolution Patterns
-1. **Infrastructure Services**: Use standard ports when possible
-2. **Application Services**: Use +1000 offset for development variants
+1. **Infrastructure Services**: Use standard ports when possible, offset if conflicts with local development
+2. **Local Development**: Native applications use standard ports (3000, 4000)
 3. **Monitoring Services**: Use +1 offset for additional instances
-4. **Override Files**: Use highest available port in range
+4. **Production**: Containerized with internal networking
 
 ## Environment-Specific Port Strategies
 
-### Local Development (docker-compose.override.yml)
-```yaml
-# Example override for port conflicts
-services:
-  frontend:
-    ports:
-      - "3010:3000"  # Use 3010 if 3000 conflicts
-  backend:
-    ports:
-      - "4010:4000"  # Use 4010 if 4000 conflicts
+### Local Development (Native Applications)
+```bash
+# Local development runs natively, no Docker containers
+npm run dev                   # Frontend on port 3000
+cd backend && npm run dev     # Backend on port 4000
+
+# Infrastructure services run in Docker
+npm run infra:start          # MongoDB, Redis, Grafana, etc.
 ```
 
-### Docker Compose Override Recommendations
-| Original Port | Override Port | Reason |
-|---------------|---------------|---------|
-| 3000 | 3010 | Avoid Grafana conflict |
-| 4000 | 4010 | Avoid range conflicts |
-| 9229 | 9239 | Multiple debug sessions |
+### Port Conflict Resolution for Local Development
+| Service | Default Port | Alternative | Reason |
+|---------|-------------|-------------|---------|
+| Frontend (Vite) | 3000 | 3010 | Avoid Grafana conflict |
+| Backend (NestJS) | 4000 | 4010 | Multiple backend instances |
+| Infrastructure | Standard | Use infra override | Complex Docker setup |
 
 ## Port Testing and Validation
 
@@ -115,7 +112,7 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 # Check for port conflicts before deployment
 
 INFRASTRUCTURE_PORTS=(27017 9090 3001 3100 6379 8081 1025 8025)
-APPLICATION_PORTS=(3000 4000 9229)
+APPLICATION_PORTS=(3000 4000)
 
 for port in "${INFRASTRUCTURE_PORTS[@]}" "${APPLICATION_PORTS[@]}"; do
     if netstat -tuln | grep -q ":$port "; then
@@ -139,7 +136,7 @@ BACKEND_URL=http://localhost:4000
 ```
 
 ### Host Port Exposure Rules
-1. **Development**: Expose all necessary ports for debugging
+1. **Development**: Native applications bind to localhost, infrastructure in Docker
 2. **Production**: Minimal exposure (80, 443 only)
 3. **Cloudflare**: No host ports (tunnel-only)
 4. **Monitoring**: Expose monitoring ports for external access

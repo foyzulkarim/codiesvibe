@@ -16,10 +16,10 @@ This document defines the network naming strategy and connectivity patterns for 
 #### Phase 1 Networks (To Be Implemented)
 All Phase 1 Docker Compose files must use consistent network naming:
 
-1. **Development Environment** (`docker-compose.dev.yml`)
-   - **Network Name**: `codiesvibe-network`
-   - **External**: `true` (connects to existing infrastructure)
-   - **Purpose**: Allows dev containers to communicate with infrastructure services
+1. **Development Environment** (Local Native + Infrastructure)
+   - **Network Name**: `codiesvibe-network` (infrastructure only)
+   - **External**: `true` (infrastructure services only)
+   - **Purpose**: Infrastructure services accessible to local development via localhost
 
 2. **Production Environment** (`docker-compose.production.yml`)
    - **Network Name**: `codiesvibe-network`
@@ -76,10 +76,10 @@ services:
 | MailHog | `codiesvibe-mailhog` | `mailhog:1025` | 1025/8025 | Email Testing |
 
 ### Application Services (Phase 1)
-| Environment | Service | Container Name | Network Address | Port |
-|-------------|---------|----------------|-----------------|------|
-| Development | Frontend | `codiesvibe-frontend-dev` | `frontend:3000` | 3000 |
-| Development | Backend | `codiesvibe-backend-dev` | `backend:4000` | 4000 |
+| Environment | Service | Host/Container | Network Address | Port |
+|-------------|---------|---------------|-----------------|------|
+| Development | Frontend | Native Process | `localhost:3000` | 3000 |
+| Development | Backend | Native Process | `localhost:4000` | 4000 |
 | Production | Frontend | `codiesvibe-frontend-prod` | `frontend:80` | 80 |
 | Production | Backend | `codiesvibe-backend-prod` | `backend:4000` | 4000 |
 | Production | Nginx | `codiesvibe-nginx` | `nginx:80` | 80 |
@@ -93,7 +93,15 @@ services:
 4. **Must connect all services to network**: Every service joins `codiesvibe-network`
 
 ### Environment Variable Alignment
-Services must use network addresses for internal communication:
+Development uses localhost, production uses container names:
+
+**Development (Native Apps + Infrastructure):**
+- MongoDB: `mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin`
+- Redis: `redis://:redis123@localhost:6379`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+
+**Production (All Containerized):**
 - MongoDB: `mongodb://mongodb:27017/codiesvibe`
 - Redis: `redis://redis:6379`
 - Prometheus: `http://prometheus:9090`
@@ -101,15 +109,16 @@ Services must use network addresses for internal communication:
 
 ## Usage Scenarios
 
-### Scenario 1: Full Development Stack
+### Scenario 1: Local Development
 ```bash
-# Start infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# Start infrastructure services
+npm run infra:start
 
-# Start development application
-docker-compose -f docker-compose.dev.yml up -d
+# Start development applications (separate terminals)
+npm run dev                   # Frontend (native)
+cd backend && npm run dev     # Backend (native)
 
-# All services communicate via codiesvibe-network
+# Infrastructure accessible via localhost, apps run natively
 ```
 
 ### Scenario 2: Production with Monitoring
@@ -123,12 +132,12 @@ docker-compose -f docker-compose.production.yml up -d
 # Monitoring automatically available
 ```
 
-### Scenario 3: Isolated Infrastructure Testing
+### Scenario 3: Infrastructure Only
 ```bash
-# Start only infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# Start only infrastructure services
+npm run infra:start
 
-# Infrastructure services available for external connections
+# Infrastructure services available for local development or testing
 ```
 
 ## Network Security Considerations
@@ -151,11 +160,17 @@ docker-compose -f docker-compose.infra.yml up -d
 # List networks
 docker network ls
 
-# Inspect network
+# Inspect infrastructure network
 docker network inspect codiesvibe-network
 
-# Check service connectivity
-docker exec -it codiesvibe-backend-dev ping mongodb
+# Check infrastructure connectivity from host
+ping localhost
+curl http://localhost:27017  # MongoDB (will show connection info)
+curl http://localhost:3001   # Grafana
+
+# Check application connectivity
+curl http://localhost:3000   # Frontend
+curl http://localhost:4000/health  # Backend
 ```
 
 ## Migration Notes
