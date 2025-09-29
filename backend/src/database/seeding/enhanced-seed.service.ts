@@ -146,7 +146,6 @@ export class EnhancedSeedService {
       description: dto.description,
       createdBy,
       longDescription: dto.longDescription ?? null,
-      pricing: dto.pricing,
       interface: dto.interface,
       functionality: dto.functionality,
       deployment: dto.deployment,
@@ -309,7 +308,13 @@ export class EnhancedSeedService {
     const { validTools, errors } = await this.validateTools(
       seedFile.data.tools,
     );
+    
+    // Log validation errors for debugging
     if (errors.length > 0) {
+      this.logger.error(`Validation errors in ${seedFile.filename}:`);
+      errors.forEach((error, index) => {
+        this.logger.error(`  ${index + 1}. ${error}`);
+      });
       throw new Error(
         `Validation failed for ${seedFile.filename}: ${errors.join(' | ')}`,
       );

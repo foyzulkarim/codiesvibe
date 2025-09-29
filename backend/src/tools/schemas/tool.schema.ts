@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { PricingModelEnum } from '../../../shared/types/tool.types';
 
 export type ToolDocument = Tool & Document;
 
@@ -150,9 +151,14 @@ export class Tool {
       pricingModel: {
         type: [String],
         required: true,
+        enum: ['free', 'freemium', 'paid'],
         validate: {
-          validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-          message: 'pricingModel must be non-empty',
+          validator: (v: string[]) => {
+            if (!Array.isArray(v) || v.length === 0) return false;
+            const validModels: PricingModelEnum[] = ['free', 'freemium', 'paid'];
+            return v.every(model => validModels.includes(model as PricingModelEnum));
+          },
+          message: 'pricingModel must be a non-empty array containing only: free, freemium, paid',
         },
       },
     },
@@ -165,7 +171,7 @@ export class Tool {
     hasFreeTier: boolean;
     hasCustomPricing: boolean;
     billingPeriods: string[];
-    pricingModel: string[];
+    pricingModel: PricingModelEnum[];
   };
 
   @Prop({
@@ -431,16 +437,6 @@ export class Tool {
   })
   aliases!: string[];
 
-  // Legacy fields (maintained for compatibility)
-  @Prop({
-    type: [String],
-    required: true,
-    validate: {
-      validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-      message: 'pricing must be a non-empty array',
-    },
-  })
-  pricing!: string[];
 
   @Prop({
     type: [String],

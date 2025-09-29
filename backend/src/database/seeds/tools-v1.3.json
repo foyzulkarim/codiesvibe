@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -135,8 +135,7 @@
       "searchKeywords": ["AI", "code editor", "cursor", "IDE", "completions", "chat", "programming"],
       "semanticTags": ["ai-powered editor", "intelligent completions", "code generation", "vs code alternative", "developer productivity", "programming assistant", "ai chat interface", "modern ide"],
       "aliases": ["Cursor", "Cursor Editor", "AI Code Editor", "Cursor AI"],
-
-      "pricing": ["Free", "Paid", "Enterprise"],
+      
       "interface": ["Desktop", "IDE Plugin"],
       "functionality": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
       "deployment": ["Local"],
@@ -174,7 +173,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": true,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "enterprise"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -277,11 +276,10 @@
       "searchKeywords": ["replit", "cloud IDE", "deployment", "collaboration", "AI coding", "online editor"],
       "semanticTags": ["cloud development", "instant deployment", "collaborative coding", "zero setup", "web ide", "education platform", "real-time collaboration", "browser-based development"],
       "aliases": ["Repl.it", "Replit IDE", "Online IDE", "Cloud Editor"],
-
-      "pricing": ["Free", "Paid", "Enterprise"],
+      
       "interface": ["Web", "API", "CLI"],
       "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
-      "deployment": ["Cloud", "Self-hosted"],
+      "deployment": ["Cloud", "Local"],
       "popularity": 85,
       "rating": 4.4,
       "reviewCount": 3200,
@@ -316,7 +314,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": true,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "credits"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -419,8 +417,7 @@
       "searchKeywords": ["lovable", "AI app builder", "full-stack", "no-code", "React", "Supabase"],
       "semanticTags": ["ai app generation", "natural language programming", "full-stack automation", "rapid development", "no-code platform", "startup tools", "mvp builder", "react applications"],
       "aliases": ["Lovable AI", "AI App Generator", "Full-Stack Builder", "Lovable Platform"],
-
-      "pricing": ["Free", "Paid", "Enterprise"],
+      
       "interface": ["Web", "API"],
       "functionality": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
       "deployment": ["Cloud"],
@@ -458,7 +455,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["one-time"],
-        "pricingModel": ["free", "open-source"]
+        "pricingModel": ["free"]
       },
 
       "pricingDetails": [
@@ -545,7 +542,6 @@
       "semanticTags": ["local ai", "privacy-preserving ai", "edge ai", "open source llm", "offline inference", "self-hosted ai", "data sovereignty", "local model hosting"],
       "aliases": ["Ollama AI", "Local LLM Runner", "Private AI", "Self-Hosted LLM"],
 
-      "pricing": ["Free"],
       "interface": ["CLI", "API"],
       "functionality": ["Model Management", "Local Inference", "API Server", "Model Customization"],
       "deployment": ["Local"],
@@ -670,7 +666,7 @@
       "semanticTags": ["desktop ai application", "user-friendly ai", "local model hosting", "document chat", "ai gui interface", "privacy-focused ai", "cross-platform ai", "beginner-friendly ai"],
       "aliases": ["LMStudio", "LM Studio AI", "Local AI Desktop", "AI Desktop App"],
 
-      "pricing": ["Free"],
+      
       "interface": ["Desktop", "API"],
       "functionality": ["Model Management", "Chat Interface", "Document RAG", "API Server", "Model Hosting"],
       "deployment": ["Local"],

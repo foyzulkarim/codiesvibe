@@ -265,7 +265,9 @@ export class ToolsService {
       query.functionality = { $in: filters.functionality };
     }
     if (filters.pricing && filters.pricing.length > 0) {
-      query.pricing = { $in: filters.pricing };
+      // Normalize pricing values to lowercase for case-insensitive matching
+      const normalizedPricing = filters.pricing.map(p => p.toLowerCase());
+      query['pricingSummary.pricingModel'] = { $in: normalizedPricing };
     }
     if (filters.interface && filters.interface.length > 0) {
       query.interface = { $in: filters.interface };

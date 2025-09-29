@@ -154,11 +154,6 @@ export class CreateToolEnhancedDto {
   @MinLength(50)
   longDescription?: string;
 
-  @ApiProperty({ description: 'Pricing models', type: [String] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsString({ each: true })
-  pricing!: string[];
 
   @ApiProperty({ description: 'Interface types', type: [String] })
   @IsArray()

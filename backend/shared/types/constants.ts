@@ -4,21 +4,9 @@ import { SortOptionUI } from './api.types';
 
 // Filter options (shared between frontend and backend)
 export const FILTER_OPTIONS = {
-  pricing: ['Free', 'Freemium', 'Paid', 'Enterprise'],
-  interface: ['Web', 'API', 'Desktop', 'Mobile', 'CLI', 'Browser Extension'],
-  functionality: [
-    'Text Generation',
-    'Image Generation',
-    'Code Generation',
-    'Data Analysis',
-    'Automation',
-    'Research',
-    'Design',
-    'Productivity',
-    'Communication',
-    'Education'
-  ],
-  deployment: ['Cloud', 'On-Premise', 'Hybrid', 'SaaS', 'Self-Hosted']
+  pricing: ['Free', 'Freemium', 'Paid'],
+  interface: ['Web', 'API', 'Desktop', 'Mobile', 'CLI', 'Browser Extension'],  
+  deployment: ['Cloud', 'Local']
 };
 
 // Sort options for UI

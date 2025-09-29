@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -112,7 +112,6 @@
       "semanticTags": ["constitutional ai", "safety-focused ai", "natural language processing", "reasoning", "analysis", "research assistant", "ethical ai", "helpful ai"],
       "aliases": ["Claude", "Anthropic Claude", "Claude Assistant", "Claude AI Assistant"],
 
-      "pricing": ["Free", "Paid"],
       "interface": ["Web", "API"],
       "functionality": ["Text Generation", "Analysis", "Code Generation"],
       "deployment": ["Cloud"],

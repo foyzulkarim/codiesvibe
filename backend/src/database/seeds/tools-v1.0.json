@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -112,7 +112,6 @@
       "semanticTags": ["conversational ai", "natural language processing", "machine learning", "artificial intelligence", "large language model", "text generation", "question answering", "virtual assistant"],
       "aliases": ["Chat GPT", "OpenAI ChatGPT", "GPT Chat", "AI Assistant"],
 
-      "pricing": ["Free", "Paid"],
       "interface": ["Web", "API", "Mobile"],
       "functionality": ["Text Generation", "Translation", "Code Generation"],
       "deployment": ["Cloud"],
@@ -150,7 +149,7 @@
         "hasFreeTier": false,
         "hasCustomPricing": true,
         "billingPeriods": ["month", "year"],
-        "pricingModel": ["subscription"]
+        "pricingModel": ["paid"]
       },
 
       "pricingDetails": [
@@ -237,7 +236,6 @@
       "semanticTags": ["code completion", "artificial intelligence", "programming assistant", "software development", "ide integration"],
       "aliases": ["Copilot", "GitHub AI", "AI Code Assistant", "Copilot AI"],
 
-      "pricing": ["Paid"],
       "interface": ["IDE Plugin", "API"],
       "functionality": ["Code Generation", "Code Completion", "Documentation"],
       "deployment": ["Cloud"],

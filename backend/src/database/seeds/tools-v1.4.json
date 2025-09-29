@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": true,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "enterprise"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -136,7 +136,6 @@
       "semanticTags": ["advanced ai coding", "codebase intelligence", "persistent memory", "enterprise development", "contextual understanding", "ai agent", "intelligent assistance", "code comprehension"],
       "aliases": ["Augment AI", "Augment Coding Assistant", "AI Pair Programmer", "Code Augment"],
 
-      "pricing": ["Free Trial", "Paid"],
       "interface": ["IDE Plugin", "Desktop"],
       "functionality": ["Code Generation", "Code Completion", "AI Chat", "Memory Persistence", "Large Codebase Support"],
       "deployment": ["Cloud"],
@@ -174,7 +173,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": true,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "enterprise"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -278,10 +277,10 @@
       "semanticTags": ["enterprise ai coding", "code intelligence", "privacy-focused ai", "code search platform", "multi-repository context", "secure development", "compliance-ready", "developer productivity"],
       "aliases": ["Cody AI", "Sourcegraph AI", "Code Search Assistant", "Enterprise Code AI"],
 
-      "pricing": ["Free", "Paid"],
+      
       "interface": ["IDE Plugin", "Web", "API"],
       "functionality": ["Code Generation", "Code Completion", "AI Chat", "Code Search", "Inline Editing"],
-      "deployment": ["Cloud", "Self-hosted"],
+      "deployment": ["Cloud", "Local"],
       "popularity": 81,
       "rating": 4.5,
       "reviewCount": 2150,
@@ -316,7 +315,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["month", "year"],
-        "pricingModel": ["freemium", "subscription"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -419,8 +418,7 @@
       "searchKeywords": ["askcodi", "AI coding", "code generation", "project management", "chat assistant"],
       "semanticTags": ["versatile ai assistant", "project organization", "code learning", "development lifecycle", "practical coding", "beginner-friendly", "multi-language support", "affordable ai coding"],
       "aliases": ["AskCodi AI", "Codi Assistant", "AI Code Helper", "AskCodi Platform"],
-
-      "pricing": ["Free", "Paid"],
+      
       "interface": ["IDE Plugin", "Web", "API"],
       "functionality": ["Code Generation", "Code Suggestions", "AI Chat", "Project Management", "Code Documentation"],
       "deployment": ["Cloud"],
@@ -458,7 +456,7 @@
         "hasFreeTier": false,
         "hasCustomPricing": true,
         "billingPeriods": ["month", "year", "custom"],
-        "pricingModel": ["enterprise", "subscription", "on-premise"]
+        "pricingModel": ["paid"]
       },
 
       "pricingDetails": [
@@ -561,11 +559,10 @@
       "searchKeywords": ["mistral", "codestral", "enterprise", "local", "deployment", "automation", "security", "coding", "ai"],
       "semanticTags": ["enterprise ai", "local deployment", "80+ languages", "advanced automation", "security-focused"],
       "aliases": ["Mistral AI Code", "Codestral", "Enterprise Code AI", "Mistral Codestral"],
-
-      "pricing": ["Enterprise"],
+      
       "interface": ["IDE Plugin", "API", "CLI"],
       "functionality": ["Code Generation", "Code Completion", "Automated Task Execution", "Enterprise Security", "Local Deployment"],
-      "deployment": ["Cloud", "Local", "Self-hosted"],
+      "deployment": ["Cloud", "Local"],
       "popularity": 78,
       "rating": 4.4,
       "reviewCount": 1560,

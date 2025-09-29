@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": true,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "enterprise"]
+        "pricingModel": ["freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -136,7 +136,6 @@
       "semanticTags": ["aws integration", "cloud development", "infrastructure management", "code analysis", "business intelligence"],
       "aliases": ["Amazon Q Developer", "AWS Q", "Q Assistant", "Amazon AI Assistant"],
 
-      "pricing": ["Free", "Paid"],
       "interface": ["Web", "API", "IDE Plugin"],
       "functionality": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence"],
       "deployment": ["Cloud"],
