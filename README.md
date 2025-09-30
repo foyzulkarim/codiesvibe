@@ -130,7 +130,7 @@ Fast local development with native hot reload, instant debugging, and maximum vi
 npm run infra:start
 
 # 2. Configure environment files
-cp .env.example .env                    # Frontend environment
+cp .env.example .env.local              # Frontend environment
 cp backend/.env.example backend/.env   # Backend environment
 # Edit both files with your settings
 
@@ -150,10 +150,10 @@ open http://localhost:4000/api/health  # Backend health check
 ### Development Environment Variables
 
 ```env
-# .env (Frontend)
+# .env.local (Frontend - create from .env.example)
 VITE_API_URL=http://localhost:4000/api
 VITE_DEBUG=true
-VITE_LOCAL_DEV=true
+VITE_DEV_TOOLS=true
 VITE_APP_NAME=CodiesVibe
 VITE_ENVIRONMENT=development
 
@@ -672,13 +672,12 @@ echo ".env" >> .gitignore
 # Copy and customize environment templates
 
 # Frontend environment files
-cp .env.example .env                           # Development (required)
-cp .env.development.example .env.development   # Development-specific (optional)
-cp .env.production.example .env.production     # Production build (optional)
+cp .env.example .env.local                         # Development (use .local for gitignore)
+cp .env.production.example .env.production.local   # Production (use .local for gitignore)
 
 # Backend environment files
-cp backend/.env.example backend/.env                # Development
-cp backend/.env.example backend/.env.production     # Production
+cp backend/.env.example backend/.env               # Development
+cp backend/.env.example backend/.env.production    # Production
 
 # For Cloudflare tunnel setup, see TUNNEL-SETUP.md
 ```
@@ -688,13 +687,21 @@ cp backend/.env.example backend/.env.production     # Production
 The project uses a clear separation of frontend and backend environment variables:
 
 - **Frontend (Vite)**: Uses `VITE_` prefixed variables that are embedded at build time
-  - `.env` - Default development settings
-  - `.env.development.example` - Development-specific template
-  - `.env.production.example` - Production build template
+  - `.env.example` - Comprehensive template with all variables (committed)
+  - `.env.local` - Development overrides (NOT committed)
+  - `.env.production.example` - Production-specific overrides template (committed)
+  - `.env.production.local` - Production values (NOT committed)
 
 - **Backend (NestJS)**: Traditional Node.js environment variables
-  - `backend/.env` - Development configuration
-  - `backend/.env.production` - Production configuration
+  - `backend/.env.example` - Template (committed)
+  - `backend/.env` - Development configuration (NOT committed)
+  - `backend/.env.production` - Production configuration (NOT committed)
+
+**Vite Environment Loading Priority:**
+1. `.env.[mode].local` (e.g., `.env.production.local`) - highest priority
+2. `.env.[mode]` (e.g., `.env.production`)
+3. `.env.local` (all modes except test)
+4. `.env` (all modes) - lowest priority
 
 ### Cloudflare Tunnel Credentials
 
