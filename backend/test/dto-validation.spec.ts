@@ -49,8 +49,6 @@ describe('DTO Validation', () => {
       );
     });
 
-
-
     it('should reject tool with empty interface array', async () => {
       const dto = plainToInstance(
         CreateToolEnhancedDto,

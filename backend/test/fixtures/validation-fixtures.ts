@@ -159,7 +159,6 @@ export const VALIDATION_FIXTURES = {
 
     // Array validation failures
 
-
     emptyInterface: {
       name: 'Test Tool',
       description: 'Valid description',
