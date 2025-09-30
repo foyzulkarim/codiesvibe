@@ -7,7 +7,7 @@ import { ActiveFilterChips } from "@/components/ActiveFilterChips";
 import ResultsCounter from "@/components/ResultsCounter";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { Button } from "@/components/ui/button";
-import { LogIn, UserPlus, Sparkles, Zap } from "lucide-react";
+import { LogIn, UserPlus, Sparkles, Zap, Github } from "lucide-react";
 import { useTools } from "@/hooks/api/useTools";
 import { FilterState } from "@/api/types";
 import { AITool, aiTools } from "@/data/tools";
@@ -109,16 +109,15 @@ export default function Index() {
               <Sparkles className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold">CodiesVibe</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
-                <LogIn className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-              <Button size="sm">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Sign Up
-              </Button>
-            </div>
+            <a
+              href="https://github.com/foyzulkarim/codiesvibe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
+              title="View on GitHub - This project is open source"
+            >
+              <Github className="h-6 w-6" />
+            </a>
           </div>
         </div>
       </header>
@@ -133,7 +132,7 @@ export default function Index() {
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Find the perfect AI-powered tools to supercharge your development workflow
           </p>
-          
+
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto mb-8">
             <SearchBar
@@ -177,7 +176,7 @@ export default function Index() {
                         setInputValue("");
                         setSearchQuery("");
                       } else {
-                        handleFilterChange(type as keyof FilterState, 
+                        handleFilterChange(type as keyof FilterState,
                           filters[type as keyof FilterState].filter(v => v !== value)
                         );
                       }
@@ -186,7 +185,7 @@ export default function Index() {
                   />
                 )}
               </div>
-              
+
               <SortSelector
                 value={sortBy}
                 onChange={handleSortChange}

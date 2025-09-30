@@ -138,7 +138,7 @@
       
       "interface": ["IDE", "CLI"],
       "functionality": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
-      "deployment": ["Local"],
+      "deployment": ["Local", "Cloud"],
       "popularity": 88,
       "rating": 4.6,
       "reviewCount": 2450,
@@ -279,7 +279,7 @@
       
       "interface": ["Web", "Mobile"],
       "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
-      "deployment": ["Cloud", "Local"],
+      "deployment": ["Cloud"],
       "popularity": 85,
       "rating": 4.4,
       "reviewCount": 3200,

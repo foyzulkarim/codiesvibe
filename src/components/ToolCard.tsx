@@ -18,14 +18,14 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
   const highlightText = useMemo(() => {
     return (text: string, term?: string): string => {
       if (!term || term.length < 2) return text;
-      
+
       const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>');
     };
   }, []);
 
   const getPricingColor = (pricing: string[]) => {
-    if (pricing.includes("Free") || pricing.includes("Open Source")) return "text-success";
+    if (pricing.includes("Free")) return "text-success";
     if (pricing.includes("Freemium")) return "text-primary";
     return "text-warning";
   };
@@ -33,13 +33,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
   // Helper to get pricing display from v2.0 structure
   const getPricingDisplay = () => {
     if (tool.pricingSummary) {
-      const { hasFreeTier, pricingModel } = tool.pricingSummary;
-      if (hasFreeTier) return ["Free"];
-      if (pricingModel.includes("freemium")) return ["Freemium"];
-      if (pricingModel.includes("subscription")) return ["Subscription"];
-      if (pricingModel.includes("enterprise")) return ["Enterprise"];
+      return tool.pricingSummary.pricingModel.map(model =>
+        model.charAt(0).toUpperCase() + model.slice(1)
+      );
     }
-    return tool.pricing || [];
+    return [];
   };
 
   // Helper to get interface display from v2.0 structure
@@ -63,7 +61,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) return "1 day ago";
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
@@ -77,13 +75,13 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
   };
 
   return (
-    <div 
+    <div
       className={`tool-card ${isExpanded ? 'tool-card-expanded' : ''} group`}
       onClick={handleCardClick}
     >
       {/* Quick Actions - Hidden until hover */}
       <div className="quick-actions">
-        <button
+        {/* <button
           onClick={(e) => {
             e.stopPropagation();
             onCompare(tool);
@@ -92,8 +90,8 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
           title="Compare"
         >
           <GitCompare className="w-4 h-4 text-muted-foreground" />
-        </button>
-        <button
+        </button> */}
+        {/* <button
           onClick={(e) => {
             e.stopPropagation();
             onSave(tool);
@@ -102,7 +100,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
           title="Save for later"
         >
           <Heart className="w-4 h-4 text-muted-foreground" />
-        </button>
+        </button> */}
       </div>
 
       {/* Main Content */}
@@ -123,24 +121,20 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 
+              <h3
                 className="text-lg font-semibold text-foreground truncate"
-                dangerouslySetInnerHTML={{ 
-                  __html: highlightText(tool.name, searchTerm) 
+                dangerouslySetInnerHTML={{
+                  __html: highlightText(tool.name, searchTerm)
                 }}
               />
-              <div className="popularity-score">
-                <TrendingUp className="w-3 h-3" />
-                {tool.popularity}
-              </div>
             </div>
-            
-            <p 
+
+            <p
               className="text-sm text-muted-foreground leading-relaxed"
-              dangerouslySetInnerHTML={{ 
+              dangerouslySetInnerHTML={{
                 __html: highlightText(
                   tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description,
                   searchTerm
@@ -152,6 +146,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
 
         {/* Tags Row - Updated for v2.0 */}
         <div className="flex flex-wrap gap-2">
+          {/* Pricing Tags */}
           {getPricingDisplay().slice(0, 2).map((price) => (
             <span
               key={price}
@@ -160,6 +155,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               {price}
             </span>
           ))}
+
+          {/* Interface Tags */}
+          {getInterfaceDisplay().length > 0 && getPricingDisplay().length > 0 && (
+            <div className="w-px h-5 bg-border self-center" />
+          )}
           {getInterfaceDisplay().slice(0, 2).map((interface_) => (
             <span
               key={interface_}
@@ -168,28 +168,23 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               {interface_}
             </span>
           ))}
-          {getFunctionalityDisplay().slice(0, 2).map((func) => (
+
+          {/* deployment Tags */}
+          {tool.deployment.length > 0 && (
+            <div className="w-px h-5 bg-border self-center" />
+          )}
+          {tool.deployment.map((deploy) => (
             <span
-              key={func}
+              key={deploy}
               className="px-2 py-1 text-xs font-medium rounded-md bg-secondary/10 text-secondary"
             >
-              {func}
-            </span>
-          ))}
-
-          {/* v2.0 Categories */}
-          {tool.categories?.primary?.slice(0, 2).map((category) => (
-            <span
-              key={category}
-              className="px-2 py-1 text-xs font-medium rounded-md bg-accent/10 text-accent"
-            >
-              {category}
+              {deploy}
             </span>
           ))}
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center justify-between text-sm">
+        {/* <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-4">
             {tool.rating && (
               <div className="flex items-center gap-1">
@@ -202,12 +197,12 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               <span className="text-muted-foreground text-xs">No ratings yet</span>
             )}
           </div>
-          
+
           <div className="flex items-center gap-1 text-muted-foreground">
             <Calendar className="w-3 h-3" />
             <span className="text-xs">{formatLastUpdated(tool.lastUpdated)}</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Expanded Content */}
         {isExpanded && (
@@ -359,7 +354,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                 <ExternalLink className="w-4 h-4" />
                 Try Now
               </button>
-              <button
+              {/* <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onCompare(tool);
@@ -368,7 +363,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               >
                 <GitCompare className="w-4 h-4" />
                 Compare
-              </button>
+              </button> */}
             </div>
           </div>
         )}
