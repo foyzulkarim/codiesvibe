@@ -49,17 +49,6 @@ describe('DTO Validation', () => {
       );
     });
 
-    it('should reject tool with empty pricing array', async () => {
-      const dto = plainToInstance(
-        CreateToolEnhancedDto,
-        VALIDATION_FIXTURES.invalidData.emptyPricing,
-      );
-      const errors = await validate(dto);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some((error) => error.property === 'pricing')).toBe(true);
-    });
-
     it('should reject tool with empty interface array', async () => {
       const dto = plainToInstance(
         CreateToolEnhancedDto,

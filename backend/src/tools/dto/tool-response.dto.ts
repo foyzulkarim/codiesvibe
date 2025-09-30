@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BaseTool } from '@shared/types/tool.types';
+import { BaseTool, PricingModelEnum } from '@shared/types/tool.types';
 
 // Response DTOs for nested structures
 class ResponseCategoriesDto {
@@ -53,9 +53,10 @@ class ResponsePricingSummaryDto {
 
   @ApiProperty({
     description: 'Pricing models',
-    example: ['freemium', 'subscription'],
+    example: ['freemium', 'paid'],
+    enum: ['free', 'freemium', 'paid'],
   })
-  pricingModel!: string[];
+  pricingModel!: PricingModelEnum[];
 }
 
 class ResponsePricingTierDto {
@@ -280,13 +281,6 @@ export class ToolResponseDto implements BaseTool {
 
   // Legacy fields
   @ApiProperty({
-    description: 'Legacy pricing models',
-    type: [String],
-    example: ['Free', 'Paid'],
-  })
-  pricing!: string[];
-
-  @ApiProperty({
     description: 'Legacy interface types',
     type: [String],
     example: ['Web', 'API'],
@@ -303,7 +297,7 @@ export class ToolResponseDto implements BaseTool {
   @ApiProperty({
     description: 'Legacy deployment options',
     type: [String],
-    example: ['Cloud'],
+    example: ['Cloud', 'On-premise'],
   })
   deployment!: string[];
 
@@ -463,7 +457,6 @@ export class ToolResponseDto implements BaseTool {
       aliases: doc.aliases || [],
 
       // Legacy fields
-      pricing: doc.pricing || [],
       interface: doc.interface || [],
       functionality: doc.functionality || [],
       deployment: doc.deployment || [],

@@ -6,72 +6,213 @@
     "system": {
       "name": "System Admin",
       "email": "admin@example.com",
-      "contributions": 1
+      "contributions": 5
     }
   },
   "tools": [
     {
-      "id": "amazon-q",
-      "name": "Amazon Q",
-      "slug": "amazon-q",
-      "description": "AI-powered assistant by AWS for developers and business users",
-      "longDescription": "Amazon Q is an AI-powered assistant by AWS that helps developers and business users with coding, troubleshooting, and business intelligence. It provides contextual assistance for AWS services, code generation, debugging, and can answer questions about your AWS infrastructure and applications. Amazon Q integrates deeply with AWS services and offers enterprise-grade security and privacy controls.",
-      "tagline": "Your AWS-native AI assistant for cloud development and operations",
+      "id": "cursor-ide",
+      "name": "Cursor IDE",
+      "slug": "cursor-ide",
+      "description": "AI-powered code editor with intelligent completions and chat",
+      "longDescription": "Cursor is an AI-first code editor built on VS Code that provides intelligent code completions, AI chat assistance, and advanced code generation capabilities. It offers different pricing tiers with varying levels of AI requests and features, making it suitable for both individual developers and enterprise teams. Cursor combines the familiar VS Code interface with cutting-edge AI capabilities for enhanced productivity.",
+      "tagline": "The AI-first code editor for the modern developer",
 
       "categories": {
-        "primary": ["AI", "Developer Tools"],
-        "secondary": ["AWS", "Cloud", "Business Intelligence"],
-        "industries": ["Technology", "Cloud Computing", "Enterprise", "DevOps"],
-        "userTypes": ["Developers", "DevOps Engineers", "Cloud Architects", "Business Analysts"]
+        "primary": ["AI", "Code Editor"],
+        "secondary": ["IDE", "Development", "Productivity"],
+        "industries": ["Technology", "Software Development", "Startups"],
+        "userTypes": ["Developers", "Software Engineers", "Full-Stack Developers", "AI Engineers"]
       },
 
       "pricingSummary": {
         "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 20,
+        "highestMonthlyPrice": 40,
         "currency": "USD",
         "hasFreeTier": true,
-        "hasCustomPricing": true,
+        "hasCustomPricing": false,
         "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "subscription", "enterprise"]
+        "pricingModel": ["paid"]
       },
 
       "pricingDetails": [
         {
-          "id": "free",
-          "name": "Amazon Q Free Tier",
+          "id": "hobby",
+          "name": "Hobby",
           "price": 0,
           "billing": "month",
-          "features": ["Basic Q&A", "Limited AWS service assistance", "Basic code suggestions", "AWS documentation access"],
-          "limitations": ["Limited monthly usage", "Basic features only", "No enterprise features"],
+          "features": ["2,000 completions", "50 uses of GPT-4", "VS Code extensions", "Basic support"],
+          "limitations": ["Limited completions", "Limited GPT-4 usage", "No priority support"],
           "sortOrder": 1
         },
         {
           "id": "pro",
-          "name": "Amazon Q Pro",
+          "name": "Pro",
           "price": 20,
           "billing": "month",
-          "features": ["Advanced coding assistance", "Expanded AWS service support", "Priority support", "Enhanced security scanning"],
+          "features": ["Unlimited completions", "500 uses of GPT-4", "Priority support", "Enhanced AI features"],
           "isPopular": true,
           "sortOrder": 2
         },
         {
-          "id": "enterprise",
-          "name": "Amazon Q Enterprise",
-          "price": 0,
-          "billing": "custom",
-          "features": ["Full feature access", "Enterprise security", "Custom integrations", "Dedicated support"],
+          "id": "business",
+          "name": "Business",
+          "price": 40,
+          "billing": "month",
+          "features": ["Everything in Pro", "Centralized billing", "Admin dashboard", "Usage analytics"],
           "sortOrder": 3
         }
       ],
 
-      "pricingUrl": "https://aws.amazon.com/q/pricing/",
+      "pricingUrl": "https://cursor.sh/pricing",
 
       "capabilities": {
-        "core": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence", "Infrastructure Assistance"],
+        "core": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
         "aiFeatures": {
           "codeGeneration": true,
           "imageGeneration": false,
-          "dataAnalysis": true,
+          "dataAnalysis": false,
+          "voiceInteraction": false,
+          "multimodal": false,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": false,
+          "offlineMode": false
+        },
+        "integrations": {
+          "platforms": ["Desktop", "IDE Plugin"],
+          "thirdParty": ["VS Code Extensions", "Git", "GitHub", "Terminal"],
+          "protocols": ["Language Server Protocol", "Git"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "Code Development",
+          "description": "Enhanced coding experience with AI-powered completions and suggestions",
+          "industries": ["Technology", "Software Development", "Startups"],
+          "userTypes": ["Developers", "Software Engineers", "Frontend Developers"],
+          "scenarios": ["Daily coding", "Feature implementation", "Bug fixing", "Code optimization"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "AI-Assisted Programming",
+          "description": "Leverage AI chat and intelligent suggestions for complex programming tasks",
+          "industries": ["Technology", "AI/ML", "Research"],
+          "userTypes": ["AI Engineers", "ML Engineers", "Senior Developers"],
+          "scenarios": ["Algorithm implementation", "Complex problem solving", "Architecture design", "Code review"],
+          "complexity": "advanced"
+        },
+        {
+          "name": "Code Refactoring",
+          "description": "Modernize and improve existing codebases with AI assistance",
+          "industries": ["Enterprise", "Technology", "Consulting"],
+          "userTypes": ["Senior Developers", "Technical Leads", "Software Architects"],
+          "scenarios": ["Legacy code modernization", "Performance optimization", "Code quality improvement", "Technical debt reduction"],
+          "complexity": "advanced"
+        },
+        {
+          "name": "Learning Programming",
+          "description": "Accelerate programming education with intelligent code suggestions and explanations",
+          "industries": ["Education", "Training", "Self-Learning"],
+          "userTypes": ["Students", "Junior Developers", "Career Changers"],
+          "scenarios": ["Coding tutorials", "Best practices learning", "Language learning", "Project building"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Rapid Prototyping",
+          "description": "Quickly build prototypes and proof-of-concepts with AI-enhanced development",
+          "industries": ["Startups", "Innovation Labs", "Consulting"],
+          "userTypes": ["Entrepreneurs", "Product Managers", "Technical Leads"],
+          "scenarios": ["MVP development", "Concept validation", "Demo creation", "Hackathons"],
+          "complexity": "intermediate"
+        }
+      ],
+
+      "searchKeywords": ["AI", "code editor", "cursor", "IDE", "completions", "chat", "programming"],
+      "semanticTags": ["ai-powered editor", "intelligent completions", "code generation", "vs code alternative", "developer productivity", "programming assistant", "ai chat interface", "modern ide"],
+      "aliases": ["Cursor", "Cursor Editor", "AI Code Editor", "Cursor AI"],
+      
+      "interface": ["IDE", "CLI"],
+      "functionality": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
+      "deployment": ["Local", "Cloud"],
+      "popularity": 88,
+      "rating": 4.6,
+      "reviewCount": 2450,
+
+      "logoUrl": "https://example.com/cursor-logo.png",
+      "website": "https://cursor.sh",
+      "documentation": "https://docs.cursor.sh",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "replit",
+      "name": "Replit",
+      "slug": "replit",
+      "description": "Cloud-based IDE with AI coding assistance and instant deployment",
+      "longDescription": "Replit is a comprehensive cloud development platform that combines an online IDE with AI-powered coding assistance, instant deployment capabilities, and collaborative features. It supports multiple programming languages and offers various deployment options from static sites to autoscaling applications. Replit eliminates the need for local development setup and enables seamless collaboration between team members.",
+      "tagline": "Code, collaborate, and deploy instantly in the cloud",
+
+      "categories": {
+        "primary": ["Cloud IDE", "Development Platform"],
+        "secondary": ["Deployment", "Collaboration", "AI"],
+        "industries": ["Technology", "Education", "Startups", "Remote Work"],
+        "userTypes": ["Developers", "Students", "Teachers", "Remote Teams"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 25,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": true,
+        "billingPeriods": ["month"],
+        "pricingModel": ["free","freemium", "paid"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "price": 0,
+          "billing": "month",
+          "features": ["Public repls", "Community support", "Basic AI features", "Limited compute"],
+          "limitations": ["Public code only", "Limited resources", "Basic features"],
+          "sortOrder": 1
+        },
+        {
+          "id": "replit-core",
+          "name": "Replit Core",
+          "price": 20,
+          "billing": "month",
+          "features": ["Private repls", "Faster performance", "Enhanced AI features", "Priority support"],
+          "isPopular": true,
+          "sortOrder": 2
+        },
+        {
+          "id": "teams",
+          "name": "Teams",
+          "price": 25,
+          "billing": "month",
+          "features": ["Team collaboration", "Admin controls", "Shared workspace", "Team analytics"],
+          "sortOrder": 3
+        }
+      ],
+
+      "pricingUrl": "https://replit.com/pricing",
+
+      "capabilities": {
+        "core": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
+        "aiFeatures": {
+          "codeGeneration": true,
+          "imageGeneration": false,
+          "dataAnalysis": false,
           "voiceInteraction": false,
           "multimodal": false,
           "thinkingMode": false
@@ -79,77 +220,466 @@
         "technical": {
           "apiAccess": true,
           "webHooks": true,
-          "sdkAvailable": true,
+          "sdkAvailable": false,
           "offlineMode": false
         },
         "integrations": {
-          "platforms": ["Web", "API", "IDE Plugin"],
-          "thirdParty": ["AWS Console", "VS Code", "JetBrains", "Slack"],
-          "protocols": ["REST", "AWS SDK", "CloudFormation"]
+          "platforms": ["Web", "API", "CLI"],
+          "thirdParty": ["GitHub", "Git", "NPM", "PyPI", "Docker"],
+          "protocols": ["REST", "WebSocket", "SSH"]
         }
       },
 
       "useCases": [
         {
-          "name": "AWS Development",
-          "description": "Accelerate AWS application development with intelligent code generation and service guidance",
-          "industries": ["Cloud Computing", "Technology", "Enterprise"],
-          "userTypes": ["AWS Developers", "Cloud Engineers", "Solutions Architects"],
-          "scenarios": ["Lambda function development", "Infrastructure as code", "API Gateway setup", "Service configuration"],
+          "name": "Web Development",
+          "description": "Build and deploy web applications with instant hosting and collaboration",
+          "industries": ["Technology", "Startups", "Freelancing"],
+          "userTypes": ["Web Developers", "Full-Stack Developers", "Frontend Developers"],
+          "scenarios": ["Website creation", "API development", "Full-stack applications", "Portfolio sites"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Prototyping",
+          "description": "Rapidly create and test ideas with zero-setup development environment",
+          "industries": ["Innovation", "Startups", "R&D"],
+          "userTypes": ["Product Managers", "Entrepreneurs", "Developers"],
+          "scenarios": ["Proof of concepts", "MVP development", "Idea validation", "Quick demos"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Learning Programming",
+          "description": "Educational platform for coding with instant feedback and sharing",
+          "industries": ["Education", "Training", "Bootcamps"],
+          "userTypes": ["Students", "Teachers", "Coding Instructors"],
+          "scenarios": ["Coding lessons", "Programming assignments", "Interactive tutorials", "Code sharing"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Team Collaboration",
+          "description": "Collaborative coding with real-time editing and shared workspaces",
+          "industries": ["Remote Work", "Consulting", "Agencies"],
+          "userTypes": ["Development Teams", "Remote Developers", "Consultants"],
+          "scenarios": ["Pair programming", "Code reviews", "Team projects", "Remote collaboration"],
           "complexity": "intermediate"
         },
         {
-          "name": "Code Debugging",
-          "description": "Debug and troubleshoot code issues with AI-powered analysis and suggestions",
-          "industries": ["Software Development", "Technology", "DevOps"],
-          "userTypes": ["Developers", "Software Engineers", "DevOps Engineers"],
-          "scenarios": ["Error resolution", "Performance optimization", "Code review", "Bug fixing"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Infrastructure Troubleshooting",
-          "description": "Diagnose and resolve AWS infrastructure issues with intelligent assistance",
-          "industries": ["Cloud Computing", "Enterprise", "Operations"],
-          "userTypes": ["Cloud Architects", "System Administrators", "DevOps Engineers"],
-          "scenarios": ["Service outages", "Performance issues", "Configuration problems", "Cost optimization"],
-          "complexity": "advanced"
-        },
-        {
-          "name": "Business Analytics",
-          "description": "Generate insights and reports from business data using AI-powered analysis",
-          "industries": ["Business", "Finance", "Analytics"],
-          "userTypes": ["Business Analysts", "Data Analysts", "Decision Makers"],
-          "scenarios": ["Report generation", "Data visualization", "Trend analysis", "KPI monitoring"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Security Scanning",
-          "description": "Identify and resolve security vulnerabilities in code and infrastructure",
-          "industries": ["Security", "Enterprise", "Compliance"],
-          "userTypes": ["Security Engineers", "DevSecOps", "Compliance Officers"],
-          "scenarios": ["Vulnerability assessment", "Security best practices", "Compliance checking", "Threat analysis"],
-          "complexity": "advanced"
+          "name": "Quick Deployments",
+          "description": "Deploy applications instantly without complex infrastructure setup",
+          "industries": ["Startups", "Small Business", "Freelancing"],
+          "userTypes": ["Solo Developers", "Small Teams", "Freelancers"],
+          "scenarios": ["App hosting", "API deployment", "Static sites", "Database applications"],
+          "complexity": "beginner"
         }
       ],
 
-      "searchKeywords": ["AI", "AWS", "amazon", "q", "developer", "assistant", "cloud", "coding", "infrastructure"],
-      "semanticTags": ["aws integration", "cloud development", "infrastructure management", "code analysis", "business intelligence"],
-      "aliases": ["Amazon Q Developer", "AWS Q", "Q Assistant", "Amazon AI Assistant"],
-
-      "pricing": ["Free", "Paid"],
-      "interface": ["Web", "API", "IDE Plugin"],
-      "functionality": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence"],
+      "searchKeywords": ["replit", "cloud IDE", "deployment", "collaboration", "AI coding", "online editor"],
+      "semanticTags": ["cloud development", "instant deployment", "collaborative coding", "zero setup", "web ide", "education platform", "real-time collaboration", "browser-based development"],
+      "aliases": ["Repl.it", "Replit IDE", "Online IDE", "Cloud Editor"],
+      
+      "interface": ["Web", "Mobile"],
+      "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
       "deployment": ["Cloud"],
-      "popularity": 72,
-      "rating": 4.3,
-      "reviewCount": 850,
+      "popularity": 85,
+      "rating": 4.4,
+      "reviewCount": 3200,
 
-      "logoUrl": "https://example.com/amazon-q-logo.png",
-      "website": "https://aws.amazon.com/q/",
-      "documentation": "https://docs.aws.amazon.com/amazonq/",
+      "logoUrl": "https://example.com/replit-logo.png",
+      "website": "https://replit.com",
+      "documentation": "https://docs.replit.com",
       "status": "active",
       "contributor": "system",
-      "dateAdded": "2025-01-15T10:30:00Z",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "lovable",
+      "name": "Lovable",
+      "slug": "lovable",
+      "description": "AI-powered full-stack app builder from natural language prompts",
+      "longDescription": "Lovable is an AI-powered platform that generates complete full-stack web applications from natural language descriptions. It combines React frontends with Supabase backends, offering rapid prototyping and deployment capabilities for both technical and non-technical users. The platform enables users to describe their app idea in plain English and receive a working application with modern technology stack.",
+      "tagline": "Turn your app ideas into reality with AI-powered development",
+
+      "categories": {
+        "primary": ["AI", "App Builder"],
+        "secondary": ["No-Code", "Full-Stack", "Rapid Prototyping"],
+        "industries": ["Startups", "Innovation", "Small Business", "Consulting"],
+        "userTypes": ["Entrepreneurs", "Product Managers", "Non-Technical Founders", "Rapid Prototypers"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 50,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": true,
+        "billingPeriods": ["month"],
+        "pricingModel": ["free","freemium", "paid"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "free",
+          "name": "Free Tier",
+          "price": 0,
+          "billing": "month",
+          "features": ["3 apps per month", "Basic templates", "Community support", "Public hosting"],
+          "limitations": ["Limited app generation", "Public projects only", "Basic features"],
+          "sortOrder": 1
+        },
+        {
+          "id": "creator",
+          "name": "Creator",
+          "price": 20,
+          "billing": "month",
+          "features": ["20 apps per month", "Private projects", "Custom domains", "Priority support"],
+          "isPopular": true,
+          "sortOrder": 2
+        },
+        {
+          "id": "business",
+          "name": "Business",
+          "price": 50,
+          "billing": "month",
+          "features": ["Unlimited apps", "Team collaboration", "Advanced integrations", "White-label options"],
+          "sortOrder": 3
+        }
+      ],
+
+      "pricingUrl": "https://lovable.dev/pricing",
+
+      "capabilities": {
+        "core": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
+        "aiFeatures": {
+          "codeGeneration": true,
+          "imageGeneration": false,
+          "dataAnalysis": false,
+          "voiceInteraction": false,
+          "multimodal": false,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": false,
+          "offlineMode": false
+        },
+        "integrations": {
+          "platforms": ["Web", "API"],
+          "thirdParty": ["Supabase", "GitHub", "React", "Tailwind CSS", "Vite"],
+          "protocols": ["REST", "GraphQL", "WebSocket"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "MVP Development",
+          "description": "Rapidly build minimum viable products to test business ideas",
+          "industries": ["Startups", "Entrepreneurship", "Innovation"],
+          "userTypes": ["Entrepreneurs", "Startup Founders", "Product Managers"],
+          "scenarios": ["Business validation", "Investor demos", "Market testing", "Rapid prototyping"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Rapid Prototyping",
+          "description": "Quickly create functional prototypes from concept descriptions",
+          "industries": ["Design", "Consulting", "Innovation Labs"],
+          "userTypes": ["Designers", "Consultants", "Innovation Managers"],
+          "scenarios": ["Concept validation", "Client presentations", "Design exploration", "Feasibility testing"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Idea Validation",
+          "description": "Transform business ideas into testable applications without coding",
+          "industries": ["Business", "Startups", "Freelancing"],
+          "userTypes": ["Business Analysts", "Entrepreneurs", "Freelancers"],
+          "scenarios": ["Market research", "User feedback collection", "Concept testing", "Business model validation"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Non-Technical App Creation",
+          "description": "Enable non-developers to create sophisticated web applications",
+          "industries": ["Small Business", "Education", "Non-Profit"],
+          "userTypes": ["Business Owners", "Teachers", "Non-Technical Users"],
+          "scenarios": ["Business tools", "Educational apps", "Community platforms", "Internal tools"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Startup Projects",
+          "description": "Build complete startup applications with modern technology stack",
+          "industries": ["Technology", "Venture Capital", "Incubators"],
+          "userTypes": ["Tech Entrepreneurs", "Startup Teams", "Accelerator Participants"],
+          "scenarios": ["Product launches", "Funding demos", "Beta testing", "User acquisition"],
+          "complexity": "intermediate"
+        }
+      ],
+
+      "searchKeywords": ["lovable", "AI app builder", "full-stack", "no-code", "React", "Supabase"],
+      "semanticTags": ["ai app generation", "natural language programming", "full-stack automation", "rapid development", "no-code platform", "startup tools", "mvp builder", "react applications"],
+      "aliases": ["Lovable AI", "AI App Generator", "Full-Stack Builder", "Lovable Platform"],
+      
+      "interface": ["Web"],
+      "functionality": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
+      "deployment": ["Cloud"],
+      "popularity": 82,
+      "rating": 4.7,
+      "reviewCount": 1850,
+
+      "logoUrl": "https://example.com/lovable-logo.png",
+      "website": "https://lovable.dev",
+      "documentation": "https://docs.lovable.dev",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "slug": "ollama",
+      "description": "Local LLM runner for running AI models on your own hardware",
+      "longDescription": "Ollama is an open-source platform that enables users to download, run, and manage large language models locally on their own hardware. It provides complete privacy and offline functionality while supporting a wide variety of open-source models including Llama, Mistral, and Code Llama. Ollama makes it easy to get started with local AI without requiring deep technical knowledge of model deployment.",
+      "tagline": "Run large language models locally with complete privacy",
+
+      "categories": {
+        "primary": ["AI", "Local LLM"],
+        "secondary": ["Privacy", "Open Source", "Offline"],
+        "industries": ["Technology", "Research", "Privacy-Focused", "Edge Computing"],
+        "userTypes": ["Developers", "Researchers", "Privacy Advocates", "AI Engineers"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 0,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": false,
+        "billingPeriods": ["one-time"],
+        "pricingModel": ["free", "paid"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "free",
+          "name": "Open Source",
+          "price": 0,
+          "billing": "one-time",
+          "features": ["Unlimited local usage", "All supported models", "API access", "Command line interface", "Community support"],
+          "isPopular": true,
+          "sortOrder": 1
+        }
+      ],
+
+      "pricingUrl": "https://github.com/ollama/ollama",
+
+      "capabilities": {
+        "core": ["Model Management", "Local Inference", "API Server", "Model Customization", "Privacy Protection"],
+        "aiFeatures": {
+          "codeGeneration": true,
+          "imageGeneration": false,
+          "dataAnalysis": true,
+          "voiceInteraction": false,
+          "multimodal": true,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": true,
+          "offlineMode": true
+        },
+        "integrations": {
+          "platforms": ["CLI", "API"],
+          "thirdParty": ["Docker", "Python", "JavaScript", "REST API"],
+          "protocols": ["REST", "HTTP", "Local API"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "Private AI Applications",
+          "description": "Build AI-powered applications that keep data completely private and local",
+          "industries": ["Healthcare", "Finance", "Legal", "Enterprise"],
+          "userTypes": ["Enterprise Developers", "Security Engineers", "Compliance Officers"],
+          "scenarios": ["Sensitive data processing", "HIPAA compliance", "Financial analysis", "Legal document review"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "Research and Experimentation",
+          "description": "Experiment with different AI models and conduct research without cloud dependencies",
+          "industries": ["Academia", "Research", "AI/ML"],
+          "userTypes": ["Researchers", "Students", "AI Scientists"],
+          "scenarios": ["Model comparison", "Research projects", "Academic studies", "AI experimentation"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "Edge Deployments",
+          "description": "Deploy AI capabilities in edge computing environments without internet connectivity",
+          "industries": ["IoT", "Manufacturing", "Remote Operations"],
+          "userTypes": ["IoT Developers", "Edge Computing Engineers", "Industrial Engineers"],
+          "scenarios": ["Offline environments", "Remote locations", "Manufacturing floors", "Embedded systems"],
+          "complexity": "advanced"
+        },
+        {
+          "name": "Sensitive Data Processing",
+          "description": "Process confidential information with AI while maintaining complete data sovereignty",
+          "industries": ["Government", "Defense", "Privacy-Critical"],
+          "userTypes": ["Government Contractors", "Security Professionals", "Privacy Engineers"],
+          "scenarios": ["Classified analysis", "Confidential documents", "Secure communications", "Air-gapped systems"],
+          "complexity": "advanced"
+        },
+        {
+          "name": "Offline AI Development",
+          "description": "Develop AI applications without relying on cloud services or internet connectivity",
+          "industries": ["Remote Development", "Consulting", "Independent Development"],
+          "userTypes": ["Independent Developers", "Remote Workers", "Consultants"],
+          "scenarios": ["Remote locations", "Poor connectivity", "Cost optimization", "Learning AI development"],
+          "complexity": "intermediate"
+        }
+      ],
+
+      "searchKeywords": ["ollama", "local LLM", "AI models", "privacy", "offline", "open source"],
+      "semanticTags": ["local ai", "privacy-preserving ai", "edge ai", "open source llm", "offline inference", "self-hosted ai", "data sovereignty", "local model hosting"],
+      "aliases": ["Ollama AI", "Local LLM Runner", "Private AI", "Self-Hosted LLM"],
+
+      "interface": ["CLI", "API", "Desktop"],
+      "functionality": ["Model Management", "Local Inference", "API Server", "Model Customization"],
+      "deployment": ["Local", "Cloud"],
+      "popularity": 79,
+      "rating": 4.5,
+      "reviewCount": 1650,
+
+      "logoUrl": "https://example.com/ollama-logo.png",
+      "website": "https://ollama.ai",
+      "documentation": "https://github.com/ollama/ollama/blob/main/README.md",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "lm-studio",
+      "name": "LM Studio",
+      "slug": "lm-studio",
+      "description": "User-friendly desktop app for running local AI models with GUI",
+      "longDescription": "LM Studio is a desktop application that provides an intuitive graphical interface for downloading, running, and chatting with local large language models. It offers document-based RAG capabilities, local API server functionality, and cross-platform SDKs for developers. LM Studio makes local AI accessible to users who prefer a visual interface over command-line tools.",
+      "tagline": "Local AI made simple with an intuitive desktop interface",
+
+      "categories": {
+        "primary": ["AI", "Desktop App"],
+        "secondary": ["Local LLM", "GUI", "Privacy"],
+        "industries": ["Technology", "Education", "Research", "Small Business"],
+        "userTypes": ["Developers", "Researchers", "Students", "Non-Technical Users"]
+      },
+
+      "pricingSummary": {
+        "lowestMonthlyPrice": 0,
+        "highestMonthlyPrice": 0,
+        "currency": "USD",
+        "hasFreeTier": true,
+        "hasCustomPricing": false,
+        "billingPeriods": ["one-time"],
+        "pricingModel": ["free"]
+      },
+
+      "pricingDetails": [
+        {
+          "id": "free",
+          "name": "Free Desktop App",
+          "price": 0,
+          "billing": "one-time",
+          "features": ["Unlimited local usage", "GUI interface", "Model management", "Document chat", "API server", "Cross-platform support"],
+          "isPopular": true,
+          "sortOrder": 1
+        }
+      ],
+
+      "pricingUrl": "https://lmstudio.ai",
+
+      "capabilities": {
+        "core": ["Model Management", "Chat Interface", "Document RAG", "API Server", "Model Hosting"],
+        "aiFeatures": {
+          "codeGeneration": true,
+          "imageGeneration": false,
+          "dataAnalysis": true,
+          "voiceInteraction": false,
+          "multimodal": true,
+          "thinkingMode": false
+        },
+        "technical": {
+          "apiAccess": true,
+          "webHooks": false,
+          "sdkAvailable": true,
+          "offlineMode": true
+        },
+        "integrations": {
+          "platforms": ["Desktop", "API"],
+          "thirdParty": ["Hugging Face", "Python SDK", "TypeScript SDK", "OpenAI API"],
+          "protocols": ["REST", "OpenAI-Compatible API"]
+        }
+      },
+
+      "useCases": [
+        {
+          "name": "AI Experimentation",
+          "description": "Explore different AI models and capabilities with an easy-to-use interface",
+          "industries": ["Education", "Research", "Technology"],
+          "userTypes": ["Students", "Researchers", "AI Enthusiasts"],
+          "scenarios": ["Model comparison", "Learning about AI", "Testing capabilities", "Research projects"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Document Analysis",
+          "description": "Chat with documents and extract insights using local AI models",
+          "industries": ["Business", "Legal", "Research", "Education"],
+          "userTypes": ["Analysts", "Researchers", "Students", "Professionals"],
+          "scenarios": ["Document Q&A", "Research assistance", "Content analysis", "Information extraction"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Local AI Development",
+          "description": "Develop AI applications using local models with API access",
+          "industries": ["Technology", "Startups", "Consulting"],
+          "userTypes": ["Developers", "AI Engineers", "Technical Consultants"],
+          "scenarios": ["App development", "Prototyping", "Local API hosting", "AI integration"],
+          "complexity": "intermediate"
+        },
+        {
+          "name": "Privacy-Focused AI Usage",
+          "description": "Use AI capabilities while keeping all data completely private and local",
+          "industries": ["Healthcare", "Finance", "Legal", "Privacy-Critical"],
+          "userTypes": ["Privacy Advocates", "Compliance Officers", "Sensitive Data Workers"],
+          "scenarios": ["Private document analysis", "Confidential Q&A", "Secure AI usage", "GDPR compliance"],
+          "complexity": "beginner"
+        },
+        {
+          "name": "Educational Purposes",
+          "description": "Learn about AI and machine learning concepts with hands-on experience",
+          "industries": ["Education", "Training", "Self-Learning"],
+          "userTypes": ["Students", "Teachers", "Self-Learners"],
+          "scenarios": ["AI education", "Coursework", "Demonstrations", "Concept exploration"],
+          "complexity": "beginner"
+        }
+      ],
+
+      "searchKeywords": ["LM Studio", "local AI", "GUI", "desktop", "LLM", "chat interface"],
+      "semanticTags": ["desktop ai application", "user-friendly ai", "local model hosting", "document chat", "ai gui interface", "privacy-focused ai", "cross-platform ai", "beginner-friendly ai"],
+      "aliases": ["LMStudio", "LM Studio AI", "Local AI Desktop", "AI Desktop App"],
+
+      
+      "interface": ["Desktop", "API", "CLI"],
+      "functionality": ["Model Management", "Chat Interface", "Document RAG", "API Server", "Model Hosting"],
+      "deployment": ["Local"],
+      "popularity": 76,
+      "rating": 4.4,
+      "reviewCount": 1420,
+
+      "logoUrl": "https://example.com/lm-studio-logo.png",
+      "website": "https://lmstudio.ai",
+      "documentation": "https://lmstudio.ai/docs",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
       "lastUpdated": "2025-09-29T08:40:00Z"
     }
   ]

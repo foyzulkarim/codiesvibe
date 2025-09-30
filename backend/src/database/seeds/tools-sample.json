@@ -32,7 +32,7 @@
         "hasFreeTier": true,
         "hasCustomPricing": false,
         "billingPeriods": ["month", "year"],
-        "pricingModel": ["freemium", "subscription"]
+        "pricingModel": ["free", "freemium", "paid"]
       },
 
       "pricingDetails": [
@@ -113,7 +113,6 @@
       "semanticTags": ["artificial intelligence", "productivity enhancement", "business automation", "data processing", "workflow optimization"],
       "aliases": ["Sample Productivity Tool", "Example Tool", "Demo Tool"],
 
-      "pricing": ["Free", "Paid"],
       "interface": ["Web", "API", "Mobile"],
       "functionality": ["Text Generation", "Data Analysis"],
       "deployment": ["Cloud", "On-Premise"],

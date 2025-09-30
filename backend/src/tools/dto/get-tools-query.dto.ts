@@ -51,8 +51,8 @@ export class GetToolsQueryDto {
   deployment?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by pricing options (comma-separated)',
-    example: 'Free,Paid',
+    description: 'Filter by pricing models (comma-separated)',
+    example: 'free,freemium,paid',
     type: String,
   })
   @IsOptional()

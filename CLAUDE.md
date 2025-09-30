@@ -58,13 +58,16 @@ backend/
 **Local Development Approach:**
 1. Start infrastructure: `npm run infra:start`
 2. Verify services are healthy via health checks
-3. Configure backend environment from `backend/.env.example`
-4. Start development servers natively for maximum speed
+3. Configure frontend environment: `cp .env.example .env.local`
+4. Configure backend environment: `cp backend/.env.example backend/.env`
+5. Start development servers natively for maximum speed
 
 **Environment Variables:**
+- Frontend: Copy `.env.example` to `.env.local` for frontend development configuration
+- Backend: Copy `backend/.env.example` to `backend/.env` for backend configuration
 - Use localhost addresses for local development (localhost:27017, localhost:6379)
-- Reference `backend/.env.example` for configuration examples
 - Infrastructure services run in Docker, applications run natively
+- Frontend uses `VITE_API_URL=http://localhost:4000/api` to connect to backend
 
 **Port Strategy:**
 - Infrastructure: Standard ports (27017, 6379, 9090, etc.)

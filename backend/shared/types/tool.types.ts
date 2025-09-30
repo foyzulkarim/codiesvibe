@@ -1,5 +1,8 @@
 // Core tool interfaces shared between frontend and backend
 
+// Enum for pricing models
+export type PricingModelEnum = 'free' | 'freemium' | 'paid';
+
 // Categories structure (replaces ToolTags)
 export interface Categories {
   primary: string[];
@@ -49,7 +52,7 @@ export interface PricingSummary {
   hasFreeTier: boolean;
   hasCustomPricing: boolean;
   billingPeriods: string[];
-  pricingModel: string[];
+  pricingModel: PricingModelEnum[];
 }
 
 // Pricing tier structure for detailed pricing information
@@ -105,7 +108,6 @@ export interface BaseTool {
   aliases: string[];
 
   // Legacy fields (maintained for compatibility)
-  pricing: string[];
   interface: string[];
   functionality: string[];
   deployment: string[];
@@ -162,7 +164,6 @@ export interface CreateToolPayload {
   aliases: string[];
 
   // Legacy fields (for backward compatibility)
-  pricing: string[];
   interface: string[];
   functionality: string[];
   deployment: string[];

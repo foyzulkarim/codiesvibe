@@ -15,6 +15,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
+import { PricingModelEnum } from '../../../shared/types/tool.types';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -120,13 +121,13 @@ class PricingSummaryDto {
 
   @ApiProperty({
     description: 'Pricing models',
-    example: ['freemium', 'subscription'],
+    example: ['freemium', 'paid'],
+    enum: ['free', 'freemium', 'paid'],
   })
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  pricingModel!: string[];
+  @IsEnum(['free', 'freemium', 'paid'], { each: true })
+  pricingModel!: PricingModelEnum[];
 }
 
 // Pricing Details DTO
@@ -527,17 +528,6 @@ export class CreateToolDto {
   @Length(1, 256, { each: true })
   aliases!: string[];
 
-  // Legacy fields (maintained for compatibility)
-  @ApiProperty({
-    description: 'Legacy pricing models',
-    example: ['Free', 'Paid'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @Length(1, 50, { each: true })
-  pricing!: string[];
-
   @ApiProperty({
     description: 'Legacy interface types',
     example: ['Web', 'API'],
@@ -625,7 +615,7 @@ export class CreateToolDto {
         hasFreeTier: true,
         hasCustomPricing: false,
         billingPeriods: ['month'],
-        pricingModel: ['freemium', 'subscription'],
+        pricingModel: ['freemium', 'paid'],
       },
       pricingDetails: [
         {
@@ -718,7 +708,6 @@ export class CreateToolDto {
         'artificial intelligence',
       ],
       aliases: ['OpenAI ChatGPT', 'GPT-4', 'Chat GPT'],
-      pricing: ['Free', 'Paid'],
       interface: ['Web', 'API'],
       functionality: ['Text Generation', 'Conversation', 'Code Assistance'],
       deployment: ['Cloud'],

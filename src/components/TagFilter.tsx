@@ -145,28 +145,20 @@ export const TagFilter = ({
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
                 onFilterChange("pricing", [...(activeFilters.pricing || []), "Free"]);
-                onFilterChange("interface", [...(activeFilters.interface || []), "IDE"]);
+                onFilterChange("deployment", [...(activeFilters.deployment || []), "Local"]);
+                onFilterChange("interface", [...(activeFilters.interface || []), "CLI"]);
               }}
             >
-              Free + IDE
+              Free + Local + CLI
             </button>
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("deployment", [...(activeFilters.deployment || []), "Self-hosted"]);
-                onFilterChange("pricing", [...(activeFilters.pricing || []), "Open Source"]);
-              }}
-            >
-              Self-hosted + Open Source
-            </button>
-            <button
-              className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
-              onClick={() => {
-                onFilterChange("functionality", [...(activeFilters.functionality || []), "Code Completion"]);
                 onFilterChange("pricing", [...(activeFilters.pricing || []), "Freemium"]);
+                onFilterChange("interface", [...(activeFilters.interface || []), "IDE Extension"]);
               }}
             >
-              Code Completion + Freemium
+              Freemium + IDE Extension
             </button>
           </div>
         </div>
