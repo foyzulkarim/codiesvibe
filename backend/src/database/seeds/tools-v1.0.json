@@ -17,32 +17,60 @@
       "description": "Advanced AI chatbot for natural conversations and assistance",
       "longDescription": "ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, help with writing, answer questions, and assist with various tasks. It represents one of the most sophisticated conversational AI systems available, capable of understanding context and providing helpful responses across a wide range of topics.",
       "tagline": "Your AI conversation partner for every task",
-
       "categories": {
-        "primary": ["AI", "Chatbot"],
-        "secondary": ["Productivity", "Communication"],
-        "industries": ["Technology", "Education", "Business", "Content Creation"],
-        "userTypes": ["General Users", "Students", "Professionals", "Developers"]
+        "primary": [
+          "AI",
+          "Chatbot"
+        ],
+        "secondary": [
+          "Productivity",
+          "Communication"
+        ],
+        "industries": [
+          "Technology",
+          "Education",
+          "Business",
+          "Content Creation"
+        ],
+        "userTypes": [
+          "General Users",
+          "Students",
+          "Professionals",
+          "Developers"
+        ]
       },
-
       "pricingSummary": {
         "lowestMonthlyPrice": 0,
         "highestMonthlyPrice": 20,
         "currency": "USD",
         "hasFreeTier": true,
         "hasCustomPricing": false,
-        "billingPeriods": ["month"],
-        "pricingModel": ["freemium", "paid"]
+        "billingPeriods": [
+          "month"
+        ],
+        "pricingModel": [
+          "free",
+          "freemium",
+          "paid"
+        ]
       },
-
       "pricingDetails": [
         {
           "id": "free",
           "name": "Free Plan",
           "price": 0,
           "billing": "month",
-          "features": ["Access to GPT-3.5", "Standard response time", "Limited daily usage", "Web interface access"],
-          "limitations": ["Usage limits apply", "No priority access", "Standard model only"],
+          "features": [
+            "Access to GPT-3.5",
+            "Standard response time",
+            "Limited daily usage",
+            "Web interface access"
+          ],
+          "limitations": [
+            "Usage limits apply",
+            "No priority access",
+            "Standard model only"
+          ],
           "sortOrder": 1
         },
         {
@@ -50,16 +78,25 @@
           "name": "ChatGPT Plus",
           "price": 20,
           "billing": "month",
-          "features": ["Access to GPT-4", "Faster response times", "Priority access during peak times", "Early access to new features"],
+          "features": [
+            "Access to GPT-4",
+            "Faster response times",
+            "Priority access during peak times",
+            "Early access to new features"
+          ],
           "isPopular": true,
           "sortOrder": 2
         }
       ],
-
       "pricingUrl": "https://openai.com/pricing",
-
       "capabilities": {
-        "core": ["Text Generation", "Translation", "Code Generation", "Question Answering", "Creative Writing"],
+        "core": [
+          "Text Generation",
+          "Translation",
+          "Code Generation",
+          "Question Answering",
+          "Creative Writing"
+        ],
         "aiFeatures": {
           "codeGeneration": true,
           "imageGeneration": false,
@@ -75,50 +112,131 @@
           "offlineMode": false
         },
         "integrations": {
-          "platforms": ["Web", "API", "Mobile"],
-          "thirdParty": ["Slack", "Discord", "Microsoft Teams"],
-          "protocols": ["REST", "JSON"]
+          "platforms": [
+            "Web",
+            "API",
+            "Mobile"
+          ],
+          "thirdParty": [
+            "Slack",
+            "Discord",
+            "Microsoft Teams"
+          ],
+          "protocols": [
+            "REST",
+            "JSON"
+          ]
         }
       },
-
       "useCases": [
         {
           "name": "Writing Assistance",
           "description": "Help with writing, editing, and content creation across various formats",
-          "industries": ["Content Creation", "Marketing", "Education", "Publishing"],
-          "userTypes": ["Writers", "Students", "Marketers", "Content Creators"],
-          "scenarios": ["Blog posts", "Email drafting", "Creative writing", "Academic essays"],
+          "industries": [
+            "Content Creation",
+            "Marketing",
+            "Education",
+            "Publishing"
+          ],
+          "userTypes": [
+            "Writers",
+            "Students",
+            "Marketers",
+            "Content Creators"
+          ],
+          "scenarios": [
+            "Blog posts",
+            "Email drafting",
+            "Creative writing",
+            "Academic essays"
+          ],
           "complexity": "beginner"
         },
         {
           "name": "Code Help",
           "description": "Programming assistance including code generation, debugging, and explanations",
-          "industries": ["Technology", "Software Development", "Education"],
-          "userTypes": ["Developers", "Students", "Engineers"],
-          "scenarios": ["Code debugging", "Algorithm explanations", "Code reviews", "Learning programming"],
+          "industries": [
+            "Technology",
+            "Software Development",
+            "Education"
+          ],
+          "userTypes": [
+            "Developers",
+            "Students",
+            "Engineers"
+          ],
+          "scenarios": [
+            "Code debugging",
+            "Algorithm explanations",
+            "Code reviews",
+            "Learning programming"
+          ],
           "complexity": "intermediate"
         },
         {
           "name": "Q&A and Research",
           "description": "Answer questions and provide research assistance across various topics",
-          "industries": ["Education", "Research", "Business", "Healthcare"],
-          "userTypes": ["Students", "Researchers", "Professionals", "General Users"],
-          "scenarios": ["Research projects", "Homework help", "Business analysis", "General inquiries"],
+          "industries": [
+            "Education",
+            "Research",
+            "Business",
+            "Healthcare"
+          ],
+          "userTypes": [
+            "Students",
+            "Researchers",
+            "Professionals",
+            "General Users"
+          ],
+          "scenarios": [
+            "Research projects",
+            "Homework help",
+            "Business analysis",
+            "General inquiries"
+          ],
           "complexity": "beginner"
         }
       ],
-
-      "searchKeywords": ["chatbot", "AI", "conversation", "GPT", "OpenAI"],
-      "semanticTags": ["conversational ai", "natural language processing", "machine learning", "artificial intelligence", "large language model", "text generation", "question answering", "virtual assistant"],
-      "aliases": ["Chat GPT", "OpenAI ChatGPT", "GPT Chat", "AI Assistant"],
-
-      "interface": ["Web", "API", "Mobile"],
-      "functionality": ["Text Generation", "Translation", "Code Generation"],
-      "deployment": ["Cloud"],
+      "searchKeywords": [
+        "chatbot",
+        "AI",
+        "conversation",
+        "GPT",
+        "OpenAI"
+      ],
+      "semanticTags": [
+        "conversational ai",
+        "natural language processing",
+        "machine learning",
+        "artificial intelligence",
+        "large language model",
+        "text generation",
+        "question answering",
+        "virtual assistant"
+      ],
+      "aliases": [
+        "Chat GPT",
+        "OpenAI ChatGPT",
+        "GPT Chat",
+        "AI Assistant"
+      ],
+      "interface": [
+        "Web",
+        "API",
+        "Mobile",
+        "CLI"
+      ],
+      "functionality": [
+        "Text Generation",
+        "Translation",
+        "Code Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
       "popularity": 95,
       "rating": 4.5,
       "reviewCount": 2500,
-
       "logoUrl": "https://example.com/chatgpt-logo.png",
       "website": "https://chat.openai.com",
       "documentation": "https://platform.openai.com/docs",
@@ -134,31 +252,55 @@
       "description": "AI-powered code completion and programming assistant",
       "longDescription": "GitHub Copilot is an AI programming assistant that helps developers write code faster by providing intelligent code suggestions and completions directly in their IDE. Powered by OpenAI Codex, it understands dozens of programming languages and can suggest whole lines or entire functions, making it an invaluable tool for both experienced developers and those learning to code.",
       "tagline": "Your AI pair programmer for faster development",
-
       "categories": {
-        "primary": ["AI", "Development"],
-        "secondary": ["Productivity", "Code"],
-        "industries": ["Technology", "Software Development", "Education"],
-        "userTypes": ["Developers", "Software Engineers", "Students", "DevOps Engineers"]
+        "primary": [
+          "AI",
+          "Development"
+        ],
+        "secondary": [
+          "Productivity",
+          "Code"
+        ],
+        "industries": [
+          "Technology",
+          "Software Development",
+          "Education"
+        ],
+        "userTypes": [
+          "Developers",
+          "Software Engineers",
+          "Students",
+          "DevOps Engineers"
+        ]
       },
-
       "pricingSummary": {
         "lowestMonthlyPrice": 10,
         "highestMonthlyPrice": 19,
         "currency": "USD",
         "hasFreeTier": false,
         "hasCustomPricing": true,
-        "billingPeriods": ["month", "year"],
-        "pricingModel": ["paid"]
+        "billingPeriods": [
+          "month",
+          "year"
+        ],
+        "pricingModel": [
+          "free",
+          "paid",
+          "freemium"
+        ]
       },
-
       "pricingDetails": [
         {
           "id": "individual",
           "name": "Individual",
           "price": 10,
           "billing": "month",
-          "features": ["Code completions", "Chat in IDE", "Command line assistance", "Security vulnerability filtering"],
+          "features": [
+            "Code completions",
+            "Chat in IDE",
+            "Command line assistance",
+            "Security vulnerability filtering"
+          ],
           "isPopular": true,
           "sortOrder": 1
         },
@@ -167,7 +309,12 @@
           "name": "Business",
           "price": 19,
           "billing": "month",
-          "features": ["Everything in Individual", "User management", "Organization-wide policies", "Industry-leading privacy"],
+          "features": [
+            "Everything in Individual",
+            "User management",
+            "Organization-wide policies",
+            "Industry-leading privacy"
+          ],
           "sortOrder": 2
         },
         {
@@ -175,15 +322,24 @@
           "name": "Enterprise",
           "price": 0,
           "billing": "custom",
-          "features": ["Everything in Business", "Advanced security", "Audit logs", "Fine-tuned models"],
+          "features": [
+            "Everything in Business",
+            "Advanced security",
+            "Audit logs",
+            "Fine-tuned models"
+          ],
           "sortOrder": 3
         }
       ],
-
       "pricingUrl": "https://github.com/pricing/copilot",
-
       "capabilities": {
-        "core": ["Code Generation", "Code Completion", "Documentation", "Code Translation", "Test Generation"],
+        "core": [
+          "Code Generation",
+          "Code Completion",
+          "Documentation",
+          "Code Translation",
+          "Test Generation"
+        ],
         "aiFeatures": {
           "codeGeneration": true,
           "imageGeneration": false,
@@ -199,50 +355,130 @@
           "offlineMode": false
         },
         "integrations": {
-          "platforms": ["IDE Plugin", "API"],
-          "thirdParty": ["VS Code", "JetBrains", "Vim", "Neovim"],
-          "protocols": ["REST", "Language Server Protocol"]
+          "platforms": [
+            "IDE Plugin",
+            "API"
+          ],
+          "thirdParty": [
+            "VS Code",
+            "JetBrains",
+            "Vim",
+            "Neovim"
+          ],
+          "protocols": [
+            "REST",
+            "Language Server Protocol"
+          ]
         }
       },
-
       "useCases": [
         {
           "name": "Code Completion",
           "description": "Real-time code suggestions and completions while coding",
-          "industries": ["Technology", "Software Development", "Startups"],
-          "userTypes": ["Developers", "Software Engineers", "Full-Stack Developers"],
-          "scenarios": ["Daily coding", "Function implementation", "Boilerplate generation", "API integration"],
+          "industries": [
+            "Technology",
+            "Software Development",
+            "Startups"
+          ],
+          "userTypes": [
+            "Developers",
+            "Software Engineers",
+            "Full-Stack Developers"
+          ],
+          "scenarios": [
+            "Daily coding",
+            "Function implementation",
+            "Boilerplate generation",
+            "API integration"
+          ],
           "complexity": "intermediate"
         },
         {
           "name": "Learning Programming",
           "description": "Accelerate programming education with intelligent code suggestions",
-          "industries": ["Education", "Training", "Bootcamps"],
-          "userTypes": ["Students", "Bootcamp Attendees", "Self-Learners", "Junior Developers"],
-          "scenarios": ["Coding exercises", "Tutorial following", "Concept learning", "Best practices"],
+          "industries": [
+            "Education",
+            "Training",
+            "Bootcamps"
+          ],
+          "userTypes": [
+            "Students",
+            "Bootcamp Attendees",
+            "Self-Learners",
+            "Junior Developers"
+          ],
+          "scenarios": [
+            "Coding exercises",
+            "Tutorial following",
+            "Concept learning",
+            "Best practices"
+          ],
           "complexity": "beginner"
         },
         {
           "name": "Rapid Prototyping",
           "description": "Quickly build prototypes and proof-of-concepts with AI assistance",
-          "industries": ["Startups", "Technology", "Consulting"],
-          "userTypes": ["Entrepreneurs", "Technical Leads", "Consultants"],
-          "scenarios": ["MVP development", "Hackathons", "Proof of concepts", "Demo creation"],
+          "industries": [
+            "Startups",
+            "Technology",
+            "Consulting"
+          ],
+          "userTypes": [
+            "Entrepreneurs",
+            "Technical Leads",
+            "Consultants"
+          ],
+          "scenarios": [
+            "MVP development",
+            "Hackathons",
+            "Proof of concepts",
+            "Demo creation"
+          ],
           "complexity": "intermediate"
         }
       ],
-
-      "searchKeywords": ["code", "programming", "AI", "completion", "GitHub", "copilot", "development", "assistant", "coding"],
-      "semanticTags": ["code completion", "artificial intelligence", "programming assistant", "software development", "ide integration"],
-      "aliases": ["Copilot", "GitHub AI", "AI Code Assistant", "Copilot AI"],
-
-      "interface": ["IDE Plugin", "API"],
-      "functionality": ["Code Generation", "Code Completion", "Documentation"],
-      "deployment": ["Cloud"],
+      "searchKeywords": [
+        "code",
+        "programming",
+        "AI",
+        "completion",
+        "GitHub",
+        "copilot",
+        "development",
+        "assistant",
+        "coding"
+      ],
+      "semanticTags": [
+        "code completion",
+        "artificial intelligence",
+        "programming assistant",
+        "software development",
+        "ide integration"
+      ],
+      "aliases": [
+        "Copilot",
+        "GitHub AI",
+        "AI Code Assistant",
+        "Copilot AI"
+      ],
+      "interface": [
+        "Web",
+        "IDE Extension",
+        "Mobile",
+        "CLI",
+        "IDE"
+      ],
+      "functionality": [
+        "Code Generation",
+        "Code Completion",
+        "Documentation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
       "popularity": 88,
       "rating": 4.2,
       "reviewCount": 1800,
-
       "logoUrl": "https://example.com/copilot-logo.png",
       "website": "https://github.com/features/copilot",
       "documentation": "https://docs.github.com/en/copilot",
