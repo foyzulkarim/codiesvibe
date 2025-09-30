@@ -36,14 +36,14 @@ describe('Error Handling in Tool Validation', () => {
     it('should handle empty required arrays', async () => {
       const invalidTool = {
         ...VALIDATION_FIXTURES.validMinimalTool,
-        pricing: [],
+        interface: [],
       };
 
       const dto = plainToInstance(CreateToolEnhancedDto, invalidTool);
       const errors = await validate(dto);
 
       expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some((error) => error.property === 'pricing')).toBe(true);
+      expect(errors.some((error) => error.property === 'interface')).toBe(true);
     });
 
     it('should handle invalid numeric values', async () => {

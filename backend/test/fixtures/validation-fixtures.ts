@@ -13,7 +13,6 @@ export const VALIDATION_FIXTURES = {
     description: 'Advanced AI chatbot for natural conversations',
     longDescription:
       'ChatGPT is an advanced language model designed for natural language conversations and assistance across various domains.',
-    pricing: ['Free', 'Paid', 'API'],
     interface: ['Web', 'API', 'Mobile'],
     functionality: ['Text Generation', 'Translation', 'Code Generation'],
     deployment: ['Cloud'],
@@ -49,7 +48,6 @@ export const VALIDATION_FIXTURES = {
     id: 'simple-tool',
     name: 'Simple Tool',
     description: 'A simple tool description',
-    pricing: ['Free'],
     interface: ['Web'],
     functionality: ['Basic'],
     deployment: ['Cloud'],
@@ -115,7 +113,6 @@ export const VALIDATION_FIXTURES = {
     // Missing required fields
     missingName: {
       description: 'Missing name',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -128,7 +125,6 @@ export const VALIDATION_FIXTURES = {
 
     missingDescription: {
       name: 'Test Tool',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -143,7 +139,6 @@ export const VALIDATION_FIXTURES = {
     emptyName: {
       name: '',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -163,24 +158,11 @@ export const VALIDATION_FIXTURES = {
     searchKeywordTooLong: 'a'.repeat(257), // 257 characters (exceeds 256)
 
     // Array validation failures
-    emptyPricing: {
-      name: 'Test Tool',
-      description: 'Valid description',
-      pricing: [],
-      interface: ['Web'],
-      functionality: ['Basic'],
-      deployment: ['Cloud'],
-      logoUrl: 'https://example.com/logo.png',
-      searchKeywords: ['test'],
-      tags: { primary: ['Test'], secondary: [] },
-      contributor: 'test-user',
-      dateAdded: '2025-09-12T10:00:00Z',
-    },
+
 
     emptyInterface: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: [],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -194,7 +176,6 @@ export const VALIDATION_FIXTURES = {
     emptyFunctionality: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: [],
       deployment: ['Cloud'],
@@ -208,7 +189,6 @@ export const VALIDATION_FIXTURES = {
     emptyDeployment: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: [],
@@ -222,7 +202,6 @@ export const VALIDATION_FIXTURES = {
     emptySearchKeywords: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -236,7 +215,6 @@ export const VALIDATION_FIXTURES = {
     emptyTags: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -251,7 +229,6 @@ export const VALIDATION_FIXTURES = {
     negativePopularity: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -266,7 +243,6 @@ export const VALIDATION_FIXTURES = {
     popularityTooHigh: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -281,7 +257,6 @@ export const VALIDATION_FIXTURES = {
     ratingTooHigh: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -296,7 +271,6 @@ export const VALIDATION_FIXTURES = {
     ratingTooLow: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -312,7 +286,6 @@ export const VALIDATION_FIXTURES = {
     invalidLogoUrl: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -327,7 +300,6 @@ export const VALIDATION_FIXTURES = {
     invalidFeaturesValues: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -349,7 +321,6 @@ export const VALIDATION_FIXTURES = {
     missingTagsPrimary: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
@@ -363,7 +334,6 @@ export const VALIDATION_FIXTURES = {
     missingTagsSecondary: {
       name: 'Test Tool',
       description: 'Valid description',
-      pricing: ['Free'],
       interface: ['Web'],
       functionality: ['Basic'],
       deployment: ['Cloud'],
