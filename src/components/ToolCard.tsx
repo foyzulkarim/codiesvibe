@@ -40,21 +40,6 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
     return [];
   };
 
-  // Helper to get interface display from v2.0 structure
-  const getInterfaceDisplay = () => {
-    if (tool.capabilities?.integrations?.platforms) {
-      return tool.capabilities.integrations.platforms;
-    }
-    return tool.interface || [];
-  };
-
-  // Helper to get functionality display from v2.0 structure
-  const getFunctionalityDisplay = () => {
-    if (tool.capabilities?.core) {
-      return tool.capabilities.core;
-    }
-    return tool.functionality || [];
-  };
 
   const formatLastUpdated = (dateString: string) => {
     const date = new Date(dateString);
@@ -147,7 +132,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
         {/* Tags Row - Updated for v2.0 */}
         <div className="flex flex-wrap gap-2">
           {/* Pricing Tags */}
-          {getPricingDisplay().slice(0, 2).map((price) => (
+          {getPricingDisplay().map((price) => (
             <span
               key={price}
               className={`px-2 py-1 text-xs font-medium rounded-md bg-success/10 ${getPricingColor([price])}`}
@@ -157,10 +142,10 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
           ))}
 
           {/* Interface Tags */}
-          {getInterfaceDisplay().length > 0 && getPricingDisplay().length > 0 && (
+          {tool.interface.length > 0 && (
             <div className="w-px h-5 bg-border self-center" />
           )}
-          {getInterfaceDisplay().slice(0, 2).map((interface_) => (
+          {tool.interface.map((interface_) => (
             <span
               key={interface_}
               className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary"
@@ -324,24 +309,6 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                   </div>
                 )}
 
-                {/* Legacy Categories (backward compatibility) */}
-                {(tool.pricing || tool.interface || tool.functionality || tool.deployment) && (
-                  <div className="flex flex-wrap gap-1">
-                    {[
-                      ...(getPricingDisplay() || []),
-                      ...(getInterfaceDisplay() || []),
-                      ...(getFunctionalityDisplay() || []),
-                      ...(tool.deployment || [])
-                    ].map((tag, index) => (
-                      <span
-                        key={`${tag}-${index}`}
-                        className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded border"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
