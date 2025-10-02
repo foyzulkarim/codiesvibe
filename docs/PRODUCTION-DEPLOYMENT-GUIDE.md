@@ -114,14 +114,22 @@ docker logs codiesvibe-nginx
 ## 🌐 Architecture
 
 ```
-Browser → Nginx (port 80) → Backend (internal port 4000)
+Browser → Nginx (port 80) → Gateway (internal port 4000) → Backend (internal port 4001)
                 ↓
            Static Files (Frontend)
 ```
 
 - **Frontend**: Built with `/api` as base URL, served by nginx
-- **Backend**: Accessible only through nginx proxy at `/api/*`
-- **nginx**: Routes `/api/*` to backend, serves static files for everything else
+- **Gateway**: Nginx-based API gateway that handles routing, rate limiting, and security headers
+- **Backend**: NestJS API accessible only through the gateway at internal port 4001
+- **nginx**: Routes `/api/*` to gateway, serves static files for everything else
+
+### Gateway Integration Benefits
+- **Rate Limiting**: Protects backend from excessive requests
+- **Security Headers**: Adds comprehensive security headers to API responses
+- **Load Balancing**: Ready for horizontal scaling of backend services
+- **Centralized Logging**: Gateway logs all API requests for monitoring
+- **SSL Termination**: Handles SSL/TLS for API endpoints
 
 ## 🔧 Environment Variables
 
@@ -149,14 +157,20 @@ docker-compose -f docker-compose.production.yml build --no-cache frontend
 ```
 
 ### Issue: 502 Bad Gateway for /api requests
-**Cause**: Backend not accessible from nginx
+**Cause**: Gateway or backend not accessible from nginx
 **Fix**:
 ```bash
+# Check if gateway is running
+docker logs codiesvibe-gateway-prod
+
 # Check if backend is running
 docker logs codiesvibe-backend-prod
 
-# Check network connectivity
-docker exec codiesvibe-nginx curl http://backend:4000/health
+# Check network connectivity from nginx to gateway
+docker exec codiesvibe-nginx curl http://gateway:4000/health
+
+# Check network connectivity from gateway to backend
+docker exec codiesvibe-gateway-prod curl http://codiesvibe-backend-prod:4001/health
 ```
 
 ### Issue: Frontend shows blank page
@@ -175,9 +189,11 @@ docker exec codiesvibe-nginx ls -la /usr/share/nginx/html/
 After deployment, verify these endpoints:
 
 - **Frontend**: `http://localhost/` - Should load the React app
-- **Backend**: `http://localhost/api/health` - Should return `{"status":"ok"}`
+- **Gateway**: `http://localhost:4000/` - Should return gateway info (direct access for testing)
+- **Backend Health**: `http://localhost/api/health` - Should return `{"status":"ok"}` (via gateway)
+- **API Documentation**: `http://localhost/api/docs` - Should load Swagger UI (via gateway)
 - **nginx**: `http://localhost/nginx-health` - Should return `healthy`
-- **API**: `http://localhost/api/tools` - Should return tools data
+- **API**: `http://localhost/api/tools` - Should return tools data (via gateway)
 
 ## 🔐 Security Considerations
 
@@ -190,11 +206,15 @@ After deployment, verify these endpoints:
 ## 📝 Files Created/Modified
 
 - `Dockerfile.frontend` - Added build-time environment variable support
-- `docker-compose.production.yml` - Added build args for environment variables
+- `Dockerfile.backend` - Production Dockerfile for NestJS backend
+- `backend/gateway/Dockerfile.gateway` - Gateway service Dockerfile
+- `backend/gateway/nginx.conf` - Gateway nginx configuration with rate limiting and security
+- `docker-compose.production.yml` - Added gateway service and updated architecture
 - `.env.production` - Production environment configuration
 - `scripts/deploy-production.sh` - Automated deployment script
 - `scripts/debug-api-config.sh` - Debug and verification script
 - `docs/PRODUCTION-DEPLOYMENT-GUIDE.md` - This guide
+- `docs/PORT-ALLOCATION.md` - Updated port allocation strategy
 
 ## ✅ Success Verification
 

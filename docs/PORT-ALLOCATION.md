@@ -30,15 +30,17 @@ This document defines port allocation across all Docker environments to prevent 
 |---------|----------------|-----------|----------|---------|-----------|
 | Nginx | 80 | 80 | HTTP | Web Server | ✅ Available |
 | Nginx | 443 | 443 | HTTPS | SSL Termination | ✅ Available |
+| Gateway | 4000 | 4000 | HTTP | API Gateway (exposed for testing) | ✅ Available |
 | Frontend | 80 | - | HTTP | Internal (via Nginx) | N/A |
-| Backend | 4000 | - | HTTP | Internal (via Nginx) | N/A |
+| Backend | 4001 | - | HTTP | Internal (via Gateway) | N/A |
 
 #### Cloudflare Environment (docker-compose.cloudflare.yml)
 | Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
 |---------|----------------|-----------|----------|---------|-----------|
 | Cloudflare Tunnel | 8080 | - | HTTP | Tunnel Endpoint | ✅ Internal Only |
+| Gateway | 4000 | - | HTTP | Internal (via Tunnel) | N/A |
 | Frontend | 80 | - | HTTP | Internal (via Tunnel) | N/A |
-| Backend | 4000 | - | HTTP | Internal (via Tunnel) | N/A |
+| Backend | 4001 | - | HTTP | Internal (via Gateway) | N/A |
 
 #### Monitoring Environment (docker-compose.monitoring.yml)
 | Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
@@ -52,7 +54,7 @@ This document defines port allocation across all Docker environments to prevent 
 ### Reserved Ranges
 - **1000-1999**: Infrastructure SMTP/Email services
 - **3000-3099**: Web interfaces (Frontend, Grafana variants)
-- **4000-4099**: Backend API services
+- **4000-4099**: Backend API services (Gateway: 4000, Backend: 4001)
 - **6000-6999**: Data services (Redis, databases)
 - **8000-8999**: Admin/Management interfaces
 - **9000-9999**: Monitoring and debugging services
@@ -80,10 +82,13 @@ This document defines port allocation across all Docker environments to prevent 
 ```bash
 # Local development runs natively, no Docker containers
 npm run dev                   # Frontend on port 3000
-cd backend && npm run dev     # Backend on port 4000
+cd backend && npm run dev     # Backend on port 4000 (direct access)
 
 # Infrastructure services run in Docker
 npm run infra:start          # MongoDB, Redis, Grafana, etc.
+
+# Production uses gateway architecture:
+# Gateway (4000) → Backend (4001)
 ```
 
 ### Port Conflict Resolution for Local Development

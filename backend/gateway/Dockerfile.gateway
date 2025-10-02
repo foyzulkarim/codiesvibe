@@ -1,0 +1,59 @@
+# CodiesVibe Gateway Dockerfile
+# Nginx-based reverse proxy for backend services
+
+# Build arguments for image metadata
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG VERSION
+
+# Use official nginx image with Alpine Linux for minimal size
+FROM nginx:1.25-alpine AS base
+
+# Install curl for health checks and other utilities
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security (nginx runs as nginx by default)
+RUN addgroup -g 1001 -S gateway && \
+    adduser -S gateway -u 1001 -G gateway
+
+# Set working directory
+WORKDIR /etc/nginx
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Create directories for logs and temp files with proper permissions
+RUN mkdir -p /var/log/nginx /var/cache/nginx /var/run && \
+    chown -R gateway:gateway /var/log/nginx /var/cache/nginx /var/run && \
+    chmod 755 /var/log/nginx /var/cache/nginx /var/run
+
+# Keep nginx as user for proper operation (it needs to write pid file)
+# The gateway user is created for future use but nginx runs as nginx
+
+# Expose gateway port
+EXPOSE 4000
+
+# Add comprehensive image metadata
+LABEL org.opencontainers.image.title="CodiesVibe API Gateway"
+LABEL org.opencontainers.image.description="Nginx reverse proxy gateway for CodiesVibe backend services"
+LABEL org.opencontainers.image.version="${VERSION:-latest}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT:-unknown}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+LABEL org.opencontainers.image.vendor="CodiesVibe"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Set environment variables
+ENV NGINX_WORKER_PROCESSES=auto
+ENV NGINX_WORKER_CONNECTIONS=1024
+ENV NGINX_KEEPALIVE_TIMEOUT=65
+
+# Health check for the gateway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:4000/health || exit 1
+
+# Start nginx with custom configuration
+CMD ["nginx", "-g", "daemon off;"]

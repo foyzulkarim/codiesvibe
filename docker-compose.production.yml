@@ -25,14 +25,14 @@ services:
     environment:
       - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
       - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
-      - BACKEND_HOST=backend
+      - BACKEND_HOST=gateway
       - BACKEND_PORT=4000
     networks:
       - codiesvibe-network
     depends_on:
       frontend-init:
         condition: service_completed_successfully
-      backend:
+      gateway:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -101,6 +101,35 @@ services:
     command: sh -c "echo 'Starting database seeding...' && npm run seed:production && echo 'Database seeding completed successfully'"
     restart: "no"  # One-time init container
 
+  # API Gateway Service
+  gateway:
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile.gateway
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-latest}
+    container_name: codiesvibe-gateway-prod
+    ports:
+      - "4000:4000"  # Gateway external port
+    environment:
+      - NGINX_WORKER_PROCESSES=auto
+      - NGINX_WORKER_CONNECTIONS=1024
+      - NGINX_KEEPALIVE_TIMEOUT=65
+    networks:
+      - codiesvibe-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
   # Backend Production Service
   backend:
     # Use pre-built GHCR image for production deployments
@@ -115,14 +144,12 @@ services:
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
     container_name: codiesvibe-backend-prod
-    # Expose port 4000 for troubleshooting (accessed through Nginx reverse proxy normally)
-    ports:
-      - "4000:4000"  # Direct backend access for troubleshooting
+    # Internal port only - accessed through gateway
     expose:
-      - "4000"
+      - "4001"
     environment:
       - NODE_ENV=production
-      - PORT=4000
+      - PORT=4001
       # Infrastructure service connections (from docker-compose.infra.yml)
       - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379
