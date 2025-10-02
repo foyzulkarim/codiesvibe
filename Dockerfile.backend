@@ -13,7 +13,7 @@ FROM node:18-alpine AS dependencies
 WORKDIR /app
 
 # Copy package files for dependency caching
-COPY backend/package*.json ./
+COPY backend/nestjs-api/package*.json ./
 
 # Install dependencies using npm ci for reproducible builds
 RUN npm ci
@@ -22,7 +22,7 @@ RUN npm ci
 FROM dependencies AS backend-builder
 
 # Copy backend source code
-COPY backend/ ./
+COPY backend/nestjs-api/ ./
 
 # Build the NestJS application
 RUN npm run build
@@ -34,7 +34,7 @@ FROM dependencies AS development
 RUN npm install -g nodemon ts-node
 
 # Copy backend source code for development
-COPY backend/ ./
+COPY backend/nestjs-api/ ./
 
 # Create non-root user for security (even in development)
 RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
@@ -83,7 +83,7 @@ RUN addgroup -g 1001 nodejs && \
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY backend/package*.json ./
+COPY backend/nestjs-api/package*.json ./
 
 # Install only production dependencies with security optimizations
 # Set HUSKY=0 to prevent husky from running during production builds
@@ -98,7 +98,7 @@ COPY --from=backend-builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=backend-builder --chown=nodejs:nodejs /app/shared ./shared
 
 # Copy health check script with proper ownership
-COPY --chown=nodejs:nodejs backend/healthcheck.js ./healthcheck.js
+COPY --chown=nodejs:nodejs backend/nestjs-api/healthcheck.js ./healthcheck.js
 
 # Create necessary directories with secure permissions
 RUN mkdir -p /app/logs /app/temp && \
