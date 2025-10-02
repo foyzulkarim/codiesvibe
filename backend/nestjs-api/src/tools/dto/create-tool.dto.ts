@@ -15,7 +15,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
-import { PricingModelEnum } from '../../../shared/types/tool.types';
+import { PricingModelEnum } from '@shared/types/tool.types';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
