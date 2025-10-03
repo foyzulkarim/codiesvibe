@@ -50,7 +50,7 @@ export class AppController {
       );
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
           throw new HttpException(
@@ -83,7 +83,7 @@ export class AppController {
       });
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
           throw new HttpException(
@@ -126,7 +126,7 @@ export class AppController {
           timestamp: new Date().toISOString(),
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNREFUSED') {
           return {

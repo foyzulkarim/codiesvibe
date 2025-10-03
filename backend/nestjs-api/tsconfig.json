@@ -14,7 +14,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["./shared/*"]
     },
     "incremental": true,
     "skipLibCheck": true,
@@ -25,6 +25,6 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*", "test/**/*", "../shared/**/*"],
+  "include": ["src/**/*", "test/**/*", "./shared/**/*"],
   "exclude": ["node_modules", "dist"]
 }

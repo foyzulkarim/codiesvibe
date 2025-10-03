@@ -13,7 +13,7 @@ FROM node:18-alpine AS dependencies
 WORKDIR /app
 
 # Copy package files for dependency caching
-COPY package*.json ./
+COPY nestjs-api/package*.json ./
 
 # Install dependencies using npm ci for reproducible builds
 RUN npm ci
@@ -21,8 +21,11 @@ RUN npm ci
 # Builder stage - Build the TypeScript application
 FROM dependencies AS backend-builder
 
+# Copy shared types first
+COPY shared ./shared
+
 # Copy backend source code
-COPY . ./
+COPY nestjs-api ./
 
 # Build the NestJS application
 RUN npm run build
@@ -33,8 +36,11 @@ FROM dependencies AS development
 # Install development tools globally for better performance
 RUN npm install -g nodemon ts-node
 
+# Copy shared types first
+COPY shared ./shared
+
 # Copy backend source code for development
-COPY . ./
+COPY nestjs-api ./
 
 # Create non-root user for security (even in development)
 RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
@@ -83,7 +89,7 @@ RUN addgroup -g 1001 nodejs && \
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY package*.json ./
+COPY nestjs-api/package*.json ./
 
 # Install only production dependencies with security optimizations
 # Set HUSKY=0 to prevent husky from running during production builds
@@ -98,7 +104,7 @@ COPY --from=backend-builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=backend-builder --chown=nodejs:nodejs /app/shared ./shared
 
 # Copy health check script with proper ownership
-COPY --chown=nodejs:nodejs healthcheck.js ./healthcheck.js
+COPY --chown=nodejs:nodejs nestjs-api/healthcheck.js ./healthcheck.js
 
 # Create necessary directories with secure permissions
 RUN mkdir -p /app/logs /app/temp && \
@@ -142,7 +148,7 @@ CMD ["node", "--enable-source-maps", "dist/src/main.js"]
 FROM production AS seeding
 
 # Copy source files needed for seeding (particularly the seed data files)
-COPY --from=backend-builder --chown=nodejs:nodejs /app/src ./src
+COPY --chown=nodejs:nodejs nestjs-api/src ./src
 
 # Override command for seeding stage - will be overridden by docker-compose
 CMD ["npm", "run", "seed"]

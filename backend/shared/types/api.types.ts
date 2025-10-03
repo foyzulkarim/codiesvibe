@@ -25,7 +25,7 @@ export interface ApiError {
 }
 
 // Utility types
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = "asc" | "desc";
 
 export interface SortOptionUI {
   value: string;
