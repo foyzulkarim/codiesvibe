@@ -1,252 +1,283 @@
-import 'dotenv/config';
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import { mcpClient } from './src/mcp';
-import { SimpleLangGraphAgent } from './src/langchain';
-import { logger, errorHandler, asyncHandler, validateRequest } from './src/utils';
+import "dotenv/config";
+import fastify from "fastify";
+import cors from "@fastify/cors";
+import { mcpClient } from "./src/mcp";
+import { SimpleLangGraphAgent } from "./src/langchain";
+import {
+  logger,
+  errorHandler,
+  asyncHandler,
+  validateRequest,
+} from "./src/utils";
 
-const fastify = Fastify({
+const app = fastify({
   logger: logger,
-  disableRequestLogging: false
+  disableRequestLogging: false,
 });
 
 // Global agent instance
 let agent: SimpleLangGraphAgent | null = null;
 
-// Register error handler
-fastify.setErrorHandler(errorHandler);
+// Error handler
+app.setErrorHandler(errorHandler);
 
 // CORS configuration
-fastify.register(cors, {
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
-  credentials: true
+app.register(cors, {
+  origin: process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3000"],
+  credentials: true,
 });
 
 // Request logging hook
-fastify.addHook('onRequest', async (request, reply) => {
-  request.log.info(`Incoming request: ${request.method} ${request.url}`);
+app.addHook("onRequest", async (request, reply) => {
+  request.log.info({ url: request.url, method: request.method }, "Request");
 });
 
 // Response logging hook
-fastify.addHook('onSend', async (request, reply, payload) => {
-  const responseTime = reply.getResponseTime();
-  request.log.info(`Response sent: ${reply.statusCode} in ${responseTime}ms`);
+app.addHook("onSend", async (request, reply, payload) => {
+  request.log.info({ statusCode: reply.statusCode }, "Response");
 });
 
 // Health check endpoint
-fastify.get('/health', asyncHandler(async (request, reply) => {
-  const mcpStatus = mcpClient.getStatus();
-  const agentStatus = agent?.getStatus() || { initialized: false, toolCount: 0, tools: [], llmConfig: {} };
-  
-  return {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'fastify-api',
-    version: '1.0.0',
-    port: process.env.PORT || 4002,
-    dependencies: {
-      mcp: {
-        connected: mcpStatus.connected,
-        toolCount: mcpStatus.toolCount,
-        baseUrl: mcpStatus.baseUrl,
-        circuitBreaker: mcpStatus.circuitBreakerState
-      },
-      agent: {
-        initialized: agentStatus.initialized,
-        toolCount: agentStatus.toolCount,
-        llmConfig: agentStatus.llmConfig
-      }
-    }
-  };
-}));// Service information endpoint
-fastify.get('/info', asyncHandler(async (request, reply) => {
-  const agentStatus = agent?.getStatus() || { initialized: false, toolCount: 0, tools: [], llmConfig: {} };
-  
-  return {
-    service: 'Fastify API with LangGraph & MongoDB MCP',
-    description: 'AI-powered API service with database tools via MCP',
-    version: '1.0.0',
-    endpoints: [
-      'GET /health - Health check with dependency status',
-      'GET /info - Service information and configuration',
-      'GET /api/tools - List available tools with schemas',
-      'POST /api/query - Process AI queries with tool execution'
-    ],
-    agent: agentStatus,
-    environment: {
-      nodeEnv: process.env.NODE_ENV || 'development',
-      port: process.env.PORT || 4002,
-      mcpServerUrl: process.env.MCP_SERVER_URL || 'http://localhost:3001',
-      ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-      ollamaModel: process.env.OLLAMA_MODEL || 'llama3.2',
-      logLevel: process.env.LOG_LEVEL || 'info'
-    }
-  };
-}));
+app.get(
+  "/health",
+  asyncHandler(async (request, reply) => {
+    try {
+      // Check MCP client connection
+      const mcpStatus = mcpClient.isClientConnected() ? "connected" : "disconnected";
 
-// API Routes
+      // Check agent status
+      const agentStatus = agent ? "initialized" : "not_initialized";
+
+      // Basic system checks
+      const systemChecks = {
+        memory: {
+          used: process.memoryUsage().heapUsed,
+          total: process.memoryUsage().heapTotal,
+        },
+        uptime: process.uptime(),
+        nodeVersion: process.version,
+      };
+
+      const healthStatus = {
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        services: {
+          mcp: mcpStatus,
+          agent: agentStatus,
+        },
+        system: systemChecks,
+      };
+
+      reply.code(200).send(healthStatus);
+    } catch (error) {
+      request.log.error(error, "Health check failed");
+      reply.code(503).send({
+        status: "unhealthy",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }),
+); // Added semicolon
+
+// Server info endpoint
+app.get(
+  "/info",
+  asyncHandler(async (request, reply) => {
+    const info = {
+      name: "Fastify LangGraph API",
+      version: "1.0.0",
+      description: "AI agent API with LangGraph and MongoDB MCP integration",
+      endpoints: {
+        health: "/health",
+        info: "/info",
+        tools: "/api/tools",
+        query: "/api/query",
+      },
+      features: [
+        "LangGraph AI Agent",
+        "MongoDB MCP Integration",
+        "Tool Management",
+        "Query Processing",
+        "Health Monitoring",
+      ],
+      environment: {
+        node: process.version,
+        platform: process.platform,
+        arch: process.arch,
+      },
+    };
+
+    reply.send(info);
+  }),
+); // Added semicolon
 
 // Get available tools
-fastify.get('/api/tools', asyncHandler(async (request, reply) => {
-  if (!agent) {
-    return reply.code(503).send({
-      error: 'ServiceUnavailable',
-      message: 'The AI agent is not initialized. Please try again later.',
-      statusCode: 503,
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  const tools = agent.getAvailableTools();
-  const mcpTools = mcpClient.getAvailableTools();
-  
-  return {
-    success: true,
-    data: {
-      langchainTools: tools,
-      mcpTools: mcpTools,
-      totalCount: tools.length,
-      mcpToolCount: mcpTools.length
-    },
-    timestamp: new Date().toISOString()
-  };
-}));// Process AI query with tools
-fastify.post('/api/query', asyncHandler(async (request, reply) => {
-  // Validate request body
-  validateRequest(request.body, ['query']);
-  
-  const { query } = request.body as { query: string };
-  
-  if (typeof query !== 'string' || query.trim().length === 0) {
-    return reply.code(400).send({
-      error: 'ValidationError',
-      message: 'Query must be a non-empty string',
-      statusCode: 400,
-      timestamp: new Date().toISOString(),
-      path: request.url
-    });
-  }
-  
-  if (query.length > 1000) {
-    return reply.code(400).send({
-      error: 'ValidationError',
-      message: 'Query must be less than 1000 characters',
-      statusCode: 400,
-      timestamp: new Date().toISOString(),
-      path: request.url
-    });
-  }
-  
-  if (!agent) {
-    return reply.code(503).send({
-      error: 'ServiceUnavailable',
-      message: 'The AI agent is not initialized. Please try again later.',
-      statusCode: 503,
-      timestamp: new Date().toISOString(),
-      path: request.url
-    });
-  }
-  
-  logger.info(`Processing query from ${request.ip}: ${query}`);
-  
-  const startTime = Date.now();
-  const result = await agent.processQuery(query.trim());
-  const processingTime = Date.now() - startTime;
-  
-  const response = {
-    success: true,
-    data: {
-      query: query.trim(),
-      result: result.result,
-      toolCalls: result.toolCalls || [],
-      processingTimeMs: processingTime,
-      timestamp: new Date().toISOString()
-    },
-    ...(result.error && { 
-      warning: result.error,
-      partialFailure: true 
-    })
-  };
-  
-  logger.info(`Query processed successfully in ${processingTime}ms`, {
-    toolCallCount: result.toolCalls?.length || 0,
-    hasError: !!result.error,
-    responseLength: result.result.length
-  });
-  
-  return response;
-}));// Initialize services and start server
+// Tools endpoint
+app.get(
+  "/api/tools",
+  asyncHandler(async (request, reply) => {
+    try {
+      request.log.info("[API] /api/tools endpoint called");
+      
+      if (!mcpClient.isClientConnected()) {
+        request.log.warn("[API] MCP client not connected");
+        reply.code(503).send({
+          error: "MCP client not connected",
+          message: "Please ensure MCP server is running and accessible",
+        });
+        return;
+      }
+
+      request.log.info("[API] MCP client is connected, fetching tools...");
+      const tools = await mcpClient.getAvailableTools();
+      request.log.info(`[API] Retrieved ${tools.length} tools from MCP client`);
+      
+      if (tools.length === 0) {
+        request.log.warn("[API] No tools returned from MCP client");
+      } else {
+        request.log.debug("[API] Tool names:", tools.map(t => t.name));
+      }
+
+      reply.send({
+        tools,
+        count: tools.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      request.log.error(error, "Failed to fetch tools");
+      reply.code(500).send({
+        error: "Failed to fetch tools",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }),
+); // Added semicolon
+
+// Query endpoint
+app.post(
+  "/api/query",
+  asyncHandler(async (request, reply) => {
+    try {
+      // Validate request body
+      validateRequest(request.body, ["query"]);
+
+      const { query, context = {}, options = {} } = request.body as any;
+
+      // Initialize agent if not already done
+      if (!agent) {
+        request.log.info("Initializing LangGraph agent...");
+        agent = new SimpleLangGraphAgent();
+        await agent.initialize();
+        request.log.info("Agent initialized successfully");
+      }
+
+      // Process the query
+      request.log.info({ query, context }, "Processing query");
+      const startTime = Date.now();
+
+      const result = await agent.processQuery(query, {
+        ...context,
+        requestId: request.id,
+        timestamp: new Date().toISOString(),
+        ...options,
+      });
+
+      const processingTime = Date.now() - startTime;
+
+      // Log the result
+      request.log.info(
+        {
+          query,
+          processingTime,
+          resultLength: JSON.stringify(result).length,
+        },
+        "Query processed successfully",
+      );
+
+      reply.send({
+        success: true,
+        query,
+        result,
+        metadata: {
+          processingTime,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+        },
+      });
+    } catch (error) {
+      request.log.error(error, "Query processing failed");
+      reply.code(500).send({
+        error: "Query processing failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+        query: (request.body as any)?.query,
+      });
+    }
+  }),
+); // Added semicolon
+
+// Server startup
 async function startServer() {
   try {
-    logger.info('🚀 Starting Fastify API server...');
-    
     // Initialize MCP client
-    logger.info('Initializing MCP client...');
+    logger.info("Initializing MCP client...");
     await mcpClient.connect();
-    logger.info(`✅ MCP client connected with ${mcpClient.getAvailableTools().length} tools`);
-    
-    // Initialize LangGraph agent
-    logger.info('Initializing LangGraph agent...');
-    agent = new SimpleLangGraphAgent();
-    await agent.initialize();
-    logger.info(`✅ LangGraph agent initialized with ${agent.getAvailableTools().length} tools`);
-    
-    // Start Fastify server
-    const port = parseInt(process.env.PORT || '4002');
-    const host = process.env.HOST || '0.0.0.0';
-    
-    await fastify.listen({ port, host });
-    logger.info(`🎉 Fastify API server running on http://${host}:${port}`);
-    logger.info('📋 Available endpoints:');
-    logger.info('  - GET /health - Health check');
-    logger.info('  - GET /info - Service information');
-    logger.info('  - GET /api/tools - List available tools');
-    logger.info('  - POST /api/query - Process AI queries');
-    
+    logger.info("MCP client connected successfully");
+
+    // Start the server
+    const port = parseInt(process.env.PORT || "4002", 10);
+    const host = process.env.HOST || "0.0.0.0";
+
+    logger.info(`Starting server on ${host}:${port}...`);
+    await app.listen({ port, host });
+    logger.info(`Server running on http://${host}:${port}`);
+
+    // Log available endpoints
+    logger.info("Available endpoints:");
+    logger.info("  GET  /health - Health check");
+    logger.info("  GET  /info - Server information");
+    logger.info("  GET  /api/tools - List available tools");
+    logger.info("  POST /api/query - Process AI queries");
   } catch (error) {
-    logger.error('❌ Failed to start server:', error);
+    logger.error(error, "Failed to start server");
     process.exit(1);
   }
 }
 
-// Graceful shutdown handlers
+// Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
-  logger.info(`📡 Received ${signal}, shutting down gracefully...`);
-  
+  logger.info(`Received ${signal}, shutting down gracefully...`);
+
   try {
-    // Stop accepting new requests
-    await fastify.close();
-    logger.info('✅ HTTP server closed');
-    
+    // Close Fastify server
+    await app.close();
+    logger.info("Fastify server closed");
+
     // Disconnect MCP client
-    if (mcpClient) {
-      mcpClient.disconnect();
-      logger.info('✅ MCP client disconnected');
+    if (mcpClient.isClientConnected()) {
+      await mcpClient.disconnect();
+      logger.info("MCP client disconnected");
     }
-    
-    // Reset agent
-    agent = null;
-    logger.info('✅ Agent cleaned up');
-    
-    logger.info('🏁 Server shutdown completed successfully');
+
+    logger.info("Graceful shutdown completed");
     process.exit(0);
   } catch (error) {
-    logger.error('❌ Error during shutdown:', error);
+    logger.error(error, "Error during graceful shutdown");
     process.exit(1);
   }
 };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('💥 Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+  logger.fatal(error, "Uncaught exception");
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+  logger.fatal({ reason, promise }, "Unhandled rejection");
   process.exit(1);
 });
 

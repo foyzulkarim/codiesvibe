@@ -7,7 +7,7 @@ export interface MCPTool {
   name: string;
   description: string;
   inputSchema: {
-    type: 'object';
+    type: "object";
     properties: Record<string, any>;
     required?: string[];
   };
@@ -20,7 +20,7 @@ export interface MCPToolCall {
 
 export interface MCPToolResult {
   content: Array<{
-    type: 'text' | 'image' | 'resource';
+    type: "text" | "image" | "resource";
     text?: string;
     data?: string;
     mimeType?: string;
@@ -33,7 +33,7 @@ export interface MCPListToolsResponse {
 }
 
 export interface MCPCallToolRequest {
-  method: 'tools/call';
+  method: "tools/call";
   params: {
     name: string;
     arguments: Record<string, any>;
@@ -41,7 +41,7 @@ export interface MCPCallToolRequest {
 }
 
 export interface MCPCallToolResponse {
-  content: MCPToolResult['content'];
+  content: MCPToolResult["content"];
   isError?: boolean;
 }
 
