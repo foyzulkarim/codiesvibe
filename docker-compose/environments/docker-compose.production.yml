@@ -1,0 +1,103 @@
+# Production Environment Overrides
+# Production-specific service configurations using extends
+
+services:
+  nestjs-api:
+    extends:
+      file: ../services/docker-compose.nestjs.yml
+      service: nestjs-api
+    build:
+      target: production
+    container_name: codiesvibe-nestjs-api-prod
+    expose:
+      - "4001"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - CSRF_SECRET=${CSRF_SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10}
+      - TRUST_PROXY=true
+      - SHUTDOWN_TIMEOUT=10000
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/logs
+
+  fastify-api:
+    extends:
+      file: ../services/docker-compose.fastify.yml
+      service: fastify-api
+    container_name: codiesvibe-fastify-api-prod
+    expose:
+      - "4002"
+    environment:
+      - NODE_ENV=production
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-warn}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/logs
+
+  gateway:
+    extends:
+      file: ../services/docker-compose.gateway.yml
+      service: gateway
+    container_name: codiesvibe-gateway-prod
+    expose:
+      - "4000"
+    environment:
+      - NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-auto}
+      - NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-2048}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/log/nginx
+      - /tmp
+
+
+
+
+
+# Production network
+networks:
+  codiesvibe-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16

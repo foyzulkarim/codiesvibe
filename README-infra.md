@@ -1,25 +1,66 @@
-# Infrastructure Setup for CodeiesVibe
+# Infrastructure Setup for CodiesVibe
 
-This document explains how to spin up all the supporting infrastructure services for the CodeiesVibe project using Docker Compose.
+This document explains the clean separation architecture for CodiesVibe, where infrastructure services are completely separated from application services.
+
+## Architecture Overview
+
+CodiesVibe follows a **clean separation architecture**:
+
+- **Infrastructure Layer**: Database, caching, monitoring (environment-agnostic)
+- **Application Layer**: Backend APIs, frontend, gateway (environment-specific)
+
+This approach ensures:
+✅ **Consistent environments** - Development mirrors production exactly  
+✅ **Clear separation** - Infrastructure vs application concerns  
+✅ **Better testing** - Development environment matches production  
+✅ **Scalable mindset** - Forces thinking in production-ready patterns  
 
 ## Quick Start
 
-To start all infrastructure services with a single command:
+### Development Environment
 
+**Option 1: Use the convenience script (Recommended)**
 ```bash
-docker-compose -f docker-compose.infra.yml up -d
+# Start full development environment
+./scripts/dev-backend.sh
+
+# Start infrastructure only
+./scripts/dev-backend.sh infra-only
+
+# Stop all services
+./scripts/dev-backend.sh stop
 ```
 
-To stop all services:
-
+**Option 2: Manual two-step approach**
 ```bash
-docker-compose -f docker-compose.infra.yml down
+# Step 1: Start infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+
+# Step 2: Start backend services
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
 ```
 
-To stop and remove all data volumes:
+### Production Environment
 
 ```bash
-docker-compose -f docker-compose.infra.yml down -v
+# Step 1: Start infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
+
+# Step 2: Start application services
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
+```
+
+### Stop Services
+
+```bash
+# Stop infrastructure
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml down
+
+# Stop backend development
+docker-compose -f docker-compose.backend.yml down
+
+# Stop production
+docker-compose -f docker-compose.production.yml down
 ```
 
 ## Services Included
@@ -63,35 +104,55 @@ docker-compose -f docker-compose.infra.yml down -v
    - SMTP: localhost:1025
    - Web UI: http://localhost:8025
 
-## Environment Variables for Your Application
+## Environment Configuration
 
-Add these to your application's `.env` file to connect to the infrastructure services:
+### Development Configuration
+
+Copy the development template:
+```bash
+cp .env.dev.example .env.dev
+```
+
+Update `.env.dev` with your development credentials, especially:
+- `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+- Any other development-specific settings
+
+### Production Configuration
+
+Copy the production template:
+```bash
+cp .env.production.example .env.production
+```
+
+**Important**: Update all secrets and credentials in production:
+- Strong `JWT_SECRET`, `COOKIE_SECRET`, `CSRF_SECRET`
+- Production `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
+- Update `VITE_API_URL` with your production domain
+- Change all default passwords
+
+### Infrastructure Connection Strings
+
+The infrastructure services use consistent connection patterns:
 
 ```env
-# Database
-MONGODB_URI=mongodb://codiesvibe_user:codiesvibe_password@localhost:27017/codiesvibe
-MONGODB_URI_ADMIN=mongodb://admin:password123@localhost:27017/codiesvibe
+# Infrastructure Service Credentials (same for dev/prod, only secrets change)
+MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+REDIS_URL=redis://:redis123@redis:6379
 
-# Redis
-REDIS_URL=redis://:redis123@localhost:6379
-
-# Email (Development)
-SMTP_HOST=localhost
-SMTP_PORT=1025
-SMTP_USER=
-SMTP_PASS=
-
-# Monitoring
-PROMETHEUS_URL=http://localhost:9090
-LOKI_URL=http://localhost:3100
+# Monitoring Endpoints
+PROMETHEUS_URL=http://prometheus:9090
+GRAFANA_URL=http://grafana:3000
+LOKI_URL=http://loki:3100
 ```
+
+**Note**: When connecting from application containers, use service names (`mongodb`, `redis`) as hostnames, not `localhost`.
 
 ## Health Checks
 
 All services include health checks. You can monitor the status with:
 
 ```bash
-docker-compose -f docker-compose.infra.yml ps
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml ps
 ```
 
 ## Data Persistence
@@ -112,33 +173,111 @@ All services are connected via the `codiesvibe-network` bridge network, allowing
 ### Service Won't Start
 Check logs for a specific service:
 ```bash
-docker-compose -f docker-compose.infra.yml logs [service-name]
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml logs [service-name]
 ```
 
 ### Port Conflicts
-If you have port conflicts, you can modify the ports in `docker-compose.infra.yml` or stop conflicting services.
+If you have port conflicts, you can modify the ports in `docker-compose/infrastructure/docker-compose.infra.yml` or stop conflicting services.
 
 ### Reset Everything
 To completely reset all data and start fresh:
 ```bash
-docker-compose -f docker-compose.infra.yml down -v
-docker-compose -f docker-compose.infra.yml up -d
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml down -v
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml up -d
 ```
 
-## Integration with Main Application
+## Clean Separation Architecture
 
-When running your main application (frontend/backend), make sure to:
+### File Structure
 
-1. Use the environment variables listed above
-2. Ensure your application containers are on the same network (`codiesvibe-network`)
-3. Use service names (e.g., `mongodb`, `redis`) as hostnames when connecting from other containers
+```
+docker-compose/
+├── infrastructure/
+│   └── docker-compose.infra.yml    # Infrastructure services only
+├── services/
+│   ├── docker-compose.nestjs.yml   # NestJS base definition
+│   ├── docker-compose.fastify.yml  # Fastify base definition
+│   └── docker-compose.gateway.yml  # Gateway base definition
+├── environments/
+│   ├── docker-compose.development.yml
+│   └── docker-compose.production.yml
 
-## Production Notes
+# Root-level compose files
+docker-compose.backend.yml          # Development backend services
+docker-compose.production.yml       # Production application services
+```
 
-This infrastructure setup is designed for development. For production:
+### Service Dependencies
 
-- Change all default passwords
-- Use proper secrets management
-- Configure proper resource limits
-- Set up proper backup strategies
-- Use external managed services where appropriate
+**Development Flow:**
+1. `docker-compose.infra.yml` creates `codiesvibe-network` and starts infrastructure
+2. `docker-compose.backend.yml` joins external `codiesvibe-network` and starts applications
+
+**Production Flow:**
+1. `docker-compose.infra.yml` creates `codiesvibe-network` and starts infrastructure  
+2. `docker-compose.production.yml` joins external `codiesvibe-network` and starts applications
+
+### Key Benefits
+
+1. **Environment Parity**: Development and production use identical infrastructure
+2. **Independent Scaling**: Infrastructure can be scaled separately from applications
+3. **Clean Dependencies**: Application services explicitly depend on infrastructure network
+4. **Security**: Infrastructure credentials managed separately from application code
+5. **Testing**: Can test infrastructure changes independently
+
+## Integration Patterns
+
+### Application Service Connection
+
+When application services connect to infrastructure:
+
+```yaml
+# In docker-compose.backend.yml or docker-compose.production.yml
+services:
+  nestjs-api:
+    # ... other config
+    networks:
+      - codiesvibe-network  # External network created by infrastructure
+    environment:
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+```
+
+### Network Configuration
+
+```yaml
+# Infrastructure creates the network
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network
+
+# Applications join the external network
+networks:
+  codiesvibe-network:
+    external: true
+    name: codiesvibe-network
+```
+
+## Production Deployment
+
+### Two-Step Deployment Process
+
+1. **Deploy Infrastructure:**
+   ```bash
+   docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
+   ```
+
+2. **Deploy Applications:**
+   ```bash
+   docker-compose -f docker-compose.production.yml --env-file .env.production up -d
+   ```
+
+### Production Considerations
+
+- **Secrets Management**: Use Docker secrets or external secret management
+- **Resource Limits**: Configure appropriate memory/CPU limits
+- **Backup Strategy**: Regular backups of MongoDB and other persistent data
+- **Monitoring**: Set up alerts and proper monitoring
+- **Security**: Change all default passwords, use SSL/TLS
+- **Scaling**: Consider external managed services for high-traffic scenarios

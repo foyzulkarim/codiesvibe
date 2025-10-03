@@ -1,0 +1,45 @@
+{
+  "name": "fastify-api",
+  "version": "1.0.0",
+  "description": "Fastify API with LangGraph and MongoDB MCP integration",
+  "main": "server.ts",
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "start": "tsx server.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "fastify",
+    "langgraph",
+    "mongodb",
+    "mcp",
+    "ai",
+    "llm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@langchain/community": "^0.0.38",
+    "@langchain/core": "^0.1.48",
+    "langgraph": "^0.0.19",
+    "axios": "^1.6.2",
+    "zod": "^3.22.4",
+    "ollama": "^0.4.8",
+    "@fastify/cors": "^8.4.0",
+    "@fastify/env": "^4.2.0",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.4",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2"
+  }
+}

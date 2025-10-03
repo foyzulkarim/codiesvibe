@@ -2,19 +2,14 @@
 # Docker Compose configuration for backend services with gateway
 # Use: docker-compose -f docker-compose.backend.yml up
 
-version: '3.8'
+
 
 services:
-  # API Gateway - Routes external traffic to backend services
+  # API Gateway - Development overrides
   gateway:
-    build:
-      context: ./backend/gateway
-      dockerfile: Dockerfile.gateway
-      args:
-        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
-        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
-        - VERSION=${VERSION:-latest}
-    container_name: codiesvibe-gateway
+    extends:
+      file: docker-compose/services/docker-compose.gateway.yml
+      service: gateway
     ports:
       - "4000:4000"  # External gateway port
     volumes:
@@ -22,36 +17,16 @@ services:
       - ./backend/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
       # Log volume for debugging
       - gateway_logs:/var/log/nginx
-    networks:
-      - codiesvibe-network
-    depends_on:
-      nestjs-api:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
-    environment:
-      - NGINX_WORKER_PROCESSES=auto
-      - NGINX_WORKER_CONNECTIONS=1024
 
-  # NestJS API Service
+  # NestJS API Service - Development overrides
   nestjs-api:
+    extends:
+      file: docker-compose/services/docker-compose.nestjs.yml
+      service: nestjs-api
     build:
-      context: ./backend/nestjs-api
-      dockerfile: Dockerfile.nestjs
-      target: development
-      args:
-        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
-        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
-        - VERSION=${VERSION:-latest}
-    container_name: codiesvibe-nestjs-api
-    # Internal port only - accessed through gateway
+      target: development  # Development build target
     expose:
-      - "4001"
+      - "4001"  # Internal port only - accessed through gateway
     volumes:
       # Mount source code for development hot-reload
       - ./backend/nestjs-api/src:/app/src
@@ -60,104 +35,59 @@ services:
       - ./backend/nestjs-api/package.json:/app/package.json
       # Log volume
       - nestjs_logs:/app/logs
-    networks:
-      - codiesvibe-network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
-      interval: 30s
-      timeout: 10s
-      start_period: 15s
-      retries: 3
     environment:
       - NODE_ENV=development
       - PORT=4001
-      # Database connections
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
-      - REDIS_URL=redis://:redis123@redis:6379
-      # Security
-      - JWT_SECRET=development-jwt-secret-change-in-production
-      - COOKIE_SECRET=development-cookie-secret-min-32-chars
-      - CSRF_SECRET=development-csrf-secret-min-32-chars
       # GitHub OAuth (development)
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-your_github_client_id}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-your_github_client_secret}
       - GITHUB_CALLBACK_URL=http://localhost:4000/api/auth/github/callback
-      # Rate limiting
-      - RATE_LIMIT_WINDOW=900000
-      - RATE_LIMIT_MAX=100
-      # Production settings
-      - TRUST_PROXY=true
-      - SHUTDOWN_TIMEOUT=30000
+    # Infrastructure dependencies come from docker-compose.infra.yml
+    depends_on: []
 
-  # MongoDB Database
-  mongodb:
-    image: mongo:7.0
-    container_name: codiesvibe-mongodb
+
+
+  # Fastify API Service - Development overrides
+  fastify-api:
+    extends:
+      file: docker-compose/services/docker-compose.fastify.yml
+      service: fastify-api
+    expose:
+      - "4002"  # Internal port only - accessed through gateway or NestJS
     ports:
-      - "27017:27017"  # Exposed for direct development access
+      - "4002:4002"  # Exposed for direct development access
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_config:/data/configdb
-      # Custom initialization script
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - codiesvibe-network
-    restart: unless-stopped
+      # Mount source code for development hot-reload
+      - ./backend/fastify-api:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+      # Mount shared types
+      - ./backend/shared:/app/shared
+      # Log volume
+      - fastify_logs:/app/logs
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=password123
-      - MONGO_INITDB_DATABASE=codiesvibe
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
+      - NODE_ENV=development
+      - PORT=4002
+      # MCP Server Configuration
+      - MCP_SERVER_URL=http://localhost:3001
+      # Ollama Configuration
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=llama3.2
+      # CORS Configuration
+      - CORS_ORIGIN=http://localhost:3000
+    # Infrastructure dependencies come from docker-compose.infra.yml
+    depends_on: []
 
-  # Redis Cache
-  redis:
-    image: redis:7.2-alpine
-    container_name: codiesvibe-redis
-    ports:
-      - "6379:6379"  # Exposed for direct development access
-    volumes:
-      - redis_data:/data
-      # Redis configuration
-      - ./includes/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    networks:
-      - codiesvibe-network
-    restart: unless-stopped
-    command: redis-server /usr/local/etc/redis/redis.conf --requirepass redis123
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
-
-# Named volumes for data persistence
+# Named volumes for application logs only
 volumes:
-  mongodb_data:
-    driver: local
-  mongodb_config:
-    driver: local
-  redis_data:
-    driver: local
   gateway_logs:
     driver: local
   nestjs_logs:
     driver: local
+  fastify_logs:
+    driver: local
 
-# Networks
+# External network configuration (created by docker-compose.infra.yml)
 networks:
   codiesvibe-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.21.0.0/16
+    external: true
+    name: codiesvibe-network

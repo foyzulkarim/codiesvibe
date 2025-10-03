@@ -1,0 +1,31 @@
+# Fastify Service Base Definition
+# Reusable Fastify service configuration for all environments
+
+services:
+  fastify-api:
+    build:
+      context: ./backend/fastify-api
+      dockerfile: Dockerfile.fastify
+      args:
+        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
+        - VERSION=${VERSION:-latest}
+    networks:
+      - codiesvibe-network
+
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    environment:
+      - PORT=4002
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+      - MCP_SERVER_URL=http://localhost:3001
+      - OLLAMA_MODEL=llama3.2

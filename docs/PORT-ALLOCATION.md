@@ -17,13 +17,15 @@ This document defines port allocation across all Docker environments to prevent 
 | MailHog SMTP | 1025 | 1025 | SMTP | Email Testing | ✅ Reserved |
 | MailHog Web | 8025 | 8025 | HTTP | Email UI | ✅ Reserved |
 
-### Application Services (Phase 1)
+### Application Services (Clean Separation Architecture)
 
-#### Development Environment (Local Native)
-| Service | Port | Protocol | Purpose | Conflicts |
-|---------|------|----------|---------|-----------|
-| Frontend | 3000 | HTTP | Vite Dev Server (native) | ⚠️ Grafana uses 3001 |
-| Backend | 4000 | HTTP | NestJS API (native) | ✅ Available |
+#### Development Environment (Containerized Backend)
+| Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
+|---------|----------------|-----------|----------|---------|-----------|
+| Frontend | 3000 | 3000 | HTTP | Vite Dev Server (native) | ⚠️ Grafana uses 3001 |
+| Gateway | 4000 | 4000 | HTTP | API Gateway (container) | ✅ Available |
+| NestJS API | 4001 | - | HTTP | Backend API (container) | N/A |
+| Fastify API | 4002 | 4002 | HTTP | Secondary API (container) | ✅ Available |
 
 #### Production Environment (docker-compose.production.yml)
 | Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
@@ -31,8 +33,8 @@ This document defines port allocation across all Docker environments to prevent 
 | Nginx | 80 | 80 | HTTP | Web Server | ✅ Available |
 | Nginx | 443 | 443 | HTTPS | SSL Termination | ✅ Available |
 | Gateway | 4000 | 4000 | HTTP | API Gateway (exposed for testing) | ✅ Available |
-| Frontend | 80 | - | HTTP | Internal (via Nginx) | N/A |
-| Backend | 4001 | - | HTTP | Internal (via Gateway) | N/A |
+| NestJS API | 4001 | - | HTTP | Backend API (internal) | N/A |
+| Fastify API | 4002 | - | HTTP | Secondary API (internal) | N/A |
 
 #### Cloudflare Environment (docker-compose.cloudflare.yml)
 | Service | Container Port | Host Port | Protocol | Purpose | Conflicts |
@@ -78,17 +80,23 @@ This document defines port allocation across all Docker environments to prevent 
 
 ## Environment-Specific Port Strategies
 
-### Local Development (Native Applications)
+### Clean Separation Development
 ```bash
-# Local development runs natively, no Docker containers
+# Clean separation development (recommended)
+./scripts/dev-backend.sh      # Infrastructure + Backend containers
+
+# Manual development approach
+# Step 1: Infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+
+# Step 2: Backend services
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
+
+# Step 3: Frontend (native)
 npm run dev                   # Frontend on port 3000
-cd backend && npm run dev     # Backend on port 4000 (direct access)
 
-# Infrastructure services run in Docker
-npm run infra:start          # MongoDB, Redis, Grafana, etc.
-
-# Production uses gateway architecture:
-# Gateway (4000) → Backend (4001)
+# Architecture: Frontend (native) → Gateway (4000) → APIs (4001, 4002)
+# Infrastructure: MongoDB, Redis, Prometheus, Grafana, Loki
 ```
 
 ### Port Conflict Resolution for Local Development
