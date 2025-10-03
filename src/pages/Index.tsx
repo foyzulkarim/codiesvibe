@@ -27,12 +27,12 @@ export default function Index() {
   const [savedTools, setSavedTools] = useState<Set<string>>(new Set());
 
   // Use the API hook for data fetching
-  const { data: tools, isLoading, isError, error } = useTools(
-    searchQuery,
-    filters,
-    sortBy,
-    'desc'
-  );
+  const {
+    data: tools,
+    isLoading,
+    isError,
+    error,
+  } = useTools(searchQuery, filters, sortBy, "desc");
 
   // Handle search (only triggers on Enter/button press)
   const handleSearch = (query: string) => {
@@ -40,10 +40,13 @@ export default function Index() {
   };
 
   // Handle filter changes
-  const handleFilterChange = (filterType: keyof FilterState, values: string[]) => {
-    setFilters(prev => ({
+  const handleFilterChange = (
+    filterType: keyof FilterState,
+    values: string[],
+  ) => {
+    setFilters((prev) => ({
       ...prev,
-      [filterType]: values
+      [filterType]: values,
     }));
   };
 
@@ -54,7 +57,7 @@ export default function Index() {
 
   // Handle comparison
   const handleCompare = (tool: AITool) => {
-    if (comparisonTools.find(t => t.name === tool.name)) {
+    if (comparisonTools.find((t) => t.name === tool.name)) {
       console.log(`${tool.name} is already in comparison`);
       return;
     }
@@ -64,11 +67,11 @@ export default function Index() {
       return;
     }
 
-    setComparisonTools(prev => [...prev, tool]);
+    setComparisonTools((prev) => [...prev, tool]);
   };
 
   const handleRemoveFromComparison = (tool: AITool) => {
-    setComparisonTools(prev => prev.filter(t => t.name !== tool.name));
+    setComparisonTools((prev) => prev.filter((t) => t.name !== tool.name));
   };
 
   // Handle save/unsave
@@ -97,7 +100,9 @@ export default function Index() {
   };
 
   // Check if any filters are active
-  const hasActiveFilters = Object.values(filters).some(arr => arr.length > 0) || searchQuery.length > 0;
+  const hasActiveFilters =
+    Object.values(filters).some((arr) => arr.length > 0) ||
+    searchQuery.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +135,8 @@ export default function Index() {
             <h2 className="text-4xl font-bold">Discover AI Coding Tools</h2>
           </div>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Find the perfect AI-powered tools to supercharge your development workflow
+            Find the perfect AI-powered tools to supercharge your development
+            workflow
           </p>
 
           {/* Search Bar */}
@@ -172,12 +178,15 @@ export default function Index() {
                     filters={filters}
                     searchQuery={searchQuery}
                     onRemoveFilter={(type, value) => {
-                      if (type === 'search') {
+                      if (type === "search") {
                         setInputValue("");
                         setSearchQuery("");
                       } else {
-                        handleFilterChange(type as keyof FilterState,
-                          filters[type as keyof FilterState].filter(v => v !== value)
+                        handleFilterChange(
+                          type as keyof FilterState,
+                          filters[type as keyof FilterState].filter(
+                            (v) => v !== value,
+                          ),
                         );
                       }
                     }}
@@ -186,17 +195,14 @@ export default function Index() {
                 )}
               </div>
 
-              <SortSelector
-                value={sortBy}
-                onChange={handleSortChange}
-              />
+              <SortSelector value={sortBy} onChange={handleSortChange} />
             </div>
 
             {/* Tools Grid */}
             {isError ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  Error loading tools: {error?.message || 'Unknown error'}
+                  Error loading tools: {error?.message || "Unknown error"}
                 </p>
               </div>
             ) : (

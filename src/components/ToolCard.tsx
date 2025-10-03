@@ -1,5 +1,13 @@
 import { useState, useMemo } from "react";
-import { Star, TrendingUp, Plus, GitCompare, Heart, ExternalLink, Calendar } from "lucide-react";
+import {
+  Star,
+  TrendingUp,
+  Plus,
+  GitCompare,
+  Heart,
+  ExternalLink,
+  Calendar,
+} from "lucide-react";
 import { AITool } from "@shared/types";
 
 interface ToolCardProps {
@@ -11,7 +19,14 @@ interface ToolCardProps {
   searchTerm?: string;
 }
 
-export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded, searchTerm }: ToolCardProps) => {
+export const ToolCard = ({
+  tool,
+  onCompare,
+  onSave,
+  isExpanded,
+  onToggleExpanded,
+  searchTerm,
+}: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
 
   // Memoized highlight function for performance
@@ -19,8 +34,14 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
     return (text: string, term?: string): string => {
       if (!term || term.length < 2) return text;
 
-      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>');
+      const regex = new RegExp(
+        `(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+        "gi",
+      );
+      return text.replace(
+        regex,
+        '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>',
+      );
     };
   }, []);
 
@@ -33,13 +54,12 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
   // Helper to get pricing display from v2.0 structure
   const getPricingDisplay = () => {
     if (tool.pricingSummary) {
-      return tool.pricingSummary.pricingModel.map(model =>
-        model.charAt(0).toUpperCase() + model.slice(1)
+      return tool.pricingSummary.pricingModel.map(
+        (model) => model.charAt(0).toUpperCase() + model.slice(1),
       );
     }
     return [];
   };
-
 
   const formatLastUpdated = (dateString: string) => {
     const date = new Date(dateString);
@@ -61,7 +81,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
 
   return (
     <div
-      className={`tool-card ${isExpanded ? 'tool-card-expanded' : ''} group`}
+      className={`tool-card ${isExpanded ? "tool-card-expanded" : ""} group`}
       onClick={handleCardClick}
     >
       {/* Quick Actions - Hidden until hover */}
@@ -112,7 +132,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               <h3
                 className="text-lg font-semibold text-foreground truncate"
                 dangerouslySetInnerHTML={{
-                  __html: highlightText(tool.name, searchTerm)
+                  __html: highlightText(tool.name, searchTerm),
                 }}
               />
             </div>
@@ -121,9 +141,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               className="text-sm text-muted-foreground leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: highlightText(
-                  tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description,
-                  searchTerm
-                )
+                  tool.description.length > 120
+                    ? `${tool.description.substring(0, 120)}...`
+                    : tool.description,
+                  searchTerm,
+                ),
               }}
             />
           </div>
@@ -204,14 +226,29 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               <div>
                 <h4 className="text-sm font-medium mb-2">AI Capabilities</h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(tool.capabilities.aiFeatures).map(([feature, available]) => (
-                    <div key={feature} className="flex items-center gap-2 text-sm">
-                      <div className={`w-2 h-2 rounded-full ${available ? 'bg-success' : 'bg-border'}`}></div>
-                      <span className={available ? 'text-foreground' : 'text-muted-foreground'}>
-                        {feature.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </span>
-                    </div>
-                  ))}
+                  {Object.entries(tool.capabilities.aiFeatures).map(
+                    ([feature, available]) => (
+                      <div
+                        key={feature}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <div
+                          className={`w-2 h-2 rounded-full ${available ? "bg-success" : "bg-border"}`}
+                        ></div>
+                        <span
+                          className={
+                            available
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {feature
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase())}
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             )}
@@ -222,9 +259,20 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                 <h4 className="text-sm font-medium mb-2">Key Features</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(tool.features).map(([feature, available]) => (
-                    <div key={feature} className="flex items-center gap-2 text-sm">
-                      <div className={`w-2 h-2 rounded-full ${available ? 'bg-success' : 'bg-border'}`}></div>
-                      <span className={available ? 'text-foreground' : 'text-muted-foreground'}>
+                    <div
+                      key={feature}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${available ? "bg-success" : "bg-border"}`}
+                      ></div>
+                      <span
+                        className={
+                          available
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
                         {feature}
                       </span>
                     </div>
@@ -239,7 +287,10 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                 <h4 className="text-sm font-medium mb-2">Pricing Plans</h4>
                 <div className="space-y-2">
                   {tool.pricingDetails.slice(0, 3).map((plan) => (
-                    <div key={plan.id} className="flex items-center justify-between p-2 rounded border">
+                    <div
+                      key={plan.id}
+                      className="flex items-center justify-between p-2 rounded border"
+                    >
                       <div>
                         <span className="font-medium text-sm">{plan.name}</span>
                         {plan.isPopular && (
@@ -249,7 +300,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                         )}
                       </div>
                       <span className="text-sm font-medium">
-                        {plan.price === null ? 'Custom' : plan.price === 0 ? 'Free' : `$${plan.price}/${plan.billing}`}
+                        {plan.price === null
+                          ? "Custom"
+                          : plan.price === 0
+                            ? "Free"
+                            : `$${plan.price}/${plan.billing}`}
                       </span>
                     </div>
                   ))}
@@ -265,10 +320,16 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                   {tool.useCases.slice(0, 3).map((useCase) => (
                     <div key={useCase.name} className="p-2 rounded border">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">{useCase.name}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{useCase.complexity}</span>
+                        <span className="font-medium text-sm">
+                          {useCase.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {useCase.complexity}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{useCase.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {useCase.description}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -282,40 +343,56 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                 {/* v2.0 Categories */}
                 {tool.categories && (
                   <div className="space-y-1">
-                    {tool.categories.primary && tool.categories.primary.length > 0 && (
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground">Primary:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {tool.categories.primary.map((cat) => (
-                            <span key={cat} className="px-2 py-1 text-xs bg-primary/10 text-primary rounded">
-                              {cat}
-                            </span>
-                          ))}
+                    {tool.categories.primary &&
+                      tool.categories.primary.length > 0 && (
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Primary:
+                          </span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {tool.categories.primary.map((cat) => (
+                              <span
+                                key={cat}
+                                className="px-2 py-1 text-xs bg-primary/10 text-primary rounded"
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {tool.categories.industries && tool.categories.industries.length > 0 && (
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground">Industries:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {tool.categories.industries.map((industry) => (
-                            <span key={industry} className="px-2 py-1 text-xs bg-secondary/10 text-secondary rounded">
-                              {industry}
-                            </span>
-                          ))}
+                      )}
+                    {tool.categories.industries &&
+                      tool.categories.industries.length > 0 && (
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Industries:
+                          </span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {tool.categories.industries.map((industry) => (
+                              <span
+                                key={industry}
+                                className="px-2 py-1 text-xs bg-secondary/10 text-secondary rounded"
+                              >
+                                {industry}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 )}
-
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => window.open(tool.website || `https://example.com/${tool.id}`, '_blank')}
+                onClick={() =>
+                  window.open(
+                    tool.website || `https://example.com/${tool.id}`,
+                    "_blank",
+                  )
+                }
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary-dark px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
               >
                 <ExternalLink className="w-4 h-4" />

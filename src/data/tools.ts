@@ -1,7 +1,7 @@
 // Mock data for AI coding tools
 // Import shared types
-import { BaseTool, FILTER_OPTIONS } from '@shared/types';
-import { transformLegacyToV2 } from '@/lib/data-transforms';
+import { BaseTool, FILTER_OPTIONS } from "@shared/types";
+import { transformLegacyToV2 } from "@/lib/data-transforms";
 
 // Use shared type alias for v2.0 compatibility to avoid empty interface lint error
 export type AITool = BaseTool;
@@ -11,8 +11,10 @@ const legacyMockData = [
   {
     id: "github-copilot",
     name: "GitHub Copilot",
-    description: "AI pair programmer that suggests code and entire functions in real-time",
-    longDescription: "GitHub Copilot is an AI coding assistant that uses OpenAI Codex to suggest code and entire functions in real-time, right from your editor.",
+    description:
+      "AI pair programmer that suggests code and entire functions in real-time",
+    longDescription:
+      "GitHub Copilot is an AI coding assistant that uses OpenAI Codex to suggest code and entire functions in real-time, right from your editor.",
     pricing: ["Subscription"],
     interface: ["IDE", "Browser Extension"],
     functionality: ["Code Completion", "Code Generation"],
@@ -27,19 +29,27 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": false,
       "Team Features": true,
-      "Code Reviews": false
+      "Code Reviews": false,
     },
-    searchKeywords: ["github", "copilot", "ai", "autocomplete", "coding", "assistant"],
+    searchKeywords: [
+      "github",
+      "copilot",
+      "ai",
+      "autocomplete",
+      "coding",
+      "assistant",
+    ],
     tags: {
       primary: ["Popular", "Microsoft", "AI Assistant"],
-      secondary: ["Enterprise", "VS Code", "JetBrains"]
-    }
+      secondary: ["Enterprise", "VS Code", "JetBrains"],
+    },
   },
   {
     id: "cursor",
     name: "Cursor",
     description: "AI-first code editor built for pair-programming with AI",
-    longDescription: "Cursor is a fork of VS Code that's built from the ground up to be the best way to code with AI.",
+    longDescription:
+      "Cursor is a fork of VS Code that's built from the ground up to be the best way to code with AI.",
     pricing: ["Freemium"],
     interface: ["Desktop"],
     functionality: ["Code Completion", "Code Generation", "Code Q&A"],
@@ -54,19 +64,21 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": true,
       "Team Features": false,
-      "Code Reviews": true
+      "Code Reviews": true,
     },
     searchKeywords: ["cursor", "editor", "ai", "vscode", "pair programming"],
     tags: {
       primary: ["Editor", "AI-First", "Popular"],
-      secondary: ["VS Code Fork", "Fast"]
-    }
+      secondary: ["VS Code Fork", "Fast"],
+    },
   },
   {
     id: "codeium",
     name: "Codeium",
-    description: "Free AI-powered code acceleration toolkit with autocomplete, search, and chat",
-    longDescription: "Codeium offers best-in-class AI code completion, search, and chat — all for free. It supports over 70+ languages and integrates with your favorite IDEs.",
+    description:
+      "Free AI-powered code acceleration toolkit with autocomplete, search, and chat",
+    longDescription:
+      "Codeium offers best-in-class AI code completion, search, and chat — all for free. It supports over 70+ languages and integrates with your favorite IDEs.",
     pricing: ["Free", "Enterprise"],
     interface: ["IDE", "Web", "Browser Extension"],
     functionality: ["Code Completion", "Code Search", "Code Q&A"],
@@ -81,19 +93,28 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": false,
       "Team Features": true,
-      "Code Reviews": false
+      "Code Reviews": false,
     },
-    searchKeywords: ["codeium", "free", "autocomplete", "ai", "coding", "assistant"],
+    searchKeywords: [
+      "codeium",
+      "free",
+      "autocomplete",
+      "ai",
+      "coding",
+      "assistant",
+    ],
     tags: {
       primary: ["Free", "Popular", "Multi-IDE"],
-      secondary: ["70+ Languages", "Enterprise"]
-    }
+      secondary: ["70+ Languages", "Enterprise"],
+    },
   },
   {
     id: "tabby",
     name: "Tabby",
-    description: "Self-hosted AI coding assistant that runs on your infrastructure",
-    longDescription: "Tabby is a self-hosted AI coding assistant. You can host your own Tabby instance and have full control over your code and data.",
+    description:
+      "Self-hosted AI coding assistant that runs on your infrastructure",
+    longDescription:
+      "Tabby is a self-hosted AI coding assistant. You can host your own Tabby instance and have full control over your code and data.",
     pricing: ["Open Source", "Enterprise"],
     interface: ["IDE", "CLI"],
     functionality: ["Code Completion", "Code Generation"],
@@ -108,19 +129,21 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": true,
       "Team Features": true,
-      "Code Reviews": false
+      "Code Reviews": false,
     },
     searchKeywords: ["tabby", "self-hosted", "open source", "private", "ai"],
     tags: {
       primary: ["Open Source", "Self-hosted", "Privacy"],
-      secondary: ["Docker", "Kubernetes"]
-    }
+      secondary: ["Docker", "Kubernetes"],
+    },
   },
   {
     id: "amazon-codewhisperer",
     name: "Amazon CodeWhisperer",
-    description: "ML-powered coding companion that generates code suggestions based on comments and existing code",
-    longDescription: "Amazon CodeWhisperer is a machine learning (ML)–powered service that helps improve developer productivity by generating code recommendations based on their comments in natural language and code in the integrated development environment (IDE).",
+    description:
+      "ML-powered coding companion that generates code suggestions based on comments and existing code",
+    longDescription:
+      "Amazon CodeWhisperer is a machine learning (ML)–powered service that helps improve developer productivity by generating code recommendations based on their comments in natural language and code in the integrated development environment (IDE).",
     pricing: ["Free", "Enterprise"],
     interface: ["IDE", "CLI"],
     functionality: ["Code Completion", "Security Scanning"],
@@ -135,19 +158,28 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": false,
       "Team Features": true,
-      "Code Reviews": true
+      "Code Reviews": true,
     },
-    searchKeywords: ["amazon", "codewhisperer", "aws", "ml", "coding", "security"],
+    searchKeywords: [
+      "amazon",
+      "codewhisperer",
+      "aws",
+      "ml",
+      "coding",
+      "security",
+    ],
     tags: {
       primary: ["AWS", "Free Tier", "Security"],
-      secondary: ["Enterprise", "ML-powered"]
-    }
+      secondary: ["Enterprise", "ML-powered"],
+    },
   },
   {
     id: "codium-ai",
     name: "Codium AI",
-    description: "AI-powered tool for generating meaningful test cases right inside your IDE",
-    longDescription: "CodiumAI analyzes your code and generates meaningful test cases to help you code smarter. It supports multiple languages and integrates with popular IDEs.",
+    description:
+      "AI-powered tool for generating meaningful test cases right inside your IDE",
+    longDescription:
+      "CodiumAI analyzes your code and generates meaningful test cases to help you code smarter. It supports multiple languages and integrates with popular IDEs.",
     pricing: ["Freemium", "Subscription"],
     interface: ["IDE", "CLI"],
     functionality: ["Test Generation", "Code Analysis"],
@@ -162,19 +194,21 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": false,
       "Team Features": false,
-      "Code Reviews": true
+      "Code Reviews": true,
     },
     searchKeywords: ["codium", "testing", "ai", "test generation", "quality"],
     tags: {
       primary: ["Testing", "Code Quality", "AI-powered"],
-      secondary: ["Multiple Languages", "IDE Integration"]
-    }
+      secondary: ["Multiple Languages", "IDE Integration"],
+    },
   },
   {
     id: "tabnine",
     name: "Tabnine",
-    description: "AI assistant for software developers that accelerates code completion",
-    longDescription: "Tabnine is an AI assistant that speeds up delivery and keeps your code safe. It suggests code completions based on context and syntax.",
+    description:
+      "AI assistant for software developers that accelerates code completion",
+    longDescription:
+      "Tabnine is an AI assistant that speeds up delivery and keeps your code safe. It suggests code completions based on context and syntax.",
     pricing: ["Free", "Subscription", "Enterprise"],
     interface: ["IDE"],
     functionality: ["Code Completion", "Code Generation"],
@@ -189,19 +223,21 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": true,
       "Team Features": true,
-      "Code Reviews": false
+      "Code Reviews": false,
     },
     searchKeywords: ["tabnine", "autocomplete", "ai", "coding", "productivity"],
     tags: {
       primary: ["Established", "Multi-tier", "Popular"],
-      secondary: ["Privacy Focused", "Team Features"]
-    }
+      secondary: ["Privacy Focused", "Team Features"],
+    },
   },
   {
     id: "aider",
     name: "Aider",
-    description: "Command-line AI pair programming tool that works with GPT-3.5/4 and Claude",
-    longDescription: "Aider is AI pair programming in your terminal. It lets you pair program with LLMs to edit code stored in your local git repository.",
+    description:
+      "Command-line AI pair programming tool that works with GPT-3.5/4 and Claude",
+    longDescription:
+      "Aider is AI pair programming in your terminal. It lets you pair program with LLMs to edit code stored in your local git repository.",
     pricing: ["Open Source"],
     interface: ["CLI"],
     functionality: ["Code Generation", "Code Refactoring", "Code Q&A"],
@@ -216,14 +252,21 @@ const legacyMockData = [
       "Multi-language Support": true,
       "Offline Mode": false,
       "Team Features": false,
-      "Code Reviews": true
+      "Code Reviews": true,
     },
-    searchKeywords: ["aider", "cli", "terminal", "gpt", "claude", "pair programming"],
+    searchKeywords: [
+      "aider",
+      "cli",
+      "terminal",
+      "gpt",
+      "claude",
+      "pair programming",
+    ],
     tags: {
       primary: ["Open Source", "CLI", "GPT Integration"],
-      secondary: ["Git Integration", "Terminal"]
-    }
-  }
+      secondary: ["Git Integration", "Terminal"],
+    },
+  },
 ];
 
 // Transform legacy data to v2.0 structure

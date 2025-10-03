@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import apiClient, { apiClient as axios } from '@/api/client';
-import { UseToolReturn, ToolResponseDto } from '@/api/types';
-import { AITool } from '@/data/tools';
-import { ToolResponseDto as ToolResponseType } from '@/api/types';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import apiClient, { apiClient as axios } from "@/api/client";
+import { UseToolReturn, ToolResponseDto } from "@/api/types";
+import { AITool } from "@/data/tools";
+import { ToolResponseDto as ToolResponseType } from "@/api/types";
 
 // Transform API response to match AITool interface (v2.0)
 const transformToolResponse = (tool: ToolResponseType): AITool => ({
@@ -48,7 +48,7 @@ const transformToolResponse = (tool: ToolResponseType): AITool => ({
 
   // Legacy compatibility (if still needed)
   ...(tool.features && { features: tool.features }),
-  ...(tool.tags && { tags: tool.tags })
+  ...(tool.tags && { tags: tool.tags }),
 });
 
 // API function to fetch single tool
@@ -65,7 +65,7 @@ const fetchTool = async (id: string): Promise<AITool> => {
 // Hook for fetching single tool details
 export const useTool = (id: string): UseToolReturn => {
   // Create query key for React Query caching
-  const queryKey = useMemo(() => ['tool', id], [id]);
+  const queryKey = useMemo(() => ["tool", id], [id]);
 
   // Fetch data using React Query
   const { data, isLoading, isError, error } = useQuery({
@@ -78,7 +78,10 @@ export const useTool = (id: string): UseToolReturn => {
       // Retry on network errors or 5xx errors, max 3 times
       if (failureCount >= 3) return false;
       const apiError = error as { response?: { status?: number } };
-      return !apiError.response || (apiError.response.status && apiError.response.status >= 500);
+      return (
+        !apiError.response ||
+        (apiError.response.status && apiError.response.status >= 500)
+      );
     },
   });
 
@@ -86,7 +89,7 @@ export const useTool = (id: string): UseToolReturn => {
     data: data || null,
     isLoading,
     isError,
-    error: error as Error || null,
+    error: (error as Error) || null,
   };
 };
 
@@ -97,12 +100,12 @@ export const usePrefetchTool = () => {
   const prefetchTool = useMemo(
     () => (id: string) => {
       queryClient.prefetchQuery({
-        queryKey: ['tool', id],
+        queryKey: ["tool", id],
         queryFn: () => fetchTool(id),
         staleTime: 5 * 60 * 1000, // 5 minutes
       });
     },
-    [queryClient]
+    [queryClient],
   );
 
   return prefetchTool;

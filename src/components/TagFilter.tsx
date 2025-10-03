@@ -8,12 +8,14 @@ interface TagFilterProps {
   onClearAll: () => void;
 }
 
-export const TagFilter = ({ 
-  activeFilters, 
-  onFilterChange, 
-  onClearAll
+export const TagFilter = ({
+  activeFilters,
+  onFilterChange,
+  onClearAll,
 }: TagFilterProps) => {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({
     // Legacy filters
     pricing: true,
     functionality: false,
@@ -28,15 +30,17 @@ export const TagFilter = ({
     technicalFeatures: false,
     status: false,
     complexity: false,
-    pricingModels: false
+    pricingModels: false,
   });
 
-  const hasActiveFilters = Object.values(activeFilters).some(filters => filters.length > 0);
+  const hasActiveFilters = Object.values(activeFilters).some(
+    (filters) => filters.length > 0,
+  );
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
   const isTagActive = (category: string, value: string) => {
@@ -45,12 +49,13 @@ export const TagFilter = ({
 
   const getChipClassName = (category: string, value: string) => {
     const isActive = isTagActive(category, value);
-    const baseClasses = "inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105";
-    
+    const baseClasses =
+      "inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105";
+
     if (isActive) {
       return `${baseClasses} bg-primary text-primary-foreground shadow-sm`;
     }
-    
+
     return `${baseClasses} bg-muted border border-border text-foreground hover:bg-muted/80 hover:border-border/80`;
   };
 
@@ -68,9 +73,12 @@ export const TagFilter = ({
       technicalFeatures: "Technical Features",
       status: "Status",
       complexity: "Complexity",
-      pricingModels: "Pricing Models"
+      pricingModels: "Pricing Models",
     };
-    return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+    return (
+      displayNames[category] ||
+      category.charAt(0).toUpperCase() + category.slice(1)
+    );
   };
 
   const sectionIcons = {
@@ -88,12 +96,11 @@ export const TagFilter = ({
     technicalFeatures: "⚙️",
     status: "📊",
     complexity: "📈",
-    pricingModels: "💳"
+    pricingModels: "💳",
   };
 
   return (
     <div className="space-y-6">
-
       {/* Filter Categories */}
       <div className="space-y-4">
         {Object.entries(filterOptions).map(([category, options]) => (
@@ -103,13 +110,18 @@ export const TagFilter = ({
               className="flex items-center justify-between w-full text-left mb-3 hover:text-primary transition-colors group"
             >
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <span className="text-base">{sectionIcons[category as keyof typeof sectionIcons]}</span>
+                <span className="text-base">
+                  {sectionIcons[category as keyof typeof sectionIcons]}
+                </span>
                 {getSectionDisplayName(category)}
               </h3>
-              {expandedSections[category] ? 
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" /> : 
-                <span className="text-muted-foreground group-hover:text-primary transition-colors">▶</span>
-              }
+              {expandedSections[category] ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              ) : (
+                <span className="text-muted-foreground group-hover:text-primary transition-colors">
+                  ▶
+                </span>
+              )}
             </button>
             {expandedSections[category] && (
               <div className="flex flex-wrap gap-2 animate-fade-in">
@@ -120,8 +132,8 @@ export const TagFilter = ({
                     onClick={() => {
                       const currentValues = activeFilters[category] || [];
                       const isActive = currentValues.includes(option);
-                      const newValues = isActive 
-                        ? currentValues.filter(v => v !== option)
+                      const newValues = isActive
+                        ? currentValues.filter((v) => v !== option)
                         : [...currentValues, option];
                       onFilterChange(category, newValues);
                     }}
@@ -139,14 +151,25 @@ export const TagFilter = ({
       </div>
       {!hasActiveFilters && (
         <div className="border-t border-border pt-4">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Popular combinations:</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+            Popular combinations:
+          </h3>
           <div className="flex flex-wrap gap-2">
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("pricing", [...(activeFilters.pricing || []), "Free"]);
-                onFilterChange("deployment", [...(activeFilters.deployment || []), "Local"]);
-                onFilterChange("interface", [...(activeFilters.interface || []), "CLI"]);
+                onFilterChange("pricing", [
+                  ...(activeFilters.pricing || []),
+                  "Free",
+                ]);
+                onFilterChange("deployment", [
+                  ...(activeFilters.deployment || []),
+                  "Local",
+                ]);
+                onFilterChange("interface", [
+                  ...(activeFilters.interface || []),
+                  "CLI",
+                ]);
               }}
             >
               Free + Local + CLI
@@ -154,8 +177,14 @@ export const TagFilter = ({
             <button
               className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"
               onClick={() => {
-                onFilterChange("pricing", [...(activeFilters.pricing || []), "Freemium"]);
-                onFilterChange("interface", [...(activeFilters.interface || []), "IDE Extension"]);
+                onFilterChange("pricing", [
+                  ...(activeFilters.pricing || []),
+                  "Freemium",
+                ]);
+                onFilterChange("interface", [
+                  ...(activeFilters.interface || []),
+                  "IDE Extension",
+                ]);
               }}
             >
               Freemium + IDE Extension
