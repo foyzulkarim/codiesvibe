@@ -9,10 +9,11 @@ ARG VERSION
 # Use official nginx image with Alpine Linux for minimal size
 FROM nginx:1.25-alpine AS base
 
-# Install curl for health checks and other utilities
+# Install curl for health checks and gettext for envsubst
 RUN apk update && apk upgrade && \
     apk add --no-cache \
     curl \
+    gettext \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user for security (nginx runs as nginx by default)
@@ -22,8 +23,8 @@ RUN addgroup -g 1001 -S gateway && \
 # Set working directory
 WORKDIR /etc/nginx
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx configuration directly
+COPY ./nginx.conf /etc/nginx/nginx.conf
 
 # Create directories for logs and temp files with proper permissions
 RUN mkdir -p /var/log/nginx /var/cache/nginx /var/run && \
@@ -55,5 +56,5 @@ ENV NGINX_KEEPALIVE_TIMEOUT=65
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:4000/health || exit 1
 
-# Start nginx with custom configuration
+# Start nginx directly
 CMD ["nginx", "-g", "daemon off;"]
