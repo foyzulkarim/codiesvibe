@@ -43,8 +43,8 @@ services:
       - GF_RENDERING_CALLBACK_URL=http://localhost:3000/
     volumes:
       # Extended Grafana configuration
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_extended_data:/var/lib/grafana
       # Custom dashboard definitions
       - grafana_extended_logs:/var/log/grafana
@@ -104,8 +104,8 @@ services:
       - '--enable-feature=exemplar-storage'
     volumes:
       # Extended Prometheus configuration
-      - ./monitoring/prometheus-extended.yml:/etc/prometheus/prometheus-extended.yml:ro
-      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - ../../monitoring/prometheus-extended.yml:/etc/prometheus/prometheus-extended.yml:ro
+      - ../../monitoring/rules:/etc/prometheus/rules:ro
       - prometheus_extended_data:/prometheus
     networks:
       - codiesvibe-network
@@ -151,7 +151,7 @@ services:
       - '--cluster.listen-address=0.0.0.0:9094'
     volumes:
       # AlertManager configuration
-      - ./monitoring/alertmanager:/etc/alertmanager:ro
+      - ../../monitoring/alertmanager:/etc/alertmanager:ro
       - alertmanager_data:/alertmanager
     networks:
       - codiesvibe-network
@@ -205,7 +205,7 @@ services:
     command: -config.file=/etc/loki/loki-extended.yml
     volumes:
       # Extended Loki configuration
-      - ./monitoring/loki-extended.yml:/etc/loki/loki-extended.yml:ro
+      - ../../monitoring/loki-extended.yml:/etc/loki/loki-extended.yml:ro
       - loki_extended_data:/loki
     networks:
       - codiesvibe-network
@@ -231,7 +231,7 @@ services:
     command: -config.file=/etc/promtail/config.yml
     volumes:
       # Promtail configuration
-      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
+      - ../../monitoring/promtail.yml:/etc/promtail/config.yml:ro
       # Docker logs
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro

@@ -45,9 +45,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Stage 1: Test and Lint Backend
-  test-backend:
-    name: Backend Tests
+  # Stage 1: Test and Lint NestJS Backend
+  test-nestjs-backend:
+    name: NestJS Backend Tests
     runs-on: ubuntu-latest
     if: ${{ !inputs.skip_tests }}
     
@@ -60,40 +60,38 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
+          cache-dependency-path: 'backend/nestjs-api/package-lock.json'
 
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install NestJS dependencies
+        working-directory: backend/nestjs-api
         run: npm ci
 
-      - name: Lint backend code
-        working-directory: backend
+      - name: Lint NestJS code
+        working-directory: backend/nestjs-api
         run: npm run lint
 
-      - name: Type check backend
-        working-directory: backend
+      - name: Type check NestJS
+        working-directory: backend/nestjs-api
         run: npm run typecheck
 
-      - name: Run backend tests
-        working-directory: backend
+      - name: Run NestJS tests
+        working-directory: backend/nestjs-api
         run: npm run test
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret
 
-      - name: Generate test coverage
-        working-directory: backend
+      - name: Generate NestJS test coverage
+        working-directory: backend/nestjs-api
         run: npm run test:cov
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret
 
-
-  # Stage 2: Backend Security Scanning
-  security-backend:
-    name: Backend Security
+  # Stage 1b: Test and Lint Fastify Backend
+  test-fastify-backend:
+    name: Fastify Backend Tests
     runs-on: ubuntu-latest
-    needs: test-backend
     if: ${{ !inputs.skip_tests }}
     
     steps:
@@ -105,41 +103,123 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
+          cache-dependency-path: 'backend/fastify-api/package-lock.json'
 
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install Fastify dependencies
+        working-directory: backend/fastify-api
         run: npm ci
 
-      - name: Audit backend dependencies
-        working-directory: backend
+      - name: Lint Fastify code
+        working-directory: backend/fastify-api
+        run: npm run lint
+
+      - name: Type check Fastify
+        working-directory: backend/fastify-api
+        run: npm run typecheck
+
+      - name: Run Fastify tests
+        working-directory: backend/fastify-api
+        run: npm test
+        env:
+          NODE_ENV: test
+
+
+  # Stage 2: NestJS Backend Security Scanning
+  security-nestjs-backend:
+    name: NestJS Backend Security
+    runs-on: ubuntu-latest
+    needs: test-nestjs-backend
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/nestjs-api/package-lock.json'
+
+      - name: Install NestJS dependencies
+        working-directory: backend/nestjs-api
+        run: npm ci
+
+      - name: Audit NestJS dependencies
+        working-directory: backend/nestjs-api
         run: npm audit --audit-level=high
 
       - name: License compliance check
-        working-directory: backend
+        working-directory: backend/nestjs-api
         run: npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary
 
-      - name: Run Trivy vulnerability scanner on source
+      - name: Run Trivy vulnerability scanner on NestJS source
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: './backend'
+          scan-ref: './backend/nestjs-api'
           format: 'sarif'
-          output: 'backend-trivy-results.sarif'
+          output: 'nestjs-backend-trivy-results.sarif'
           exit-code: '0'
 
-      - name: Upload Trivy scan results
+      - name: Upload NestJS Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('backend-trivy-results.sarif') != ''
+        if: always() && hashFiles('nestjs-backend-trivy-results.sarif') != ''
         with:
-          sarif_file: 'backend-trivy-results.sarif'
+          sarif_file: 'nestjs-backend-trivy-results.sarif'
 
-  # Stage 3: Build and Push Backend Image
-  build-backend:
-    name: Build Backend Image
+  # Stage 2b: Fastify Backend Security Scanning
+  security-fastify-backend:
+    name: Fastify Backend Security
     runs-on: ubuntu-latest
-    needs: [test-backend, security-backend]
-    if: always() && (needs.test-backend.result == 'success' || inputs.skip_tests) && (needs.security-backend.result == 'success' || inputs.skip_tests)
+    needs: test-fastify-backend
+    if: ${{ !inputs.skip_tests }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/fastify-api/package-lock.json'
+
+      - name: Install Fastify dependencies
+        working-directory: backend/fastify-api
+        run: npm ci
+
+      - name: Audit Fastify dependencies
+        working-directory: backend/fastify-api
+        run: npm audit --audit-level=high
+
+      - name: License compliance check
+        working-directory: backend/fastify-api
+        run: npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary
+
+      - name: Run Trivy vulnerability scanner on Fastify source
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './backend/fastify-api'
+          format: 'sarif'
+          output: 'fastify-backend-trivy-results.sarif'
+          exit-code: '0'
+
+      - name: Upload Fastify Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('fastify-backend-trivy-results.sarif') != ''
+        with:
+          sarif_file: 'fastify-backend-trivy-results.sarif'
+
+  # Stage 3: Build and Push NestJS Backend Image
+  build-nestjs-backend:
+    name: Build NestJS Backend Image
+    runs-on: ubuntu-latest
+    needs: [test-nestjs-backend, security-nestjs-backend]
+    if: always() && (needs.test-nestjs-backend.result == 'success' || inputs.skip_tests) && (needs.security-nestjs-backend.result == 'success' || inputs.skip_tests)
     outputs:
       image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
       digest: ${{ steps.build.outputs.digest }}
@@ -163,7 +243,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-nestjs
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -175,23 +255,23 @@ jobs:
             type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
           labels: |
-            org.opencontainers.image.title=CodiesVibe Backend
-            org.opencontainers.image.description=Backend API for CodiesVibe AI Tools Directory
+            org.opencontainers.image.title=CodiesVibe NestJS Backend
+            org.opencontainers.image.description=NestJS API for CodiesVibe AI Tools Directory
             org.opencontainers.image.vendor=CodiesVibe
             org.opencontainers.image.licenses=MIT
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.url=https://codiesvibe.com
             maintainer=CodiesVibe Team
-            component=backend
+            component=nestjs-backend
             environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
-      - name: Build and push Backend
+      - name: Build and push NestJS Backend
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile.backend
+          context: ./backend/nestjs-api
+          file: ./backend/nestjs-api/Dockerfile.nestjs
           target: production
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -209,38 +289,139 @@ jobs:
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: 'sarif'
-          output: 'backend-image-trivy.sarif'
+          output: 'nestjs-backend-image-trivy.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '0'
           ignore-unfixed: true
 
       - name: Upload Backend image scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('backend-image-trivy.sarif') != ''
+        if: always() && hashFiles('nestjs-backend-image-trivy.sarif') != ''
         with:
-          sarif_file: 'backend-image-trivy.sarif'
-          category: 'backend-image-security'
+          sarif_file: 'nestjs-backend-image-trivy.sarif'
+          category: 'nestjs-backend-image-security'
 
       - name: Generate Backend SBOM
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: 'spdx-json'
-          output: 'backend-sbom.spdx.json'
+          output: 'nestjs-backend-sbom.spdx.json'
 
       - name: Upload Backend SBOM
         uses: actions/upload-artifact@v4
         with:
-          name: backend-sbom-${{ github.sha }}
-          path: backend-sbom.spdx.json
+          name: nestjs-backend-sbom-${{ github.sha }}
+          path: nestjs-backend-sbom.spdx.json
           retention-days: 30
 
-  # Stage 4: Backend API Testing
-  api-test-backend:
-    name: Backend API Testing
+  # Stage 3b: Build and Push Fastify Backend Image
+  build-fastify-backend:
+    name: Build Fastify Backend Image
     runs-on: ubuntu-latest
-    needs: build-backend
-    if: always() && needs.build-backend.result == 'success'
+    needs: [test-fastify-backend, security-fastify-backend]
+    if: always() && (needs.test-fastify-backend.result == 'success' || inputs.skip_tests) && (needs.security-fastify-backend.result == 'success' || inputs.skip_tests)
+    outputs:
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-fastify
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodiesVibe Fastify Backend
+            org.opencontainers.image.description=Fastify API for CodiesVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodiesVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodiesVibe Team
+            component=fastify-backend
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+      - name: Build and push Fastify Backend
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/fastify-api
+          file: ./backend/fastify-api/Dockerfile.fastify
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on Fastify Backend image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'fastify-backend-image-trivy.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Fastify Backend image scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('fastify-backend-image-trivy.sarif') != ''
+        with:
+          sarif_file: 'fastify-backend-image-trivy.sarif'
+          category: 'fastify-backend-image-security'
+
+      - name: Generate Fastify Backend SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'spdx-json'
+          output: 'fastify-backend-sbom.spdx.json'
+
+      - name: Upload Fastify Backend SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastify-backend-sbom-${{ github.sha }}
+          path: fastify-backend-sbom.spdx.json
+          retention-days: 30
+
+  # Stage 4: NestJS Backend API Testing
+  api-test-nestjs-backend:
+    name: NestJS Backend API Testing
+    runs-on: ubuntu-latest
+    needs: build-nestjs-backend
+    if: always() && needs.build-nestjs-backend.result == 'success'
     
     services:
       mongodb:
@@ -265,17 +446,17 @@ jobs:
 
       - name: Start test backend
         run: |
-          # Use the built image for testing with infrastructure dependencies
-          docker run -d --name test-backend \
-            -p 4000:4000 \
-            --network host \
-            -e NODE_ENV=test \
-            -e JWT_SECRET=test-secret \
-            -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
-            ${{ needs.build-backend.outputs.image }}
+           # Use the built NestJS image for testing with infrastructure dependencies
+           docker run -d --name test-nestjs-backend \
+             -p 4000:4000 \
+             --network host \
+             -e NODE_ENV=test \
+             -e JWT_SECRET=test-secret \
+             -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
+             ${{ needs.build-nestjs-backend.outputs.image }}
 
-          # Wait for backend to be ready
-          timeout 300 bash -c 'until curl -f http://localhost:4000/health; do echo "Waiting for backend..."; sleep 5; done'
+           # Wait for NestJS backend to be ready
+           timeout 300 bash -c 'until curl -f http://localhost:4000/health; do echo "Waiting for NestJS backend..."; sleep 5; done'
 
       - name: Install testing tools
         run: npm install -g artillery newman
@@ -347,7 +528,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          name: backend-api-tests-${{ github.sha }}
+          name: nestjs-backend-api-tests-${{ github.sha }}
           path: |
             backend-load-test.json
             api-test-config.yml
@@ -356,8 +537,132 @@ jobs:
       - name: Cleanup test environment
         if: always()
         run: |
-          docker stop test-backend || true
-          docker rm test-backend || true
+          docker stop test-nestjs-backend || true
+          docker rm test-nestjs-backend || true
+
+  # Stage 4b: Fastify Backend API Testing
+  api-test-fastify-backend:
+    name: Fastify Backend API Testing
+    runs-on: ubuntu-latest
+    needs: build-fastify-backend
+    if: always() && needs.build-fastify-backend.result == 'success'
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: codiesvibe
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+          --health-start-period 40s
+            
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start test Fastify backend
+        run: |
+          # Use the built Fastify image for testing with infrastructure dependencies
+          docker run -d --name test-fastify-backend \
+            -p 4001:4001 \
+            --network host \
+            -e NODE_ENV=test \
+            -e JWT_SECRET=test-secret \
+            -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
+            ${{ needs.build-fastify-backend.outputs.image }}
+
+          # Wait for Fastify backend to be ready
+          timeout 300 bash -c 'until curl -f http://localhost:4001/health; do echo "Waiting for Fastify backend..."; sleep 5; done'
+
+      - name: Install testing tools
+        run: npm install -g artillery newman
+
+      - name: Run API load testing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Create Artillery config for comprehensive API testing
+          cat > api-test-config.yml << EOF
+          config:
+            target: 'http://localhost:4001'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 25
+              - duration: 60
+                arrivalRate: 5
+            http:
+              timeout: 30
+          scenarios:
+            - name: "Health Check"
+              weight: 50
+              flow:
+                - get:
+                    url: "/health"
+                    expect:
+                      - statusCode: 200
+            - name: "API Documentation"
+              weight: 50
+              flow:
+                - get:
+                    url: "/api/docs"
+                    expect:
+                      - statusCode: 200
+          EOF
+          
+          # Run load test
+          artillery run api-test-config.yml --output fastify-backend-load-test.json
+
+      - name: Performance analysis
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Analyze API response times
+          echo "=== Fastify API Performance Analysis ==="
+          
+          # Test individual endpoints
+          HEALTH_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:4001/health)
+          echo "Health endpoint: ${HEALTH_TIME}s"
+
+          DOCS_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:4001/api/docs)
+          echo "API docs endpoint: ${DOCS_TIME}s"
+
+          # Fail if any endpoint is too slow
+          if (( $(echo "$HEALTH_TIME > 3.0" | bc -l) )); then
+            echo "❌ Health endpoint too slow: ${HEALTH_TIME}s"
+            exit 1
+          fi
+
+          if (( $(echo "$DOCS_TIME > 5.0" | bc -l) )); then
+            echo "❌ API docs endpoint too slow: ${DOCS_TIME}s"
+            exit 1
+          fi
+          
+          echo "✅ All Fastify API performance benchmarks passed"
+
+
+      - name: Upload API test artifacts
+        uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: fastify-backend-api-tests-${{ github.sha }}
+          path: |
+            fastify-backend-load-test.json
+            api-test-config.yml
+          retention-days: 30
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker stop test-fastify-backend || true
+          docker rm test-fastify-backend || true
 
   # Stage 5: Trigger Deployment (DISABLED)
   # Deployment workflow is not implemented yet
@@ -385,17 +690,35 @@ jobs:
   #           });
 
   # Cleanup Job
-  cleanup:
-    name: Cleanup Backend Packages
+  cleanup-nestjs:
+    name: Cleanup NestJS Backend Packages
     runs-on: ubuntu-latest
-    needs: [build-backend]
+    needs: [build-nestjs-backend]
     if: always() && github.ref == 'refs/heads/main'
     
     steps:
-      - name: Delete old backend packages
+      - name: Delete old NestJS backend packages
         uses: actions/delete-package-versions@v5
+        continue-on-error: true  # Don't fail if no packages exist yet
         with:
-          package-name: ${{ env.IMAGE_NAME }}
+          package-name: ${{ env.IMAGE_NAME }}-nestjs
+          package-type: 'container'
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup-fastify:
+    name: Cleanup Fastify Backend Packages
+    runs-on: ubuntu-latest
+    needs: [build-fastify-backend]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Delete old Fastify backend packages
+        uses: actions/delete-package-versions@v5
+        continue-on-error: true  # Don't fail if no packages exist yet
+        with:
+          package-name: ${{ env.IMAGE_NAME }}-fastify
           package-type: 'container'
           min-versions-to-keep: 10
           delete-only-untagged-versions: true

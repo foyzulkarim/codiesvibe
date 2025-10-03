@@ -1,0 +1,80 @@
+# Development Environment Overrides
+# Development-specific service configurations using extends
+
+services:
+  nestjs-api:
+    extends:
+      file: ../services/docker-compose.nestjs.yml
+      service: nestjs-api
+    build:
+      target: development
+    container_name: codiesvibe-nestjs-api
+    expose:
+      - "4001"
+    volumes:
+      - ./backend/nestjs-api/src:/app/src
+      - ./backend/shared:/app/shared
+      - ./backend/nestjs-api/package.json:/app/package.json
+      - nestjs_logs:/app/logs
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=development-jwt-secret-change-in-production
+      - COOKIE_SECRET=development-cookie-secret-min-32-chars
+      - CSRF_SECRET=development-csrf-secret-min-32-chars
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-your_github_client_id}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-your_github_client_secret}
+      - GITHUB_CALLBACK_URL=http://localhost:4000/api/auth/github/callback
+      - RATE_LIMIT_WINDOW=900000
+      - RATE_LIMIT_MAX=100
+      - TRUST_PROXY=true
+      - SHUTDOWN_TIMEOUT=30000
+
+  fastify-api:
+    extends:
+      file: ../services/docker-compose.fastify.yml
+      service: fastify-api
+    container_name: codiesvibe-fastify-api
+    expose:
+      - "4002"
+    ports:
+      - "4002:4002"
+    volumes:
+      - ./backend/fastify-api:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared
+      - fastify_logs:/app/logs
+    environment:
+      - NODE_ENV=development
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=http://localhost:3000
+
+  gateway:
+    extends:
+      file: ../services/docker-compose.gateway.yml
+      service: gateway
+    container_name: codiesvibe-gateway
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - gateway_logs:/var/log/nginx
+
+
+
+# Development volumes
+volumes:
+  nestjs_logs:
+    driver: local
+  fastify_logs:
+    driver: local
+  gateway_logs:
+    driver: local
+
+# Development network
+networks:
+  codiesvibe-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

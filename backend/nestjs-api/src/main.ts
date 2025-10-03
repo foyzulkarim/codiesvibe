@@ -56,7 +56,7 @@ async function bootstrap() {
 
   // Database seeding is now handled by a separate seed script (src/seed.ts)
 
-  const port = configService.get<number>('port') || 4000;
+  const port = parseInt(process.env.PORT || '4001', 10);
   await app.listen(port);
 
   console.log(`🚀 Application is running on: http://localhost:${port}`);

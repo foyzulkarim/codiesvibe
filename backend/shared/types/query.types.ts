@@ -1,6 +1,12 @@
 // Query and filter types shared between frontend and backend
 
-export type SortOption = 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'relevance' | 'name';
+export type SortOption =
+  | "popularity"
+  | "rating"
+  | "reviewCount"
+  | "createdAt"
+  | "relevance"
+  | "name";
 
 export interface BaseQueryParams {
   search?: string;

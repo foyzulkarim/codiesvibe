@@ -1,7 +1,7 @@
 // Core tool interfaces shared between frontend and backend
 
 // Enum for pricing models
-export type PricingModelEnum = 'free' | 'freemium' | 'paid';
+export type PricingModelEnum = "free" | "freemium" | "paid";
 
 // Categories structure (replaces ToolTags)
 export interface Categories {
@@ -75,7 +75,7 @@ export interface UseCase {
   industries: string[];
   userTypes: string[];
   scenarios: string[];
-  complexity: 'beginner' | 'intermediate' | 'advanced';
+  complexity: "beginner" | "intermediate" | "advanced";
 }
 
 // Base tool interface (shared between frontend and backend)
@@ -119,7 +119,7 @@ export interface BaseTool {
   logoUrl?: string;
   website?: string;
   documentation?: string;
-  status: 'active' | 'beta' | 'deprecated' | 'discontinued';
+  status: "active" | "beta" | "deprecated" | "discontinued";
   contributor: string;
   dateAdded: string;
   lastUpdated: string;
@@ -175,5 +175,5 @@ export interface CreateToolPayload {
   logoUrl?: string;
   website?: string;
   documentation?: string;
-  status?: 'active' | 'beta' | 'deprecated' | 'discontinued';
+  status?: "active" | "beta" | "deprecated" | "discontinued";
 }

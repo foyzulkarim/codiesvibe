@@ -2,7 +2,13 @@
 // Custom Prometheus metrics exporter for application-specific monitoring
 
 import express from 'express';
-import { register, collectDefaultMetrics, Gauge, Counter, Histogram } from 'prom-client';
+import {
+  register,
+  collectDefaultMetrics,
+  Gauge,
+  Counter,
+  Histogram,
+} from 'prom-client';
 import { MongoClient } from 'mongodb';
 import { createClient } from 'redis';
 import fetch from 'node-fetch';
@@ -10,9 +16,12 @@ import fetch from 'node-fetch';
 // Environment configuration
 const config = {
   port: parseInt(process.env.METRICS_PORT || '8080'),
-  scrapeInterval: parseInt(process.env.SCRAPE_INTERVAL?.replace('s', '') || '30') * 1000,
+  scrapeInterval:
+    parseInt(process.env.SCRAPE_INTERVAL?.replace('s', '') || '30') * 1000,
   backendUrl: process.env.BACKEND_URL || 'http://backend:4000',
-  mongodbUrl: process.env.MONGODB_URL || 'mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin',
+  mongodbUrl:
+    process.env.MONGODB_URL ||
+    'mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin',
   redisUrl: process.env.REDIS_URL || 'redis://:redis123@redis:6379',
 };
 
@@ -140,19 +149,25 @@ async function collectMongoDBMetrics() {
 
   try {
     const db = mongoClient.db('codiesvibe');
-    
+
     // Get server status
     const serverStatus = await db.admin().serverStatus();
-    
+
     // Connection metrics
-    metrics.mongodbConnectionsGauge.set({ state: 'current' }, serverStatus.connections?.current || 0);
-    metrics.mongodbConnectionsGauge.set({ state: 'available' }, serverStatus.connections?.available || 0);
+    metrics.mongodbConnectionsGauge.set(
+      { state: 'current' },
+      serverStatus.connections?.current || 0
+    );
+    metrics.mongodbConnectionsGauge.set(
+      { state: 'available' },
+      serverStatus.connections?.available || 0
+    );
 
     // Collection metrics
     const collections = await db.listCollections().toArray();
     for (const collection of collections) {
       const stats = await db.collection(collection.name).stats();
-      
+
       // Document count by collection
       metrics.toolsTotal.set(
         { category: collection.name, status: 'active' },
@@ -165,9 +180,9 @@ async function collectMongoDBMetrics() {
     const usersCollection = db.collection('users');
 
     // Tools by category
-    const toolsByCategory = await toolsCollection.aggregate([
-      { $group: { _id: '$category', count: { $sum: 1 } } }
-    ]).toArray();
+    const toolsByCategory = await toolsCollection
+      .aggregate([{ $group: { _id: '$category', count: { $sum: 1 } } }])
+      .toArray();
 
     for (const category of toolsByCategory) {
       metrics.toolsTotal.set(
@@ -179,7 +194,6 @@ async function collectMongoDBMetrics() {
     // User count
     const userCount = await usersCollection.countDocuments();
     metrics.activeSessionsGauge.set(userCount);
-
   } catch (error) {
     console.error('Error collecting MongoDB metrics:', error);
   }
@@ -192,7 +206,7 @@ async function collectRedisMetrics() {
   try {
     const info = await redisClient.info();
     const lines = info.split('\r\n');
-    
+
     // Parse Redis info
     const redisInfo: Record<string, string> = {};
     for (const line of lines) {
@@ -210,12 +224,17 @@ async function collectRedisMetrics() {
 
     // Cache statistics (if available)
     if (redisInfo.keyspace_hits) {
-      metrics.redisCacheHitsTotal.inc({ key_pattern: 'all' }, parseInt(redisInfo.keyspace_hits));
+      metrics.redisCacheHitsTotal.inc(
+        { key_pattern: 'all' },
+        parseInt(redisInfo.keyspace_hits)
+      );
     }
     if (redisInfo.keyspace_misses) {
-      metrics.redisCacheMissesTotal.inc({ key_pattern: 'all' }, parseInt(redisInfo.keyspace_misses));
+      metrics.redisCacheMissesTotal.inc(
+        { key_pattern: 'all' },
+        parseInt(redisInfo.keyspace_misses)
+      );
     }
-
   } catch (error) {
     console.error('Error collecting Redis metrics:', error);
   }
@@ -246,7 +265,6 @@ async function collectApplicationMetrics() {
         console.log('Backend metrics endpoint not available');
       }
     }
-
   } catch (error) {
     console.error('Error collecting application metrics:', error);
   }
@@ -255,7 +273,7 @@ async function collectApplicationMetrics() {
 // Collect all metrics
 async function collectMetrics() {
   console.log('Collecting metrics...');
-  
+
   await Promise.allSettled([
     collectMongoDBMetrics(),
     collectRedisMetrics(),
@@ -268,7 +286,7 @@ app.get('/metrics', async (req, res) => {
   try {
     // Collect fresh metrics
     await collectMetrics();
-    
+
     // Return Prometheus metrics
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
@@ -299,12 +317,13 @@ async function start() {
 
     // Start HTTP server
     app.listen(config.port, () => {
-      console.log(`CodiesVibe metrics exporter listening on port ${config.port}`);
+      console.log(
+        `CodiesVibe metrics exporter listening on port ${config.port}`
+      );
       console.log(`Metrics endpoint: http://localhost:${config.port}/metrics`);
       console.log(`Health endpoint: http://localhost:${config.port}/health`);
       console.log(`Scrape interval: ${config.scrapeInterval}ms`);
     });
-
   } catch (error) {
     console.error('Failed to start metrics exporter:', error);
     process.exit(1);
@@ -314,29 +333,29 @@ async function start() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Received SIGTERM, shutting down gracefully...');
-  
+
   if (mongoClient) {
     await mongoClient.close();
   }
-  
+
   if (redisClient) {
     await redisClient.quit();
   }
-  
+
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('Received SIGINT, shutting down gracefully...');
-  
+
   if (mongoClient) {
     await mongoClient.close();
   }
-  
+
   if (redisClient) {
     await redisClient.quit();
   }
-  
+
   process.exit(0);
 });
 

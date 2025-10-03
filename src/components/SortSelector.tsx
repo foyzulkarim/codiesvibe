@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { SORT_OPTIONS } from "@/lib/config";
 
 interface SortSelectorProps {
@@ -8,7 +14,7 @@ interface SortSelectorProps {
 
 const SORT_LABELS = {
   [SORT_OPTIONS.NAME]: "Name A-Z",
-  [SORT_OPTIONS.CREATED_AT]: "Recently Added"
+  [SORT_OPTIONS.CREATED_AT]: "Recently Added",
 };
 
 export function SortSelector({ value, onChange }: SortSelectorProps) {

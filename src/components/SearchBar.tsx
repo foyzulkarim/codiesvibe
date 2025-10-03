@@ -10,10 +10,15 @@ interface SearchBarProps {
   showSearchButton?: boolean;
 }
 
-export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton = false }: SearchBarProps) => {
-
+export const SearchBar = ({
+  onSearch,
+  tools,
+  value,
+  onChange,
+  showSearchButton = false,
+}: SearchBarProps) => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       onSearch(value);
     }
   };

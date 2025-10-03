@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { PricingModelEnum } from '../../../shared/types/tool.types';
+import { PricingModelEnum } from '@shared/types/tool.types';
 
 export type ToolDocument = Tool & Document;
 

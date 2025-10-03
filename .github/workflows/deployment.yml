@@ -150,7 +150,7 @@ jobs:
             fi
             
             # Start infrastructure
-            docker-compose -f docker-compose.infra.yml up -d
+            docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml up -d
             sleep 30
             
             # Deploy application
@@ -276,7 +276,7 @@ jobs:
             fi
             
             # Start infrastructure
-            docker-compose -f docker-compose.infra.yml up -d
+            docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml up -d
             sleep 30
             
             # Deploy with Cloudflare tunnels

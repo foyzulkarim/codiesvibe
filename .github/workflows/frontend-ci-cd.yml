@@ -232,6 +232,7 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
             VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
             VITE_API_URL=http://api.localhost
+            NODE_ENV=production
 
       - name: Run Trivy scan on Frontend image
         uses: aquasecurity/trivy-action@master

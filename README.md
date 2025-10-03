@@ -75,21 +75,31 @@ graph TB
 git clone https://github.com/your-username/codiesvibe.git
 cd codiesvibe
 
-# Start infrastructure services
-docker-compose -f docker-compose.infra.yml up -d
+# Step 1: Configure environment
+cp .env.dev.example .env.dev
+# Edit .env.dev with your development credentials
+
+# Step 2: Start infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+
+# Step 3: Start backend applications
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
+
+# Step 4: Start frontend (separate terminal)
+npm run dev
 
 # Verify infrastructure health
-docker-compose -f docker-compose.infra.yml ps
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml ps
 ```
 
 ### 3. Choose Your Environment
 
 | Environment | Command | Use Case |
 |-------------|---------|----------|
-| **Development** | `npm run infra:start` + local dev servers | Local development with native hot reload |
-| **Production** | `docker-compose -f docker-compose.production.yml up -d` | Production deployment with Nginx |
+| **Development** | Manual two-step setup | Clean separation architecture with explicit steps |
+| **Production** | `docker-compose -f docker-compose.production.yml --env-file .env.production up -d` | Production deployment with Nginx |
 | **Cloudflare** | See `TUNNEL-SETUP.md` | Secure public access via local tunnel |
-| **Monitoring** | `docker-compose -f docker-compose.monitoring.yml up -d` | Extended observability stack |
+| **Monitoring** | `docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml up -d` | Infrastructure includes monitoring stack |
 
 ---
 
@@ -99,22 +109,23 @@ docker-compose -f docker-compose.infra.yml ps
 
 | File | Purpose | Target | Ports |
 |------|---------|---------|-------|
-| `docker-compose.infra.yml` | Infrastructure services | All environments | 27017, 6379, 9090, 3001 |
+| `docker-compose/infrastructure/docker-compose.infra.yml` | Infrastructure services | All environments | 27017, 6379, 9090, 3001 |
 | `docker-compose.production.yml` | Production deployment | Production servers | 80, 443 |
 | Local cloudflared tunnel | Simple tunnel setup | Public deployment | None (tunneled) |
-| `docker-compose.monitoring.yml` | Extended monitoring | Ops teams | 3002, 9091, 9093 |
+| `docker-compose/infrastructure/docker-compose.monitoring.yml` | Extended monitoring | Ops teams | 3002, 9091, 9093 |
 
-### 🎯 Infrastructure First Approach
+### 🎯 Clean Separation Architecture
 
-Always start with infrastructure services:
+The project uses **clean separation architecture** with infrastructure and application layers completely separated:
 
 ```bash
-# Start supporting services first
-npm run infra:start
+# Development (explicit two-step approach)
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
 
-# Then start local development
-npm run dev                    # Frontend
-cd backend && npm run dev      # Backend (in separate terminal)
+# Production
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 ```
 
 ---
@@ -126,44 +137,54 @@ Fast local development with native hot reload, instant debugging, and maximum vi
 ### Development Setup
 
 ```bash
-# 1. Start infrastructure services
-npm run infra:start
+# 1. Configure environment files
+cp .env.dev.example .env.dev              # Development environment
+# Edit .env.dev with your development credentials (especially GitHub OAuth)
 
-# 2. Configure environment files
-cp .env.example .env.local              # Frontend environment
-cp backend/.env.example backend/.env   # Backend environment
-# Edit both files with your settings
+# 2. Start infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
 
-# 3. Install dependencies
-npm install                    # Frontend dependencies
-cd backend && npm install     # Backend dependencies
+# 3. Start backend services
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
 
-# 4. Start development servers (separate terminals)
-npm run dev                   # Frontend (Vite dev server)
-cd backend && npm run dev     # Backend (NestJS with hot reload)
+# 4. Install frontend dependencies and start frontend (separate terminal)
+npm install                               # Frontend dependencies
+npm run dev                               # Frontend (Vite dev server)
 
 # 5. Access your application
-open http://localhost:3000    # Frontend
-open http://localhost:4000/api/health  # Backend health check
+open http://localhost:3000                # Frontend
+open http://localhost:4000/api/health     # Backend health check (via gateway)
+open http://localhost:4001                # NestJS API direct
+open http://localhost:4002                # Fastify API direct
 ```
 
 ### Development Environment Variables
 
 ```env
-# .env.local (Frontend - create from .env.example)
+# .env.dev (Development environment - create from .env.dev.example)
+NODE_ENV=development
+PORT=4001
+
+# Infrastructure connections (services from docker-compose.infra.yml)
+MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+REDIS_URL=redis://:redis123@redis:6379
+
+# GitHub OAuth (development - configure with your dev app)
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_CALLBACK_URL=http://localhost:4000/api/auth/github/callback
+
+# Security (development - change for production)
+JWT_SECRET=development-jwt-secret-change-in-production
+COOKIE_SECRET=development-cookie-secret-min-32-chars
+CSRF_SECRET=development-csrf-secret-min-32-chars
+
+# Frontend build variables
 VITE_API_URL=http://localhost:4000/api
 VITE_DEBUG=true
 VITE_DEV_TOOLS=true
 VITE_APP_NAME=CodiesVibe
 VITE_ENVIRONMENT=development
-
-# backend/.env (Backend)
-NODE_ENV=development
-PORT=4000
-MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin
-REDIS_URL=redis://:redis123@localhost:6379
-JWT_SECRET=dev-jwt-secret-change-in-production
-CORS_ORIGIN=http://localhost:3000
 
 # Optional debugging
 DEBUG=*
@@ -182,24 +203,26 @@ LOG_LEVEL=debug
 
 ```bash
 # Infrastructure management
-npm run infra:start           # Start MongoDB, Redis, monitoring
-npm run infra:stop            # Stop infrastructure services
-npm run infra:status          # Check infrastructure status
-npm run infra:logs            # View infrastructure logs
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev down
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev logs -f
 
-# Development workflow
-npm run dev                   # Start frontend (root directory)
-cd backend && npm run dev     # Start backend with hot reload
-cd backend && npm run start:debug  # Start backend with debugging
+# Backend management
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
+docker-compose -f docker-compose.backend.yml --env-file .env.dev down
+docker-compose -f docker-compose.backend.yml --env-file .env.dev logs -f
 
-# Code quality
-npm run lint                  # Frontend linting
-npm run typecheck            # Frontend type checking
-cd backend && npm run lint    # Backend linting
-cd backend && npm run test    # Backend tests
+# Frontend development
+npm run dev                           # Start frontend (Vite dev server)
+npm run lint                          # Frontend linting
+npm run typecheck                    # Frontend type checking
 
-# Database management
-cd backend && npm run seed    # Seed database with sample data
+# Backend development (if running natively instead of containers)
+cd backend && npm run dev             # Start backend with hot reload
+cd backend && npm run start:debug     # Start backend with debugging
+cd backend && npm run lint            # Backend linting
+cd backend && npm run test            # Backend tests
+cd backend && npm run seed            # Seed database with sample data
 ```
 
 ---
@@ -224,15 +247,15 @@ docker run --rm mongo:7 mongosh "your-mongodb-uri" --eval "db.adminCommand('ping
 ### Production Setup
 
 ```bash
-# 1. Start infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# 1. Configure production environment
+cp .env.production.example .env.production
+# Edit .env.production with strong production secrets and credentials
 
-# 2. Configure production environment
-cp backend/.env.example backend/.env.production
-# Edit with production settings (see below)
+# 2. Start infrastructure services (MongoDB, Redis, Monitoring)
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
 
-# 3. Deploy production environment
-docker-compose -f docker-compose.production.yml up -d
+# 3. Deploy production application (depends on infrastructure)
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 
 # 4. Verify deployment
 curl -f http://localhost/health
@@ -242,33 +265,44 @@ curl -f http://localhost/api/health
 ### Production Environment Variables
 
 ```env
-# backend/.env.production
+# .env.production (Production environment - create from .env.production.example)
 NODE_ENV=production
-PORT=4000
+PORT=4001
 
-# REQUIRED: External MongoDB
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/codiesvibe?retryWrites=true&w=majority
+# Infrastructure Service Credentials (same services, production credentials)
+MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
+REDIS_URL=redis://:redis123@redis:6379
 
 # REQUIRED: Security secrets (32+ characters each)
-JWT_SECRET=your-super-secure-jwt-secret-minimum-32-characters-long
-COOKIE_SECRET=your-super-secure-cookie-secret-minimum-32-characters
-CSRF_SECRET=your-super-secure-csrf-secret-minimum-32-characters
+JWT_SECRET=production-jwt-secret-change-immediately-min-32-chars
+COOKIE_SECRET=production-cookie-secret-min-32-chars-please-change
+CSRF_SECRET=production-csrf-secret-min-32-chars-change-now
 
 # REQUIRED: Production domain
-CORS_ORIGIN=https://your-domain.com
+CORS_ORIGIN=https://codiesvibe.com,https://api.codiesvibe.com
 TRUST_PROXY=true
+
+# GitHub OAuth (production - configure with production app)
+GITHUB_CLIENT_ID=your_production_github_client_id
+GITHUB_CLIENT_SECRET=your_production_github_client_secret
+GITHUB_CALLBACK_URL=https://your-domain.com/api/auth/github/callback
 
 # Security and rate limiting
 RATE_LIMIT_WINDOW=900000
 RATE_LIMIT_MAX=100
-HELMET_CSP=true
+SHUTDOWN_TIMEOUT=30000
 
-# Optional: External Redis
-REDIS_URL=redis://username:password@redis-host:6379
+# Frontend build configuration
+VITE_API_URL=https://api.codiesvibe.com/api
+VITE_ENVIRONMENT=production
+VITE_DEBUG=false
+VITE_DEV_TOOLS=false
 
-# Optional: Monitoring
-PROMETHEUS_ENABLED=true
-HEALTH_CHECK_ENABLED=true
+# Monitoring endpoints (available from infrastructure)
+PROMETHEUS_URL=http://prometheus:9090
+GRAFANA_URL=http://grafana:3000
+LOKI_URL=http://loki:3100
+LOG_LEVEL=info
 ```
 
 ### Production Features
@@ -391,16 +425,20 @@ RATE_LIMIT_MAX=200
 ### Deploy with Cloudflare
 
 ```bash
-# 1. Start infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# 1. Configure production environment
+cp .env.production.example .env.production
+# Edit with production credentials and Cloudflare domain
 
-# 2. Start production stack
-docker-compose -f docker-compose.production.yml up -d
+# 2. Start infrastructure
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
 
-# 3. Start Cloudflare tunnel (see TUNNEL-SETUP.md for details)
+# 3. Start production stack
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
+
+# 4. Start Cloudflare tunnel (see TUNNEL-SETUP.md for details)
 cloudflared tunnel run
 
-# 4. Verify deployment
+# 5. Verify deployment
 curl https://your-domain.com/health
 curl https://api.your-domain.com/api/tools
 ```
@@ -436,14 +474,16 @@ Comprehensive observability stack with Prometheus, Grafana, Loki, and AlertManag
 ### Start Monitoring Stack
 
 ```bash
-# 1. Start infrastructure
-docker-compose -f docker-compose.infra.yml up -d
+# Infrastructure includes monitoring stack (Prometheus, Grafana, Loki)
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
 
-# 2. Start extended monitoring
-docker-compose -f docker-compose.monitoring.yml up -d
+# Verify monitoring services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml ps
 
-# 3. Verify monitoring services
-docker-compose -f docker-compose.monitoring.yml ps
+# Access monitoring dashboards
+open http://localhost:9090      # Prometheus
+open http://localhost:3001      # Grafana (admin/admin123)
+open http://localhost:3100      # Loki
 ```
 
 ### Monitoring Services
@@ -671,15 +711,19 @@ echo ".env" >> .gitignore
 ```bash
 # Copy and customize environment templates
 
-# Frontend environment files
-cp .env.example .env.local                         # Development (use .local for gitignore)
-cp .env.production.example .env.production.local   # Production (use .local for gitignore)
+# Development environment
+cp .env.dev.example .env.dev                       # Development (infrastructure + applications)
 
-# Backend environment files
-cp backend/.env.example backend/.env               # Development
-cp backend/.env.example backend/.env.production    # Production
+# Production environment  
+cp .env.production.example .env.production         # Production (infrastructure + applications)
 
 # For Cloudflare tunnel setup, see TUNNEL-SETUP.md
+
+# Environment files contain:
+# - Infrastructure service credentials (MongoDB, Redis)
+# - Application configuration (ports, CORS, security)
+# - Frontend build variables (VITE_ prefixed)
+# - External service connections (GitHub OAuth, Ollama, etc.)
 ```
 
 ### Environment File Structure
@@ -841,7 +885,7 @@ echo "=== CodiesVibe Health Check ==="
 
 # Infrastructure services
 echo "Checking infrastructure..."
-docker-compose -f docker-compose.infra.yml ps
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml ps
 
 # Application services
 echo "Checking application..."
@@ -907,22 +951,22 @@ docs/
 ### Quick Reference Commands
 
 ```bash
-# Infrastructure management
-npm run infra:start                                   # Start infrastructure
-npm run infra:stop                                    # Stop infrastructure
+# Development setup (two-step approach)
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
 
-# Development workflow
-npm run dev                                          # Start frontend
-cd backend && npm run dev                           # Start backend
-npm run infra:logs                                  # Follow infrastructure logs
+# Stop development environment
+docker-compose -f docker-compose.backend.yml --env-file .env.dev down
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev down
 
 # Production deployment
-docker-compose -f docker-compose.production.yml up -d   # Deploy production
-docker-compose -f docker-compose.production.yml ps      # Check status
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 
-# Monitoring
-docker-compose -f docker-compose.monitoring.yml up -d   # Start monitoring
-open http://localhost:3002                              # Grafana dashboard
+# Monitoring (included in infrastructure)
+open http://localhost:9090      # Prometheus
+open http://localhost:3001      # Grafana (admin/admin123)
+open http://localhost:3100      # Loki
 
 # Cleanup
 docker system prune -a          # Clean unused Docker resources
@@ -958,7 +1002,12 @@ services:
 1. **Fork the repository**
 2. **Clone your fork** and set up development environment
 3. **Create feature branch**: `git checkout -b feature/amazing-feature`
-4. **Start local development**: `npm run infra:start` + `npm run dev` + `cd backend && npm run dev`
+4. **Start local development**: 
+   ```bash
+   docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
+   docker-compose -f docker-compose.backend.yml --env-file .env.dev up
+   npm run dev
+   ```
 5. **Make your changes** with hot reload feedback
 6. **Run tests**: Ensure all tests pass in development environment
 7. **Commit changes**: Follow conventional commit messages
@@ -1014,6 +1063,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**🚀 Built with modern DevOps practices for the AI tools community**
+**🚀 Built with clean separation architecture for maximum clarity and production parity**
 
-*Last updated: $(date) - Phase 2 Complete with Advanced Containerization*
+*Last updated: October 3, 2025 - Clean Separation Architecture Complete*

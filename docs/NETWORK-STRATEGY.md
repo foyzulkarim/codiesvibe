@@ -1,65 +1,88 @@
 # Network Strategy for CodiesVibe Docker Implementation
 
 ## Overview
-This document defines the network naming strategy and connectivity patterns for all Docker Compose environments in the CodiesVibe project.
+This document defines the **clean separation architecture** network strategy and connectivity patterns for all Docker Compose environments in the CodiesVibe project.
 
-## Network Architecture
+## Clean Separation Network Architecture
 
-### Current Infrastructure Network
+### Infrastructure Network (Environment-Agnostic)
 - **Name**: `codiesvibe-network`
 - **Driver**: `bridge`
-- **Purpose**: Connects all infrastructure services (MongoDB, Redis, Prometheus, Grafana, etc.)
-- **Definition**: `docker-compose.infra.yml`
+- **Purpose**: Connects all infrastructure services (MongoDB, Redis, Prometheus, Grafana, Loki)
+- **Definition**: `docker-compose/infrastructure/docker-compose.infra.yml`
+- **Created by**: Infrastructure compose file
+- **Used by**: All application compose files as external network
 
-### Standardized Network Naming Convention
+### Clean Separation Network Pattern
 
-#### Phase 1 Networks (To Be Implemented)
-All Phase 1 Docker Compose files must use consistent network naming:
-
-1. **Development Environment** (Local Native + Infrastructure)
-   - **Network Name**: `codiesvibe-network` (infrastructure only)
-   - **External**: `true` (infrastructure services only)
-   - **Purpose**: Infrastructure services accessible to local development via localhost
-
-2. **Production Environment** (`docker-compose.production.yml`)
-   - **Network Name**: `codiesvibe-network`
-   - **External**: `true` (connects to existing infrastructure)
-   - **Purpose**: Production containers communicate with monitoring/logging infrastructure
-
-3. **Cloudflare Environment** (`docker-compose.cloudflare.yml`)
-   - **Network Name**: `codiesvibe-network`
-   - **External**: `true` (connects to existing infrastructure)
-   - **Purpose**: Cloudflare tunnel integration with infrastructure monitoring
-
-4. **Monitoring Environment** (`docker-compose.monitoring.yml`)
-   - **Network Name**: `codiesvibe-network`
-   - **External**: `true` (reuses infrastructure network)
-   - **Purpose**: Additional monitoring services join existing network
-
-## Network Configuration Patterns
-
-### External Network Declaration
-All Phase 1 compose files must include:
+#### Infrastructure Layer (Creates Network)
 ```yaml
+# docker-compose/infrastructure/docker-compose.infra.yml
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network
+```
+
+#### Application Layer (Uses External Network)
+```yaml
+# docker-compose.backend.yml, docker-compose.production.yml
 networks:
   codiesvibe-network:
     external: true
     name: codiesvibe-network
 ```
 
-### Service Network Assignment
-All services must join the network:
+### Environment Network Usage
+
+1. **Development Environment** (`docker-compose.backend.yml`)
+   - **Network**: External `codiesvibe-network`
+   - **Purpose**: Backend services connect to infrastructure
+   - **Access**: Infrastructure services via container names
+
+2. **Production Environment** (`docker-compose.production.yml`)
+   - **Network**: External `codiesvibe-network`
+   - **Purpose**: Application services connect to infrastructure
+   - **Access**: Infrastructure services via container names
+
+3. **Infrastructure Services** (`docker-compose.infra.yml`)
+   - **Network**: Creates `codiesvibe-network`
+   - **Purpose**: Provides database, caching, monitoring
+   - **Access**: Exposes ports to host for development
+
+## Network Configuration Patterns
+
+### Infrastructure Network Creation
+Infrastructure compose file creates the network:
 ```yaml
+# docker-compose/infrastructure/docker-compose.infra.yml
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network
+
 services:
-  frontend:
-    # ... other config
+  mongodb:
+    # ... config
     networks:
       - codiesvibe-network
-  
-  backend:
-    # ... other config
+```
+
+### Application Network Usage
+Application compose files join external network:
+```yaml
+# docker-compose.backend.yml, docker-compose.production.yml
+networks:
+  codiesvibe-network:
+    external: true
+    name: codiesvibe-network
+
+services:
+  nestjs-api:
+    # ... config
     networks:
       - codiesvibe-network
+    depends_on: []  # No infrastructure deps - managed by external network
 ```
 
 ## Service Connectivity Matrix
@@ -75,69 +98,83 @@ services:
 | Mongo Express | `codiesvibe-mongo-express` | `mongo-express:8081` | 8081 | DB Admin |
 | MailHog | `codiesvibe-mailhog` | `mailhog:1025` | 1025/8025 | Email Testing |
 
-### Application Services (Phase 1)
-| Environment | Service | Host/Container | Network Address | Port |
-|-------------|---------|---------------|-----------------|------|
-| Development | Frontend | Native Process | `localhost:3000` | 3000 |
-| Development | Backend | Native Process | `localhost:4000` | 4000 |
-| Production | Frontend | `codiesvibe-frontend-prod` | `frontend:80` | 80 |
-| Production | Backend | `codiesvibe-backend-prod` | `backend:4000` | 4000 |
-| Production | Nginx | `codiesvibe-nginx` | `nginx:80` | 80 |
+### Application Services (Clean Separation)
+| Environment | Service | Container Name | Network Address | Port | Access Pattern |
+|-------------|---------|---------------|-----------------|------|---------------|
+| Development | NestJS API | `codiesvibe-nestjs-dev` | `nestjs-api:4001` | 4001 | Container |
+| Development | Fastify API | `codiesvibe-fastify-dev` | `fastify-api:4002` | 4002 | Container |
+| Development | Gateway | `codiesvibe-gateway-dev` | `gateway:4000` | 4000 | Container |
+| Production | NestJS API | `codiesvibe-backend-prod` | `nestjs-api:4001` | 4001 | Container |
+| Production | Fastify API | `codiesvibe-fastify-api-prod` | `fastify-api:4002` | 4002 | Container |
+| Production | Gateway | `codiesvibe-gateway-prod` | `gateway:4000` | 4000 | Container |
+| Production | Nginx | `codiesvibe-nginx` | `nginx:80` | 80 | Host + Container |
 
-## Integration Requirements
+## Clean Separation Requirements
 
-### Phase 1 Compose File Requirements
-1. **Must use external network**: `codiesvibe-network`
-2. **Must not create conflicting networks**: Avoid `app-network` or custom names
-3. **Must use consistent container naming**: `codiesvibe-{service}-{env}`
-4. **Must connect all services to network**: Every service joins `codiesvibe-network`
+### Infrastructure Compose File Requirements
+1. **Creates network**: `codiesvibe-network` with bridge driver
+2. **Host port exposure**: Exposes infrastructure ports to host for development
+3. **Container naming**: `codiesvibe-{service}` for consistency
+4. **Health checks**: All services include health checks
+
+### Application Compose File Requirements
+1. **Uses external network**: `codiesvibe-network` (external: true)
+2. **No infrastructure duplication**: Does not define MongoDB/Redis services
+3. **Container naming**: `codiesvibe-{service}-{env}` for consistency
+4. **Clean dependencies**: No explicit infrastructure dependencies
 
 ### Environment Variable Alignment
-Development uses localhost, production uses container names:
+Both development and production use container names (clean separation):
 
-**Development (Native Apps + Infrastructure):**
-- MongoDB: `mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin`
-- Redis: `redis://:redis123@localhost:6379`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3001`
-
-**Production (All Containerized):**
-- MongoDB: `mongodb://mongodb:27017/codiesvibe`
-- Redis: `redis://redis:6379`
+**Development (Containerized Apps + Infrastructure):**
+- MongoDB: `mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin`
+- Redis: `redis://:redis123@redis:6379`
 - Prometheus: `http://prometheus:9090`
 - Grafana: `http://grafana:3000`
 
+**Production (All Containerized):**
+- MongoDB: `mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin`
+- Redis: `redis://:redis123@redis:6379`
+- Prometheus: `http://prometheus:9090`
+- Grafana: `http://grafana:3000`
+
+**Key Difference**: Only credentials and external URLs change, not service connection patterns
+
 ## Usage Scenarios
 
-### Scenario 1: Local Development
+### Scenario 1: Clean Separation Development
 ```bash
-# Start infrastructure services
-npm run infra:start
+# Quick start (recommended)
+./scripts/dev-backend.sh
 
-# Start development applications (separate terminals)
-npm run dev                   # Frontend (native)
-cd backend && npm run dev     # Backend (native)
+# Manual two-step approach
+# Step 1: Start infrastructure services
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
 
-# Infrastructure accessible via localhost, apps run natively
+# Step 2: Start backend applications
+docker-compose -f docker-compose.backend.yml --env-file .env.dev up
+
+# Frontend runs natively, infrastructure and backend containerized
 ```
 
-### Scenario 2: Production with Monitoring
+### Scenario 2: Production Deployment
 ```bash
-# Start infrastructure (includes monitoring)
-docker-compose -f docker-compose.infra.yml up -d
+# Step 1: Start infrastructure (includes monitoring)
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.production up -d
 
-# Start production application
-docker-compose -f docker-compose.production.yml up -d
+# Step 2: Start production application
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d
 
-# Monitoring automatically available
+# All services containerized with clean separation
 ```
 
 ### Scenario 3: Infrastructure Only
 ```bash
 # Start only infrastructure services
-npm run infra:start
+docker-compose -f docker-compose/infrastructure/docker-compose.infra.yml --env-file .env.dev up -d
 
-# Infrastructure services available for local development or testing
+# Infrastructure services available for development or testing
+# Applications can connect via external network pattern
 ```
 
 ## Network Security Considerations
@@ -173,11 +210,28 @@ curl http://localhost:3000   # Frontend
 curl http://localhost:4000/health  # Backend
 ```
 
-## Migration Notes
+## Clean Separation Benefits
 
-### From Schema Contracts
-- **OLD**: `app-network` → **NEW**: `codiesvibe-network`
-- **OLD**: Service-specific networks → **NEW**: Single shared network
-- **OLD**: Internal network creation → **NEW**: External network reference
+### Architecture Advantages
+1. **Perfect Environment Parity**: Development exactly matches production network patterns
+2. **Infrastructure Independence**: Same infrastructure definition for all environments
+3. **Clear Boundaries**: Infrastructure layer separate from application layer
+4. **Scalable Design**: Infrastructure and applications can scale independently
 
-This strategy ensures seamless communication between all services while maintaining clear separation of concerns and enabling flexible deployment scenarios.
+### Operational Benefits
+1. **Consistent Configuration**: Same service connection strings in all environments
+2. **Simplified Debugging**: Network issues easier to diagnose with clear separation
+3. **Flexible Deployment**: Can deploy infrastructure updates independently
+4. **Security Isolation**: Clear network boundaries between layers
+
+## Migration from Mixed Architecture
+
+### Clean Separation Changes
+- **OLD**: Mixed infrastructure/app services in same compose files
+- **NEW**: Infrastructure creates network, applications join external network
+- **OLD**: Environment-specific infrastructure definitions
+- **NEW**: Environment-agnostic infrastructure, configuration-driven deployment
+- **OLD**: Complex dependency management within single files
+- **NEW**: Clean dependency management via external network pattern
+
+This clean separation strategy ensures maximum clarity, perfect environment parity, and scalable architecture while maintaining flexible deployment scenarios.

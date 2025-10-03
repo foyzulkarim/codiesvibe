@@ -8,11 +8,15 @@ interface ComparisonPanelProps {
   onClose: () => void;
 }
 
-export const ComparisonPanel = ({ tools, onRemove, onClose }: ComparisonPanelProps) => {
+export const ComparisonPanel = ({
+  tools,
+  onRemove,
+  onClose,
+}: ComparisonPanelProps) => {
   if (tools.length === 0) return null;
 
   const allFeatures = Array.from(
-    new Set(tools.flatMap(tool => Object.keys(tool.features)))
+    new Set(tools.flatMap((tool) => Object.keys(tool.features))),
   );
 
   return (
@@ -21,8 +25,12 @@ export const ComparisonPanel = ({ tools, onRemove, onClose }: ComparisonPanelPro
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Tool Comparison</h2>
-            <p className="text-muted-foreground">Compare features side by side</p>
+            <h2 className="text-2xl font-bold text-foreground">
+              Tool Comparison
+            </h2>
+            <p className="text-muted-foreground">
+              Compare features side by side
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -54,12 +62,16 @@ export const ComparisonPanel = ({ tools, onRemove, onClose }: ComparisonPanelPro
                             {tool.name.charAt(0)}
                           </div>
                         </div>
-                        
+
                         <div>
-                          <h3 className="font-semibold text-foreground">{tool.name}</h3>
+                          <h3 className="font-semibold text-foreground">
+                            {tool.name}
+                          </h3>
                           <div className="flex items-center justify-center gap-1 mt-1">
                             <Star className="w-4 h-4 fill-warning text-warning" />
-                            <span className="text-sm font-medium">{tool.rating}</span>
+                            <span className="text-sm font-medium">
+                              {tool.rating}
+                            </span>
                           </div>
                         </div>
 

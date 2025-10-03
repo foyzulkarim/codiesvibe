@@ -1,11 +1,19 @@
-import { AITool } from '@/data/tools';
-import { SortOption as SortOptionType } from '@/lib/config';
+import { AITool } from "@/data/tools";
+import { SortOption as SortOptionType } from "@/lib/config";
 
 // Import v2.0 shared types
-import { BaseTool, Categories, PricingSummary, Capabilities, UseCase, ApiResponse, PaginatedResponse } from '@shared/types';
+import {
+  BaseTool,
+  Categories,
+  PricingSummary,
+  Capabilities,
+  UseCase,
+  ApiResponse,
+  PaginatedResponse,
+} from "@shared/types";
 
 // Re-export shared types for backward compatibility
-export type { ApiResponse, PaginatedResponse } from '@shared/types';
+export type { ApiResponse, PaginatedResponse } from "@shared/types";
 
 // Tool API Types (v2.0)
 // Use shared interface for consistency
@@ -27,7 +35,13 @@ export interface ToolsQueryParams {
   interface?: string;
   minRating?: number;
   maxRating?: number;
-  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'dateAdded' | 'relevance';
+  sortBy?:
+    | "popularity"
+    | "rating"
+    | "reviewCount"
+    | "createdAt"
+    | "dateAdded"
+    | "relevance";
 
   // v2.0 category filters
   primaryCategory?: string;
@@ -103,7 +117,7 @@ export interface ApiError {
 }
 
 // Utility Types
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = "asc" | "desc";
 
 export interface SortOptionUI {
   value: SortOptionType;
@@ -113,11 +127,11 @@ export interface SortOptionUI {
 
 // Available sort options for UI - Updated for v2.0
 export const SORT_OPTIONS_UI: SortOptionUI[] = [
-  { value: 'popularity', label: 'Most Popular', direction: 'desc' },
-  { value: 'rating', label: 'Highest Rated', direction: 'desc' },
-  { value: 'reviewCount', label: 'Most Reviewed', direction: 'desc' },
-  { value: 'name', label: 'Name A-Z', direction: 'asc' },
-  { value: 'createdAt', label: 'Newest', direction: 'desc' },
-  { value: 'dateAdded', label: 'Recently Added', direction: 'desc' },
-  { value: 'relevance', label: 'Most Relevant', direction: 'desc' }
+  { value: "popularity", label: "Most Popular", direction: "desc" },
+  { value: "rating", label: "Highest Rated", direction: "desc" },
+  { value: "reviewCount", label: "Most Reviewed", direction: "desc" },
+  { value: "name", label: "Name A-Z", direction: "asc" },
+  { value: "createdAt", label: "Newest", direction: "desc" },
+  { value: "dateAdded", label: "Recently Added", direction: "desc" },
+  { value: "relevance", label: "Most Relevant", direction: "desc" },
 ];

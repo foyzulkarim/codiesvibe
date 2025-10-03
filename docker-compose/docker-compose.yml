@@ -1,0 +1,25 @@
+# CodiesVibe Root Docker Compose Configuration
+# Main composition file with includes for all service base definitions
+
+include:
+  # Service base definitions
+  - ./services/docker-compose.nestjs.yml
+  - ./services/docker-compose.fastify.yml
+  - ./services/docker-compose.gateway.yml
+
+# Common volumes for all environments
+volumes:
+  nestjs_logs:
+    driver: local
+  fastify_logs:
+    driver: local
+  gateway_logs:
+    driver: local
+
+# Common networks for all environments
+networks:
+  codiesvibe-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
