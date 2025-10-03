@@ -4,7 +4,7 @@
 services:
   gateway:
     build:
-      context: ./backend/gateway
+      context: ../../backend/gateway
       dockerfile: Dockerfile.gateway
       args:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
@@ -12,11 +12,6 @@ services:
         - VERSION=${VERSION:-latest}
     networks:
       - codiesvibe-network
-
-networks:
-  codiesvibe-network:
-    driver: bridge
-    name: codiesvibe-network
     depends_on:
       nestjs-api:
         condition: service_healthy
@@ -30,3 +25,13 @@ networks:
     environment:
       - NGINX_WORKER_PROCESSES=auto
       - NGINX_WORKER_CONNECTIONS=1024
+      # Service name configuration for nginx upstream
+      - NESTJS_SERVICE_HOST=${NESTJS_SERVICE_HOST:-codiesvibe-nestjs-api-1}
+      - NESTJS_SERVICE_PORT=${NESTJS_SERVICE_PORT:-4001}
+      - FASTIFY_SERVICE_HOST=${FASTIFY_SERVICE_HOST:-codiesvibe-fastify-api-1}
+      - FASTIFY_SERVICE_PORT=${FASTIFY_SERVICE_PORT:-4002}
+
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network

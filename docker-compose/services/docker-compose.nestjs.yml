@@ -4,19 +4,14 @@
 services:
   nestjs-api:
     build:
-      context: ./backend/nestjs-api
-      dockerfile: Dockerfile.nestjs
+      context: ../../backend
+      dockerfile: nestjs-api/Dockerfile.nestjs
       args:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
     networks:
       - codiesvibe-network
-
-networks:
-  codiesvibe-network:
-    driver: bridge
-    name: codiesvibe-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
@@ -28,3 +23,8 @@ networks:
       - PORT=4001
       - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379
+
+networks:
+  codiesvibe-network:
+    driver: bridge
+    name: codiesvibe-network
