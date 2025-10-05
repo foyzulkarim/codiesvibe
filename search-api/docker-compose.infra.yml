@@ -1,0 +1,213 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb-search-api
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: ai_tools
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - search-api-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis-search-api
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - search-api-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Prometheus Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-search-api
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - search-api-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-search-api
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - search-api-network
+    depends_on:
+      - prometheus
+
+  # Loki Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: loki-search-api
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+    networks:
+      - search-api-network
+    command: -config.file=/etc/loki/local-config.yaml
+
+  # Promtail Log Forwarder
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail-search-api
+    restart: unless-stopped
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - search-api-network
+    depends_on:
+      - loki
+    command: -config.file=/etc/promtail/config.yml
+
+  # MailHog for Email Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog-search-api
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - search-api-network
+
+  # Ollama LLM Service (Optional - if you want local LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-search-api
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    networks:
+      - search-api-network
+    # Uncomment and adjust GPU support if needed
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Search API Application
+  search-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.search
+    container_name: search-api
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      # Server Configuration
+      - PORT=4002
+      - NODE_ENV=development
+
+      # MongoDB Configuration
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/ai_tools?authSource=admin
+      - DB_NAME=ai_tools
+      - COLLECTION_NAME=tools
+
+      # LLM Configuration
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+      - TEMPERATURE=0.7
+
+      # AI Reasoning Configuration
+      - CONFIDENCE_THRESHOLD=0.3
+      - MAX_ITERATIONS=10
+      - DEFAULT_LIMIT=20
+      - ENABLE_REASONING_EXPLANATION=true
+
+      # LangGraph Configuration
+      - LANGGRAPH_TRACING=false
+      - LANGGRAPH_CALLBACKS_ENABLED=false
+      - LANGGRAPH_TIMEOUT=30000
+
+      # Application Settings
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=*
+
+    volumes:
+      - ./logs:/app/logs
+      - ./prompts:/app/prompts:ro
+    networks:
+      - search-api-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  loki_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+networks:
+  search-api-network:
+    driver: bridge
+    name: codiesvibe-network

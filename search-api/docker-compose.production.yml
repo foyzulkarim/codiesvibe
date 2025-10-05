@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # MongoDB Database (Production)
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb-search-api-prod
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - search-api-network
+    logging:
+      driver: "json"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis Cache (Production)
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis-search-api-prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - search-api-network
+    logging:
+      driver: "json"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Search API Application (Production)
+  search-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.search
+      target: production
+    container_name: search-api-prod
+    restart: always
+    ports:
+      - "4002:4002"
+    environment:
+      # Server Configuration
+      - PORT=4002
+      - NODE_ENV=production
+
+      # MongoDB Configuration
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB_NAME}?authSource=admin
+      - DB_NAME=${MONGO_DB_NAME}
+      - COLLECTION_NAME=${MONGO_COLLECTION_NAME}
+
+      # LLM Configuration (if using external LLM)
+      - OLLAMA_URL=${OLLAMA_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      - TEMPERATURE=${LLM_TEMPERATURE}
+
+      # AI Reasoning Configuration
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD}
+      - MAX_ITERATIONS=${MAX_ITERATIONS}
+      - DEFAULT_LIMIT=${DEFAULT_LIMIT}
+      - ENABLE_REASONING_EXPLANATION=${ENABLE_REASONING_EXPLANATION}
+
+      # LangGraph Configuration
+      - LANGGRAPH_TRACING=${LANGGRAPH_TRACING:-false}
+      - LANGGRAPH_CALLBACKS_ENABLED=${LANGGRAPH_CALLBACKS_ENABLED:-false}
+      - LANGGRAPH_TIMEOUT=${LANGGRAPH_TIMEOUT:-30000}
+
+      # Application Settings
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=${CORS_ORIGIN}
+
+    volumes:
+      - ./logs:/app/logs
+      - ./prompts:/app/prompts:ro
+    networks:
+      - search-api-network
+    depends_on:
+      - mongodb
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-search-api-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - search-api-network
+    depends_on:
+      - search-api
+    logging:
+      driver: "json"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  search-api-network:
+    driver: bridge
+    name: codiesvibe-network

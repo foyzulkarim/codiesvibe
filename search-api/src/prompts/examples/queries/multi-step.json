@@ -1,0 +1,62 @@
+[
+  {
+    "id": "multi-001",
+    "category": "discovery",
+    "query": "Find free AI tools with API access for my startup",
+    "analysis": {
+      "intent": "find_free_api_tools",
+      "entities": {
+        "pricing": { "type": "free", "value": 0 },
+        "features": ["API access"],
+        "context": "startup"
+      },
+      "constraints": {
+        "maxPrice": 0,
+        "hasAPI": true
+      },
+      "ambiguities": ["startup needs specification"],
+      "confidence": 0.8,
+      "reasoning": "Clear price and feature requirements, but startup context needs clarification"
+    },
+    "expectedAction": {
+      "tool": "filterByNestedField",
+      "parameters": {
+        "fieldPath": "capabilities.api",
+        "operator": "equals",
+        "value": true
+      },
+      "reasoning": "First filter for API capability, then apply price filter"
+    },
+    "metadata": {
+      "complexity": "medium",
+      "iterationCount": 2,
+      "successIndicators": ["api_filter_applied", "price_filter_applied", "startup_context_understood"]
+    }
+  },
+  {
+    "id": "multi-002",
+    "category": "analysis",
+    "query": "What are the average prices of AI tools in different categories?",
+    "analysis": {
+      "intent": "analyze_pricing_by_category",
+      "entities": {
+        "metric": "average prices",
+        "grouping": "categories"
+      },
+      "constraints": {},
+      "ambiguities": [],
+      "confidence": 0.95,
+      "reasoning": "Clear analytical request requiring grouping and aggregation"
+    },
+    "expectedAction": {
+      "tool": "groupBy",
+      "parameters": { "field": "categories.primary" },
+      "reasoning": "Group tools by category for price analysis"
+    },
+    "metadata": {
+      "complexity": "medium",
+      "iterationCount": 2,
+      "successIndicators": ["data_grouped", "average_calculated", "comparison_ready"]
+    }
+  }
+]

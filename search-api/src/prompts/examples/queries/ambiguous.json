@@ -1,0 +1,78 @@
+[
+  {
+    "id": "ambig-001",
+    "category": "clarification",
+    "query": "I need affordable AI tools",
+    "analysis": {
+      "intent": "needs_clarification",
+      "entities": {
+        "pricing": { "type": "affordable", value: undefined },
+        "category": "AI tools"
+      },
+      "constraints": {},
+      "ambiguities": [
+        "What price range is considered affordable?",
+        "What specific features are needed?",
+        "Is this for personal or business use?"
+      ],
+      "confidence": 0.2,
+      "reasoning": "Subjective pricing term without clear definition or context"
+    },
+    "expectedAction": {
+      "tool": "clarify",
+      "parameters": {
+        "question": "What price range do you consider affordable for AI tools?",
+        "options": [
+          "Free tools only",
+          "Under $20/month",
+          "Under $50/month",
+          "Under $100/month"
+        ]
+      },
+      "reasoning": "Need to establish budget constraints before proceeding"
+    },
+    "metadata": {
+      "complexity": "complex",
+      "iterationCount": 2,
+      "successIndicators": ["budget_clarified", "search_refined"]
+    }
+  },
+  {
+    "id": "ambig-002",
+    "category": "clarification",
+    "query": "Show me interesting tools",
+    "analysis": {
+      "intent": "needs_clarification",
+      "entities": {
+        "quality": "interesting",
+        "target": "tools"
+      },
+      "constraints": {},
+      "ambiguities": [
+        "What makes a tool interesting to you?",
+        "What specific features or capabilities?",
+        "What use case or industry?"
+      ],
+      "confidence": 0.1,
+      "reasoning": "Purely subjective criteria with no context"
+    },
+    "expectedAction": {
+      "tool": "clarify",
+      "parameters": {
+        "question": "What specific features or capabilities would make a tool interesting to you?",
+        "options": [
+          "Cutting-edge AI technology",
+          "Unique problem-solving approaches",
+          "High user ratings and reviews",
+          "Innovative user interfaces"
+        ]
+      },
+      "reasoning": "Need to understand user's definition of interesting"
+    },
+    "metadata": {
+      "complexity": "complex",
+      "iterationCount": 3,
+      "successIndicators": ["preferences_understood", "criteria_defined"]
+    }
+  }
+]

@@ -1,0 +1,72 @@
+# Multi-stage Dockerfile for Search API with AI Reasoning and LangGraph
+# Node.js 18 Alpine for production-ready container
+FROM node:18-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat \
+    openssl-dev
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies (including dev dependencies for building)
+RUN npm ci --only=production=false
+
+# Copy source code
+COPY src/ ./src/
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files (production only)
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Set proper file permissions
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose the application port
+EXPOSE 4002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:4002/health || exit 1
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=4002
+
+# Start the application with dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/server.js"]
