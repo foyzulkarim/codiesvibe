@@ -1,9 +1,10 @@
 import { GraphState } from "./state";
 import { LLMPlanner } from "../planning/llm-planner";
 import { RulesBasedPlanner } from "../planning/rules-based";
+import { QueryAnalyzer } from "../planning/query-analyzer";
 import { ResultEvaluator } from "../evaluation/evaluator";
 import { ResponseFormatter } from "../formatting/response-formatter";
-import { AmbiguityDetector } from "../ambiguity/detector";
+import { AmbiguityDetector, AmbiguityType } from "../ambiguity/detector";
 import config from "../config/agentic";
 
 // Import the CustomToolExecutor
@@ -24,26 +25,56 @@ export const planner = async (state: GraphState): Promise<Partial<GraphState>> =
   console.log(`🔥[${sessionId}] Available tools:`, CustomToolExecutor.getRegisteredTools());
 
   try {
-    // Create a query context from the query
+    // Use enhanced query analyzer to create a rich query context
+    const enhancedAnalysis = QueryAnalyzer.analyzeQuery(query);
+    
+    // Create a query context from the enhanced analysis
     const queryContext = {
-      originalQuery: query,
-      interpretedIntent: '',
-      extractedEntities: {},
-      constraints: {},
-      ambiguities: [],
-      clarificationNeeded: false,
+      originalQuery: enhancedAnalysis.originalQuery,
+      interpretedIntent: enhancedAnalysis.interpretedIntent,
+      extractedEntities: enhancedAnalysis.extractedEntities,
+      constraints: enhancedAnalysis.constraints,
+      ambiguities: enhancedAnalysis.ambiguities,
+      clarificationNeeded: enhancedAnalysis.ambiguities.length > 0,
       clarificationHistory: [],
       refinementHistory: [],
       sessionId: metadata?.sessionId || '',
-      preferences: {}
+      preferences: {},
+      // Add enhanced analysis data
+      queryPattern: enhancedAnalysis.queryPattern,
+      suggestedTools: enhancedAnalysis.suggestedTools,
+      analysisConfidence: enhancedAnalysis.confidence
+    };
+    
+    console.log(`🔥[${sessionId}] ENHANCED QUERY ANALYSIS:`);
+    console.log(`🔥[${sessionId}] Pattern: ${enhancedAnalysis.queryPattern.type} (confidence: ${enhancedAnalysis.queryPattern.confidence})`);
+    console.log(`🔥[${sessionId}] Intent: ${enhancedAnalysis.interpretedIntent}`);
+    console.log(`🔥[${sessionId}] Entities:`, JSON.stringify(enhancedAnalysis.extractedEntities, null, 2));
+    console.log(`🔥[${sessionId}] Constraints:`, JSON.stringify(enhancedAnalysis.constraints, null, 2));
+    console.log(`🔥[${sessionId}] Suggested Tools:`, enhancedAnalysis.suggestedTools);
+    
+    // Convert string ambiguities to Ambiguity objects for compatibility
+    const ambiguityObjects = enhancedAnalysis.ambiguities.map((ambiguityText, index) => ({
+      id: `amb_${index}_${Date.now()}`,
+      type: AmbiguityType.SCOPE_AMBIGUITY,
+      description: ambiguityText,
+      severity: 'medium' as const,
+      text: ambiguityText,
+      suggestedQuestions: [`Can you clarify "${ambiguityText}"?`]
+    }));
+    
+    // Create a copy of queryContext with proper Ambiguity objects for the detector
+    const contextForDetector = {
+      ...queryContext,
+      ambiguities: ambiguityObjects
     };
     
     // Check if we need clarification
-    if (AmbiguityDetector.needsClarification(queryContext)) {
+    if (AmbiguityDetector.needsClarification(contextForDetector)) {
       const clarificationRequest = AmbiguityDetector.generateClarificationRequest(
-        queryContext.ambiguities,
+        ambiguityObjects,
         queryContext.originalQuery,
-        queryContext
+        contextForDetector
       );
       
       return {

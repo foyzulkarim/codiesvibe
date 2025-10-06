@@ -18,7 +18,7 @@ export class PromptBuilder {
   static loadSystemPrompt(): string {
     try {
       const basePath = this.PROMPTS_DIR;
-      const basePrompt = fs.readFileSync(path.join(basePath, 'base.md'), 'utf8');
+      const basePrompt = fs.readFileSync(path.join(basePath, 'enhanced-base.md'), 'utf8');
       const reasoningPrompt = fs.readFileSync(path.join(basePath, 'reasoning.md'), 'utf8');
       const toolsPrompt = fs.readFileSync(path.join(basePath, 'tools.md'), 'utf8');
       const outputFormatPrompt = fs.readFileSync(path.join(basePath, 'output-format.md'), 'utf8');
@@ -420,10 +420,159 @@ export class PromptBuilder {
     const query = context.originalQuery.toLowerCase();
     let specificGuidance = "";
 
-    // Provide specific guidance based on query patterns
-    if (query.includes('chatgpt') || query.includes('midjourney') || query.includes('claude') ||
-        query.includes('gemini') || query.includes('dall-e') || query.includes('stable diffusion')) {
-      specificGuidance = `
+    // Use enhanced query pattern information if available
+    const queryPattern = (context as any).queryPattern;
+    const suggestedTools = (context as any).suggestedTools || [];
+    const analysisConfidence = (context as any).analysisConfidence || 0.5;
+
+    // Build specific guidance based on query pattern analysis
+    if (queryPattern) {
+      switch (queryPattern.type) {
+        case 'brand':
+          const brandNames = queryPattern.entities?.brandNames || [];
+          specificGuidance = `
+## ENHANCED QUERY ANALYSIS (Confidence: ${(queryPattern.confidence * 100).toFixed(0)}%)
+**PATTERN IDENTIFIED**: Brand/Tool Name Query
+**DETECTED BRANDS**: ${brandNames.join(', ') || 'Unknown brand'}
+
+**RECOMMENDED APPROACH**:
+1. **PRIMARY**: Use filterByField with field: "name" and exact value match
+2. **FALLBACK**: Use searchByText with the full query string
+3. **ALTERNATIVE**: Use findBySlug if the query looks like a slug
+
+**EXAMPLE FOR BRAND "${brandNames[0] || 'BrandName'}"**:
+{
+  "tool": "filterByField",
+  "parameters": {
+    "field": "name",
+    "value": "${brandNames[0] || 'BrandName'}",
+    "operator": "contains",
+    "caseSensitive": false
+  },
+  "reasoning": "Looking for exact tool name match in the database",
+  "confidence": ${Math.max(0.8, queryPattern.confidence).toFixed(2)},
+  "expectedOutcome": "Find tools with '${brandNames[0] || 'BrandName'}' in the name field"
+}
+
+**SUGGESTED TOOLS**: ${suggestedTools.join(', ') || 'filterByField, searchByText'}
+`;
+          break;
+
+        case 'category':
+          const categories = queryPattern.entities?.categories || [];
+          specificGuidance = `
+## ENHANCED QUERY ANALYSIS (Confidence: ${(queryPattern.confidence * 100).toFixed(0)}%)
+**PATTERN IDENTIFIED**: Category/Type Query
+**DETECTED CATEGORIES**: ${categories.join(', ') || 'General category'}
+
+**RECOMMENDED APPROACH**:
+1. **PRIMARY**: Use filterByArrayContains with field: "categories.primary"
+2. **SECONDARY**: Use searchByText across name and description fields
+3. **ENHANCED**: Try both primary and secondary categories with filterByArrayIntersection
+
+**AVAILABLE CATEGORY FIELDS**:
+- categories.primary (array) - Main tool categories
+- categories.secondary (array) - Secondary categories
+- categories.industries (array) - Industry verticals
+- categories.userTypes (array) - Target user types
+
+**EXAMPLE FOR CATEGORY "${categories[0] || 'writing'}"**:
+{
+  "tool": "filterByArrayContains",
+  "parameters": {
+    "field": "categories.primary",
+    "values": ["${categories[0] || 'writing'}"],
+    "matchType": "any"
+  },
+  "reasoning": "Looking for tools in the ${categories[0] || 'writing'} category",
+  "confidence": ${Math.max(0.7, queryPattern.confidence).toFixed(2)},
+  "expectedOutcome": "Find tools categorized as ${categories[0] || 'writing'}"
+}
+
+**SUGGESTED TOOLS**: ${suggestedTools.join(', ') || 'filterByArrayContains, searchByText'}
+`;
+          break;
+
+        case 'pricing':
+          const priceTerms = queryPattern.entities?.pricingTerms || [];
+          const priceRanges = queryPattern.entities?.priceRanges || [];
+          specificGuidance = `
+## ENHANCED QUERY ANALYSIS (Confidence: ${(queryPattern.confidence * 100).toFixed(0)}%)
+**PATTERN IDENTIFIED**: Pricing/Cost Query
+**DETECTED PRICING TERMS**: ${priceTerms.join(', ') || 'General pricing'}
+**DETECTED PRICE RANGES**: ${priceRanges.join(', ') || 'No specific range'}
+
+**RECOMMENDED APPROACH**:
+1. **PRIMARY**: Use filterByNestedField for pricing fields
+2. **ALTERNATIVE**: Use filterByPriceRange for specific price constraints
+3. **COMPLEX**: Combine multiple pricing criteria for advanced filters
+
+**AVAILABLE PRICING FIELDS**:
+- pricingSummary.hasFreeTier (boolean)
+- pricingSummary.lowestMonthlyPrice (number)
+- pricingSummary.highestMonthlyPrice (number)
+- pricingSummary.pricingModel (array: free, freemium, paid)
+- pricingSummary.currency (string)
+
+**EXAMPLE FOR "FREE TOOLS"**:
+{
+  "tool": "filterByNestedField",
+  "parameters": {
+    "field": "pricingSummary.hasFreeTier",
+    "value": true
+  },
+  "reasoning": "Looking for tools with free tier availability",
+  "confidence": ${Math.max(0.8, queryPattern.confidence).toFixed(2)},
+  "expectedOutcome": "Find tools that offer free plans"
+}
+
+**SUGGESTED TOOLS**: ${suggestedTools.join(', ') || 'filterByNestedField, filterByPriceRange'}
+`;
+          break;
+
+        case 'capability':
+          const capabilities = queryPattern.entities?.capabilities || [];
+          const technicalTerms = queryPattern.entities?.technicalTerms || [];
+          specificGuidance = `
+## ENHANCED QUERY ANALYSIS (Confidence: ${(queryPattern.confidence * 100).toFixed(0)}%)
+**PATTERN IDENTIFIED**: Capability/Feature Query
+**DETECTED CAPABILITIES**: ${capabilities.join(', ') || 'General capabilities'}
+**DETECTED TECHNICAL TERMS**: ${technicalTerms.join(', ') || 'No technical terms'}
+
+**RECOMMENDED APPROACH**:
+1. **PRIMARY**: Use filterByNestedField with capability paths
+2. **ALTERNATIVE**: Use searchByKeywords with relevant keywords
+3. **ADVANCED**: Use filterByArrayIntersection for multiple capability requirements
+
+**AVAILABLE CAPABILITY FIELDS**:
+- capabilities.core (array)
+- capabilities.aiFeatures.codeGeneration (boolean)
+- capabilities.aiFeatures.imageGeneration (boolean)
+- capabilities.technical.apiAccess (boolean)
+- capabilities.technical.webHooks (boolean)
+- capabilities.technical.sdkAvailable (boolean)
+
+**EXAMPLE FOR "API ACCESS"**:
+{
+  "tool": "filterByNestedField",
+  "parameters": {
+    "field": "capabilities.technical.apiAccess",
+    "value": true
+  },
+  "reasoning": "Looking for tools with API access capability",
+  "confidence": ${Math.max(0.7, queryPattern.confidence).toFixed(2)},
+  "expectedOutcome": "Find tools that provide API access"
+}
+
+**SUGGESTED TOOLS**: ${suggestedTools.join(', ') || 'filterByNestedField, searchByKeywords'}
+`;
+          break;
+
+        default:
+          // Fallback to original keyword-based guidance
+          if (query.includes('chatgpt') || query.includes('midjourney') || query.includes('claude') ||
+              query.includes('gemini') || query.includes('dall-e') || query.includes('stable diffusion')) {
+            specificGuidance = `
 ## SPECIFIC QUERY ANALYSIS
 This appears to be a query for a specific AI tool by name/brand.
 
@@ -445,9 +594,9 @@ This appears to be a query for a specific AI tool by name/brand.
   "expectedOutcome": "Find tools with 'ChatGPT' in the name field"
 }
 `;
-    } else if (query.includes('free') || query.includes('pricing') || query.includes('cost') ||
-               query.includes('price') || query.includes('subscription')) {
-      specificGuidance = `
+          } else if (query.includes('free') || query.includes('pricing') || query.includes('cost') ||
+                     query.includes('price') || query.includes('subscription')) {
+            specificGuidance = `
 ## SPECIFIC QUERY ANALYSIS
 This appears to be a query about pricing or cost.
 
@@ -461,9 +610,9 @@ This appears to be a query about pricing or cost.
 - pricingSummary.pricingModel (string)
 - pricingSummary.currency (string)
 `;
-    } else if (query.includes('category') || query.includes('type') || query.includes('kind') ||
-               query.includes('writing') || query.includes('image') || query.includes('code')) {
-      specificGuidance = `
+          } else if (query.includes('category') || query.includes('type') || query.includes('kind') ||
+                     query.includes('writing') || query.includes('image') || query.includes('code')) {
+            specificGuidance = `
 ## SPECIFIC QUERY ANALYSIS
 This appears to be a query about tool categories or capabilities.
 
@@ -477,6 +626,9 @@ This appears to be a query about tool categories or capabilities.
 - categories.industries (array)
 - categories.userTypes (array)
 `;
+          }
+          break;
+      }
     }
 
     const enhancedPrompt = `You are analyzing a query to search for AI tools in a database.

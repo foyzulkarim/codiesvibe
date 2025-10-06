@@ -173,11 +173,19 @@ export class LLMPlanner {
   private static buildPlanningPrompt(request: LLMPlanningRequest): string {
     const { context, state, availableTools, iteration, maxIterations, planningType } = request;
 
+    // Enhance context with query pattern information if available
+    const enhancedContext = {
+      ...context,
+      queryPattern: (context as any).queryPattern,
+      suggestedTools: (context as any).suggestedTools,
+      analysisConfidence: (context as any).analysisConfidence
+    };
+
     switch (planningType) {
       case 'initial':
         // Use enhanced tool selection prompt for initial planning to get better tool selection
         return PromptBuilder.buildEnhancedToolSelectionPrompt(
-          context,
+          enhancedContext,
           state,
           availableTools
         );
@@ -185,7 +193,7 @@ export class LLMPlanner {
       case 'iteration':
         // Use enhanced tool selection prompt for iterations as well
         return PromptBuilder.buildEnhancedToolSelectionPrompt(
-          context,
+          enhancedContext,
           state,
           availableTools
         );
@@ -200,7 +208,7 @@ export class LLMPlanner {
 
       case 'completion':
         return PromptBuilder.buildEnhancedToolSelectionPrompt(
-          context,
+          enhancedContext,
           state,
           availableTools
         );
@@ -208,7 +216,7 @@ export class LLMPlanner {
       default:
         // Always use enhanced tool selection prompt
         return PromptBuilder.buildEnhancedToolSelectionPrompt(
-          context,
+          enhancedContext,
           state,
           availableTools
         );
