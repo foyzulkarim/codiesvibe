@@ -19,7 +19,7 @@ interface AgenticConfig {
 const config: AgenticConfig = {
   PORT: parseInt(process.env.PORT || '4002', 10),
   DEFAULT_LIMIT: parseInt(process.env.DEFAULT_LIMIT || '20', 10),
-  MAX_ITERATIONS: parseInt(process.env.MAX_ITERATIONS || '10', 10),
+  MAX_ITERATIONS: parseInt(process.env.MAX_ITERATIONS || '3', 3),
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017',
   DB_NAME: process.env.DB_NAME || 'toolsdb',
   COLLECTION_NAME: process.env.COLLECTION_NAME || 'tools',

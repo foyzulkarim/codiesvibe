@@ -35,7 +35,7 @@ export interface ToolMetadata {
   /** Tool name */
   name: string;
   /** Tool category */
-  category: 'filter' | 'sort' | 'search' | 'aggregate' | 'array' | 'utility';
+  category: 'filter' | 'sort' | 'search' | 'aggregate' | 'array' | 'utility' | 'analysis';
   /** Tool description */
   description: string;
   /** Parameter schema */
@@ -44,7 +44,7 @@ export interface ToolMetadata {
   examples: string[];
   /** Performance characteristics */
   performance: {
-    complexity: 'O(1)' | 'O(log n)' | 'O(n)' | 'O(n log n)' | 'O(n²)';
+    complexity: 'O(1)' | 'O(log n)' | 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n*m)';
     memoryUsage: 'low' | 'medium' | 'high';
   };
 }

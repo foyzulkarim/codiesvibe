@@ -21,7 +21,7 @@ export const filterByNestedField: ToolFunction<FilterByNestedFieldParams> = (
   params: FilterByNestedFieldParams
 ): ToolResponse => {
   const startTime = Date.now();
-  
+  console.log('🔍 FilterByNestedField params:', { data, params });
   try {
     // Validate inputs
     if (!Array.isArray(data)) {
@@ -49,7 +49,7 @@ export const filterByNestedField: ToolFunction<FilterByNestedFieldParams> = (
     // Normalize and validate the nested field path
     const normalizedField = normalizeFieldPath(params.field);
     const fieldParts = normalizedField.split('.');
-    
+
     // Validate root field if it's a known field
     if (fieldParts.length > 0 && fieldParts[0] && Object.values(AllowedFields).includes(fieldParts[0] as AllowedFields)) {
       assertField(fieldParts[0]);
@@ -58,11 +58,11 @@ export const filterByNestedField: ToolFunction<FilterByNestedFieldParams> = (
     const operator = params.operator || Operators.EQUALS;
     const caseSensitive = params.caseSensitive !== false; // Default to true
     const nullHandling = params.nullHandling || 'exclude';
-    
+
     // Filter the data
     const filteredData = data.filter(item => {
       const fieldValue = getNestedValue(item, normalizedField);
-      
+
       return matchesNestedCondition(
         fieldValue,
         operator,
@@ -74,7 +74,7 @@ export const filterByNestedField: ToolFunction<FilterByNestedFieldParams> = (
 
     const executionTime = Date.now() - startTime;
     const filterRatio = data.length > 0 ? filteredData.length / data.length : 0;
-    
+
     // Generate AI reasoning
     const reasoning = generateNestedFieldReasoning(
       normalizedField,
@@ -99,24 +99,24 @@ export const filterByNestedField: ToolFunction<FilterByNestedFieldParams> = (
     );
 
     const warnings: string[] = [];
-    
+
     // Add performance warnings
     if (executionTime > 200) {
       warnings.push(`Nested field filter took ${executionTime}ms - deep nesting may impact performance`);
     }
-    
+
     // Add path depth warnings
     if (fieldParts.length > 4) {
       warnings.push(`Very deep nesting (${fieldParts.length} levels) - consider data structure optimization`);
     }
-    
+
     // Add result warnings
     if (filteredData.length === 0) {
       warnings.push('No items matched the nested field criteria');
     } else if (filterRatio < 0.05) {
       warnings.push(`Very selective nested filter (${(filterRatio * 100).toFixed(2)}% of data)`);
     }
-    
+
     // Add null handling warnings
     if (nullHandling === 'include') {
       const nullCount = data.filter(item => getNestedValue(item, normalizedField) == null).length;
@@ -205,19 +205,19 @@ function matchesNestedCondition(
 
     case Operators.STARTS_WITH:
       return typeof fieldValue === 'string' && typeof compareValue === 'string' &&
-             fieldValue.startsWith(compareValue);
+        fieldValue.startsWith(compareValue);
 
     case Operators.ENDS_WITH:
       return typeof fieldValue === 'string' && typeof compareValue === 'string' &&
-             fieldValue.endsWith(compareValue);
+        fieldValue.endsWith(compareValue);
 
     case Operators.IN:
-      return Array.isArray(compareValue) && 
-             compareValue.some(item => deepEqual(fieldValue, item));
+      return Array.isArray(compareValue) &&
+        compareValue.some(item => deepEqual(fieldValue, item));
 
     case Operators.NOT_IN:
-      return !Array.isArray(compareValue) || 
-             !compareValue.some(item => deepEqual(fieldValue, item));
+      return !Array.isArray(compareValue) ||
+        !compareValue.some(item => deepEqual(fieldValue, item));
 
     case Operators.REGEX:
       if (typeof fieldValue === 'string' && typeof compareValue === 'string') {
@@ -251,21 +251,21 @@ function generateNestedFieldReasoning(
 ): string {
   const filterRatio = originalCount > 0 ? (filteredCount / originalCount) * 100 : 0;
   const operatorDescription = getOperatorDescription(operator);
-  
+
   let reasoning = `Applied nested field filter on '${field}' (${nestingDepth} level${nestingDepth > 1 ? 's' : ''} deep) `;
   reasoning += `using '${operatorDescription}' operator with value '${JSON.stringify(value)}'. `;
-  
+
   if (!caseSensitive && typeof value === 'string') {
     reasoning += 'Used case-insensitive string matching. ';
   }
-  
+
   if (nullHandling !== 'exclude') {
     reasoning += `Null handling: ${nullHandling}. `;
   }
-  
+
   reasoning += `Filtered ${originalCount} items down to ${filteredCount} items `;
   reasoning += `(${filterRatio.toFixed(1)}% retention). `;
-  
+
   // Add performance insight
   if (executionTime < 30) {
     reasoning += 'Nested field access executed very efficiently. ';
@@ -274,12 +274,12 @@ function generateNestedFieldReasoning(
   } else {
     reasoning += `Nested field access took ${executionTime}ms - deep nesting impacts performance. `;
   }
-  
+
   // Add nesting specific insights
   if (nestingDepth > 3) {
     reasoning += `Deep nesting (${nestingDepth} levels) required careful traversal. `;
   }
-  
+
   // Add selectivity insights
   if (filterRatio < 10) {
     reasoning += 'Highly selective nested filter - good for precise queries.';
@@ -288,7 +288,7 @@ function generateNestedFieldReasoning(
   } else {
     reasoning += 'Balanced nested filter selectivity achieved.';
   }
-  
+
   return reasoning;
 }
 
@@ -316,7 +316,7 @@ function getOperatorDescription(operator: Operators): string {
     [Operators.IS_NULL]: 'is null',
     [Operators.IS_NOT_NULL]: 'is not null'
   };
-  
+
   return descriptions[operator] || operator;
 }
 
@@ -332,7 +332,7 @@ function calculateNestedFieldConfidence(
   nullHandling: string
 ): number {
   let confidence = 0.85; // Base confidence for nested operations
-  
+
   // Adjust based on result ratio
   const ratio = totalCount > 0 ? resultCount / totalCount : 0;
   if (ratio === 0) {
@@ -340,31 +340,31 @@ function calculateNestedFieldConfidence(
   } else if (ratio < 0.01 || ratio > 0.99) {
     confidence = 0.7; // Lower confidence for extreme selectivity
   }
-  
+
   // Adjust based on nesting depth
   if (nestingDepth > 4) {
     confidence -= 0.1; // Deep nesting is more error-prone
   } else if (nestingDepth > 2) {
     confidence -= 0.05; // Moderate nesting complexity
   }
-  
+
   // Adjust based on operator complexity
   if (operator === Operators.REGEX) {
     confidence -= 0.1; // Regex is more complex and error-prone
   } else if ([Operators.IN, Operators.NOT_IN].includes(operator)) {
     confidence -= 0.05; // Array operations are slightly more complex
   }
-  
+
   // Adjust based on performance
   if (executionTime > 200) {
     confidence -= 0.1; // Slow nested operations are less reliable
   }
-  
+
   // Adjust based on null handling
   if (nullHandling === 'treat_as_empty') {
     confidence -= 0.05; // Null coercion adds complexity
   }
-  
+
   // Ensure confidence is within bounds
   return Math.max(0.0, Math.min(1.0, confidence));
 }

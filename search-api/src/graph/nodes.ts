@@ -1,6 +1,7 @@
 import { GraphState } from "./state";
 import { LLMPlanner } from "../planning/llm-planner";
 import { RulesBasedPlanner } from "../planning/rules-based";
+// import { SemanticPlanner } from "../planning/semantic-planner"; // Temporarily disabled
 import { QueryAnalyzer } from "../planning/query-analyzer";
 import { ResultEvaluator } from "../evaluation/evaluator";
 import { ResponseFormatter } from "../formatting/response-formatter";
@@ -116,15 +117,54 @@ export const planner = async (state: GraphState): Promise<Partial<GraphState>> =
       }
     };
     
-    // Choose between LLM and rules-based planning
+    // Check if we should use semantic planning for this query (temporarily disabled)
+    const availableTools = CustomToolExecutor.getRegisteredTools();
     let planningResult;
+
+    // TODO: Re-enable semantic planning once TypeScript errors are fixed
+    // if (iterationCount === 0 && SemanticPlanner.shouldUseSemanticPlanning(enhancedAnalysis, availableTools)) {
+    //   try {
+    //     console.log(`🔥[${sessionId}] USING SEMANTIC PLANNER for multi-intent query`);
+
+    //     const semanticResult = await SemanticPlanner.generateSemanticPlan(
+    //       queryContext,
+    //       agentState,
+    //       availableTools
+    //     );
+
+    //     console.log(`🔥[${sessionId}] SEMANTIC PLAN GENERATED:`);
+    //     console.log(`🔥[${sessionId}] Tool: ${semanticResult.plan.tool}`);
+    //     console.log(`🔥[${sessionId}] Confidence: ${semanticResult.confidence.toFixed(2)}`);
+    //     console.log(`🔥[${sessionId}] Strategy: ${semanticResult.metadata.strategy}`);
+    //     console.log(`🔥[${sessionId}] Reasoning: ${semanticResult.reasoning}`);
+
+    //     return {
+    //       plan: semanticResult.plan,
+    //       metadata: {
+    //         ...metadata,
+    //         lastPlanUpdate: new Date().toISOString(),
+    //         currentNode: 'planner',
+    //         planningReasoning: semanticResult.reasoning,
+    //         iterationCount: iterationCount + 1,
+    //         semanticPlanningUsed: true,
+    //         semanticPlanningMetadata: semanticResult.metadata
+    //       }
+    //     };
+
+    //   } catch (error) {
+    //     console.warn(`🔥[${sessionId}] Semantic planner failed, falling back to LLM planner:`, error);
+    //     // Fall through to LLM planner
+    //   }
+    // }
+
+    // Choose between LLM and rules-based planning
     if (config.OLLAMA_URL && config.ENABLE_REASONING_EXPLANATION) {
       try {
         // Use LLM planner for all iterations
         planningResult = await LLMPlanner.generatePlan({
           context: queryContext,
           state: agentState,
-          availableTools: CustomToolExecutor.getRegisteredTools(),
+          availableTools: availableTools,
           iteration: iterationCount,
           maxIterations,
           planningType: iterationCount === 0 ? "initial" : "iteration"
@@ -274,7 +314,7 @@ export const executor = async (state: GraphState): Promise<Partial<GraphState>> 
       timeout: 30000
     });
 
-    console.log(`🔥[${sessionId}] EXECUTION RESULT:`, JSON.stringify(executionResult, null, 2));
+    // console.log(`🔥[${sessionId}] EXECUTION RESULT:`, JSON.stringify(executionResult, null, 2));
 
     if (executionResult.success) {
       console.log(`🔥[${sessionId}] EXECUTION SUCCESS: ${executionResult.data?.length || 0} results`);

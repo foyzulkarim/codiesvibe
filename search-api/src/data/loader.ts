@@ -82,7 +82,7 @@ export const loadAll = async (): Promise<Tool[]> => {
     if (dataset.length > 0) {
       const sampleDoc = dataset[0];
       if (sampleDoc) {
-        console.log('📝 Sample document structure:', JSON.stringify(sampleDoc, null, 2));
+        // console.log('📝 Sample document structure:', JSON.stringify(sampleDoc, null, 2));
         console.log('🏷️  Document fields:', Object.keys(sampleDoc));
         console.log('🔍 Name field:', sampleDoc.name || 'N/A');
         console.log('📄 Description field:', sampleDoc.description || 'N/A');

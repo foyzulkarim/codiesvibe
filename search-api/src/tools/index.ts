@@ -29,15 +29,38 @@ import { limitResults, LimitResultsParams } from './limitResults';
 import { groupBy, GroupByParams } from './simpleAggregation';
 import { selectFields, SelectFieldsParams } from './simpleProjection';
 
+// Import new semantic analysis tools (temporarily commented out due to TypeScript errors)
+// import {
+//   queryDecomposer,
+//   queryDecomposerTool,
+//   QueryDecomposerParams,
+//   QueryDecomposition
+// } from './queryDecomposer';
+// import {
+//   intentBasedFieldSelector,
+//   selectFieldsFromComponents,
+//   intentBasedFieldSelectorTool,
+//   selectFieldsFromComponentsTool,
+//   IntentBasedFieldSelectorParams,
+//   FieldSelectionFromComponentsParams,
+//   FieldSelectionResult
+// } from './intentBasedFieldSelector';
+// import {
+//   multiFieldKeywordSearch,
+//   multiFieldKeywordSearchTool,
+//   MultiFieldKeywordSearchParams,
+//   MultiFieldSearchResultData
+// } from './multiFieldKeywordSearch';
+
 /**
  * Tool Categories for organization and discovery
  */
-export type ToolCategory = 'filter' | 'sort' | 'search' | 'aggregate' | 'array' | 'utility';
+export type ToolCategory = 'filter' | 'sort' | 'search' | 'aggregate' | 'array' | 'utility' | 'analysis';
 
 /**
  * Performance complexity indicators
  */
-export type PerformanceComplexity = 'O(1)' | 'O(log n)' | 'O(n)' | 'O(n log n)' | 'O(n²)';
+export type PerformanceComplexity = 'O(1)' | 'O(log n)' | 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n*m)';
 
 /**
  * Memory usage indicators
@@ -491,7 +514,109 @@ export const TOOL_REGISTRY: Record<string, ToolRegistryEntry<any, any>> = {
         memoryUsage: 'low'
       }
     }
-  }
+  },
+
+  // Semantic Analysis Tools (temporarily commented out)
+  // queryDecomposer: {
+  //   func: queryDecomposer,
+  //   metadata: {
+  //     name: 'queryDecomposer',
+  //     category: 'analysis',
+  //     description: 'Decompose queries into semantic components for targeted search',
+  //     schema: {
+  //       query: { type: 'string', required: true, description: 'Query to decompose' },
+  //       minConfidence: { type: 'number', required: false, default: 0.3, description: 'Minimum confidence threshold' },
+  //       maxComponents: { type: 'number', required: false, default: 5, description: 'Maximum components to extract' },
+  //       includeContext: { type: 'boolean', required: false, default: true, description: 'Include surrounding context' }
+  //     },
+  //     examples: [
+  //       'Decompose "free cli" into pricing and interface components',
+  //       'Analyze "AI writing tool with API access" for multiple intents',
+  //       'Break down "affordable project management software" into semantic units'
+  //     ],
+  //     performance: {
+  //       complexity: 'O(n)',
+  //       memoryUsage: 'low'
+  //     }
+  //   }
+  // },
+
+  // intentBasedFieldSelector: {
+  //   func: intentBasedFieldSelector,
+  //   metadata: {
+  //     name: 'intentBasedFieldSelector',
+  //     category: 'analysis',
+  //     description: 'Map semantic intents to optimal database fields for targeted search',
+  //     schema: {
+  //       intents: { type: 'array', required: true, description: 'Array of semantic intents' },
+  //       query: { type: 'string', required: false, description: 'Original query for context' },
+  //       terms: { type: 'array', required: false, description: 'Specific terms to map to fields' },
+  //       maxFields: { type: 'number', required: false, default: 10, description: 'Maximum fields to return' },
+  //       minWeight: { type: 'number', required: false, default: 0.3, description: 'Minimum field weight threshold' },
+  //       includeBoostTerms: { type: 'boolean', required: false, default: true, description: 'Include boost terms' }
+  //     },
+  //     examples: [
+  //       'Map ["pricing", "interface"] intents to optimal database fields',
+  //       'Select fields for "free cli" query with pricing and interface intents',
+  //       'Find best fields for multi-intent search across categories and capabilities'
+  //     ],
+  //     performance: {
+  //       complexity: 'O(n)',
+  //       memoryUsage: 'low'
+  //     }
+  //   }
+  // },
+
+  // selectFieldsFromComponents: {
+  //   func: selectFieldsFromComponents,
+  //   metadata: {
+  //     name: 'selectFieldsFromComponents',
+  //     category: 'analysis',
+  //     description: 'Select fields from pre-analyzed query components',
+  //     schema: {
+  //       components: { type: 'array', required: true, description: 'Query components from decomposer' },
+  //       originalQuery: { type: 'string', required: false, description: 'Original query' },
+  //       maxFields: { type: 'number', required: false, default: 10, description: 'Maximum fields' },
+  //       minWeight: { type: 'number', required: false, default: 0.3, description: 'Minimum weight' }
+  //     },
+  //     examples: [
+  //       'Select fields from query decomposition results',
+  //       'Map decomposed components to optimal search fields',
+  //       'Convert query analysis into field mappings'
+  //     ],
+  //     performance: {
+  //       complexity: 'O(n)',
+  //       memoryUsage: 'low'
+  //     }
+  //   }
+  // },
+
+  // multiFieldKeywordSearch: {
+  //   func: multiFieldKeywordSearch,
+  //   metadata: {
+  //     name: 'multiFieldKeywordSearch',
+  //     category: 'search',
+  //     description: 'Execute targeted searches across multiple database fields with semantic awareness',
+  //     schema: {
+  //       query: { type: 'string', required: true, description: 'Search query' },
+  //       fieldMappings: { type: 'array', required: false, description: 'Pre-calculated field mappings' },
+  //       terms: { type: 'array', required: false, description: 'Specific terms to search' },
+  //       maxResults: { type: 'number', required: false, default: 50, description: 'Maximum results' },
+  //       minScore: { type: 'number', required: false, default: 0.1, description: 'Minimum score threshold' },
+  //       includeHighlights: { type: 'boolean', required: false, default: true, description: 'Include highlighted matches' },
+  //       boostFieldMatches: { type: 'boolean', required: false, default: true, description: 'Boost field-specific matches' }
+  //     },
+  //     examples: [
+  //       'Search "free cli" across pricing and interface fields',
+  //       'Multi-field search for "AI writing assistant" with semantic targeting',
+  //       'Targeted search across capabilities and categories fields'
+  //     ],
+  //     performance: {
+  //       complexity: 'O(n)',
+  //       memoryUsage: 'medium'
+  //     }
+  //   }
+  // }
 };
 
 /**
@@ -600,7 +725,23 @@ export {
   limitResults,
   groupBy,
   selectFields
+  // Export new semantic analysis tools (temporarily commented out)
+  // queryDecomposer,
+  // intentBasedFieldSelector,
+  // selectFieldsFromComponents,
+  // multiFieldKeywordSearch
 };
+
+// Export new tool types for external use (temporarily commented out)
+// export type {
+//   QueryDecomposerParams,
+//   QueryDecomposition,
+//   IntentBasedFieldSelectorParams,
+//   FieldSelectionFromComponentsParams,
+//   FieldSelectionResult,
+//   MultiFieldKeywordSearchParams,
+//   MultiFieldSearchResultData
+// };
 
 // Export base types and utilities
 export * from './base';

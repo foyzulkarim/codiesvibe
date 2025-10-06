@@ -84,7 +84,10 @@ export const createWorkflow = () => {
     .addEdge("final_response", END)
     .addEdge("clarification", END);
   
-  return workflow.compile();
+  // Compile the workflow with a reasonable recursion limit
+  return workflow.compile({
+    recursionLimit: 10 // Increased from default 25 to provide buffer for our 3 iterations
+  });
 };
 
 /**
