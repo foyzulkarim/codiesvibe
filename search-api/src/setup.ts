@@ -1,6 +1,6 @@
-import { connectToMongoDB, connectToQdrant } from "@/config/database";
-import { mongoDBService } from "@/services/mongodb.service";
-import { qdrantService } from "@/services/qdrant.service";
+import { connectToMongoDB, connectToQdrant } from "./config/database";
+import { mongoDBService } from "./services/mongodb.service";
+import { qdrantService } from "./services/qdrant.service";
 import dotenv from "dotenv";
 
 // Load environment variables
