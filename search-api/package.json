@@ -1,0 +1,37 @@
+{
+  "name": "langgraph-search-system",
+  "version": "1.0.0",
+  "description": "Maximum Quality Search Architecture with LangGraph",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/index.ts",
+    "setup": "ts-node -r tsconfig-paths/register src/setup.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@langchain/community": "^0.3.14",
+    "@langchain/langgraph": "^0.2.19",
+    "@qdrant/js-client-rest": "^1.15.1",
+    "dotenv": "^16.4.5",
+    "fuse.js": "^7.0.0",
+    "mongodb": "^6.10.0",
+    "ollama": "^0.5.9",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.1",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.6.3"
+  }
+}
