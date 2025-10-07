@@ -11,6 +11,7 @@ export const FunctionSchema = z.object({
 export const PlanSchema = z.object({
   steps: z.array(FunctionSchema),
   description: z.string().optional(),
+  mergeStrategy: z.enum(["weighted", "best", "diverse"]).optional(),
 });
 
 // Multi-strategy plan schema

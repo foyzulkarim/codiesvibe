@@ -23,7 +23,9 @@ export const StateAnnotation = Annotation.Root({
     semanticCandidates: Record<string, any[]>;
     classificationScores: Record<string, any[]>;
     combinedScores: Record<string, any[]>;
+    resolvedToolNames: string[];
     comparativeFlag: boolean;
+    comparativeConfidence: number;
     referenceTool: string | null;
     priceConstraints: any;
     interfacePreferences: string[];

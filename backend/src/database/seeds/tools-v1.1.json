@@ -18,12 +18,9 @@
       "longDescription": "Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest, with a focus on safety and constitutional AI principles. It excels at complex reasoning, writing assistance, code generation, and thoughtful analysis across a wide range of topics.",
       "tagline": "Your thoughtful AI assistant for safe and helpful interactions",
 
-      "categories": {
-        "primary": ["AI", "Assistant"],
-        "secondary": ["Productivity", "Analysis"],
-        "industries": ["Technology", "Education", "Research", "Business", "Content Creation"],
-        "userTypes": ["Researchers", "Writers", "Students", "Professionals", "Analysts"]
-      },
+      "categories": ["AI", "Assistant", "Productivity", "Analysis"],
+      "industries": ["Technology", "Education", "Research", "Business", "Content Creation"],
+      "userTypes": ["Researchers", "Writers", "Students", "Professionals", "Analysts"],
 
       "pricingSummary": {
         "lowestMonthlyPrice": 0,
@@ -35,82 +32,7 @@
         "pricingModel": ["free","freemium", "paid"]
       },
 
-      "pricingDetails": [
-        {
-          "id": "free",
-          "name": "Free Plan",
-          "price": 0,
-          "billing": "month",
-          "features": ["Limited daily conversations", "Claude 3 Haiku access", "Web interface", "Basic chat functionality"],
-          "limitations": ["Daily usage limits", "Standard response time", "Limited model access"],
-          "sortOrder": 1
-        },
-        {
-          "id": "pro",
-          "name": "Claude Pro",
-          "price": 20,
-          "billing": "month",
-          "features": ["5x more usage", "Claude 3 Opus and Sonnet access", "Priority bandwidth", "Early access to new features"],
-          "isPopular": true,
-          "sortOrder": 2
-        }
-      ],
-
       "pricingUrl": "https://claude.ai/pricing",
-
-      "capabilities": {
-        "core": ["Text Generation", "Analysis", "Code Generation", "Research Assistance", "Creative Writing"],
-        "aiFeatures": {
-          "codeGeneration": true,
-          "imageGeneration": false,
-          "dataAnalysis": true,
-          "voiceInteraction": false,
-          "multimodal": true,
-          "thinkingMode": false
-        },
-        "technical": {
-          "apiAccess": true,
-          "webHooks": false,
-          "sdkAvailable": true,
-          "offlineMode": false
-        },
-        "integrations": {
-          "platforms": ["Web", "API"],
-          "thirdParty": ["Slack", "Discord"],
-          "protocols": ["REST", "JSON"]
-        }
-      },
-
-      "useCases": [
-        {
-          "name": "Writing Assistance",
-          "description": "Professional writing help including drafting, editing, and content strategy",
-          "industries": ["Content Creation", "Marketing", "Publishing", "Education"],
-          "userTypes": ["Writers", "Content Creators", "Marketers", "Students"],
-          "scenarios": ["Article writing", "Email composition", "Creative storytelling", "Academic papers"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Data Analysis",
-          "description": "Complex data interpretation, analysis, and insights generation",
-          "industries": ["Business", "Research", "Finance", "Healthcare"],
-          "userTypes": ["Analysts", "Researchers", "Data Scientists", "Business Intelligence"],
-          "scenarios": ["Report analysis", "Market research", "Statistical interpretation", "Trend analysis"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Research Help",
-          "description": "In-depth research assistance and knowledge synthesis across domains",
-          "industries": ["Education", "Research", "Academia", "Consulting"],
-          "userTypes": ["Researchers", "Students", "Academics", "Consultants"],
-          "scenarios": ["Literature reviews", "Fact checking", "Topic exploration", "Synthesis of complex information"],
-          "complexity": "advanced"
-        }
-      ],
-
-      "searchKeywords": ["AI", "assistant", "claude", "anthropic", "conversation"],
-      "semanticTags": ["constitutional ai", "safety-focused ai", "natural language processing", "reasoning", "analysis", "research assistant", "ethical ai", "helpful ai"],
-      "aliases": ["Claude", "Anthropic Claude", "Claude Assistant", "Claude AI Assistant"],
 
       "interface": ["Web", "API", "Mobile", "CLI"],
       "functionality": ["Text Generation", "Analysis", "Code Generation"],
@@ -135,12 +57,9 @@
       "longDescription": "Amazon Q is an AI-powered assistant by AWS that helps developers and business users with coding, troubleshooting, and business intelligence. It provides contextual assistance for AWS services, code generation, debugging, and can answer questions about your AWS infrastructure and applications. Amazon Q integrates deeply with AWS services and offers enterprise-grade security and privacy controls.",
       "tagline": "Your AWS-native AI assistant for cloud development and operations",
 
-      "categories": {
-        "primary": ["AI", "Developer Tools"],
-        "secondary": ["AWS", "Cloud", "Business Intelligence"],
-        "industries": ["Technology", "Cloud Computing", "Enterprise", "DevOps"],
-        "userTypes": ["Developers", "DevOps Engineers", "Cloud Architects", "Business Analysts"]
-      },
+      "categories": ["AI", "Developer Tools", "AWS", "Cloud", "Business Intelligence"],
+      "industries": ["Technology", "Cloud Computing", "Enterprise", "DevOps"],
+      "userTypes": ["Developers", "DevOps Engineers", "Cloud Architects", "Business Analysts"],
 
       "pricingSummary": {
         "lowestMonthlyPrice": 0,
@@ -152,106 +71,7 @@
         "pricingModel": ["free","freemium", "paid"]
       },
 
-      "pricingDetails": [
-        {
-          "id": "free",
-          "name": "Amazon Q Free Tier",
-          "price": 0,
-          "billing": "month",
-          "features": ["Basic Q&A", "Limited AWS service assistance", "Basic code suggestions", "AWS documentation access"],
-          "limitations": ["Limited monthly usage", "Basic features only", "No enterprise features"],
-          "sortOrder": 1
-        },
-        {
-          "id": "pro",
-          "name": "Amazon Q Pro",
-          "price": 20,
-          "billing": "month",
-          "features": ["Advanced coding assistance", "Expanded AWS service support", "Priority support", "Enhanced security scanning"],
-          "isPopular": true,
-          "sortOrder": 2
-        },
-        {
-          "id": "enterprise",
-          "name": "Amazon Q Enterprise",
-          "price": 0,
-          "billing": "custom",
-          "features": ["Full feature access", "Enterprise security", "Custom integrations", "Dedicated support"],
-          "sortOrder": 3
-        }
-      ],
-
       "pricingUrl": "https://aws.amazon.com/q/pricing/",
-
-      "capabilities": {
-        "core": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence", "Infrastructure Assistance"],
-        "aiFeatures": {
-          "codeGeneration": true,
-          "imageGeneration": false,
-          "dataAnalysis": true,
-          "voiceInteraction": false,
-          "multimodal": false,
-          "thinkingMode": false
-        },
-        "technical": {
-          "apiAccess": true,
-          "webHooks": true,
-          "sdkAvailable": true,
-          "offlineMode": false
-        },
-        "integrations": {
-          "platforms": ["Web", "API", "IDE Plugin"],
-          "thirdParty": ["AWS Console", "VS Code", "JetBrains", "Slack"],
-          "protocols": ["REST", "AWS SDK", "CloudFormation"]
-        }
-      },
-
-      "useCases": [
-        {
-          "name": "AWS Development",
-          "description": "Accelerate AWS application development with intelligent code generation and service guidance",
-          "industries": ["Cloud Computing", "Technology", "Enterprise"],
-          "userTypes": ["AWS Developers", "Cloud Engineers", "Solutions Architects"],
-          "scenarios": ["Lambda function development", "Infrastructure as code", "API Gateway setup", "Service configuration"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Code Debugging",
-          "description": "Debug and troubleshoot code issues with AI-powered analysis and suggestions",
-          "industries": ["Software Development", "Technology", "DevOps"],
-          "userTypes": ["Developers", "Software Engineers", "DevOps Engineers"],
-          "scenarios": ["Error resolution", "Performance optimization", "Code review", "Bug fixing"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Infrastructure Troubleshooting",
-          "description": "Diagnose and resolve AWS infrastructure issues with intelligent assistance",
-          "industries": ["Cloud Computing", "Enterprise", "Operations"],
-          "userTypes": ["Cloud Architects", "System Administrators", "DevOps Engineers"],
-          "scenarios": ["Service outages", "Performance issues", "Configuration problems", "Cost optimization"],
-          "complexity": "advanced"
-        },
-        {
-          "name": "Business Analytics",
-          "description": "Generate insights and reports from business data using AI-powered analysis",
-          "industries": ["Business", "Finance", "Analytics"],
-          "userTypes": ["Business Analysts", "Data Analysts", "Decision Makers"],
-          "scenarios": ["Report generation", "Data visualization", "Trend analysis", "KPI monitoring"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Security Scanning",
-          "description": "Identify and resolve security vulnerabilities in code and infrastructure",
-          "industries": ["Security", "Enterprise", "Compliance"],
-          "userTypes": ["Security Engineers", "DevSecOps", "Compliance Officers"],
-          "scenarios": ["Vulnerability assessment", "Security best practices", "Compliance checking", "Threat analysis"],
-          "complexity": "advanced"
-        }
-      ],
-
-      "searchKeywords": ["AI", "AWS", "amazon", "q", "developer", "assistant", "cloud", "coding", "infrastructure"],
-      "semanticTags": ["aws integration", "cloud development", "infrastructure management", "code analysis", "business intelligence"],
-      "aliases": ["Amazon Q Developer", "AWS Q", "Q Assistant", "Amazon AI Assistant"],
 
       "interface": ["Web", "CLI", "IDE Extension"],
       "functionality": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence"],
