@@ -101,18 +101,12 @@ export class EnhancedSeedService {
         // Additional checks to ensure compatibility with our Mongoose schema
         const additionalErrors: string[] = [];
         if (!dto.logoUrl) additionalErrors.push('logoUrl is required');
-        if (!dto.searchKeywords || dto.searchKeywords.length === 0)
-          additionalErrors.push('searchKeywords must be a non-empty array');
-        const hasPrimaryCategories =
-          Array.isArray(dto.categories?.primary) &&
-          dto.categories.primary.length > 0;
-        const hasSecondaryCategories =
-          Array.isArray(dto.categories?.secondary) &&
-          dto.categories.secondary.length > 0;
-        if (!(hasPrimaryCategories || hasSecondaryCategories))
-          additionalErrors.push(
-            'categories must have at least one non-empty array (primary or secondary)',
-          );
+        if (!dto.categories || dto.categories.length === 0)
+          additionalErrors.push('categories must be a non-empty array');
+        if (!dto.industries || dto.industries.length === 0)
+          additionalErrors.push('industries must be a non-empty array');
+        if (!dto.userTypes || dto.userTypes.length === 0)
+          additionalErrors.push('userTypes must be a non-empty array');
 
         if (validationErrors.length > 0 || additionalErrors.length > 0) {
           const classValidatorMsgs = validationErrors
@@ -150,15 +144,11 @@ export class EnhancedSeedService {
       functionality: dto.functionality,
       deployment: dto.deployment,
       logoUrl: dto.logoUrl,
-      searchKeywords: dto.searchKeywords,
       categories: dto.categories,
-      capabilities: dto.capabilities,
-      semanticTags: dto.semanticTags,
-      aliases: dto.aliases,
+      industries: dto.industries,
+      userTypes: dto.userTypes,
       pricingSummary: dto.pricingSummary,
-      pricingDetails: dto.pricingDetails,
       pricingUrl: dto.pricingUrl,
-      useCases: dto.useCases,
       slug: dto.slug,
       tagline: dto.tagline,
       website: dto.website,

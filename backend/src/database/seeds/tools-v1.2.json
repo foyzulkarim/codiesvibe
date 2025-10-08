@@ -215,85 +215,15 @@
         "currency": "USD",
         "hasFreeTier": true,
         "hasCustomPricing": false,
-        "billingPeriods": [],
+        "billingPeriods": ["month"],
         "pricingModel": ["free"]
       },
 
       "pricingUrl": "https://ollama.ai/",
 
-      "capabilities": {
-        "core": ["Model Management", "Local Inference", "API Server", "Model Customization", "Privacy Protection"],
-        "aiFeatures": {
-          "codeGeneration": true,
-          "imageGeneration": false,
-          "dataAnalysis": true,
-          "voiceInteraction": false,
-          "multimodal": true,
-          "thinkingMode": false
-        },
-        "technical": {
-          "apiAccess": true,
-          "webHooks": false,
-          "sdkAvailable": true,
-          "offlineMode": true
-        },
-        "integrations": {
-          "platforms": ["CLI", "API"],
-          "thirdParty": ["Docker", "Python", "JavaScript", "REST API"],
-          "protocols": ["REST", "HTTP", "Local API"]
-        }
-      },
-
-      "useCases": [
-        {
-          "name": "Private AI Applications",
-          "description": "Build AI-powered applications that keep data completely private and local",
-          "industries": ["Healthcare", "Finance", "Legal", "Enterprise"],
-          "userTypes": ["Enterprise Developers", "Security Engineers", "Compliance Officers"],
-          "scenarios": ["Sensitive data processing", "HIPAA compliance", "Financial analysis", "Legal document review"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Research and Experimentation",
-          "description": "Experiment with different AI models and conduct research without cloud dependencies",
-          "industries": ["Academia", "Research", "AI/ML"],
-          "userTypes": ["Researchers", "Students", "AI Scientists"],
-          "scenarios": ["Model comparison", "Research projects", "Academic studies", "AI experimentation"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Edge Deployments",
-          "description": "Deploy AI capabilities in edge computing environments without internet connectivity",
-          "industries": ["IoT", "Manufacturing", "Remote Operations"],
-          "userTypes": ["IoT Developers", "Edge Computing Engineers", "Industrial Engineers"],
-          "scenarios": ["Offline environments", "Remote locations", "Manufacturing floors", "Embedded systems"],
-          "complexity": "advanced"
-        },
-        {
-          "name": "Sensitive Data Processing",
-          "description": "Process confidential information with AI while maintaining complete data sovereignty",
-          "industries": ["Government", "Defense", "Privacy-Critical"],
-          "userTypes": ["Government Contractors", "Security Professionals", "Privacy Engineers"],
-          "scenarios": ["Classified analysis", "Confidential documents", "Secure communications", "Air-gapped systems"],
-          "complexity": "advanced"
-        },
-        {
-          "name": "Offline AI Development",
-          "description": "Develop AI applications without relying on cloud services or internet connectivity",
-          "industries": ["Remote Development", "Consulting", "Independent Development"],
-          "userTypes": ["Independent Developers", "Remote Workers", "Consultants"],
-          "scenarios": ["Remote locations", "Poor connectivity", "Cost optimization", "Learning AI development"],
-          "complexity": "intermediate"
-        }
-      ],
-
-      "searchKeywords": ["ollama", "local LLM", "AI models", "privacy", "offline", "open source"],
-      "semanticTags": ["local ai", "privacy-preserving ai", "edge ai", "open source llm", "offline inference", "self-hosted ai", "data sovereignty", "local model hosting"],
-      "aliases": ["Ollama AI", "Local LLM Runner", "Private AI", "Self-Hosted LLM"],
-
       "interface": ["CLI", "API", "Desktop"],
       "functionality": ["Model Management", "Local Inference", "API Server", "Model Customization"],
-      "deployment": ["Local", "Cloud"],
+      "deployment": ["Local", "Self-Hosted"],
       "popularity": 79,
       "rating": 4.5,
       "reviewCount": 1650,
@@ -324,89 +254,19 @@
         "currency": "USD",
         "hasFreeTier": true,
         "hasCustomPricing": false,
-        "billingPeriods": [],
+        "billingPeriods": ["month"],
         "pricingModel": ["free"]
       },
 
       "pricingUrl": "https://lmstudio.ai/",
 
-      "capabilities": {
-        "core": ["Model Management", "Chat Interface", "Document RAG", "API Server", "Model Hosting"],
-        "aiFeatures": {
-          "codeGeneration": true,
-          "imageGeneration": false,
-          "dataAnalysis": true,
-          "voiceInteraction": false,
-          "multimodal": true,
-          "thinkingMode": false
-        },
-        "technical": {
-          "apiAccess": true,
-          "webHooks": false,
-          "sdkAvailable": true,
-          "offlineMode": true
-        },
-        "integrations": {
-          "platforms": ["Desktop", "API"],
-          "thirdParty": ["Hugging Face", "Python SDK", "TypeScript SDK", "OpenAI API"],
-          "protocols": ["REST", "OpenAI-Compatible API"]
-        }
-      },
-
-      "useCases": [
-        {
-          "name": "AI Experimentation",
-          "description": "Explore different AI models and capabilities with an easy-to-use interface",
-          "industries": ["Education", "Research", "Technology"],
-          "userTypes": ["Students", "Researchers", "AI Enthusiasts"],
-          "scenarios": ["Model comparison", "Learning about AI", "Testing capabilities", "Research projects"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Document Analysis",
-          "description": "Chat with documents and extract insights using local AI models",
-          "industries": ["Business", "Legal", "Research", "Education"],
-          "userTypes": ["Analysts", "Researchers", "Students", "Professionals"],
-          "scenarios": ["Document Q&A", "Research assistance", "Content analysis", "Information extraction"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Local AI Development",
-          "description": "Develop AI applications using local models with API access",
-          "industries": ["Technology", "Startups", "Consulting"],
-          "userTypes": ["Developers", "AI Engineers", "Technical Consultants"],
-          "scenarios": ["App development", "Prototyping", "Local API hosting", "AI integration"],
-          "complexity": "intermediate"
-        },
-        {
-          "name": "Privacy-Focused AI Usage",
-          "description": "Use AI capabilities while keeping all data completely private and local",
-          "industries": ["Healthcare", "Finance", "Legal", "Privacy-Critical"],
-          "userTypes": ["Privacy Advocates", "Compliance Officers", "Sensitive Data Workers"],
-          "scenarios": ["Private document analysis", "Confidential Q&A", "Secure AI usage", "GDPR compliance"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Educational Purposes",
-          "description": "Learn about AI and machine learning concepts with hands-on experience",
-          "industries": ["Education", "Training", "Self-Learning"],
-          "userTypes": ["Students", "Teachers", "Self-Learners"],
-          "scenarios": ["AI education", "Coursework", "Demonstrations", "Concept exploration"],
-          "complexity": "beginner"
-        }
-      ],
-
-      "searchKeywords": ["LM Studio", "local AI", "GUI", "desktop", "LLM", "chat interface"],
-      "semanticTags": ["desktop ai application", "user-friendly ai", "local model hosting", "document chat", "ai gui interface", "privacy-focused ai", "cross-platform ai", "beginner-friendly ai"],
-      "aliases": ["LMStudio", "LM Studio AI", "Local AI Desktop", "AI Desktop App"],
-
-      
-      "interface": "Desktop Application",
-      "functionality": "Local LLM execution with GUI interface",
-      "deployment": "Desktop",
+      "interface": ["Desktop", "API"],
+      "functionality": ["Model Management", "Chat Interface", "Document RAG", "API Server"],
+      "deployment": ["Local", "Self-Hosted"],
       "popularity": 8.5,
       "rating": 4.6,
       "reviewCount": 2800,
+
       "logoUrl": "https://lmstudio.ai/favicon.ico",
       "website": "https://lmstudio.ai/",
       "documentation": "https://lmstudio.ai/docs",
