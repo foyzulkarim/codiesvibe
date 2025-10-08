@@ -31,8 +31,6 @@ export const VALIDATION_FIXTURES_V2 = {
       pricingModel: ['freemium', 'subscription'],
     },
 
-    
-    
     // Legacy fields for backward compatibility
     pricing: ['Free', 'Paid'],
     interface: ['Web', 'API'],

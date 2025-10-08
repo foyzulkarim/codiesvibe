@@ -167,7 +167,6 @@ export class Tool {
     pricingModel: PricingModelEnum[];
   };
 
-  
   @Prop({
     validate: {
       validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
@@ -176,9 +175,6 @@ export class Tool {
   })
   pricingUrl?: string;
 
-  
-  
-  
   @Prop({
     type: [String],
     required: true,
@@ -365,18 +361,9 @@ ToolSchema.index({ status: 1 }, { name: 'tool_status_index' });
 ToolSchema.index({ createdBy: 1 }, { name: 'tool_created_by_index' });
 
 // Secondary indexes for v2.0 flattened categorization
-ToolSchema.index(
-  { categories: 1 },
-  { name: 'tool_categories_index' },
-);
-ToolSchema.index(
-  { industries: 1 },
-  { name: 'tool_industries_index' },
-);
-ToolSchema.index(
-  { userTypes: 1 },
-  { name: 'tool_user_types_index' },
-);
+ToolSchema.index({ categories: 1 }, { name: 'tool_categories_index' });
+ToolSchema.index({ industries: 1 }, { name: 'tool_industries_index' });
+ToolSchema.index({ userTypes: 1 }, { name: 'tool_user_types_index' });
 
 // Pricing indexes
 ToolSchema.index(
@@ -387,7 +374,6 @@ ToolSchema.index(
   { 'pricingSummary.lowestMonthlyPrice': 1 },
   { name: 'tool_pricing_lowest_price_index' },
 );
-
 
 // Full-text search indexes with simplified v2.0 fields
 ToolSchema.index(

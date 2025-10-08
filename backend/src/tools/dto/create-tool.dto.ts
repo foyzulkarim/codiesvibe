@@ -19,7 +19,6 @@ import { PricingModelEnum } from '../../../shared/types/tool.types';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-
 // Pricing Summary DTO
 class PricingSummaryDto {
   @ApiProperty({
@@ -83,8 +82,6 @@ class PricingSummaryDto {
   @IsEnum(['free', 'freemium', 'paid'], { each: true })
   pricingModel!: PricingModelEnum[];
 }
-
-
 
 export class CreateToolDto {
   // Identity fields

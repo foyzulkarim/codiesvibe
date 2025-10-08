@@ -6,7 +6,6 @@ import {
   ValidationOptions,
 } from 'class-validator';
 
-
 /**
  * Custom validator for numeric ranges with business logic
  * Provides more detailed validation for rating, popularity, reviewCount

@@ -113,7 +113,6 @@ export class ToolsService {
       rating: 0,
       reviewCount: 0,
 
-      
       // Set metadata
       contributor: 'user',
       dateAdded: new Date(),
