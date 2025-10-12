@@ -57,7 +57,7 @@
       "longDescription": "Replit is a comprehensive cloud development platform that combines an online IDE with AI-powered coding assistance, instant deployment capabilities, and collaborative features. It supports multiple programming languages and offers various deployment options from static sites to autoscaling applications. Replit eliminates the need for local development setup and enables seamless collaboration between team members.",
       "tagline": "Code, collaborate, and deploy instantly in the cloud",
 
-      "categories": ["Cloud IDE", "Development Platform", "Deployment", "Collaboration", "AI"],
+      "categories": ["Cloud IDE", "Development", "Deployment", "Collaboration", "AI"],
       "industries": ["Technology", "Education", "Startups", "Remote Work"],
       "userTypes": ["Developers", "Students", "Teachers", "Remote Teams"],
 
@@ -74,7 +74,7 @@
       "pricingUrl": "https://replit.com/pricing",
       
       "interface": ["Web", "Mobile"],
-      "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Management"],
+      "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Setup"],
       "deployment": ["Cloud"],
       "popularity": 85,
       "rating": 4.4,
