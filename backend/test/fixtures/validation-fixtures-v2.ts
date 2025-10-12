@@ -17,12 +17,9 @@ export const VALIDATION_FIXTURES_V2 = {
       'Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest.',
     tagline: 'Your thoughtful AI assistant for safe and helpful interactions',
 
-    categories: {
-      primary: ['AI', 'Assistant'],
-      secondary: ['Productivity', 'Analysis'],
-      industries: ['Technology', 'Education', 'Research'],
-      userTypes: ['Researchers', 'Writers', 'Students'],
-    },
+    categories: ['AI', 'Assistant', 'Productivity', 'Analysis'],
+    industries: ['Technology', 'Education', 'Research'],
+    userTypes: ['Researchers', 'Writers', 'Students'],
 
     pricingSummary: {
       lowestMonthlyPrice: 0,
@@ -33,77 +30,6 @@ export const VALIDATION_FIXTURES_V2 = {
       billingPeriods: ['month'],
       pricingModel: ['freemium', 'subscription'],
     },
-
-    pricingDetails: [
-      {
-        id: 'free',
-        name: 'Free Plan',
-        price: 0,
-        billing: 'month',
-        features: ['Limited daily conversations', 'Claude 3 Haiku access'],
-        limitations: ['Daily usage limits', 'Standard response time'],
-        sortOrder: 1,
-      },
-      {
-        id: 'pro',
-        name: 'Claude Pro',
-        price: 20,
-        billing: 'month',
-        features: ['5x more usage', 'Priority bandwidth'],
-        isPopular: true,
-        sortOrder: 2,
-      },
-    ],
-
-    capabilities: {
-      core: ['Text Generation', 'Analysis', 'Code Generation'],
-      aiFeatures: {
-        codeGeneration: true,
-        imageGeneration: false,
-        dataAnalysis: true,
-        voiceInteraction: false,
-        multimodal: true,
-        thinkingMode: false,
-      },
-      technical: {
-        apiAccess: true,
-        webHooks: false,
-        sdkAvailable: true,
-        offlineMode: false,
-      },
-      integrations: {
-        platforms: ['Web', 'API'],
-        thirdParty: ['Slack', 'Discord'],
-        protocols: ['REST', 'JSON'],
-      },
-    },
-
-    useCases: [
-      {
-        name: 'Writing Assistance',
-        description: 'Professional writing help including drafting and editing',
-        industries: ['Content Creation', 'Marketing'],
-        userTypes: ['Writers', 'Content Creators'],
-        scenarios: ['Article writing', 'Email composition'],
-        complexity: 'beginner',
-      },
-      {
-        name: 'Data Analysis',
-        description: 'Complex data interpretation and insights generation',
-        industries: ['Business', 'Research'],
-        userTypes: ['Analysts', 'Researchers'],
-        scenarios: ['Report analysis', 'Statistical interpretation'],
-        complexity: 'intermediate',
-      },
-    ],
-
-    searchKeywords: ['AI', 'assistant', 'claude', 'anthropic'],
-    semanticTags: [
-      'constitutional ai',
-      'safety-focused ai',
-      'natural language processing',
-    ],
-    aliases: ['Claude', 'Anthropic Claude'],
 
     // Legacy fields for backward compatibility
     pricing: ['Free', 'Paid'],

@@ -110,6 +110,23 @@ services:
       timeout: 10s
       retries: 3
 
+  # Vector Database - Qdrant
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: codiesvibe-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - codiesvibe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 
 
 volumes:
@@ -122,6 +139,8 @@ volumes:
   loki_data:
     driver: local
   redis_data:
+    driver: local
+  qdrant_data:
     driver: local
 
 networks:

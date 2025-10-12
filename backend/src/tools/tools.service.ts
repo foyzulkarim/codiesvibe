@@ -113,9 +113,6 @@ export class ToolsService {
       rating: 0,
       reviewCount: 0,
 
-      // Ensure aliases has a default empty array
-      aliases: createToolDto.aliases || [],
-
       // Set metadata
       contributor: 'user',
       dateAdded: new Date(),
@@ -151,9 +148,6 @@ export class ToolsService {
           { name: { $regex: searchRegex } },
           { description: { $regex: searchRegex } },
           { tagline: { $regex: searchRegex } },
-          { searchKeywords: { $in: [searchRegex] } },
-          { semanticTags: { $in: [searchRegex] } },
-          { aliases: { $in: [searchRegex] } },
           { longDescription: { $regex: searchRegex } },
         ],
       };
@@ -278,16 +272,13 @@ export class ToolsService {
 
     // v2.0 filters
     if (filters.categories && filters.categories.length > 0) {
-      query.$or = [
-        { 'categories.primary': { $in: filters.categories } },
-        { 'categories.secondary': { $in: filters.categories } },
-      ];
+      query.categories = { $in: filters.categories };
     }
     if (filters.industries && filters.industries.length > 0) {
-      query['categories.industries'] = { $in: filters.industries };
+      query.industries = { $in: filters.industries };
     }
     if (filters.userTypes && filters.userTypes.length > 0) {
-      query['categories.userTypes'] = { $in: filters.userTypes };
+      query.userTypes = { $in: filters.userTypes };
     }
     if (filters.hasFreeTier !== undefined) {
       query['pricingSummary.hasFreeTier'] = filters.hasFreeTier;
@@ -339,10 +330,9 @@ export class ToolsService {
 
     // Validate required array fields
     const requiredArrayFields = [
-      'searchKeywords',
-      'semanticTags',
-      'aliases',
-      'pricing',
+      'categories',
+      'industries',
+      'userTypes',
       'interface',
       'functionality',
       'deployment',
@@ -355,29 +345,29 @@ export class ToolsService {
       }
     }
 
-    // Validate categories structure if provided
+    // Validate flattened categories structure if provided
     if (updateData.categories !== undefined) {
-      const categories = updateData.categories;
       if (
-        !categories.primary ||
-        !Array.isArray(categories.primary) ||
-        categories.primary.length === 0
+        !Array.isArray(updateData.categories) ||
+        updateData.categories.length === 0
       ) {
-        throw new Error('Categories must have at least one primary category');
+        throw new Error('Categories must be a non-empty array');
       }
+    }
+    if (updateData.industries !== undefined) {
       if (
-        categories.industries &&
-        (!Array.isArray(categories.industries) ||
-          categories.industries.length === 0)
+        !Array.isArray(updateData.industries) ||
+        updateData.industries.length === 0
       ) {
-        throw new Error('Categories must have at least one industry');
+        throw new Error('Industries must be a non-empty array');
       }
+    }
+    if (updateData.userTypes !== undefined) {
       if (
-        categories.userTypes &&
-        (!Array.isArray(categories.userTypes) ||
-          categories.userTypes.length === 0)
+        !Array.isArray(updateData.userTypes) ||
+        updateData.userTypes.length === 0
       ) {
-        throw new Error('Categories must have at least one user type');
+        throw new Error('User types must be a non-empty array');
       }
     }
 

@@ -64,53 +64,39 @@ export class Tool {
   })
   createdBy!: Types.ObjectId;
 
-  // Categorization
+  // Flattened categorization (v2.0)
   @Prop({
-    type: {
-      primary: {
-        type: [String],
-        required: true,
-        validate: {
-          validator: (v: string[]) =>
-            Array.isArray(v) && v.length >= 1 && v.length <= 5,
-          message: 'primary categories must have 1-5 entries',
-        },
-      },
-      secondary: {
-        type: [String],
-        validate: {
-          validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 5),
-          message: 'secondary categories must have at most 5 entries',
-        },
-        default: [],
-      },
-      industries: {
-        type: [String],
-        required: true,
-        validate: {
-          validator: (v: string[]) =>
-            Array.isArray(v) && v.length >= 1 && v.length <= 10,
-          message: 'industries must have 1-10 entries',
-        },
-      },
-      userTypes: {
-        type: [String],
-        required: true,
-        validate: {
-          validator: (v: string[]) =>
-            Array.isArray(v) && v.length >= 1 && v.length <= 10,
-          message: 'userTypes must have 1-10 entries',
-        },
-      },
-    },
+    type: [String],
     required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 5,
+      message: 'categories must have 1-5 entries',
+    },
   })
-  categories!: {
-    primary: string[];
-    secondary: string[];
-    industries: string[];
-    userTypes: string[];
-  };
+  categories!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 10,
+      message: 'industries must have 1-10 entries',
+    },
+  })
+  industries!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 10,
+      message: 'userTypes must have 1-10 entries',
+    },
+  })
+  userTypes!: string[];
 
   // Pricing
   @Prop({
@@ -182,267 +168,12 @@ export class Tool {
   };
 
   @Prop({
-    type: [
-      {
-        id: {
-          type: String,
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        billing: {
-          type: String,
-          required: true,
-        },
-        features: {
-          type: [String],
-          required: true,
-        },
-        limitations: {
-          type: [String],
-        },
-        maxUsers: {
-          type: Number,
-          min: 1,
-        },
-        isPopular: {
-          type: Boolean,
-          default: false,
-        },
-        sortOrder: {
-          type: Number,
-          required: true,
-        },
-      },
-    ],
-    required: true,
-    validate: {
-      validator: (v: any[]) =>
-        Array.isArray(v) && v.length >= 1 && v.length <= 10,
-      message: 'pricingDetails must have 1-10 entries',
-    },
-  })
-  pricingDetails!: Array<{
-    id: string;
-    name: string;
-    price: number;
-    billing: string;
-    features: string[];
-    limitations?: string[];
-    maxUsers?: number;
-    isPopular?: boolean;
-    sortOrder: number;
-  }>;
-
-  @Prop({
     validate: {
       validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
       message: 'pricingUrl must be a valid URL',
     },
   })
   pricingUrl?: string;
-
-  // Capabilities
-  @Prop({
-    type: {
-      core: {
-        type: [String],
-        required: true,
-        validate: {
-          validator: (v: string[]) =>
-            Array.isArray(v) && v.length >= 1 && v.length <= 10,
-          message: 'core capabilities must have 1-10 entries',
-        },
-      },
-      aiFeatures: {
-        type: {
-          codeGeneration: { type: Boolean, required: true },
-          imageGeneration: { type: Boolean, required: true },
-          dataAnalysis: { type: Boolean, required: true },
-          voiceInteraction: { type: Boolean, required: true },
-          multimodal: { type: Boolean, required: true },
-          thinkingMode: { type: Boolean, required: true },
-        },
-        required: true,
-      },
-      technical: {
-        type: {
-          apiAccess: { type: Boolean, required: true },
-          webHooks: { type: Boolean, required: true },
-          sdkAvailable: { type: Boolean, required: true },
-          offlineMode: { type: Boolean, required: true },
-        },
-        required: true,
-      },
-      integrations: {
-        type: {
-          platforms: {
-            type: [String],
-            required: true,
-            validate: {
-              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-              message: 'platforms must have at least one entry',
-            },
-          },
-          thirdParty: {
-            type: [String],
-            required: true,
-            validate: {
-              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-              message: 'thirdParty must have at least one entry',
-            },
-          },
-          protocols: {
-            type: [String],
-            required: true,
-            validate: {
-              validator: (v: string[]) => Array.isArray(v) && v.length > 0,
-              message: 'protocols must have at least one entry',
-            },
-          },
-        },
-        required: true,
-      },
-    },
-    required: true,
-  })
-  capabilities!: {
-    core: string[];
-    aiFeatures: {
-      codeGeneration: boolean;
-      imageGeneration: boolean;
-      dataAnalysis: boolean;
-      voiceInteraction: boolean;
-      multimodal: boolean;
-      thinkingMode: boolean;
-    };
-    technical: {
-      apiAccess: boolean;
-      webHooks: boolean;
-      sdkAvailable: boolean;
-      offlineMode: boolean;
-    };
-    integrations: {
-      platforms: string[];
-      thirdParty: string[];
-      protocols: string[];
-    };
-  };
-
-  // Use cases
-  @Prop({
-    type: [
-      {
-        name: {
-          type: String,
-          required: true,
-          maxlength: 50,
-        },
-        description: {
-          type: String,
-          required: true,
-          minlength: 10,
-          maxlength: 500,
-        },
-        industries: {
-          type: [String],
-          required: true,
-          validate: {
-            validator: (v: string[]) =>
-              Array.isArray(v) && v.length >= 1 && v.length <= 5,
-            message: 'industries must have 1-5 entries',
-          },
-        },
-        userTypes: {
-          type: [String],
-          required: true,
-          validate: {
-            validator: (v: string[]) =>
-              Array.isArray(v) && v.length >= 1 && v.length <= 5,
-            message: 'userTypes must have 1-5 entries',
-          },
-        },
-        scenarios: {
-          type: [String],
-          required: true,
-          validate: {
-            validator: (v: string[]) =>
-              Array.isArray(v) && v.length >= 1 && v.length <= 10,
-            message: 'scenarios must have 1-10 entries',
-          },
-        },
-        complexity: {
-          type: String,
-          required: true,
-          enum: ['beginner', 'intermediate', 'advanced'],
-        },
-      },
-    ],
-    required: true,
-  })
-  useCases!: Array<{
-    name: string;
-    description: string;
-    industries: string[];
-    userTypes: string[];
-    scenarios: string[];
-    complexity: 'beginner' | 'intermediate' | 'advanced';
-  }>;
-
-  // Search optimization
-  @Prop({
-    type: [String],
-    required: true,
-    validate: {
-      validator: (v: string[]) => {
-        if (!Array.isArray(v) || v.length < 5 || v.length > 20) return false;
-        return v.every(
-          (keyword) => typeof keyword === 'string' && keyword.length <= 256,
-        );
-      },
-      message:
-        'searchKeywords must have 5-20 entries with strings max 256 chars each',
-    },
-  })
-  searchKeywords!: string[];
-
-  @Prop({
-    type: [String],
-    required: true,
-    validate: {
-      validator: (v: string[]) => {
-        if (!Array.isArray(v) || v.length < 5 || v.length > 20) return false;
-        return v.every((tag) => typeof tag === 'string' && tag.length <= 256);
-      },
-      message:
-        'semanticTags must have 5-20 entries with strings max 256 chars each',
-    },
-  })
-  semanticTags!: string[];
-
-  @Prop({
-    type: [String],
-    required: true,
-    default: [],
-    validate: {
-      validator: (v: string[]) => {
-        if (!Array.isArray(v) || v.length > 10) return false;
-        return v.every(
-          (alias) => typeof alias === 'string' && alias.length <= 256,
-        );
-      },
-      message:
-        'aliases must have at most 10 entries with strings max 256 chars each',
-    },
-  })
-  aliases!: string[];
 
   @Prop({
     type: [String],
@@ -617,31 +348,6 @@ ToolSchema.pre('save', function (next) {
     }
   }
 
-  // Truncate search fields to max length
-  if (Array.isArray(this.searchKeywords)) {
-    this.searchKeywords = this.searchKeywords.map((keyword) =>
-      typeof keyword === 'string'
-        ? keyword.substring(0, 256)
-        : String(keyword).substring(0, 256),
-    );
-  }
-
-  if (Array.isArray(this.semanticTags)) {
-    this.semanticTags = this.semanticTags.map((tag) =>
-      typeof tag === 'string'
-        ? tag.substring(0, 256)
-        : String(tag).substring(0, 256),
-    );
-  }
-
-  if (Array.isArray(this.aliases)) {
-    this.aliases = this.aliases.map((alias) =>
-      typeof alias === 'string'
-        ? alias.substring(0, 256)
-        : String(alias).substring(0, 256),
-    );
-  }
-
   // Update lastUpdated timestamp
   this.lastUpdated = new Date();
 
@@ -654,19 +360,10 @@ ToolSchema.index({ slug: 1 }, { unique: true, name: 'tool_slug_index' });
 ToolSchema.index({ status: 1 }, { name: 'tool_status_index' });
 ToolSchema.index({ createdBy: 1 }, { name: 'tool_created_by_index' });
 
-// Secondary indexes for v2.0 categorization
-ToolSchema.index(
-  { 'categories.primary': 1 },
-  { name: 'tool_categories_primary_index' },
-);
-ToolSchema.index(
-  { 'categories.industries': 1 },
-  { name: 'tool_categories_industries_index' },
-);
-ToolSchema.index(
-  { 'categories.userTypes': 1 },
-  { name: 'tool_categories_user_types_index' },
-);
+// Secondary indexes for v2.0 flattened categorization
+ToolSchema.index({ categories: 1 }, { name: 'tool_categories_index' });
+ToolSchema.index({ industries: 1 }, { name: 'tool_industries_index' });
+ToolSchema.index({ userTypes: 1 }, { name: 'tool_user_types_index' });
 
 // Pricing indexes
 ToolSchema.index(
@@ -678,26 +375,13 @@ ToolSchema.index(
   { name: 'tool_pricing_lowest_price_index' },
 );
 
-// Capabilities indexes
-ToolSchema.index(
-  { 'capabilities.aiFeatures.codeGeneration': 1 },
-  { name: 'tool_capabilities_code_gen_index' },
-);
-ToolSchema.index(
-  { 'capabilities.aiFeatures.imageGeneration': 1 },
-  { name: 'tool_capabilities_image_gen_index' },
-);
-
-// Full-text search indexes with enhanced v2.0 fields
+// Full-text search indexes with simplified v2.0 fields
 ToolSchema.index(
   {
     name: 'text',
     description: 'text',
     longDescription: 'text',
     tagline: 'text',
-    searchKeywords: 'text',
-    semanticTags: 'text',
-    aliases: 'text',
   },
   {
     name: 'tool_v2_search_index',
@@ -705,9 +389,6 @@ ToolSchema.index(
       name: 15,
       tagline: 12,
       description: 8,
-      searchKeywords: 10,
-      semanticTags: 9,
-      aliases: 6,
       longDescription: 3,
     },
   },
@@ -733,7 +414,7 @@ ToolSchema.index(
 
 ToolSchema.index(
   {
-    'categories.primary': 1,
+    categories: 1,
     rating: -1,
   },
   { name: 'tool_category_rating_index' },

@@ -19,53 +19,6 @@ import { PricingModelEnum } from '../../../shared/types/tool.types';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-// Categories DTO
-class CategoriesDto {
-  @ApiProperty({
-    description: 'Primary categories (1-5 entries)',
-    example: ['AI', 'Chatbot'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  primary!: string[];
-
-  @ApiPropertyOptional({
-    description: 'Secondary categories (0-5 entries)',
-    example: ['Productivity'],
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  secondary?: string[];
-
-  @ApiProperty({
-    description: 'Target industries (1-10 entries)',
-    example: ['Technology', 'Education'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  industries!: string[];
-
-  @ApiProperty({
-    description: 'Target user types (1-10 entries)',
-    example: ['Developers', 'Students'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  userTypes!: string[];
-}
-
 // Pricing Summary DTO
 class PricingSummaryDto {
   @ApiProperty({
@@ -128,254 +81,6 @@ class PricingSummaryDto {
   @ArrayNotEmpty()
   @IsEnum(['free', 'freemium', 'paid'], { each: true })
   pricingModel!: PricingModelEnum[];
-}
-
-// Pricing Details DTO
-class PricingTierDto {
-  @ApiProperty({
-    description: 'Unique tier ID',
-    example: 'free',
-  })
-  @IsString()
-  @IsNotEmpty()
-  id!: string;
-
-  @ApiProperty({
-    description: 'Tier name',
-    example: 'Free Plan',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
-
-  @ApiProperty({
-    description: 'Price amount',
-    example: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  price!: number;
-
-  @ApiProperty({
-    description: 'Billing period',
-    example: 'month',
-  })
-  @IsString()
-  @IsNotEmpty()
-  billing!: string;
-
-  @ApiProperty({
-    description: 'Included features',
-    example: ['Basic AI responses', '100 requests/month'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  features!: string[];
-
-  @ApiPropertyOptional({
-    description: 'Plan limitations',
-    example: ['Limited to 100 requests'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  limitations?: string[];
-
-  @ApiPropertyOptional({
-    description: 'Maximum users',
-    example: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  maxUsers?: number;
-
-  @ApiPropertyOptional({
-    description: 'Is this the popular plan',
-    example: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isPopular?: boolean;
-
-  @ApiProperty({
-    description: 'Sort order for display',
-    example: 1,
-  })
-  @IsNumber()
-  sortOrder!: number;
-}
-
-// AI Features DTO
-class AIFeaturesDto {
-  @ApiProperty({ description: 'Code generation capability', example: false })
-  @IsBoolean()
-  codeGeneration!: boolean;
-
-  @ApiProperty({ description: 'Image generation capability', example: false })
-  @IsBoolean()
-  imageGeneration!: boolean;
-
-  @ApiProperty({ description: 'Data analysis capability', example: true })
-  @IsBoolean()
-  dataAnalysis!: boolean;
-
-  @ApiProperty({ description: 'Voice interaction capability', example: false })
-  @IsBoolean()
-  voiceInteraction!: boolean;
-
-  @ApiProperty({ description: 'Multimodal capability', example: true })
-  @IsBoolean()
-  multimodal!: boolean;
-
-  @ApiProperty({ description: 'Thinking mode capability', example: false })
-  @IsBoolean()
-  thinkingMode!: boolean;
-}
-
-// Technical Features DTO
-class TechnicalFeaturesDto {
-  @ApiProperty({ description: 'API access available', example: true })
-  @IsBoolean()
-  apiAccess!: boolean;
-
-  @ApiProperty({ description: 'Webhooks supported', example: false })
-  @IsBoolean()
-  webHooks!: boolean;
-
-  @ApiProperty({ description: 'SDK available', example: true })
-  @IsBoolean()
-  sdkAvailable!: boolean;
-
-  @ApiProperty({ description: 'Offline mode supported', example: false })
-  @IsBoolean()
-  offlineMode!: boolean;
-}
-
-// Integrations DTO
-class IntegrationsDto {
-  @ApiProperty({
-    description: 'Supported platforms',
-    example: ['Web', 'iOS', 'Android'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  platforms!: string[];
-
-  @ApiProperty({
-    description: 'Third-party integrations',
-    example: ['Slack', 'Discord'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  thirdParty!: string[];
-
-  @ApiProperty({
-    description: 'Supported protocols',
-    example: ['REST', 'GraphQL'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  protocols!: string[];
-}
-
-// Capabilities DTO
-class CapabilitiesDto {
-  @ApiProperty({
-    description: 'Core capabilities (1-10 entries)',
-    example: ['Natural Language Processing', 'Text Generation'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  core!: string[];
-
-  @ApiProperty({ description: 'AI-specific features' })
-  @ValidateNested()
-  @Type(() => AIFeaturesDto)
-  aiFeatures!: AIFeaturesDto;
-
-  @ApiProperty({ description: 'Technical features' })
-  @ValidateNested()
-  @Type(() => TechnicalFeaturesDto)
-  technical!: TechnicalFeaturesDto;
-
-  @ApiProperty({ description: 'Integration capabilities' })
-  @ValidateNested()
-  @Type(() => IntegrationsDto)
-  integrations!: IntegrationsDto;
-}
-
-// Use Case DTO
-class UseCaseDto {
-  @ApiProperty({
-    description: 'Use case name',
-    example: 'Content Creation',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @Length(1, 50)
-  name!: string;
-
-  @ApiProperty({
-    description: 'Use case description',
-    example:
-      'Create blog posts, articles, and marketing content with AI assistance',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @Length(10, 500)
-  description!: string;
-
-  @ApiProperty({
-    description: 'Relevant industries (1-5 entries)',
-    example: ['Marketing', 'Publishing'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  industries!: string[];
-
-  @ApiProperty({
-    description: 'Target user types (1-5 entries)',
-    example: ['Content Creators', 'Marketers'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  userTypes!: string[];
-
-  @ApiProperty({
-    description: 'Specific scenarios (1-10 entries)',
-    example: ['Blog writing', 'Social media posts'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  scenarios!: string[];
-
-  @ApiProperty({
-    description: 'Complexity level',
-    example: 'beginner',
-  })
-  @IsEnum(['beginner', 'intermediate', 'advanced'])
-  complexity!: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export class CreateToolDto {
@@ -443,28 +148,45 @@ export class CreateToolDto {
   @Length(1, 100)
   tagline?: string;
 
-  // Categorization
-  @ApiProperty({ description: 'Tool categorization' })
-  @ValidateNested()
-  @Type(() => CategoriesDto)
-  categories!: CategoriesDto;
-
-  // Pricing
-  @ApiProperty({ description: 'Pricing summary information' })
-  @ValidateNested()
-  @Type(() => PricingSummaryDto)
-  pricingSummary!: PricingSummaryDto;
+  // Flattened categorization (v2.0)
+  @ApiProperty({
+    description: 'Tool categories (1-5 entries)',
+    example: ['AI', 'Chatbot', 'Productivity'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(5)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  categories!: string[];
 
   @ApiProperty({
-    description: 'Detailed pricing tiers (1-10 entries)',
-    type: [PricingTierDto],
+    description: 'Target industries (1-10 entries)',
+    example: ['Technology', 'Education', 'Business'],
   })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(10)
-  @ValidateNested({ each: true })
-  @Type(() => PricingTierDto)
-  pricingDetails!: PricingTierDto[];
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  industries!: string[];
+
+  @ApiProperty({
+    description: 'Target user types (1-10 entries)',
+    example: ['Developers', 'Analysts', 'Content Creators'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  userTypes!: string[];
+
+  // Pricing (simplified)
+  @ApiProperty({ description: 'Pricing summary information' })
+  @ValidateNested()
+  @Type(() => PricingSummaryDto)
+  pricingSummary!: PricingSummaryDto;
 
   @ApiPropertyOptional({
     description: 'URL to pricing page',
@@ -473,60 +195,6 @@ export class CreateToolDto {
   @IsOptional()
   @IsUrl({}, { message: 'Pricing URL must be a valid URL' })
   pricingUrl?: string;
-
-  // Capabilities
-  @ApiProperty({ description: 'Tool capabilities and features' })
-  @ValidateNested()
-  @Type(() => CapabilitiesDto)
-  capabilities!: CapabilitiesDto;
-
-  // Use cases
-  @ApiProperty({
-    description: 'Tool use cases',
-    type: [UseCaseDto],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @ValidateNested({ each: true })
-  @Type(() => UseCaseDto)
-  useCases!: UseCaseDto[];
-
-  // Search optimization
-  @ApiProperty({
-    description: 'Search keywords (5-20 entries)',
-    example: ['AI', 'chatbot', 'language model', 'OpenAI', 'conversation'],
-  })
-  @IsArray()
-  @ArrayMinSize(5)
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @Length(1, 256, { each: true })
-  searchKeywords!: string[];
-
-  @ApiProperty({
-    description: 'Semantic tags for AI understanding (5-20 entries)',
-    example: [
-      'natural language processing',
-      'machine learning',
-      'conversational AI',
-    ],
-  })
-  @IsArray()
-  @ArrayMinSize(5)
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @Length(1, 256, { each: true })
-  semanticTags!: string[];
-
-  @ApiProperty({
-    description: 'Alternative names and aliases (max 10 entries)',
-    example: ['OpenAI ChatGPT', 'GPT-4', 'Chat GPT'],
-  })
-  @IsArray()
-  @ArrayMaxSize(10)
-  @IsString({ each: true })
-  @Length(1, 256, { each: true })
-  aliases!: string[];
 
   @ApiProperty({
     description: 'Legacy interface types',
@@ -602,12 +270,9 @@ export class CreateToolDto {
       longDescription:
         'ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, answer questions, help with writing, coding, and many other tasks. It uses state-of-the-art transformer architecture to understand context and provide relevant, helpful responses.',
       tagline: 'Your AI conversation partner',
-      categories: {
-        primary: ['AI', 'Chatbot'],
-        secondary: ['Productivity'],
-        industries: ['Technology', 'Education', 'Content Creation'],
-        userTypes: ['Developers', 'Students', 'Content Creators'],
-      },
+      categories: ['AI', 'Chatbot', 'Productivity'],
+      industries: ['Technology', 'Education', 'Business'],
+      userTypes: ['Developers', 'Students', 'Content Creators'],
       pricingSummary: {
         lowestMonthlyPrice: 0,
         highestMonthlyPrice: 20,
@@ -617,97 +282,7 @@ export class CreateToolDto {
         billingPeriods: ['month'],
         pricingModel: ['freemium', 'paid'],
       },
-      pricingDetails: [
-        {
-          id: 'free',
-          name: 'Free Plan',
-          price: 0,
-          billing: 'month',
-          features: ['Basic AI responses', 'Limited daily usage'],
-          limitations: ['Rate limited', 'Lower priority access'],
-          sortOrder: 1,
-        },
-        {
-          id: 'plus',
-          name: 'ChatGPT Plus',
-          price: 20,
-          billing: 'month',
-          features: [
-            'Priority access',
-            'Faster responses',
-            'Latest model access',
-          ],
-          isPopular: true,
-          sortOrder: 2,
-        },
-      ],
       pricingUrl: 'https://openai.com/pricing',
-      capabilities: {
-        core: [
-          'Natural Language Processing',
-          'Text Generation',
-          'Question Answering',
-        ],
-        aiFeatures: {
-          codeGeneration: true,
-          imageGeneration: false,
-          dataAnalysis: true,
-          voiceInteraction: false,
-          multimodal: true,
-          thinkingMode: false,
-        },
-        technical: {
-          apiAccess: true,
-          webHooks: false,
-          sdkAvailable: true,
-          offlineMode: false,
-        },
-        integrations: {
-          platforms: ['Web', 'API'],
-          thirdParty: ['Microsoft Office', 'Google Workspace'],
-          protocols: ['REST', 'WebSocket'],
-        },
-      },
-      useCases: [
-        {
-          name: 'Content Creation',
-          description:
-            'Create blog posts, articles, and marketing content with AI assistance',
-          industries: ['Marketing', 'Publishing', 'E-commerce'],
-          userTypes: ['Content Creators', 'Marketers', 'Writers'],
-          scenarios: [
-            'Blog writing',
-            'Social media posts',
-            'Product descriptions',
-          ],
-          complexity: 'beginner',
-        },
-        {
-          name: 'Code Assistance',
-          description:
-            'Get help with programming tasks, debugging, and code optimization',
-          industries: ['Technology', 'Software Development'],
-          userTypes: ['Developers', 'Engineers', 'Students'],
-          scenarios: ['Code review', 'Bug fixing', 'Learning new languages'],
-          complexity: 'intermediate',
-        },
-      ],
-      searchKeywords: [
-        'AI',
-        'chatbot',
-        'language model',
-        'OpenAI',
-        'conversation',
-        'assistant',
-      ],
-      semanticTags: [
-        'natural language processing',
-        'machine learning',
-        'conversational AI',
-        'text generation',
-        'artificial intelligence',
-      ],
-      aliases: ['OpenAI ChatGPT', 'GPT-4', 'Chat GPT'],
       interface: ['Web', 'API'],
       functionality: ['Text Generation', 'Conversation', 'Code Assistance'],
       deployment: ['Cloud'],

@@ -1,37 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BaseTool, PricingModelEnum } from '@shared/types/tool.types';
 
-// Response DTOs for nested structures
-class ResponseCategoriesDto {
-  @ApiProperty({
-    description: 'Primary categories',
-    type: [String],
-    example: ['AI', 'Chatbot'],
-  })
-  primary!: string[];
-
-  @ApiProperty({
-    description: 'Secondary categories',
-    type: [String],
-    example: ['Productivity'],
-  })
-  secondary!: string[];
-
-  @ApiProperty({
-    description: 'Target industries',
-    type: [String],
-    example: ['Technology', 'Education'],
-  })
-  industries!: string[];
-
-  @ApiProperty({
-    description: 'Target user types',
-    type: [String],
-    example: ['Developers', 'Students'],
-  })
-  userTypes!: string[];
-}
-
 class ResponsePricingSummaryDto {
   @ApiProperty({ description: 'Lowest monthly price', example: 0 })
   lowestMonthlyPrice!: number;
@@ -57,126 +26,6 @@ class ResponsePricingSummaryDto {
     enum: ['free', 'freemium', 'paid'],
   })
   pricingModel!: PricingModelEnum[];
-}
-
-class ResponsePricingTierDto {
-  @ApiProperty({ description: 'Tier ID', example: 'free' })
-  id!: string;
-
-  @ApiProperty({ description: 'Tier name', example: 'Free Plan' })
-  name!: string;
-
-  @ApiProperty({ description: 'Price', example: 0 })
-  price!: number;
-
-  @ApiProperty({ description: 'Billing period', example: 'month' })
-  billing!: string;
-
-  @ApiProperty({ description: 'Features', example: ['Basic AI responses'] })
-  features!: string[];
-
-  @ApiPropertyOptional({
-    description: 'Limitations',
-    example: ['Rate limited'],
-  })
-  limitations?: string[];
-
-  @ApiPropertyOptional({ description: 'Max users', example: 1 })
-  maxUsers?: number;
-
-  @ApiPropertyOptional({ description: 'Is popular', example: false })
-  isPopular?: boolean;
-
-  @ApiProperty({ description: 'Sort order', example: 1 })
-  sortOrder!: number;
-}
-
-class ResponseAIFeaturesDto {
-  @ApiProperty({ description: 'Code generation capability', example: false })
-  codeGeneration!: boolean;
-
-  @ApiProperty({ description: 'Image generation capability', example: false })
-  imageGeneration!: boolean;
-
-  @ApiProperty({ description: 'Data analysis capability', example: true })
-  dataAnalysis!: boolean;
-
-  @ApiProperty({ description: 'Voice interaction capability', example: false })
-  voiceInteraction!: boolean;
-
-  @ApiProperty({ description: 'Multimodal capability', example: true })
-  multimodal!: boolean;
-
-  @ApiProperty({ description: 'Thinking mode capability', example: false })
-  thinkingMode!: boolean;
-}
-
-class ResponseTechnicalFeaturesDto {
-  @ApiProperty({ description: 'API access available', example: true })
-  apiAccess!: boolean;
-
-  @ApiProperty({ description: 'Webhooks supported', example: false })
-  webHooks!: boolean;
-
-  @ApiProperty({ description: 'SDK available', example: true })
-  sdkAvailable!: boolean;
-
-  @ApiProperty({ description: 'Offline mode supported', example: false })
-  offlineMode!: boolean;
-}
-
-class ResponseIntegrationsDto {
-  @ApiProperty({ description: 'Supported platforms', example: ['Web', 'API'] })
-  platforms!: string[];
-
-  @ApiProperty({ description: 'Third-party integrations', example: ['Slack'] })
-  thirdParty!: string[];
-
-  @ApiProperty({ description: 'Supported protocols', example: ['REST'] })
-  protocols!: string[];
-}
-
-class ResponseCapabilitiesDto {
-  @ApiProperty({
-    description: 'Core capabilities',
-    example: ['Natural Language Processing'],
-  })
-  core!: string[];
-
-  @ApiProperty({ description: 'AI features' })
-  aiFeatures!: ResponseAIFeaturesDto;
-
-  @ApiProperty({ description: 'Technical features' })
-  technical!: ResponseTechnicalFeaturesDto;
-
-  @ApiProperty({ description: 'Integrations' })
-  integrations!: ResponseIntegrationsDto;
-}
-
-class ResponseUseCaseDto {
-  @ApiProperty({ description: 'Use case name', example: 'Content Creation' })
-  name!: string;
-
-  @ApiProperty({
-    description: 'Use case description',
-    example: 'Create content with AI',
-  })
-  description!: string;
-
-  @ApiProperty({ description: 'Relevant industries', example: ['Marketing'] })
-  industries!: string[];
-
-  @ApiProperty({
-    description: 'Target user types',
-    example: ['Content Creators'],
-  })
-  userTypes!: string[];
-
-  @ApiProperty({ description: 'Scenarios', example: ['Blog writing'] })
-  scenarios!: string[];
-
-  @ApiProperty({ description: 'Complexity level', example: 'beginner' })
-  complexity!: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export class ToolResponseDto implements BaseTool {
@@ -217,67 +66,40 @@ export class ToolResponseDto implements BaseTool {
   })
   tagline?: string;
 
-  // Categorization
+  // Flattened categorization (v2.0)
   @ApiProperty({
-    description: 'Tool categorization',
-    type: ResponseCategoriesDto,
+    description: 'Tool categories',
+    type: [String],
+    example: ['AI', 'Chatbot', 'Productivity'],
   })
-  categories!: ResponseCategoriesDto;
+  categories!: string[];
 
-  // Pricing
+  @ApiProperty({
+    description: 'Target industries',
+    type: [String],
+    example: ['Technology', 'Education', 'Business'],
+  })
+  industries!: string[];
+
+  @ApiProperty({
+    description: 'Target user types',
+    type: [String],
+    example: ['Developers', 'Students', 'Content Creators'],
+  })
+  userTypes!: string[];
+
+  // Pricing (simplified)
   @ApiProperty({
     description: 'Pricing summary',
     type: ResponsePricingSummaryDto,
   })
   pricingSummary!: ResponsePricingSummaryDto;
 
-  @ApiProperty({
-    description: 'Detailed pricing tiers',
-    type: [ResponsePricingTierDto],
-  })
-  pricingDetails!: ResponsePricingTierDto[];
-
   @ApiPropertyOptional({
     description: 'Pricing page URL',
     example: 'https://openai.com/pricing',
   })
   pricingUrl?: string;
-
-  // Capabilities
-  @ApiProperty({
-    description: 'Tool capabilities',
-    type: ResponseCapabilitiesDto,
-  })
-  capabilities!: ResponseCapabilitiesDto;
-
-  // Use cases
-  @ApiProperty({
-    description: 'Tool use cases',
-    type: [ResponseUseCaseDto],
-  })
-  useCases!: ResponseUseCaseDto[];
-
-  // Search optimization
-  @ApiProperty({
-    description: 'Search keywords',
-    type: [String],
-    example: ['AI', 'chatbot', 'conversation'],
-  })
-  searchKeywords!: string[];
-
-  @ApiProperty({
-    description: 'Semantic tags',
-    type: [String],
-    example: ['natural language processing', 'machine learning'],
-  })
-  semanticTags!: string[];
-
-  @ApiProperty({
-    description: 'Alternative names',
-    type: [String],
-    example: ['OpenAI ChatGPT', 'GPT-4'],
-  })
-  aliases!: string[];
 
   // Legacy fields
   @ApiProperty({
@@ -401,15 +223,12 @@ export class ToolResponseDto implements BaseTool {
       longDescription: doc.longDescription,
       tagline: doc.tagline,
 
-      // Categorization
-      categories: {
-        primary: doc.categories?.primary || [],
-        secondary: doc.categories?.secondary || [],
-        industries: doc.categories?.industries || [],
-        userTypes: doc.categories?.userTypes || [],
-      },
+      // Flattened categorization (v2.0)
+      categories: doc.categories || [],
+      industries: doc.industries || [],
+      userTypes: doc.userTypes || [],
 
-      // Pricing
+      // Pricing (simplified)
       pricingSummary: {
         lowestMonthlyPrice: doc.pricingSummary?.lowestMonthlyPrice || 0,
         highestMonthlyPrice: doc.pricingSummary?.highestMonthlyPrice || 0,
@@ -419,42 +238,7 @@ export class ToolResponseDto implements BaseTool {
         billingPeriods: doc.pricingSummary?.billingPeriods || [],
         pricingModel: doc.pricingSummary?.pricingModel || [],
       },
-      pricingDetails: doc.pricingDetails || [],
       pricingUrl: doc.pricingUrl,
-
-      // Capabilities
-      capabilities: {
-        core: doc.capabilities?.core || [],
-        aiFeatures: {
-          codeGeneration: doc.capabilities?.aiFeatures?.codeGeneration || false,
-          imageGeneration:
-            doc.capabilities?.aiFeatures?.imageGeneration || false,
-          dataAnalysis: doc.capabilities?.aiFeatures?.dataAnalysis || false,
-          voiceInteraction:
-            doc.capabilities?.aiFeatures?.voiceInteraction || false,
-          multimodal: doc.capabilities?.aiFeatures?.multimodal || false,
-          thinkingMode: doc.capabilities?.aiFeatures?.thinkingMode || false,
-        },
-        technical: {
-          apiAccess: doc.capabilities?.technical?.apiAccess || false,
-          webHooks: doc.capabilities?.technical?.webHooks || false,
-          sdkAvailable: doc.capabilities?.technical?.sdkAvailable || false,
-          offlineMode: doc.capabilities?.technical?.offlineMode || false,
-        },
-        integrations: {
-          platforms: doc.capabilities?.integrations?.platforms || [],
-          thirdParty: doc.capabilities?.integrations?.thirdParty || [],
-          protocols: doc.capabilities?.integrations?.protocols || [],
-        },
-      },
-
-      // Use cases
-      useCases: doc.useCases || [],
-
-      // Search optimization
-      searchKeywords: doc.searchKeywords || [],
-      semanticTags: doc.semanticTags || [],
-      aliases: doc.aliases || [],
 
       // Legacy fields
       interface: doc.interface || [],

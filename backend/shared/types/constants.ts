@@ -6,7 +6,7 @@ import { SortOptionUI } from './api.types';
 export const FILTER_OPTIONS = {
   pricing: ['Free', 'Freemium', 'Paid'],
   interface: ['Web', 'API', 'Mobile', 'CLI', 'IDE Extension', "IDE", "Desktop"],
-  deployment: ['Cloud', 'Local'],
+  deployment: ['Cloud', 'Local', 'Self-Hosted'],
 };
 
 // Sort options for UI
