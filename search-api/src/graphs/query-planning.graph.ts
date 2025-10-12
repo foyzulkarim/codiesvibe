@@ -15,11 +15,17 @@ import { enhancedConfidenceRouter } from "@/routers/confidence.router";
  */
 export function createQueryPlanningGraph(): StateGraph<typeof StateAnnotation.State> {
   const workflow = new StateGraph(StateAnnotation)
+    // Router node
+    .addNode("confidence-router", enhancedConfidenceRouter)
+    
     // Planning nodes
     .addNode("optimal-planner", optimalPlannerNode)
     .addNode("multi-strategy-planner", multiStrategyPlannerNode)
     .addNode("fallback-planner", fallbackPlannerNode)
     .addNode("plan-validator", planValidatorNode)
+    
+    // Set the entry point
+    .setEntryPoint("confidence-router")
     
     // Define conditional routing from confidence to planner
     .addConditionalEdges(
@@ -39,7 +45,7 @@ export function createQueryPlanningGraph(): StateGraph<typeof StateAnnotation.St
     
     .addEdge("plan-validator", END);
     
-  return workflow;
+  return workflow as any;
 }
 
 /**

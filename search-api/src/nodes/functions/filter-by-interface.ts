@@ -17,6 +17,10 @@ interface FilterByInterfaceResult {
 export async function filterByInterface(
   params: FilterByInterfaceParams
 ): Promise<FilterByInterfaceResult> {
+
+  // Log the input parameters
+  console.log(`🔍 Filtering tools by interface:`, { params });
+
   const { tools, interfaces } = params;
 
   if (!tools || tools.length === 0 || !interfaces || interfaces.length === 0) {
@@ -52,6 +56,9 @@ export async function filterByInterface(
       );
     });
 
+    // Log the filter results
+    console.log(`🔍 Filtered tools by interface (${interfaces.join(', ')}) - Matched ${filteredTools.length} of ${originalCount}`);
+
     return {
       tools: filteredTools,
       filteredCount: filteredTools.length,
@@ -67,12 +74,23 @@ export async function filterByInterface(
  * LangGraph node function for filterByInterface
  */
 export async function filterByInterfaceNode(state: State): Promise<Partial<State>> {
+
+  // Log the input state
+  console.log(`🔍 filterByInterfaceNode called with state:`, Object.keys(state));
+
   const { intent, executionResults } = state;
+
+  // executionResults and intent log
+  console.log(`🔍 filterByInterfaceNode - executionResults:`, executionResults);
+  console.log(`🔍 filterByInterfaceNode - intent:`, { intent });
 
   // Get the latest results from execution
   const latestResults = executionResults && executionResults.length > 0
-    ? executionResults[executionResults.length - 1].tools || []
+    ? executionResults[executionResults.length - 1].queryResults || []
     : [];
+
+  // Log the latest results
+  console.log(`🔍 filterByInterfaceNode - Latest results:`, { len: latestResults.length });
 
   if (latestResults.length === 0 || !intent.interface || intent.interface.length === 0) {
     return {
@@ -85,7 +103,11 @@ export async function filterByInterfaceNode(state: State): Promise<Partial<State
     interfaces: intent.interface,
   });
 
+  // Log the filter result
+  console.log(`🔍 filterByInterfaceNode - Filter result:`, { result });
+
   return {
+    queryResults: result.tools,
     executionResults: [...(state.executionResults || []), result]
   };
 }

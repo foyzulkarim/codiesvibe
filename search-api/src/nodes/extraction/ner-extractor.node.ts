@@ -1,4 +1,6 @@
-import { StateAnnotation } from "@/types/state";
+import { StateAnnotation } from '@/types/state';
+import { modelConfigs, chatVllmClient } from '@/config/models';
+import { extractJsonFromResponse } from '@/utils/llm-response-handler';
 
 /**
  * Extract tool names using Named Entity Recognition
@@ -26,23 +28,19 @@ Respond with a JSON array of tool names found in the query. If no tool names are
 Example response: ["GitHub", "VS Code", "React"]
 `;
 
-    // Call the LLM for NER
-    // TODO: Implement actual LLM integration
-    const response = await callLLM({
-      prompt,
-      model: "llama3.1", // TODO: Use model config
-      options: {
-        temperature: 0.1,
-        top_p: 0.9
-      },
-      format: "json"
-    });
+    // Call the LLM for NER using LangChain
+    const response = await chatVllmClient.invoke(prompt);
+
+    console.log("nerExtractorNode(): Raw NER response");
 
     let nerResults: string[] = [];
 
     try {
-      // Parse the JSON response
-      nerResults = JSON.parse(response.response);
+      // Use the utility to extract clean JSON from the response
+      const jsonText = extractJsonFromResponse(response);
+      console.log("nerExtractorNode(): Extracted JSON text:", jsonText);
+
+      nerResults = JSON.parse(jsonText);
 
       // Ensure it's an array
       if (!Array.isArray(nerResults)) {
@@ -80,14 +78,4 @@ Example response: ["GitHub", "VS Code", "React"]
       }
     };
   }
-}
-
-// TODO: Implement actual LLM service
-async function callLLM(params: { prompt: string; model: string; options: any; format?: string }): Promise<{ response: string }> {
-  // Mock implementation for now
-  // In real implementation, this would use Ollama or another LLM service
-  const words = params.prompt.split(" ").filter((word: string) =>
-    word.length > 2 && /^[A-Z]/.test(word)
-  );
-  return { response: JSON.stringify(words) };
 }

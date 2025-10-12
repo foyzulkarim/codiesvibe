@@ -7,6 +7,13 @@ export async function completionNode(state: typeof StateAnnotation.State): Promi
   const { queryResults, metadata, routingDecision, plan, qualityAssessment } = state;
   
   try {
+    // Log the input state for debugging
+    console.log('completionNode(): Input state:', {
+      hasQueryResults: !!queryResults,
+      queryResultsLength: queryResults?.length || 0,
+      queryResultsPreview: queryResults?.slice(0, 2).map(r => ({ name: r?.name, id: r?._id })) || []
+    });
+    
     const endTime = new Date();
     const executionTime = metadata.startTime ? endTime.getTime() - metadata.startTime.getTime() : 0;
     
@@ -40,9 +47,7 @@ export async function completionNode(state: typeof StateAnnotation.State): Promi
     } else if (routingDecision === "multi-strategy") {
       strategy = "Multi-Strategy Search";
       explanation = `I used multiple search approaches to find the best results. `;
-      if (metadata.strategiesSuccessful !== undefined) {
-        explanation += `${metadata.strategiesSuccessful} strategies were successfully executed. `;
-      }
+      // Note: strategiesSuccessful property not available in current metadata type
     } else {
       strategy = "Broad Search";
       explanation = `I used a broad search approach to find relevant tools. `;
@@ -64,10 +69,7 @@ export async function completionNode(state: typeof StateAnnotation.State): Promi
       explanation += `Found ${qualityAssessment.resultCount} results with average relevance of ${(qualityAssessment.averageRelevance * 100).toFixed(1)}%. `;
     }
     
-    // Add suggested refinements if available
-    if (state.suggestedRefinements && state.suggestedRefinements.length > 0) {
-      explanation += `For better results, consider: ${state.suggestedRefinements.join(", ")}.`;
-    }
+    // Note: suggestedRefinements property not available in current state type
     
     // Create completion response
     const completion = {
@@ -96,9 +98,8 @@ export async function completionNode(state: typeof StateAnnotation.State): Promi
       metadata: {
         ...metadata,
         endTime,
-        totalExecutionTime: executionTime,
-        finalResultsCount: formattedResults.length,
-        completionGenerated: true
+        originalQuery: metadata.originalQuery || state.query
+        // Note: totalExecutionTime and finalResultsCount not in metadata type
       }
     };
   } catch (error) {
@@ -122,7 +123,8 @@ export async function completionNode(state: typeof StateAnnotation.State): Promi
       metadata: {
         ...state.metadata,
         endTime: new Date(),
-        completionError: error instanceof Error ? error.message : String(error)
+        originalQuery: state.metadata?.originalQuery || state.query
+        // Note: completionError not in metadata type
       }
     };
   }

@@ -71,7 +71,7 @@ export async function filterByFunctionalityNode(state: State): Promise<Partial<S
 
   // Get the latest results from execution
   const latestResults = executionResults && executionResults.length > 0
-    ? executionResults[executionResults.length - 1].tools || []
+    ? executionResults[executionResults.length - 1].queryResults || []
     : [];
 
   if (latestResults.length === 0 || !intent.functionality || intent.functionality.length === 0) {
@@ -86,6 +86,7 @@ export async function filterByFunctionalityNode(state: State): Promise<Partial<S
   });
 
   return {
+    queryResults: result.tools,
     executionResults: [...(state.executionResults || []), result]
   };
 }

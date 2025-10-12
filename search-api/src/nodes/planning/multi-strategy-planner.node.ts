@@ -288,12 +288,7 @@ export async function multiStrategyPlannerNode(state: typeof StateAnnotation.Sta
     return {
       plan,
       metadata: {
-        ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "multi-strategy-planner"],
-        nodeExecutionTimes: {
-          ...(state.metadata?.nodeExecutionTimes || {}),
-          "multi-strategy-planner": Date.now() - (state.metadata?.startTime?.getTime() || Date.now())
-        }
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -316,9 +311,7 @@ export async function multiStrategyPlannerNode(state: typeof StateAnnotation.Sta
     return {
       plan: fallbackPlan,
       metadata: {
-        ...state.metadata,
-        plannerType: "multi-strategy",
-        planError: error instanceof Error ? error.message : String(error)
+        ...state.metadata
       }
     };
   }

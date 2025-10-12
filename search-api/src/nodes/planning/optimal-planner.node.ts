@@ -193,10 +193,7 @@ export async function optimalPlannerNode(state: typeof StateAnnotation.State): P
     return {
       plan,
       metadata: {
-        ...state.metadata,
-        plannerType: "optimal",
-        planConfidence: 0.9, // High confidence for optimal planner
-        stepCount: steps.length
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -219,9 +216,7 @@ export async function optimalPlannerNode(state: typeof StateAnnotation.State): P
     return {
       plan: fallbackPlan,
       metadata: {
-        ...state.metadata,
-        plannerType: "optimal",
-        planError: error instanceof Error ? error.message : String(error)
+        ...state.metadata
       }
     };
   }

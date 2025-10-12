@@ -25,7 +25,8 @@ export async function queryPreprocessorNode(state: typeof StateAnnotation.State)
       "crm": "customer relationship management",
       "cms": "content management system",
       "ai": "artificial intelligence",
-      "ml": "machine learning"
+      "ml": "machine learning",
+      "cli": "command line interface"
     };
 
     for (const [abbr, expansion] of Object.entries(abbreviations)) {

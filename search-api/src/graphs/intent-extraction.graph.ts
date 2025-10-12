@@ -46,7 +46,7 @@ export function createIntentExtractionGraph(): StateGraph<typeof StateAnnotation
     .addNode("confidence-evaluator", confidenceEvaluatorNode)
     
     // Define edges
-    .addEdge("__start__", "query-preprocessor")
+    .setEntryPoint("query-preprocessor")
     
     // Fan out to parallel branches after preprocessing
     .addEdge("query-preprocessor", "semantic-prefilter")
@@ -79,7 +79,7 @@ export function createIntentExtractionGraph(): StateGraph<typeof StateAnnotation
     .addEdge("intent-synthesizer", "confidence-evaluator")
     .addEdge("confidence-evaluator", END);
     
-  return workflow;
+  return workflow as any;
 }
 
 /**

@@ -12,8 +12,7 @@ export async function confidenceEvaluatorNode(state: typeof StateAnnotation.Stat
     return {
       routingDecision: "fallback",
       metadata: {
-        ...state.metadata,
-        routingReason: "No confidence data available"
+        ...state.metadata
       }
     };
   }
@@ -49,13 +48,7 @@ export async function confidenceEvaluatorNode(state: typeof StateAnnotation.Stat
     return {
       routingDecision,
       metadata: {
-        ...state.metadata,
-        routingReason,
-        confidenceEvaluation: {
-          overall,
-          breakdown,
-          thresholds: confidenceThresholds
-        }
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -63,9 +56,7 @@ export async function confidenceEvaluatorNode(state: typeof StateAnnotation.Stat
     return {
       routingDecision: "fallback",
       metadata: {
-        ...state.metadata,
-        routingReason: "Error evaluating confidence",
-        error: error instanceof Error ? error.message : String(error)
+        ...state.metadata
       }
     };
   }

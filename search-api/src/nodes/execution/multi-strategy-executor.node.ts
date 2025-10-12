@@ -12,8 +12,7 @@ export async function multiStrategyExecutorNode(state: typeof StateAnnotation.St
     return {
       queryResults: [],
       metadata: {
-        ...state.metadata,
-        executionError: "No valid multi-strategy plan provided for execution"
+        ...state.metadata
       }
     };
   }
@@ -44,12 +43,7 @@ export async function multiStrategyExecutorNode(state: typeof StateAnnotation.St
     return {
       executionResults,
       metadata: {
-        ...state.metadata,
-        executionPath: [...(state.metadata.executionPath || []), "multi-strategy-executor"],
-        strategiesExecuted: multiStrategyPlan.strategies.length,
-        strategiesSuccessful: executionResults.filter(r => r.success).length,
-        multiStrategyWeights: multiStrategyPlan.weights,
-        mergeStrategy: multiStrategyPlan.mergeStrategy
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -64,9 +58,7 @@ export async function multiStrategyExecutorNode(state: typeof StateAnnotation.St
     return {
       queryResults: [],
       metadata: {
-        ...state.metadata,
-        executionError: error instanceof Error ? error.message : String(error),
-        executionPath: [...(state.metadata.executionPath || []), "multi-strategy-executor"]
+        ...state.metadata
       },
       errors: [...(state.errors || []), newError]
     };
@@ -94,7 +86,10 @@ async function executeSingleStrategy(strategy: Plan, strategyIndex: number, stat
       }
       
       // Prepare input data if step references previous results
-      let stepParams = { ...step.parameters };
+      let stepParams = { 
+        ...step.parameters,
+        ...state // Include the full state to satisfy the State type requirement
+      };
       if (step.inputFromStep !== undefined && step.inputFromStep >= 0 && step.inputFromStep < executionResults.length) {
         stepParams.input = executionResults[step.inputFromStep];
       }
@@ -104,8 +99,8 @@ async function executeSingleStrategy(strategy: Plan, strategyIndex: number, stat
       executionResults.push(stepResult);
       
       // Update current results
-      if (stepResult.results && Array.isArray(stepResult.results)) {
-        currentResults = stepResult.results;
+      if (stepResult.queryResults && Array.isArray(stepResult.queryResults)) {
+        currentResults = stepResult.queryResults;
       } else if (Array.isArray(stepResult)) {
         currentResults = stepResult;
       }

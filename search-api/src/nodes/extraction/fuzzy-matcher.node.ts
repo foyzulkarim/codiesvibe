@@ -1,4 +1,5 @@
 import { StateAnnotation } from "@/types/state";
+import { mongoDBService } from "@/services/mongodb.service";
 
 interface Tool {
   _id: string;
@@ -23,11 +24,7 @@ export async function fuzzyMatcherNode(state: typeof StateAnnotation.State): Pro
 
   try {
     // Get all tools from the database
-    // TODO: Implement actual MongoDB service integration
     const allTools = await getAllTools();
-
-    // Extract tool names for fuzzy matching
-    const toolNames = allTools.map(tool => tool.name);
 
     // Configure Fuse.js for fuzzy searching
     const fuseOptions = {
@@ -84,21 +81,9 @@ export async function fuzzyMatcherNode(state: typeof StateAnnotation.State): Pro
   }
 }
 
-// TODO: Implement actual MongoDB service
+// Implement actual MongoDB service
 async function getAllTools(): Promise<Tool[]> {
-  // Mock implementation for now
-  return [
-    { _id: "1", name: "GitHub", category: "development" },
-    { _id: "2", name: "VS Code", category: "development" },
-    { _id: "3", name: "React", category: "development" },
-    { _id: "4", name: "Docker", category: "development" },
-    { _id: "5", name: "Slack", category: "communication" },
-    { _id: "6", name: "Figma", category: "design" },
-    { _id: "7", name: "Jira", category: "productivity" },
-    { _id: "8", name: "Trello", category: "productivity" },
-    { _id: "9", name: "Notion", category: "productivity" },
-    { _id: "10", name: "Zoom", category: "communication" }
-  ];
+  return await mongoDBService.getAllTools();
 }
 
 // Mock Fuse class - in real implementation this would be from fuse.js

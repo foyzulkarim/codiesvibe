@@ -69,7 +69,7 @@ export async function excludeToolsNode(state: State): Promise<Partial<State>> {
 
   // Get the latest results from execution
   const latestResults = executionResults && executionResults.length > 0
-    ? executionResults[executionResults.length - 1].tools || []
+    ? executionResults[executionResults.length - 1].queryResults || []
     : [];
 
   if (latestResults.length === 0 || (!intent.excludeTools || intent.excludeTools.length === 0)) {
@@ -100,6 +100,7 @@ export async function excludeToolsNode(state: State): Promise<Partial<State>> {
   });
 
   return {
+    queryResults: result.tools,
     executionResults: [...(state.executionResults || []), result]
   };
 }

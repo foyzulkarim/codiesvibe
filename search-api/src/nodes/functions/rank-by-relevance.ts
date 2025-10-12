@@ -40,6 +40,8 @@ export async function rankByRelevance(
 
   const originalCount = tools.length;
 
+  console.log(`🔍 rankByRelevanceNode - Input tools count:`, originalCount);
+
   try {
     // Generate embedding for the query
     const queryEmbedding = await embeddingService.generateEmbedding(query);
@@ -90,6 +92,8 @@ export async function rankByRelevance(
     // Sort by relevance score (descending)
     toolsWithScores.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
+    console.log(`🔍 rankByRelevanceNode - Ranked tools:`, toolsWithScores);
+
     return {
       tools: toolsWithScores,
       rankingStrategy: strategy,
@@ -109,6 +113,8 @@ export async function rankByRelevanceNode(state: State): Promise<Partial<State>>
 
   // Use semantic query from intent or fall back to preprocessed query
   const rankingQuery = intent.semanticQuery || preprocessedQuery || query;
+
+  console.log(`🔍 rankByRelevanceNode - Query:`, rankingQuery, queryResults);
 
   // Get tools to rank
   const toolsToRank = queryResults || [];
@@ -135,7 +141,10 @@ export async function rankByRelevanceNode(state: State): Promise<Partial<State>>
     strategy
   });
 
+  console.log(`🔍 rankByRelevanceNode - Result:`, result);
+
   return {
-    queryResults: result.tools
+    queryResults: result.tools,
+    executionResults: [...(state.executionResults || []), result]
   };
 }

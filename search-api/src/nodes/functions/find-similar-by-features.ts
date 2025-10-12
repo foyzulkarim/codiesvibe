@@ -23,7 +23,7 @@ export async function findSimilarByFeatures(
   const { referenceToolId, limit = 10, filters = {} } = params;
 
   if (!referenceToolId) {
-    return { tools: [], similarities: [], referenceTool: null };
+    return { tools: [], similarities: [], referenceTool: undefined };
   }
 
   try {
@@ -128,6 +128,7 @@ export async function findSimilarByFeaturesNode(state: State): Promise<Partial<S
       });
 
       return {
+        queryResults: result.tools,
         executionResults: [...(state.executionResults || []), result]
       };
     }
@@ -135,10 +136,11 @@ export async function findSimilarByFeaturesNode(state: State): Promise<Partial<S
 
   // If no reference tool found or not a comparative query, return empty results
   return {
+    queryResults: [],
     executionResults: [...(state.executionResults || []), {
       tools: [],
       similarities: [],
-      referenceTool: null
+      referenceTool: undefined
     }]
   };
 }

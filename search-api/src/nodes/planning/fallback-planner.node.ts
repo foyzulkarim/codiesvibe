@@ -1,4 +1,4 @@
-import { StateAnnotation } from "../../types/state";
+import { StateAnnotation } from "@/types/state";
 import { Plan, Function } from "../../types/plan";
 
 /**
@@ -8,7 +8,7 @@ import { Plan, Function } from "../../types/plan";
  * Uses the most reliable available query and optionally adds high-confidence
  * category or interface filters.
  */
-export const fallbackPlannerNode = (state: StateAnnotation.State): Partial<StateAnnotation.State> => {
+export const fallbackPlannerNode = (state: typeof StateAnnotation.State): Partial<typeof StateAnnotation.State> => {
   try {
     const { intent, query, preprocessedQuery } = state;
     

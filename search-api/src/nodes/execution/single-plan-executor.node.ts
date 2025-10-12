@@ -12,8 +12,7 @@ export async function singlePlanExecutorNode(state: typeof StateAnnotation.State
     return {
       queryResults: [],
       metadata: {
-        ...state.metadata,
-        executionError: "No valid single plan provided for execution"
+        ...state.metadata
       }
     };
   }
@@ -34,22 +33,38 @@ export async function singlePlanExecutorNode(state: typeof StateAnnotation.State
         throw new Error(`Unknown function: ${step.name}`);
       }
       
-      // Prepare input data if step references previous results
-      let stepParams = { ...step.parameters };
+      // Prepare a modified state for this step execution
+      let stepState = { ...state };
+      
+      // If this step references previous results, update the state with those results
       if (step.inputFromStep !== undefined && step.inputFromStep >= 0 && step.inputFromStep < executionResults.length) {
-        stepParams.input = executionResults[step.inputFromStep];
+        const previousResult = executionResults[step.inputFromStep];
+        // Update the executionResults to include the previous step's result
+        stepState.executionResults = [...(state.executionResults || []), previousResult];
+        
+        // Also update queryResults if the previous result has tools
+        if (previousResult.tools || previousResult.queryResults) {
+          stepState.queryResults = previousResult.tools || previousResult.queryResults;
+        }
       }
       
-      // Execute the function
-      const stepResult = await executor(stepParams);
+      // Execute the function with the modified state
+      const stepResult = await executor(stepState);
       executionResults.push(stepResult);
       
       // Update current results for the next step
-      if (stepResult.results && Array.isArray(stepResult.results)) {
-        currentResults = stepResult.results;
+      if (stepResult.queryResults && Array.isArray(stepResult.queryResults)) {
+        currentResults = stepResult.queryResults;
       } else if (Array.isArray(stepResult)) {
         currentResults = stepResult;
       }
+      
+      // Log the step result for debugging
+      console.log(`Step ${i + 1} (${step.name}) result:`, {
+        hasQueryResults: !!stepResult.queryResults,
+        queryResultsLength: stepResult.queryResults?.length || 0,
+        currentResultsLength: currentResults.length
+      });
       
       // Log execution time
       const executionTime = Date.now() - startTime;
@@ -57,16 +72,23 @@ export async function singlePlanExecutorNode(state: typeof StateAnnotation.State
       
       // Update metadata with execution time
       state.metadata.nodeExecutionTimes[`${step.name}_${i}`] = executionTime;
+
+      // step.name
+      state.metadata.name = step.name;
     }
+    
+    // Log final state before returning
+    console.log('singlePlanExecutorNode(): Final state before return:', {
+      executionResultsLength: executionResults.length,
+      currentResultsLength: currentResults.length,
+      currentResultsPreview: currentResults.slice(0, 2).map(r => ({ name: r?.name, id: r?._id }))
+    });
     
     return {
       executionResults,
       queryResults: currentResults,
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata.executionPath || []), "single-plan-executor"],
-        lastExecutionPlan: singlePlan.description,
-        stepsExecuted: singlePlan.steps.length
       }
     };
   } catch (error) {
@@ -82,9 +104,7 @@ export async function singlePlanExecutorNode(state: typeof StateAnnotation.State
     return {
       queryResults: [],
       metadata: {
-        ...state.metadata,
-        executionError: error instanceof Error ? error.message : String(error),
-        executionPath: [...(state.metadata.executionPath || []), "single-plan-executor"]
+        ...state.metadata
       },
       errors: [...(state.errors || []), newError]
     };

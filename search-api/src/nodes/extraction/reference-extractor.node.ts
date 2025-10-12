@@ -1,4 +1,6 @@
-import { StateAnnotation } from "@/types/state";
+import { StateAnnotation } from '@/types/state';
+import { modelConfigs, chatVllmClient } from '@/config/models';
+import { extractCleanContent } from '@/utils/llm-response-handler';
 
 function extractReferenceTool(query: string): string | null {
   // Pattern-based extraction for common comparative structures
@@ -35,7 +37,7 @@ export async function referenceExtractorNode(state: typeof StateAnnotation.State
     return {
       extractionSignals: {
         ...extractionSignals,
-        referenceTool: null
+        referenceTool: undefined
       }
     };
   }
@@ -54,18 +56,10 @@ Query: "${preprocessedQuery}"
 Respond with only the name of the reference tool. If no reference tool is found, respond with "none".
 `;
 
-      // Call the LLM for reference extraction
-      // TODO: Implement actual LLM integration
-      const response = await callLLM({
-        prompt,
-        model: "llama3.1", // TODO: Use model config
-        options: {
-          temperature: 0.1,
-          top_p: 0.9
-        }
-      });
+      // Call the LLM for reference extraction using LangChain
+      const response = await chatVllmClient.invoke(prompt);
 
-      const extractedTool = response.response.trim();
+      const extractedTool = extractCleanContent(response).trim();
 
       if (extractedTool.toLowerCase() !== "none") {
         referenceTool = extractedTool;
@@ -83,15 +77,8 @@ Respond with only the name of the reference tool. If no reference tool is found,
     return {
       extractionSignals: {
         ...extractionSignals,
-        referenceTool: null
+        referenceTool: undefined
       }
     };
   }
-}
-
-// TODO: Implement actual LLM service
-async function callLLM(params: { prompt: string; model: string; options: any }): Promise<{ response: string }> {
-  // Mock implementation for now
-  const words = params.prompt.split(" ");
-  return { response: words[0] || "none" };
 }

@@ -71,8 +71,10 @@ export async function filterByDeploymentNode(state: State): Promise<Partial<Stat
 
   // Get the latest results from execution
   const latestResults = executionResults && executionResults.length > 0
-    ? executionResults[executionResults.length - 1].tools || []
+    ? executionResults[executionResults.length - 1].queryResults || []
     : [];
+
+  console.log(`🔍 filterByDeploymentNode - Input tools count:`, latestResults.length);
 
   if (latestResults.length === 0 || !intent.deployment || intent.deployment.length === 0) {
     return {
@@ -85,7 +87,10 @@ export async function filterByDeploymentNode(state: State): Promise<Partial<Stat
     deployment: intent.deployment,
   });
 
+  console.log(`🔍 filterByDeploymentNode - Filter result:`, { result });
+
   return {
+    queryResults: result.tools,
     executionResults: [...(state.executionResults || []), result]
   };
 }

@@ -4,10 +4,10 @@ function extractDeploymentPreferences(query: string): string[] {
   const preferences: string[] = [];
 
   const deploymentPatterns: Record<string, RegExp> = {
-    "cloud": /\b(cloud|saas|online|hosted|aws|azure|gcp)\b/gi,
-    "on-premise": /\b(on.?premise|self.?hosted|local|in.?house|internal)\b/gi,
-    "hybrid": /\b(hybrid|mixed|both|partial)\b/gi,
-    "docker": /\b(docker|container|kubernetes|k8s)\b/gi
+    "Cloud": /\b(cloud|saas|online|hosted|aws|azure|gcp)\b/gi,
+    "Self-Hosted": /\b(on.?premise|self.?hosted|local|in.?house|internal)\b/gi,
+    "Hybrid": /\b(hybrid|mixed|both|partial)\b/gi,
+    "Docker": /\b(docker|container|kubernetes|k8s)\b/gi
   };
 
   for (const [deploymentType, pattern] of Object.entries(deploymentPatterns)) {

@@ -6,12 +6,18 @@ import { StateAnnotation } from "@/types/state";
 export async function resultMergerNode(state: typeof StateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
   const { executionResults, plan } = state;
   
+  console.log('resultMergerNode(): Called with:', {
+    hasExecutionResults: !!executionResults,
+    executionResultsLength: executionResults?.length || 0,
+    plan: plan ? 'present' : 'missing'
+  });
+  
   if (!executionResults || executionResults.length === 0) {
+    console.log('resultMergerNode(): No execution results, returning empty array');
     return {
       queryResults: [],
       metadata: {
-        ...state.metadata,
-        mergeError: "No execution results to merge"
+        ...state.metadata
       }
     };
   }
@@ -19,17 +25,32 @@ export async function resultMergerNode(state: typeof StateAnnotation.State): Pro
   // Check if this is multi-strategy execution
   const isMultiStrategy = plan && "strategies" in plan;
   
+  console.log('resultMergerNode(): isMultiStrategy:', isMultiStrategy);
+  
   if (!isMultiStrategy) {
     // For single strategy execution, just return the results
     const lastResult = executionResults[executionResults.length - 1];
-    const results = lastResult.results || [];
+    
+    console.log('resultMergerNode(): Last result structure:', {
+      hasResults: !!lastResult.results,
+      hasQueryResults: !!lastResult.queryResults,
+      resultsLength: lastResult.results?.length || 0,
+      queryResultsLength: lastResult.queryResults?.length || 0,
+      lastResultKeys: Object.keys(lastResult)
+    });
+    
+    // Try to get results from either results or queryResults field
+    const results = lastResult.queryResults || lastResult.results || [];
+    
+    console.log('resultMergerNode(): Single strategy, returning results:', {
+      resultsLength: results.length,
+      resultsPreview: results.slice(0, 2).map(r => ({ name: r?.name, id: r?._id }))
+    });
     
     return {
       queryResults: results,
       metadata: {
-        ...state.metadata,
-        mergeStrategy: "single-strategy",
-        resultsCount: results.length
+        ...state.metadata
       }
     };
   }
@@ -58,11 +79,7 @@ export async function resultMergerNode(state: typeof StateAnnotation.State): Pro
     return {
       queryResults: mergedResults,
       metadata: {
-        ...state.metadata,
-        mergeStrategy,
-        resultsBeforeMerge: executionResults.reduce((sum, result) => sum + (result.results?.length || 0), 0),
-        resultsAfterMerge: mergedResults.length,
-        strategiesMerged: executionResults.length
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -74,10 +91,7 @@ export async function resultMergerNode(state: typeof StateAnnotation.State): Pro
     return {
       queryResults: allResults,
       metadata: {
-        ...state.metadata,
-        mergeStrategy: "fallback-concat",
-        mergeError: error instanceof Error ? error.message : String(error),
-        resultsCount: allResults.length
+        ...state.metadata
       }
     };
   }

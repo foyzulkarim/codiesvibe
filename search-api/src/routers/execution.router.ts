@@ -54,12 +54,12 @@ export async function executionRouter(state: typeof StateAnnotation.State): Prom
 /**
  * Post-execution router to determine if result merging is needed
  */
-export async function postExecutionRouter(state: typeof StateAnnotation.State): Promise<"result-merger" | "completion"> {
+export async function postExecutionRouter(state: typeof StateAnnotation.State): Promise<"result-merger" | "execution-completion"> {
   const { executionResults, plan } = state;
   
   if (!executionResults || executionResults.length === 0) {
-    console.log("Post-execution router: No execution results, routing to completion");
-    return "completion";
+    console.log("Post-execution router: No execution results, routing to execution-completion");
+    return "execution-completion";
   }
   
   // Check if this was a multi-strategy execution
@@ -69,7 +69,7 @@ export async function postExecutionRouter(state: typeof StateAnnotation.State): 
     console.log("Post-execution router: Multi-strategy execution detected, routing to result-merger");
     return "result-merger";
   } else {
-    console.log("Post-execution router: Single strategy execution, routing to completion");
-    return "completion";
+    console.log("Post-execution router: Single strategy execution, routing to execution-completion");
+    return "execution-completion";
   }
 }

@@ -42,6 +42,19 @@ export const StateAnnotation = Annotation.Root({
   executionResults: Annotation<any[]>,
   queryResults: Annotation<any[]>,
 
+  // Final Results
+  completion: Annotation<{
+    query: string;
+    strategy: string;
+    results: any[];
+    explanation: string;
+    metadata: {
+      executionTime: string;
+      resultsCount: number;
+      error?: string;
+    };
+  }>,
+
   // Quality Assessment
   qualityAssessment: Annotation<{
     resultCount: number;
@@ -70,6 +83,11 @@ export const StateAnnotation = Annotation.Root({
     endTime?: Date;
     executionPath: string[];
     nodeExecutionTimes: Record<string, number>;
+    threadId?: string;
+    originalQuery?: string;
+    recoveryTime?: Date;
+    rollbackTime?: Date;
+    name: string;
   }>
 });
 

@@ -1,3 +1,5 @@
+import { enumValues } from "@/config/constants";
+import { embeddingService } from "@/services/embedding.service";
 import { StateAnnotation } from "@/types/state";
 
 /**
@@ -23,26 +25,14 @@ export async function semanticPrefilterNode(state: typeof StateAnnotation.State)
   }
 
   try {
-    // Generate embedding for the preprocessed query
-    // TODO: Implement embedding service integration
-    const queryEmbedding = await generateEmbedding(preprocessedQuery);
+    // Generate embedding for the preprocessed query    
+    const queryEmbedding = await embeddingService.generateEmbedding(preprocessedQuery);
 
     // Get pre-computed embeddings for enum values
-    // TODO: Implement embedding service for enum values
     const enumEmbeddings = await getEnumEmbeddings();
 
     // Find similar candidates for each enum type
     const semanticCandidates: Record<string, Array<{ value: string; score: number }>> = {};
-
-    // Mock enum values for now - these should come from constants
-    const enumValues = {
-      categories: ["development", "design", "productivity", "communication", "data"],
-      functionality: ["code editing", "version control", "project management", "collaboration", "analytics"],
-      userTypes: ["developers", "designers", "project managers", "business analysts", "data scientists"],
-      interface: ["web app", "desktop app", "mobile app", "cli", "api"],
-      deployment: ["cloud", "on-premise", "hybrid", "saas", "self-hosted"],
-      pricingModel: ["free", "freemium", "subscription", "one-time", "usage-based"]
-    };
 
     // Categories
     const categoryCandidates = findMostSimilar(
@@ -134,21 +124,21 @@ export async function semanticPrefilterNode(state: typeof StateAnnotation.State)
   }
 }
 
-// TODO: Move these to embedding service
-async function generateEmbedding(text: string): Promise<number[]> {
-  // Mock implementation - replace with actual embedding service
-  return Array.from({ length: 384 }, () => Math.random());
-}
 
 async function getEnumEmbeddings(): Promise<any> {
-  // Mock implementation - replace with actual enum embeddings
+  const categories = await embeddingService.generateEmbeddings(enumValues.categories);
+  const functionality = await embeddingService.generateEmbeddings(enumValues.functionality);
+  const userTypes = await embeddingService.generateEmbeddings(enumValues.userTypes);
+  const interfaceEmbeddings = await embeddingService.generateEmbeddings(enumValues.interface);
+  const deployment = await embeddingService.generateEmbeddings(enumValues.deployment);
+  const pricingModel = await embeddingService.generateEmbeddings(enumValues.pricingModel);
   return {
-    categories: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) })),
-    functionality: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) })),
-    userTypes: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) })),
-    interface: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) })),
-    deployment: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) })),
-    pricingModel: Array.from({ length: 5 }, () => ({ embedding: Array.from({ length: 384 }, () => Math.random()) }))
+    categories: categories.map(embedding => ({ embedding })),
+    functionality: functionality.map(embedding => ({ embedding })),
+    userTypes: userTypes.map(embedding => ({ embedding })),
+    interface: interfaceEmbeddings.map(embedding => ({ embedding })),
+    deployment: deployment.map(embedding => ({ embedding })),
+    pricingModel: pricingModel.map(embedding => ({ embedding }))
   };
 }
 
@@ -164,8 +154,19 @@ function findMostSimilar(queryEmbedding: number[], candidateEmbeddings: number[]
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
-  const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
+  // Add null/undefined checks
+  if (!a || !b || a.length === 0 || b.length === 0) {
+    return 0;
+  }
+  
+  const dotProduct = a.reduce((sum, val, i) => sum + val * (b[i] || 0), 0);
   const normA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
   const normB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+  
+  // Avoid division by zero
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+  
   return dotProduct / (normA * normB);
 }

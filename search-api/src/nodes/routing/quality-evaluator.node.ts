@@ -17,8 +17,7 @@ export async function qualityEvaluatorNode(state: typeof StateAnnotation.State):
         decision: "expand"
       },
       metadata: {
-        ...state.metadata,
-        qualityReason: "No results found"
+        ...state.metadata
       }
     };
   }
@@ -93,12 +92,7 @@ export async function qualityEvaluatorNode(state: typeof StateAnnotation.State):
         decision
       },
       metadata: {
-        ...state.metadata,
-        qualityReason,
-        qualityMetrics: {
-          thresholds: qualityThresholds,
-          iterations: currentIterations
-        }
+        ...state.metadata
       }
     };
   } catch (error) {
@@ -111,9 +105,7 @@ export async function qualityEvaluatorNode(state: typeof StateAnnotation.State):
         decision: "accept"
       },
       metadata: {
-        ...state.metadata,
-        qualityReason: "Error evaluating quality, accepting results",
-        error: error instanceof Error ? error.message : String(error)
+        ...state.metadata
       }
     };
   }

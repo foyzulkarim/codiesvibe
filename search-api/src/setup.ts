@@ -1,6 +1,7 @@
 import { MongoDBService } from "./services/mongodb.service";
 import { QdrantService } from "./services/qdrant.service";
 import { EmbeddingService } from "./services/embedding.service";
+import { vectorSeedingService } from "./services/vector-seeding.service";
 import { enumValues, embeddingConfig } from "./config/constants";
 
 /**
@@ -15,7 +16,6 @@ export async function precomputeEnumEmbeddings(): Promise<void> {
   console.log("🧠 Pre-computing enum embeddings...");
   
   const embeddingService = new EmbeddingService();
-  await embeddingService.initialize();
   
   const embeddingCache = new Map<string, number[]>();
   
@@ -70,6 +70,63 @@ export async function precomputeEnumEmbeddings(): Promise<void> {
 }
 
 /**
+ * Seed vectors for all tools in the database
+ */
+export async function seedVectors(options: {
+  force?: boolean;
+  silent?: boolean;
+} = {}): Promise<void> {
+  // Check if vector seeding should run based on environment variable
+  const shouldRunFromEnv = process.env.VECTOR_SEED_ON_SETUP === 'true';
+  
+  if (!shouldRunFromEnv && !options.silent) {
+    console.log("⏭️ Skipping vector seeding (VECTOR_SEED_ON_SETUP not set)");
+    return;
+  }
+
+  if (!options.silent) {
+    console.log("🌱 Starting vector seeding process...");
+  }
+
+  try {
+    // Set up progress callback for logging
+    const progressCallback = (progress: any) => {
+      if (!options.silent) {
+        const percentage = progress.total > 0
+          ? Math.round((progress.processed / progress.total) * 100)
+          : 0;
+        
+        console.log(`  🔄 Progress: ${progress.processed}/${progress.total} (${percentage}%) - ✅ ${progress.successful} - ❌ ${progress.failed}`);
+        
+        if (progress.currentBatch && progress.totalBatches) {
+          console.log(`  📦 Batch ${progress.currentBatch}/${progress.totalBatches}`);
+        }
+      }
+    };
+
+    // Start seeding with progress tracking
+    await vectorSeedingService.seedTools({
+      force: options.force,
+      onProgress: progressCallback
+    });
+
+    if (!options.silent) {
+      console.log("✅ Vector seeding completed successfully");
+      
+      // Get final stats
+      const stats = vectorSeedingService.getSeedingStats();
+      console.log(`📊 Final stats: ${stats.indexedTools}/${stats.totalTools} tools indexed (${stats.successRate.toFixed(1)}%)`);
+    }
+  } catch (error) {
+    if (!options.silent) {
+      console.error("❌ Vector seeding failed:", error);
+      console.warn("⚠️ Vector seeding failed, but continuing with setup process");
+    }
+    // Don't throw error - vector seeding failure shouldn't break the entire setup
+  }
+}
+
+/**
  * Initialize database connections and validate they're working
  */
 export async function initializeDatabases(): Promise<void> {
@@ -79,22 +136,9 @@ export async function initializeDatabases(): Promise<void> {
   console.log("  🍃 Connecting to MongoDB...");
   const mongoService = new MongoDBService();
   try {
-    await mongoService.connect();
-    await mongoService.ping();
+    // Test connection by getting all tools
+    await mongoService.getAllTools();
     console.log("  ✅ MongoDB connection successful");
-    
-    // Verify collections exist
-    const db = mongoService.getDatabase();
-    const collections = await db.listCollections().toArray();
-    const collectionNames = collections.map(c => c.name);
-    
-    if (!collectionNames.includes("tools")) {
-      console.log("  ⚠️ 'tools' collection not found, creating...");
-      await db.createCollection("tools");
-      console.log("  ✅ Created 'tools' collection");
-    }
-    
-    await mongoService.disconnect();
   } catch (error) {
     console.error("  ❌ MongoDB connection failed:", error);
     throw new Error(`MongoDB initialization failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -104,24 +148,8 @@ export async function initializeDatabases(): Promise<void> {
   console.log("  🔍 Connecting to Qdrant...");
   const qdrantService = new QdrantService();
   try {
-    await qdrantService.healthCheck();
-    
-    // Verify collection exists
-    const collections = await qdrantService.listCollections();
-    const toolCollection = collections.find(c => c.name === "tools");
-    
-    if (!toolCollection) {
-      console.log("  ⚠️ 'tools' collection not found in Qdrant, creating...");
-      await qdrantService.createCollection("tools", {
-        vectors: {
-          size: embeddingConfig.dimensions,
-          distance: "Cosine"
-        }
-      });
-      console.log("  ✅ Created 'tools' collection in Qdrant");
-    } else {
-      console.log("  ✅ Qdrant 'tools' collection exists");
-    }
+    await qdrantService.getCollectionInfo();
+    console.log("  ✅ Qdrant 'tools' collection exists");
   } catch (error) {
     console.error("  ❌ Qdrant connection failed:", error);
     throw new Error(`Qdrant initialization failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -186,7 +214,6 @@ export async function testServices(): Promise<void> {
   // Test embedding service
   console.log("  🧠 Testing embedding service...");
   const embeddingService = new EmbeddingService();
-  await embeddingService.initialize();
   
   try {
     const testEmbedding = await embeddingService.generateEmbedding("test query");
@@ -203,12 +230,7 @@ export async function testServices(): Promise<void> {
   console.log("  🍃 Testing MongoDB service...");
   const mongoService = new MongoDBService();
   try {
-    await mongoService.connect();
-    const db = mongoService.getDatabase();
-    const testDoc = { test: true, timestamp: new Date() };
-    await db.collection("test").insertOne(testDoc);
-    await db.collection("test").deleteOne({ test: true });
-    await mongoService.disconnect();
+    await mongoService.getAllTools();
     console.log("  ✅ MongoDB service test passed");
   } catch (error) {
     console.error("  ❌ MongoDB service test failed:", error);
@@ -219,7 +241,7 @@ export async function testServices(): Promise<void> {
   console.log("  🔍 Testing Qdrant service...");
   const qdrantService = new QdrantService();
   try {
-    await qdrantService.healthCheck();
+    await qdrantService.getCollectionInfo();
     console.log("  ✅ Qdrant service test passed");
   } catch (error) {
     console.error("  ❌ Qdrant service test failed:", error);
@@ -230,7 +252,11 @@ export async function testServices(): Promise<void> {
 /**
  * Main setup function that orchestrates all initialization steps
  */
-export async function setupServices(): Promise<void> {
+export async function setupServices(options: {
+  seedVectors?: boolean;
+  forceSeedVectors?: boolean;
+  silent?: boolean;
+} = {}): Promise<void> {
   const startTime = Date.now();
   
   console.log("🚀 Setting up Intelligent Search System...\n");
@@ -240,6 +266,14 @@ export async function setupServices(): Promise<void> {
     await initializeDatabases();
     await testServices();
     await precomputeEnumEmbeddings();
+    
+    // Optionally seed vectors
+    if (options.seedVectors || process.env.VECTOR_SEED_ON_SETUP === 'true') {
+      await seedVectors({
+        force: options.forceSeedVectors,
+        silent: options.silent
+      });
+    }
     
     const duration = Date.now() - startTime;
     console.log(`\n✅ Setup completed successfully in ${duration}ms`);
@@ -258,8 +292,13 @@ export async function setupServicesAdvanced(options: {
   populateSampleData?: boolean;
   enableMetrics?: boolean;
   warmupCache?: boolean;
+  seedVectors?: boolean;
+  forceSeedVectors?: boolean;
 } = {}): Promise<void> {
-  await setupServices();
+  await setupServices({
+    seedVectors: options.seedVectors,
+    forceSeedVectors: options.forceSeedVectors
+  });
   
   if (options.populateSampleData) {
     console.log("\n📝 Populating sample data...");
@@ -289,6 +328,8 @@ if (require.main === module) {
   const populateData = args.includes("--populate-data");
   const enableMetrics = args.includes("--metrics");
   const warmupCache = args.includes("--warmup");
+  const seedVectors = args.includes("--seed-vectors");
+  const forceSeedVectors = args.includes("--force-seed-vectors");
   
   async function main() {
     try {
@@ -296,16 +337,25 @@ if (require.main === module) {
         await setupServicesAdvanced({
           populateSampleData: populateData,
           enableMetrics: enableMetrics,
-          warmupCache: warmupCache
+          warmupCache: warmupCache,
+          seedVectors: seedVectors,
+          forceSeedVectors: forceSeedVectors
         });
       } else {
-        await setupServices();
+        await setupServices({
+          seedVectors: seedVectors,
+          forceSeedVectors: forceSeedVectors
+        });
       }
       
       console.log("\n💡 Next steps:");
       console.log("  1. Start the search API: npm run dev");
       console.log("  2. Test with: npm start \"React tools\"");
       console.log("  3. Check health: npm start --health");
+      
+      if (seedVectors) {
+        console.log("  4. Vector search is now available with indexed tools");
+      }
       
     } catch (error) {
       console.error("\n💥 Setup failed!");

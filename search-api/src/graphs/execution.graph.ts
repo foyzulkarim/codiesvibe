@@ -37,10 +37,10 @@ export function createExecutionGraph(): StateGraph<typeof StateAnnotation.State>
     .addNode("single-plan-executor", singlePlanExecutorNode)
     .addNode("multi-strategy-executor", multiStrategyExecutorNode)
     .addNode("result-merger", resultMergerNode)
-    .addNode("completion", completionNode)
+    .addNode("execution-completion", completionNode)
     
-    // Start with quality evaluation (for initial execution, this will route to execution)
-    .addEdge("__start__", "quality-evaluator")
+    // Set the entry point
+    .setEntryPoint("quality-evaluator")
     
     // Route based on quality (first time will route to execution)
     .addConditionalEdges(
@@ -48,7 +48,7 @@ export function createExecutionGraph(): StateGraph<typeof StateAnnotation.State>
       preQualityRouter,
       {
         "execution-router": "execution-router",
-        "completion": "completion"
+        "execution-completion": "execution-completion"
       }
     )
     
@@ -72,7 +72,7 @@ export function createExecutionGraph(): StateGraph<typeof StateAnnotation.State>
       postExecutionRouter,
       {
         "result-merger": "result-merger",
-        "completion": "completion"
+        "execution-completion": "execution-completion"
       }
     )
     
@@ -86,7 +86,7 @@ export function createExecutionGraph(): StateGraph<typeof StateAnnotation.State>
       {
         "refinement-planner": "refinement-planner",
         "expansion-planner": "expansion-planner",
-        "completion": "completion"
+        "execution-completion": "execution-completion"
       }
     )
     
@@ -95,9 +95,9 @@ export function createExecutionGraph(): StateGraph<typeof StateAnnotation.State>
     .addEdge("expansion-planner", "execution-router")
     
     // End at completion
-    .addEdge("completion", END);
+    .addEdge("execution-completion", END);
     
-  return workflow;
+  return workflow as any;
 }
 
 /**
@@ -116,7 +116,8 @@ export async function executePlan(state: typeof StateAnnotation.State): Promise<
     }
   };
   
-  return await compiledGraph.invoke(updatedState);
+  const result = await compiledGraph.invoke(updatedState);
+  return result;
 }
 
 /**
@@ -143,12 +144,12 @@ export async function executeSearch(plan: any, query: string): Promise<any> {
 /**
  * Pre-quality router for initial execution decision
  */
-async function preQualityRouter(state: typeof StateAnnotation.State): Promise<"execution-router" | "completion"> {
+async function preQualityRouter(state: typeof StateAnnotation.State): Promise<"execution-router" | "execution-completion"> {
   // If we don't have results yet, we need to execute
   if (!state.queryResults || state.queryResults.length === 0) {
     return "execution-router";
   }
   
-  // If we have results, evaluate quality
-  return "quality-router";
+  // If we have results, go to completion
+  return "execution-completion";
 }

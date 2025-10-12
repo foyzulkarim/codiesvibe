@@ -166,6 +166,24 @@ export class EmbeddingService {
   clearCache(): void {
     embeddingCache.clear();
   }
+
+  /**
+   * Initialize the embedding service
+   * Ensures Qdrant client is ready and can generate embeddings
+   */
+  async initialize(): Promise<void> {
+    try {
+      // Ensure Qdrant client is initialized
+      if (!this.qdrantClient) {
+        await this.initQdrant();
+      }
+
+      // Test embedding generation with a simple text
+      await this.generateEmbedding("test");
+    } catch (error) {
+      throw new Error(`Embedding service initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 }
 
 // Export singleton instance

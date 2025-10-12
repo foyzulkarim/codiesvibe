@@ -1,4 +1,5 @@
 import { StateAnnotation } from "@/types/state";
+import { embeddingService } from '@/services/embedding.service';
 
 const comparativePatterns: Record<string, RegExp> = {
   direct: /\b(compare|vs|versus|or)\b/gi,
@@ -50,8 +51,7 @@ export async function comparativeDetectorNode(state: typeof StateAnnotation.Stat
     // If no explicit pattern found, use semantic similarity
     if (!comparativeFlag) {
       // Generate embedding for the query
-      // TODO: Implement embedding service integration
-      const queryEmbedding = await generateEmbedding(preprocessedQuery);
+      const queryEmbedding = await embeddingService.generateEmbedding(preprocessedQuery);
 
       // Get embeddings for comparative patterns
       const comparativePatterns = [
@@ -102,10 +102,8 @@ export async function comparativeDetectorNode(state: typeof StateAnnotation.Stat
   }
 }
 
-// TODO: Implement embedding service
 async function generateEmbedding(text: string): Promise<number[]> {
-  // Mock implementation
-  return Array.from({ length: 384 }, () => Math.random());
+  return embeddingService.generateEmbedding(text);
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {

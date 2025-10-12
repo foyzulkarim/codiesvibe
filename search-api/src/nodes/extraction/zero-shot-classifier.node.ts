@@ -1,4 +1,6 @@
-import { StateAnnotation } from "@/types/state";
+import { StateAnnotation } from '@/types/state';
+import { modelConfigs, chatVllmClient } from '@/config/models';
+import { extractCleanContent } from '@/utils/llm-response-handler';
 
 /**
  * Classify query against filtered candidates using zero-shot classification
@@ -42,22 +44,14 @@ Query: "${preprocessedQuery}"
 Respond with only the category name that best matches the query.
 `;
 
-      // Call the LLM for classification
-      // TODO: Implement actual LLM integration
-      const response = await callLLM({
-        prompt,
-        model: "llama3.1", // TODO: Use model config
-        options: {
-          temperature: 0.1,
-          top_p: 0.9
-        }
-      });
+      // Call the LLM for classification using LangChain
+      const response = await chatVllmClient.invoke(prompt);
 
-      const classifiedValue = response.response.trim().toLowerCase();
+      const classifiedValue = extractCleanContent(response).trim().toLowerCase();
 
       // Find the classified value in our candidates and assign a high score
       const matchedCandidate = candidates.find(c =>
-        c.value.toLowerCase() === classifiedValue
+        c.value && c.value.toLowerCase() === classifiedValue
       );
 
       if (matchedCandidate) {
@@ -96,13 +90,4 @@ Respond with only the category name that best matches the query.
       }
     };
   }
-}
-
-// TODO: Implement actual LLM service
-async function callLLM(params: { prompt: string; model: string; options: any }): Promise<{ response: string }> {
-  // Mock implementation for now
-  // In real implementation, this would use Ollama or another LLM service
-  const words = params.prompt.split(" ");
-  const randomWord = words[Math.floor(Math.random() * words.length)];
-  return { response: randomWord };
 }

@@ -4,11 +4,11 @@ function extractInterfacePreferences(query: string): string[] {
   const preferences: string[] = [];
 
   const interfacePatterns: Record<string, RegExp> = {
-    "web app": /\b(web app|web application|browser|online|cloud)\b/gi,
-    "desktop app": /\b(desktop|native|standalone|offline)\b/gi,
-    "mobile app": /\b(mobile|phone|tablet|ios|android)\b/gi,
-    "cli": /\b(cli|command line|terminal|console|shell)\b/gi,
-    "api": /\b(api|rest|graphql|sdk|library)\b/gi
+    "Web App": /\b(web app|web application|browser|online|cloud)\b/gi,
+    "Desktop": /\b(desktop|native|standalone|offline)\b/gi,
+    "Mobile": /\b(mobile|phone|tablet|ios|android)\b/gi,
+    "CLI": /\b(cli|command line|terminal|console|shell)\b/gi,
+    "API": /\b(api|rest|graphql|sdk|library)\b/gi
   };
 
   for (const [interfaceType, pattern] of Object.entries(interfacePatterns)) {
