@@ -1,0 +1,407 @@
+{
+  "version": "1.0",
+  "experiments": [
+    {
+      "id": "enhanced-search-v2",
+      "name": "Enhanced Search v2.0",
+      "description": "Compare enhanced search features with original search",
+      "status": "draft",
+      "startDate": null,
+      "endDate": null,
+      "targeting": {
+        "userSegments": [],
+        "rolloutPercentage": 0,
+        "conditions": []
+      },
+      "variants": [
+        {
+          "id": "enhanced-full",
+          "name": "Enhanced Search Full",
+          "description": "All enhanced features enabled",
+          "weight": 100,
+          "config": {
+            "contextEnrichment": {
+              "enabled": true,
+              "maxEntitiesPerQuery": 5,
+              "minSampleSize": 10,
+              "confidenceThreshold": 0.6,
+              "cacheEnabled": true,
+              "cacheTTL": 3600,
+              "enrichmentStrategy": "qdrant_multi_vector",
+              "maxProcessingTime": 200,
+              "fallbackEnabled": true
+            },
+            "localNLP": {
+              "enabled": true,
+              "nerModel": "Xenova/bert-base-NER",
+              "classificationModel": "Xenova/distilbert-base-uncased",
+              "modelCacheEnabled": true,
+              "modelCacheSize": 2,
+              "confidenceThreshold": 0.7,
+              "maxProcessingTime": 100,
+              "fallbackEnabled": true,
+              "fallbackThreshold": 0.5,
+              "batchProcessingEnabled": true,
+              "maxBatchSize": 10
+            },
+            "multiVectorSearch": {
+              "enabled": true,
+              "vectorTypes": ["semantic", "categories", "functionality", "aliases", "composites"],
+              "mergeStrategy": "reciprocal_rank_fusion",
+              "rrfKValue": 60,
+              "maxResultsPerVector": 20,
+              "deduplicationEnabled": true,
+              "deduplicationThreshold": 0.9,
+              "sourceAttributionEnabled": true,
+              "parallelSearchEnabled": true,
+              "searchTimeout": 5000
+            },
+            "enhancedResultMerging": {
+              "enabled": true,
+              "mergeStrategy": "reciprocal_rank_fusion",
+              "diversityPromotion": true,
+              "sourceWeighting": true
+            },
+            "dynamicExecutionPlanning": {
+              "enabled": true,
+              "stageSkipping": true,
+              "adaptiveRouting": true
+            }
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "response_time",
+          "name": "Response Time",
+          "description": "Average response time in milliseconds",
+          "type": "performance",
+          "unit": "ms",
+          "aggregation": "avg"
+        },
+        {
+          "id": "relevance_score",
+          "name": "Relevance Score",
+          "description": "Average relevance score of search results",
+          "type": "quality",
+          "unit": "score",
+          "aggregation": "avg"
+        },
+        {
+          "id": "user_satisfaction",
+          "name": "User Satisfaction",
+          "description": "User satisfaction rating from feedback",
+          "type": "user",
+          "unit": "rating",
+          "aggregation": "avg"
+        },
+        {
+          "id": "cost_per_query",
+          "name": "Cost per Query",
+          "description": "Average cost per search query",
+          "type": "cost",
+          "unit": "credits",
+          "aggregation": "avg"
+        },
+        {
+          "id": "local_nlp_usage_rate",
+          "name": "Local NLP Usage Rate",
+          "description": "Percentage of queries processed locally",
+          "type": "performance",
+          "unit": "percentage",
+          "aggregation": "avg"
+        },
+        {
+          "id": "cache_hit_rate",
+          "name": "Cache Hit Rate",
+          "description": "Percentage of cache hits",
+          "type": "performance",
+          "unit": "percentage",
+          "aggregation": "avg"
+        },
+        {
+          "id": "error_rate",
+          "name": "Error Rate",
+          "description": "Percentage of failed queries",
+          "type": "reliability",
+          "unit": "percentage",
+          "aggregation": "avg"
+        }
+      ],
+      "successCriteria": {
+        "primaryMetrics": ["response_time", "relevance_score"],
+        "thresholds": {
+          "response_time": {
+            "target": "<200ms for simple queries, <2000ms for complex queries",
+            "improvement": "20% faster than control"
+          },
+          "relevance_score": {
+            "target": ">0.7 average relevance",
+            "improvement": "15% higher than control"
+          },
+          "local_nlp_usage_rate": {
+            "target": ">70%",
+            "improvement": "N/A - baseline metric"
+          },
+          "cost_per_query": {
+            "target": "50% reduction",
+            "improvement": "50% lower than control"
+          }
+        }
+      }
+    },
+    {
+      "id": "context-enrichment-isolated",
+      "name": "Context Enrichment Isolated Test",
+      "description": "Test context enrichment feature in isolation",
+      "status": "draft",
+      "startDate": null,
+      "endDate": null,
+      "targeting": {
+        "userSegments": ["developers"],
+        "rolloutPercentage": 10,
+        "conditions": []
+      },
+      "variants": [
+        {
+          "id": "context-enabled",
+          "name": "Context Enrichment Enabled",
+          "description": "Search with context enrichment",
+          "weight": 100,
+          "config": {
+            "contextEnrichment": {
+              "enabled": true,
+              "maxEntitiesPerQuery": 5,
+              "minSampleSize": 10,
+              "confidenceThreshold": 0.6,
+              "cacheEnabled": true,
+              "cacheTTL": 3600,
+              "enrichmentStrategy": "qdrant_multi_vector",
+              "maxProcessingTime": 200,
+              "fallbackEnabled": true
+            }
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "context_processing_time",
+          "name": "Context Processing Time",
+          "description": "Time taken to process context enrichment",
+          "type": "performance",
+          "unit": "ms",
+          "aggregation": "avg"
+        },
+        {
+          "id": "entity_statistics_quality",
+          "name": "Entity Statistics Quality",
+          "description": "Quality of generated entity statistics",
+          "type": "quality",
+          "unit": "score",
+          "aggregation": "avg"
+        },
+        {
+          "id": "relevance_improvement",
+          "name": "Relevance Improvement",
+          "description": "Improvement in result relevance with context",
+          "type": "quality",
+          "unit": "percentage",
+          "aggregation": "avg"
+        }
+      ],
+      "successCriteria": {
+        "primaryMetrics": ["context_processing_time", "relevance_improvement"],
+        "thresholds": {
+          "context_processing_time": {
+            "target": "<200ms",
+            "improvement": "N/A - performance requirement"
+          },
+          "relevance_improvement": {
+            "target": ">10% improvement",
+            "improvement": "10% higher than control"
+          }
+        }
+      }
+    },
+    {
+      "id": "local-nlp-isolated",
+      "name": "Local NLP Isolated Test",
+      "description": "Test local NLP processing in isolation",
+      "status": "draft",
+      "startDate": null,
+      "endDate": null,
+      "targeting": {
+        "userSegments": [],
+        "rolloutPercentage": 5,
+        "conditions": []
+      },
+      "variants": [
+        {
+          "id": "local-nlp-enabled",
+          "name": "Local NLP Enabled",
+          "description": "NLP processing using local models with fallback",
+          "weight": 100,
+          "config": {
+            "localNLP": {
+              "enabled": true,
+              "nerModel": "Xenova/bert-base-NER",
+              "classificationModel": "Xenova/distilbert-base-uncased",
+              "modelCacheEnabled": true,
+              "modelCacheSize": 2,
+              "confidenceThreshold": 0.7,
+              "maxProcessingTime": 100,
+              "fallbackEnabled": true,
+              "fallbackThreshold": 0.5,
+              "batchProcessingEnabled": true,
+              "maxBatchSize": 10
+            }
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "nlp_processing_time",
+          "name": "NLP Processing Time",
+          "description": "Time taken for NLP processing",
+          "type": "performance",
+          "unit": "ms",
+          "aggregation": "avg"
+        },
+        {
+          "id": "local_nlp_success_rate",
+          "name": "Local NLP Success Rate",
+          "description": "Percentage of queries processed locally without fallback",
+          "type": "performance",
+          "unit": "percentage",
+          "aggregation": "avg"
+        },
+        {
+          "id": "nlp_cost_savings",
+          "name": "NLP Cost Savings",
+          "description": "Cost savings from local NLP processing",
+          "type": "cost",
+          "unit": "credits",
+          "aggregation": "sum"
+        },
+        {
+          "id": "entity_extraction_accuracy",
+          "name": "Entity Extraction Accuracy",
+          "description": "Accuracy of entity extraction compared to LLM baseline",
+          "type": "quality",
+          "unit": "percentage",
+          "aggregation": "avg"
+        }
+      ],
+      "successCriteria": {
+        "primaryMetrics": ["nlp_processing_time", "local_nlp_success_rate", "nlp_cost_savings"],
+        "thresholds": {
+          "nlp_processing_time": {
+            "target": "<100ms",
+            "improvement": "50% faster than LLM"
+          },
+          "local_nlp_success_rate": {
+            "target": ">70%",
+            "improvement": "N/A - baseline metric"
+          },
+          "nlp_cost_savings": {
+            "target": "50% reduction",
+            "improvement": "50% lower than control"
+          }
+        }
+      }
+    },
+    {
+      "id": "merge-strategies-comparison",
+      "name": "Result Merge Strategies Comparison",
+      "description": "Compare different result merging strategies",
+      "status": "draft",
+      "startDate": null,
+      "endDate": null,
+      "targeting": {
+        "userSegments": [],
+        "rolloutPercentage": 5,
+        "conditions": []
+      },
+      "variants": [
+        {
+          "id": "rrf",
+          "name": "Reciprocal Rank Fusion",
+          "description": "RRF merge strategy with k=60",
+          "weight": 33,
+          "config": {
+            "multiVectorSearch": {
+              "mergeStrategy": "reciprocal_rank_fusion",
+              "rrfKValue": 60
+            }
+          }
+        },
+        {
+          "id": "weighted",
+          "name": "Weighted Average",
+          "description": "Weighted average merge strategy",
+          "weight": 33,
+          "config": {
+            "multiVectorSearch": {
+              "mergeStrategy": "weighted_average"
+            }
+          }
+        },
+        {
+          "id": "custom",
+          "name": "Custom Strategy",
+          "description": "Custom merge strategy with diversity promotion",
+          "weight": 34,
+          "config": {
+            "multiVectorSearch": {
+              "mergeStrategy": "custom"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "merge_time",
+          "name": "Merge Time",
+          "description": "Time taken to merge results",
+          "type": "performance",
+          "unit": "ms",
+          "aggregation": "avg"
+        },
+        {
+          "id": "result_diversity",
+          "name": "Result Diversity",
+          "description": "Diversity score of merged results",
+          "type": "quality",
+          "unit": "score",
+          "aggregation": "avg"
+        },
+        {
+          "id": "merge_relevance",
+          "name": "Merge Relevance",
+          "description": "Relevance of merged results",
+          "type": "quality",
+          "unit": "score",
+          "aggregation": "avg"
+        }
+      ],
+      "successCriteria": {
+        "primaryMetrics": ["result_diversity", "merge_relevance"],
+        "thresholds": {
+          "result_diversity": {
+            "target": ">0.7 diversity score",
+            "improvement": "N/A - comparison metric"
+          },
+          "merge_relevance": {
+            "target": ">0.8 relevance score",
+            "improvement": "N/A - comparison metric"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "lastUpdated": "2024-01-01T00:00:00Z",
+    "schemaVersion": "1.0",
+    "description": "A/B testing configuration for enhanced search features"
+  }
+}
