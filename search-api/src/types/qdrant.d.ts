@@ -7,9 +7,16 @@ declare module '@qdrant/js-client-rest' {
     getCollections(): Promise<{ collections: Array<{ name: string }> }>;
     getCollection(collectionName: string): Promise<any>;
     createCollection(collectionName: string, options: {
-      vectors: {
+      vectors?: {
         size: number;
         distance: 'Cosine' | 'Euclid' | 'Dot';
+      };
+      // Support for named vectors
+      vectors_config?: {
+        [vectorName: string]: {
+          size: number;
+          distance: 'Cosine' | 'Euclid' | 'Dot';
+        };
       };
     }): Promise<void>;
     deleteCollection(collectionName: string): Promise<void>;
@@ -18,12 +25,12 @@ declare module '@qdrant/js-client-rest' {
     upsert(collectionName: string, points: {
       batch?: Array<{
         id: string | number;
-        vector: number[];
+        vector?: number[] | { [vectorName: string]: number[] };
         payload?: any;
       }>;
       points?: Array<{
         id: string | number;
-        vector: number[];
+        vector?: number[] | { [vectorName: string]: number[] };
         payload?: any;
       }>;
       wait?: boolean;
@@ -31,29 +38,30 @@ declare module '@qdrant/js-client-rest' {
 
     // Search operations
     search(collectionName: string, params: {
-      vector: number[];
+      vector?: number[];
+      vector_name?: string;
       limit?: number;
       offset?: number;
       filter?: any;
       with_payload?: boolean | string[];
-      with_vector?: boolean;
+      with_vector?: boolean | string[];
       score_threshold?: number;
     }): Promise<Array<{
       id: string | number;
       score: number;
       payload?: any;
-      vector?: number[];
+      vector?: number[] | { [vectorName: string]: number[] };
     }>>;
 
     // Retrieve operations
     retrieve(collectionName: string, params: {
       ids: (string | number)[];
       with_payload?: boolean | string[];
-      with_vector?: boolean;
+      with_vector?: boolean | string[];
     }): Promise<Array<{
       id: string | number;
       payload?: any;
-      vector?: number[];
+      vector?: number[] | { [vectorName: string]: number[] };
     }>>;
 
     // Delete operations

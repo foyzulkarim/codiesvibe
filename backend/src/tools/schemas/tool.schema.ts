@@ -316,6 +316,104 @@ export class Tool {
     default: Date.now,
   })
   lastUpdated?: Date;
+
+  // Enhanced entity relationships (v2.0)
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 10,
+      message: 'toolTypes must have 1-10 entries',
+    },
+  })
+  toolTypes!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 15,
+      message: 'domains must have 1-15 entries',
+    },
+  })
+  domains!: string[];
+
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 20,
+      message: 'capabilities must have 1-20 entries',
+    },
+  })
+  capabilities!: string[];
+
+  // Search optimization fields (v2.0)
+  @Prop({
+    type: [String],
+    validate: {
+      validator: (v: string[]) =>
+        !v || (Array.isArray(v) && v.length <= 10),
+      message: 'aliases must have at most 10 entries',
+    },
+  })
+  aliases?: string[];
+
+  @Prop({
+    type: [String],
+    validate: {
+      validator: (v: string[]) =>
+        !v || (Array.isArray(v) && v.length <= 15),
+      message: 'synonyms must have at most 15 entries',
+    },
+  })
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  @Prop({
+    type: [String],
+    validate: {
+      validator: (v: string[]) =>
+        !v || (Array.isArray(v) && v.length <= 10),
+      message: 'similarTo must have at most 10 entries',
+    },
+  })
+  similarTo?: string[];
+
+  @Prop({
+    type: [String],
+    validate: {
+      validator: (v: string[]) =>
+        !v || (Array.isArray(v) && v.length <= 10),
+      message: 'alternativesFor must have at most 10 entries',
+    },
+  })
+  alternativesFor?: string[];
+
+  @Prop({
+    type: [String],
+    validate: {
+      validator: (v: string[]) =>
+        !v || (Array.isArray(v) && v.length <= 15),
+      message: 'worksWith must have at most 15 entries',
+    },
+  })
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  @Prop({
+    type: [String],
+    required: true,
+    validate: {
+      validator: (v: string[]) =>
+        Array.isArray(v) && v.length >= 1 && v.length <= 15,
+      message: 'commonUseCases must have 1-15 entries',
+    },
+  })
+  commonUseCases!: string[];
 }
 
 export const ToolSchema = SchemaFactory.createForClass(Tool);
@@ -348,6 +446,61 @@ ToolSchema.pre('save', function (next) {
     }
   }
 
+  // Validate and clean new array fields
+  if (this.toolTypes && Array.isArray(this.toolTypes)) {
+    this.toolTypes = this.toolTypes
+      .filter((t: string) => t && t.trim())
+      .map((t: string) => t.trim());
+  }
+
+  if (this.domains && Array.isArray(this.domains)) {
+    this.domains = this.domains
+      .filter((d: string) => d && d.trim())
+      .map((d: string) => d.trim());
+  }
+
+  if (this.capabilities && Array.isArray(this.capabilities)) {
+    this.capabilities = this.capabilities
+      .filter((c: string) => c && c.trim())
+      .map((c: string) => c.trim());
+  }
+
+  if (this.aliases && Array.isArray(this.aliases)) {
+    this.aliases = this.aliases
+      .filter((a: string) => a && a.trim())
+      .map((a: string) => a.trim());
+  }
+
+  if (this.synonyms && Array.isArray(this.synonyms)) {
+    this.synonyms = this.synonyms
+      .filter((s: string) => s && s.trim())
+      .map((s: string) => s.trim());
+  }
+
+  if (this.similarTo && Array.isArray(this.similarTo)) {
+    this.similarTo = this.similarTo
+      .filter((s: string) => s && s.trim())
+      .map((s: string) => s.trim());
+  }
+
+  if (this.alternativesFor && Array.isArray(this.alternativesFor)) {
+    this.alternativesFor = this.alternativesFor
+      .filter((a: string) => a && a.trim())
+      .map((a: string) => a.trim());
+  }
+
+  if (this.worksWith && Array.isArray(this.worksWith)) {
+    this.worksWith = this.worksWith
+      .filter((w: string) => w && w.trim())
+      .map((w: string) => w.trim());
+  }
+
+  if (this.commonUseCases && Array.isArray(this.commonUseCases)) {
+    this.commonUseCases = this.commonUseCases
+      .filter((c: string) => c && c.trim())
+      .map((c: string) => c.trim());
+  }
+
   // Update lastUpdated timestamp
   this.lastUpdated = new Date();
 
@@ -364,6 +517,23 @@ ToolSchema.index({ createdBy: 1 }, { name: 'tool_created_by_index' });
 ToolSchema.index({ categories: 1 }, { name: 'tool_categories_index' });
 ToolSchema.index({ industries: 1 }, { name: 'tool_industries_index' });
 ToolSchema.index({ userTypes: 1 }, { name: 'tool_user_types_index' });
+
+// Enhanced entity relationship indexes (v2.0)
+ToolSchema.index({ toolTypes: 1 }, { name: 'tool_tool_types_index' });
+ToolSchema.index({ domains: 1 }, { name: 'tool_domains_index' });
+ToolSchema.index({ capabilities: 1 }, { name: 'tool_capabilities_index' });
+
+// Search optimization indexes (v2.0)
+ToolSchema.index({ aliases: 1 }, { name: 'tool_aliases_index' });
+ToolSchema.index({ synonyms: 1 }, { name: 'tool_synonyms_index' });
+
+// Context relationship indexes (v2.0)
+ToolSchema.index({ similarTo: 1 }, { name: 'tool_similar_to_index' });
+ToolSchema.index({ alternativesFor: 1 }, { name: 'tool_alternatives_for_index' });
+ToolSchema.index({ worksWith: 1 }, { name: 'tool_works_with_index' });
+
+// Usage pattern indexes (v2.0)
+ToolSchema.index({ commonUseCases: 1 }, { name: 'tool_common_use_cases_index' });
 
 // Pricing indexes
 ToolSchema.index(
@@ -426,4 +596,38 @@ ToolSchema.index(
     popularity: -1,
   },
   { name: 'tool_free_tier_popularity_index' },
+);
+
+// Compound indexes for enhanced v2.0 fields
+ToolSchema.index(
+  {
+    toolTypes: 1,
+    rating: -1,
+  },
+  { name: 'tool_tool_types_rating_index' },
+);
+
+ToolSchema.index(
+  {
+    domains: 1,
+    popularity: -1,
+  },
+  { name: 'tool_domains_popularity_index' },
+);
+
+ToolSchema.index(
+  {
+    capabilities: 1,
+    status: 1,
+  },
+  { name: 'tool_capabilities_status_index' },
+);
+
+ToolSchema.index(
+  {
+    status: 1,
+    commonUseCases: 1,
+    popularity: -1,
+  },
+  { name: 'tool_status_use_cases_popularity_index' },
 );

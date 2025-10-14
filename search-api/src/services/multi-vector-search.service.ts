@@ -10,6 +10,13 @@ import {
   VectorSearchMetricsRecordSchema
 } from '@/types/enhanced-state';
 import { z } from 'zod';
+import {
+  ResultDeduplicator,
+  DeduplicationResult,
+  createMultiVectorDeduplicationConfig,
+  DeduplicationPerformanceMonitor,
+  mergeResultsWithRRF
+} from '@/utils/result-deduplication';
 
 // Type imports for proper TypeScript usage
 type VectorSearchStateType = z.infer<typeof VectorSearchStateSchema>;
@@ -23,33 +30,84 @@ interface VectorSearchCache {
   ttl: number;
 }
 
-// Result deduplication interface
-interface DeduplicationResult {
-  uniqueResults: any[];
-  duplicatesRemoved: number;
-  deduplicationTime: number;
-}
 
-// Source attribution interface
+// Enhanced source attribution interface
 interface SourceAttribution {
   resultId: string;
   sources: {
     vectorType: string;
     score: number;
     rank: number;
+    weight: number;
   }[];
   combinedScore: number;
+  rrfScore: number;
+  weightedScore: number;
+}
+
+// Performance metrics for each vector type
+interface VectorTypePerformanceMetrics {
+  vectorType: string;
+  searchTime: number;
+  resultCount: number;
+  avgSimilarity: number;
+  cacheHitRate: number;
+  errorCount: number;
+  timeoutCount: number;
+}
+
+// Merge strategy configuration
+interface MergeStrategyConfig {
+  strategy: 'reciprocal_rank_fusion' | 'weighted_average' | 'custom' | 'hybrid';
+  rrfKValue: number;
+  vectorWeights: Record<string, number>;
+  diversityThreshold: number;
+  maxResults: number;
+}
+
+// Search result with enhanced metadata
+interface EnhancedSearchResult {
+  id: string;
+  score: number;
+  payload: any;
+  vectorType: string;
+  rank: number;
+  originalScore: number;
+  attribution?: SourceAttribution;
 }
 
 class MultiVectorSearchService {
   private config: MultiVectorSearchConfig;
   private cache: Map<string, VectorSearchCache> = new Map();
+  private performanceMetrics: Map<string, VectorTypePerformanceMetrics> = new Map();
+  private deduplicator: ResultDeduplicator;
+  private deduplicationMonitor: DeduplicationPerformanceMonitor;
+  private lastSearchMetrics: {
+    totalSearchTime: number;
+    vectorTypeMetrics: Record<string, any>;
+    mergeTime: number;
+    deduplicationTime: number;
+    cacheHitRate: number;
+  } | null = null;
 
   constructor(config?: Partial<MultiVectorSearchConfig>) {
     this.config = {
       ...defaultEnhancedSearchConfig.multiVectorSearch,
       ...config
     };
+    
+    // Initialize enhanced deduplicator with RRF configuration
+    const deduplicationConfig = createMultiVectorDeduplicationConfig({
+      similarityThreshold: this.config.deduplicationThreshold,
+      rrfKValue: this.config.rrfKValue,
+      enableScoreMerging: this.config.sourceAttributionEnabled,
+      enableSourceAttribution: this.config.sourceAttributionEnabled,
+      batchSize: 100,
+      enableParallelProcessing: false
+    });
+    
+    this.deduplicator = new ResultDeduplicator(deduplicationConfig);
+    this.deduplicationMonitor = new DeduplicationPerformanceMonitor();
   }
 
   /**
@@ -68,7 +126,7 @@ class MultiVectorSearchService {
   }
 
   /**
-   * Perform multi-vector search across different vector types
+   * Perform multi-vector search across different vector types with enhanced result merging
    */
   async searchMultiVector(
     query: string,
@@ -76,103 +134,101 @@ class MultiVectorSearchService {
       limit?: number;
       filter?: Record<string, any>;
       vectorTypes?: string[];
+      mergeStrategy?: string;
+      rrfKValue?: number;
+      enableSourceAttribution?: boolean;
     } = {}
   ): Promise<VectorSearchStateType> {
     const startTime = Date.now();
     const {
       limit = 20,
       filter = {},
-      vectorTypes = this.config.vectorTypes
+      vectorTypes = this.config.vectorTypes,
+      mergeStrategy = this.config.mergeStrategy,
+      rrfKValue = this.config.rrfKValue,
+      enableSourceAttribution = this.config.sourceAttributionEnabled
     } = options;
 
     try {
       // Check cache first
-      const cacheKey = this.generateCacheKey(query, JSON.stringify({ limit, filter, vectorTypes }));
-      if (this.config.searchTimeout > 0) {
-        const cached = this.getFromCache(cacheKey);
-        if (cached) {
-          return cached;
-        }
+      const cacheKey = this.generateCacheKey(query, JSON.stringify({ limit, filter, vectorTypes, mergeStrategy, rrfKValue }));
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        this.updateCacheMetrics(true);
+        return cached;
       }
+      this.updateCacheMetrics(false);
 
       // Generate query embedding once
       const queryEmbedding = await embeddingService.generateEmbedding(query);
 
       // Initialize search results and metrics
-      const vectorSearchResults: Record<string, any[]> = {};
+      const vectorSearchResults: Record<string, EnhancedSearchResult[]> = {};
       const searchMetrics: Record<string, any> = {};
 
-      // Search across different vector types
+      // Enhanced parallel search across vector types
+      const searchStartTime = Date.now();
       if (this.config.parallelSearchEnabled) {
-        // Parallel search for better performance
-        const searchPromises = vectorTypes.map(vectorType => 
-          this.searchSingleVectorType(queryEmbedding, vectorType, limit, filter)
-        );
-        
-        const results = await Promise.allSettled(searchPromises);
-        
-        results.forEach((result, index) => {
-          const vectorType = vectorTypes[index];
-          if (result.status === 'fulfilled') {
-            vectorSearchResults[vectorType] = result.value.results;
-            searchMetrics[vectorType] = result.value.metrics;
-          } else {
-            console.warn(`Search failed for vector type ${vectorType}:`, result.reason);
-            vectorSearchResults[vectorType] = [];
-            searchMetrics[vectorType] = {
-              resultCount: 0,
-              searchTime: 0,
-              avgSimilarity: 0,
-              error: result.reason
-            };
-          }
-        });
+        await this.performParallelSearch(queryEmbedding, vectorTypes, limit, filter, vectorSearchResults, searchMetrics);
       } else {
-        // Sequential search
-        for (const vectorType of vectorTypes) {
-          try {
-            const result = await this.searchSingleVectorType(queryEmbedding, vectorType, limit, filter);
-            vectorSearchResults[vectorType] = result.results;
-            searchMetrics[vectorType] = result.metrics;
-          } catch (error) {
-            console.warn(`Search failed for vector type ${vectorType}:`, error);
-            vectorSearchResults[vectorType] = [];
-            searchMetrics[vectorType] = {
-              resultCount: 0,
-              searchTime: 0,
-              avgSimilarity: 0,
-              error
-            };
-          }
-        }
+        await this.performSequentialSearch(queryEmbedding, vectorTypes, limit, filter, vectorSearchResults, searchMetrics);
       }
+      const totalSearchTime = Date.now() - searchStartTime;
+
+      // Update performance metrics
+      this.updatePerformanceMetrics(vectorTypes, searchMetrics);
 
       // Convert to proper schema format
       const formattedResults = this.formatSearchResults(vectorSearchResults);
       const formattedMetrics = this.formatSearchMetrics(searchMetrics);
 
-      // Merge results based on configured strategy
+      // Enhanced result merging with configurable strategies
       const mergeStartTime = Date.now();
-      const mergedResults = await this.mergeResults(formattedResults, this.config.mergeStrategy);
+      const mergeConfig: MergeStrategyConfig = {
+        strategy: mergeStrategy as any,
+        rrfKValue,
+        vectorWeights: this.getVectorWeights(),
+        diversityThreshold: 0.7,
+        maxResults: limit
+      };
+      
+      const mergedResults = await this.mergeResultsWithStrategy(formattedResults, mergeConfig, enableSourceAttribution);
       const mergeTime = Date.now() - mergeStartTime;
 
-      // Create vector search state
+      // Enhanced deduplication with RRF
+      const dedupStartTime = Date.now();
+      const deduplicationResult = this.performEnhancedDeduplication(mergedResults);
+      const dedupTime = Date.now() - dedupStartTime;
+      
+      // Record deduplication metrics
+      this.recordDeduplicationMetrics(deduplicationResult, dedupTime);
+
+      // Create enhanced vector search state
       const vectorSearchState: VectorSearchStateType = {
         queryEmbedding,
         vectorSearchResults: formattedResults,
         searchMetrics: formattedMetrics,
-        mergeStrategy: this.config.mergeStrategy
+        mergeStrategy: mergeStrategy as any
+      };
+
+      // Update last search metrics
+      this.lastSearchMetrics = {
+        totalSearchTime,
+        vectorTypeMetrics: searchMetrics,
+        mergeTime,
+        deduplicationTime: dedupTime,
+        cacheHitRate: this.getCacheHitRate()
       };
 
       // Cache the result
-      if (this.config.searchTimeout > 0) {
-        this.setCache(cacheKey, vectorSearchState);
-      }
+      this.setCache(cacheKey, vectorSearchState);
 
-      console.log(`Multi-vector search completed in ${Date.now() - startTime}ms (merge: ${mergeTime}ms)`);
+      console.log(`🔍 Enhanced multi-vector search completed in ${Date.now() - startTime}ms (search: ${totalSearchTime}ms, merge: ${mergeTime}ms, dedup: ${dedupTime}ms)`);
+      console.log(`📊 Results: ${Object.values(vectorSearchResults).reduce((sum, results) => sum + results.length, 0)} total, ${deduplicationResult.uniqueResults.length} unique after deduplication`);
+      
       return vectorSearchState;
     } catch (error) {
-      console.error('Error in multi-vector search:', error);
+      console.error('❌ Error in enhanced multi-vector search:', error);
       throw error;
     }
   }
@@ -237,16 +293,15 @@ class MultiVectorSearchService {
     results: Record<string, any[]>,
     strategy: string
   ): Promise<any[]> {
-    switch (strategy) {
-      case 'reciprocal_rank_fusion':
-        return this.reciprocalRankFusion(results);
-      case 'weighted_average':
-        return this.weightedAverage(results);
-      case 'custom':
-        return this.customMergeStrategy(results);
-      default:
-        return this.reciprocalRankFusion(results);
-    }
+    const config: MergeStrategyConfig = {
+      strategy: strategy as any,
+      rrfKValue: this.config.rrfKValue,
+      vectorWeights: this.getVectorWeights(),
+      diversityThreshold: 0.7,
+      maxResults: 20
+    };
+    
+    return this.mergeResultsWithStrategy(results, config, this.config.sourceAttributionEnabled);
   }
 
   /**
@@ -289,30 +344,214 @@ class MultiVectorSearchService {
 
     // Apply deduplication if enabled
     if (this.config.deduplicationEnabled) {
-      return this.deduplicateResults(mergedResults).uniqueResults;
+      const deduplicationResult = this.performEnhancedDeduplication(mergedResults);
+      return deduplicationResult.uniqueResults;
     }
 
     return mergedResults;
   }
 
   /**
-   * Weighted average merging strategy
+   * Enhanced parallel search across vector types with timeout handling
    */
-  private weightedAverage(results: Record<string, any[]>): any[] {
-    const scoreMap: Record<string, { weightedScore: number; result: any; sources: any[] }> = {};
+  private async performParallelSearch(
+    queryEmbedding: number[],
+    vectorTypes: string[],
+    limit: number,
+    filter: Record<string, any>,
+    vectorSearchResults: Record<string, EnhancedSearchResult[]>,
+    searchMetrics: Record<string, any>
+  ): Promise<void> {
+    const searchPromises = vectorTypes.map(vectorType =>
+      this.searchSingleVectorTypeEnhanced(queryEmbedding, vectorType, limit, filter)
+    );
     
-    // Define weights for different vector types (can be made configurable)
-    const weights: Record<string, number> = {
-      semantic: 1.0,
-      categories: 0.8,
-      functionality: 0.7,
-      aliases: 0.6,
-      composites: 0.5
-    };
+    const results = await Promise.allSettled(searchPromises);
+    
+    results.forEach((result, index) => {
+      const vectorType = vectorTypes[index];
+      if (result.status === 'fulfilled') {
+        vectorSearchResults[vectorType] = result.value.results;
+        searchMetrics[vectorType] = result.value.metrics;
+      } else {
+        console.warn(`⚠️ Search failed for vector type ${vectorType}:`, result.reason);
+        vectorSearchResults[vectorType] = [];
+        searchMetrics[vectorType] = {
+          resultCount: 0,
+          searchTime: 0,
+          avgSimilarity: 0,
+          error: result.reason
+        };
+        this.updateErrorMetrics(vectorType);
+      }
+    });
+  }
 
-    // Calculate weighted scores
+  /**
+   * Enhanced sequential search across vector types
+   */
+  private async performSequentialSearch(
+    queryEmbedding: number[],
+    vectorTypes: string[],
+    limit: number,
+    filter: Record<string, any>,
+    vectorSearchResults: Record<string, EnhancedSearchResult[]>,
+    searchMetrics: Record<string, any>
+  ): Promise<void> {
+    for (const vectorType of vectorTypes) {
+      try {
+        const result = await this.searchSingleVectorTypeEnhanced(queryEmbedding, vectorType, limit, filter);
+        vectorSearchResults[vectorType] = result.results;
+        searchMetrics[vectorType] = result.metrics;
+      } catch (error) {
+        console.warn(`⚠️ Search failed for vector type ${vectorType}:`, error);
+        vectorSearchResults[vectorType] = [];
+        searchMetrics[vectorType] = {
+          resultCount: 0,
+          searchTime: 0,
+          avgSimilarity: 0,
+          error
+        };
+        this.updateErrorMetrics(vectorType);
+      }
+    }
+  }
+
+  /**
+   * Enhanced single vector type search with additional metadata
+   */
+  private async searchSingleVectorTypeEnhanced(
+    queryEmbedding: number[],
+    vectorType: string,
+    limit: number,
+    filter: Record<string, any>
+  ): Promise<{
+    results: EnhancedSearchResult[];
+    metrics: {
+      resultCount: number;
+      searchTime: number;
+      avgSimilarity: number;
+    };
+  }> {
+    const startTime = Date.now();
+    
+    try {
+      // Use Qdrant service's searchByVectorType for named vector support
+      const searchPromise = qdrantService.searchByVectorType(
+        queryEmbedding,
+        vectorType,
+        Math.min(limit * 2, this.config.maxResultsPerVector),
+        filter
+      );
+
+      // Apply timeout if configured
+      const results = this.config.searchTimeout > 0
+        ? await this.withTimeout(searchPromise, this.config.searchTimeout)
+        : await searchPromise;
+
+      const searchTime = Date.now() - startTime;
+      const avgSimilarity = results.length > 0
+        ? results.reduce((sum, result) => sum + result.score, 0) / results.length
+        : 0;
+
+      // Enhance results with additional metadata
+      const enhancedResults: EnhancedSearchResult[] = results.map((result, index) => ({
+        id: result.id || result.payload?.id,
+        score: result.score,
+        payload: result.payload,
+        vectorType,
+        rank: index + 1,
+        originalScore: result.score
+      }));
+
+      return {
+        results: enhancedResults,
+        metrics: {
+          resultCount: results.length,
+          searchTime,
+          avgSimilarity
+        }
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('timed out')) {
+        this.updateTimeoutMetrics(vectorType);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Enhanced result merging with multiple strategies
+   */
+  private async mergeResultsWithStrategy(
+    results: Record<string, any[]>,
+    config: MergeStrategyConfig,
+    enableSourceAttribution: boolean
+  ): Promise<any[]> {
+    switch (config.strategy) {
+      case 'reciprocal_rank_fusion':
+        return this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
+      case 'weighted_average':
+        return this.weightedAverageEnhanced(results, config, enableSourceAttribution);
+      case 'hybrid':
+        return this.hybridMergeStrategy(results, config, enableSourceAttribution);
+      case 'custom':
+        return this.customMergeStrategy(results, config, enableSourceAttribution);
+      default:
+        return this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
+    }
+  }
+
+  /**
+   * Enhanced Reciprocal Rank Fusion (RRF) with k=60 and source attribution
+   */
+  private reciprocalRankFusionEnhanced(
+    results: Record<string, any[]>,
+    config: MergeStrategyConfig,
+    enableSourceAttribution: boolean
+  ): any[] {
+    // Use the enhanced RRF utility function
+    const rrfResults = mergeResultsWithRRF(
+      results,
+      config.rrfKValue,
+      config.vectorWeights,
+      enableSourceAttribution
+    );
+
+    // Convert to expected format and apply diversity filtering
+    let mergedResults = rrfResults.map(item => ({
+      ...item.result,
+      rrfScore: item.rrfScore,
+      weightedScore: item.weightedScore,
+      sources: enableSourceAttribution ? item.sources : undefined,
+      mergedFromCount: item.mergedFromCount
+    }));
+
+    // Apply diversity filtering to ensure result variety
+    mergedResults = this.applyDiversityFiltering(mergedResults, config.diversityThreshold);
+
+    // Limit results
+    return mergedResults.slice(0, config.maxResults);
+  }
+
+  /**
+   * Enhanced weighted average merging strategy
+   */
+  private weightedAverageEnhanced(
+    results: Record<string, any[]>,
+    config: MergeStrategyConfig,
+    enableSourceAttribution: boolean
+  ): any[] {
+    const scoreMap: Record<string, {
+      weightedScore: number;
+      result: any;
+      sources: any[];
+      totalWeight: number;
+    }> = {};
+
+    // Calculate weighted scores with enhanced attribution
     Object.entries(results).forEach(([vectorType, vectorResults]) => {
-      const weight = weights[vectorType] || 0.5;
+      const weight = config.vectorWeights[vectorType] || 1.0;
       
       vectorResults.forEach(result => {
         const resultId = result.id || result.payload?.id || `temp_${Math.random().toString(36).substr(2, 9)}`;
@@ -320,86 +559,311 @@ class MultiVectorSearchService {
         if (!scoreMap[resultId]) {
           scoreMap[resultId] = {
             weightedScore: 0,
+            totalWeight: 0,
             result,
             sources: []
           };
         }
 
         scoreMap[resultId].weightedScore += result.score * weight;
+        scoreMap[resultId].totalWeight += weight;
+        
         scoreMap[resultId].sources.push({
           vectorType,
           score: result.score,
-          weightedScore: result.score * weight
+          weightedScore: result.score * weight,
+          weight
         });
       });
     });
 
-    // Sort by weighted score
-    const mergedResults = Object.values(scoreMap)
-      .sort((a, b) => b.weightedScore - a.weightedScore)
+    // Normalize by total weight and sort
+    let mergedResults = Object.values(scoreMap)
       .map(item => ({
         ...item.result,
-        weightedScore: item.weightedScore,
-        sources: this.config.sourceAttributionEnabled ? item.sources : undefined
-      }));
+        weightedScore: item.totalWeight > 0 ? item.weightedScore / item.totalWeight : 0,
+        sources: enableSourceAttribution ? item.sources : undefined
+      }))
+      .sort((a, b) => b.weightedScore - a.weightedScore);
 
-    // Apply deduplication if enabled
-    if (this.config.deduplicationEnabled) {
-      return this.deduplicateResults(mergedResults).uniqueResults;
-    }
+    // Apply diversity filtering
+    mergedResults = this.applyDiversityFiltering(mergedResults, config.diversityThreshold);
 
-    return mergedResults;
+    return mergedResults.slice(0, config.maxResults);
   }
 
   /**
-   * Custom merge strategy (can be extended based on specific requirements)
+   * Hybrid merge strategy combining RRF and weighted average
    */
-  private customMergeStrategy(results: Record<string, any[]>): any[] {
-    // This is a placeholder for a custom strategy
-    // Can be extended to implement domain-specific merging logic
+  private hybridMergeStrategy(
+    results: Record<string, any[]>,
+    config: MergeStrategyConfig,
+    enableSourceAttribution: boolean
+  ): any[] {
+    // Get results from both strategies
+    const rrfResults = this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
+    const weightedResults = this.weightedAverageEnhanced(results, config, enableSourceAttribution);
+
+    // Combine and re-rank
+    const combinedMap: Record<string, any> = {};
     
-    // For now, fall back to RRF
-    return this.reciprocalRankFusion(results);
+    // Add RRF results
+    rrfResults.forEach((result, index) => {
+      const resultId = result.id || result.payload?.id;
+      if (resultId) {
+        combinedMap[resultId] = {
+          ...result,
+          rrfRank: index + 1,
+          hybridScore: result.rrfScore || result.weightedScore
+        };
+      }
+    });
+
+    // Add weighted average results and update hybrid score
+    weightedResults.forEach((result, index) => {
+      const resultId = result.id || result.payload?.id;
+      if (resultId && combinedMap[resultId]) {
+        combinedMap[resultId].weightedRank = index + 1;
+        combinedMap[resultId].hybridScore = (
+          (combinedMap[resultId].rrfScore || 0) * 0.6 +
+          (result.weightedScore || 0) * 0.4
+        );
+      } else if (resultId) {
+        combinedMap[resultId] = {
+          ...result,
+          weightedRank: index + 1,
+          hybridScore: result.weightedScore
+        };
+      }
+    });
+
+    // Sort by hybrid score
+    return Object.values(combinedMap)
+      .sort((a, b) => b.hybridScore - a.hybridScore)
+      .slice(0, config.maxResults);
   }
 
   /**
-   * Deduplicate results based on similarity threshold
+   * Custom merge strategy with domain-specific logic
    */
-  private deduplicateResults(results: any[]): DeduplicationResult {
-    const startTime = Date.now();
-    const uniqueResults: any[] = [];
-    const seenIds = new Set<string>();
-    let duplicatesRemoved = 0;
+  private customMergeStrategy(
+    results: Record<string, any[]>,
+    config: MergeStrategyConfig,
+    enableSourceAttribution: boolean
+  ): any[] {
+    // For now, fall back to enhanced RRF
+    // This can be extended with domain-specific merging logic
+    return this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
+  }
+
+  /**
+   * Apply diversity filtering to ensure result variety
+   */
+  private applyDiversityFiltering(results: any[], threshold: number): any[] {
+    if (threshold <= 0) return results;
+
+    const diverseResults: any[] = [];
+    const seenCategories = new Set<string>();
+    const seenNames = new Set<string>();
 
     for (const result of results) {
-      const resultId = result.id || result.payload?.id;
+      const category = result.payload?.category;
+      const name = result.payload?.name;
+
+      // Check if result is diverse enough
+      let isDiverse = true;
       
-      if (resultId) {
-        if (!seenIds.has(resultId)) {
-          seenIds.add(resultId);
-          uniqueResults.push(result);
-        } else {
-          duplicatesRemoved++;
-        }
-      } else {
-        // For results without IDs, use content-based deduplication
-        const contentHash = this.generateContentHash(result);
-        if (!seenIds.has(contentHash)) {
-          seenIds.add(contentHash);
-          uniqueResults.push(result);
-        } else {
-          duplicatesRemoved++;
-        }
+      if (category && seenCategories.has(category)) {
+        const categorySimilarity = this.calculateCategorySimilarity(result, diverseResults);
+        if (categorySimilarity > threshold) isDiverse = false;
       }
+
+      if (name && seenNames.has(name)) {
+        isDiverse = false;
+      }
+
+      if (isDiverse) {
+        diverseResults.push(result);
+        if (category) seenCategories.add(category);
+        if (name) seenNames.add(name);
+      }
+
+      if (diverseResults.length >= results.length) break;
     }
 
-    const deduplicationTime = Date.now() - startTime;
+    return diverseResults;
+  }
+
+  /**
+   * Calculate category similarity for diversity filtering
+   */
+  private calculateCategorySimilarity(result: any, existingResults: any[]): number {
+    const resultCategory = result.payload?.category;
+    if (!resultCategory) return 0;
+
+    const similarCount = existingResults.filter(r =>
+      r.payload?.category === resultCategory
+    ).length;
+
+    return similarCount / existingResults.length;
+  }
+
+  /**
+   * Enhanced deduplication using the dedicated deduplicator utility with RRF
+   */
+  private performEnhancedDeduplication(results: any[]): DeduplicationResult {
+    // Update deduplicator configuration if needed
+    const currentConfig = this.deduplicator.getConfig();
+    if (currentConfig.similarityThreshold !== this.config.deduplicationThreshold) {
+      this.deduplicator.updateConfig({
+        similarityThreshold: this.config.deduplicationThreshold,
+        rrfKValue: this.config.rrfKValue,
+        enableSourceAttribution: this.config.sourceAttributionEnabled
+      });
+    }
     
-    return {
-      uniqueResults,
-      duplicatesRemoved,
-      deduplicationTime
+    return this.deduplicator.deduplicate(results);
+  }
+
+  /**
+   * Record deduplication performance metrics
+   */
+  private recordDeduplicationMetrics(result: DeduplicationResult, processingTime: number): void {
+    const metrics = {
+      totalProcessed: result.totalResultsProcessed,
+      uniqueResults: result.uniqueResults.length,
+      duplicatesRemoved: result.duplicatesRemoved,
+      processingTime,
+      averageSimilarityScore: result.averageMergedScore,
+      batchCount: Math.ceil(result.totalResultsProcessed / this.deduplicator.getConfig().batchSize)
     };
+    
+    this.deduplicationMonitor.recordMetrics(metrics);
+  }
+
+  /**
+   * Calculate content similarity between two results
+   */
+  private calculateContentSimilarity(result1: any, result2: any): number {
+    const name1 = (result1.payload?.name || '').toLowerCase();
+    const name2 = (result2.payload?.name || '').toLowerCase();
+    const desc1 = (result1.payload?.description || '').toLowerCase();
+    const desc2 = (result2.payload?.description || '').toLowerCase();
+
+    // Simple similarity calculation (can be enhanced with more sophisticated methods)
+    const nameSimilarity = name1 === name2 ? 1.0 : 0.0;
+    const descSimilarity = this.calculateStringSimilarity(desc1, desc2);
+    
+    return (nameSimilarity * 0.7 + descSimilarity * 0.3);
+  }
+
+  /**
+   * Calculate string similarity using Jaccard similarity
+   */
+  private calculateStringSimilarity(str1: string, str2: string): number {
+    if (!str1 || !str2) return 0;
+    
+    const words1 = new Set(str1.split(/\s+/));
+    const words2 = new Set(str2.split(/\s+/));
+    
+    const intersection = new Set(Array.from(words1).filter(x => words2.has(x)));
+    const union = new Set(Array.from(words1).concat(Array.from(words2)));
+    
+    return intersection.size / union.size;
+  }
+
+  /**
+   * Get vector weights for merging strategies
+   */
+  private getVectorWeights(): Record<string, number> {
+    return {
+      semantic: 1.0,
+      categories: 0.8,
+      functionality: 0.7,
+      aliases: 0.6,
+      composites: 0.5
+    };
+  }
+
+  /**
+   * Update performance metrics for vector types
+   */
+  private updatePerformanceMetrics(vectorTypes: string[], searchMetrics: Record<string, any>): void {
+    vectorTypes.forEach(vectorType => {
+      const metrics = searchMetrics[vectorType];
+      if (!metrics) return;
+
+      const existing = this.performanceMetrics.get(vectorType) || {
+        vectorType,
+        searchTime: 0,
+        resultCount: 0,
+        avgSimilarity: 0,
+        cacheHitRate: 0,
+        errorCount: 0,
+        timeoutCount: 0
+      };
+
+      // Update with exponential moving average
+      const alpha = 0.3; // Smoothing factor
+      existing.searchTime = existing.searchTime * (1 - alpha) + metrics.searchTime * alpha;
+      existing.resultCount = existing.resultCount * (1 - alpha) + metrics.resultCount * alpha;
+      existing.avgSimilarity = existing.avgSimilarity * (1 - alpha) + metrics.avgSimilarity * alpha;
+
+      this.performanceMetrics.set(vectorType, existing);
+    });
+  }
+
+  /**
+   * Update error metrics for vector types
+   */
+  private updateErrorMetrics(vectorType: string): void {
+    const existing = this.performanceMetrics.get(vectorType) || {
+      vectorType,
+      searchTime: 0,
+      resultCount: 0,
+      avgSimilarity: 0,
+      cacheHitRate: 0,
+      errorCount: 0,
+      timeoutCount: 0
+    };
+
+    existing.errorCount += 1;
+    this.performanceMetrics.set(vectorType, existing);
+  }
+
+  /**
+   * Update timeout metrics for vector types
+   */
+  private updateTimeoutMetrics(vectorType: string): void {
+    const existing = this.performanceMetrics.get(vectorType) || {
+      vectorType,
+      searchTime: 0,
+      resultCount: 0,
+      avgSimilarity: 0,
+      cacheHitRate: 0,
+      errorCount: 0,
+      timeoutCount: 0
+    };
+
+    existing.timeoutCount += 1;
+    this.performanceMetrics.set(vectorType, existing);
+  }
+
+  /**
+   * Update cache metrics
+   */
+  private updateCacheMetrics(hit: boolean): void {
+    // This would update cache hit/miss tracking
+    // Implementation depends on the specific caching strategy
+  }
+
+  /**
+   * Get cache hit rate
+   */
+  private getCacheHitRate(): number {
+    // This would calculate the actual cache hit rate
+    // For now, return a placeholder
+    return 0.0;
   }
 
   /**
@@ -581,6 +1045,13 @@ class MultiVectorSearchService {
    */
   updateConfig(newConfig: Partial<MultiVectorSearchConfig>): void {
     this.config = { ...this.config, ...newConfig };
+    
+    // Update deduplicator configuration if deduplication settings changed
+    if (newConfig.deduplicationThreshold !== undefined) {
+      this.deduplicator.updateConfig({
+        similarityThreshold: newConfig.deduplicationThreshold
+      });
+    }
   }
 
   /**
@@ -604,9 +1075,64 @@ class MultiVectorSearchService {
     totalSearchTime: number;
     vectorTypeMetrics: Record<string, any>;
     mergeTime: number;
+    deduplicationTime: number;
+    cacheHitRate: number;
   } | null {
-    // This would need to be implemented with proper tracking
-    return null;
+    return this.lastSearchMetrics;
+  }
+
+  /**
+   * Get performance metrics for all vector types
+   */
+  getVectorTypeMetrics(): VectorTypePerformanceMetrics[] {
+    return Array.from(this.performanceMetrics.values());
+  }
+
+  /**
+   * Reset performance metrics
+   */
+  resetPerformanceMetrics(): void {
+    this.performanceMetrics.clear();
+    this.lastSearchMetrics = null;
+  }
+
+  /**
+   * Get detailed performance report
+   */
+  getPerformanceReport(): {
+    vectorTypes: VectorTypePerformanceMetrics[];
+    lastSearch: typeof this.lastSearchMetrics;
+    cacheStats: ReturnType<typeof this.getCacheStats>;
+    config: MultiVectorSearchConfig;
+    deduplicationMetrics: ReturnType<typeof this.deduplicationMonitor.getAverageMetrics>;
+  } {
+    return {
+      vectorTypes: this.getVectorTypeMetrics(),
+      lastSearch: this.lastSearchMetrics,
+      cacheStats: this.getCacheStats(),
+      config: this.getConfig(),
+      deduplicationMetrics: this.deduplicationMonitor.getAverageMetrics()
+    };
+  }
+
+  /**
+   * Get deduplication performance metrics
+   */
+  getDeduplicationMetrics(): {
+    current: ReturnType<typeof this.deduplicationMonitor.getMetrics>;
+    average: ReturnType<typeof this.deduplicationMonitor.getAverageMetrics>;
+  } {
+    return {
+      current: this.deduplicationMonitor.getMetrics(),
+      average: this.deduplicationMonitor.getAverageMetrics()
+    };
+  }
+
+  /**
+   * Reset deduplication performance metrics
+   */
+  resetDeduplicationMetrics(): void {
+    this.deduplicationMonitor.clear();
   }
 }
 

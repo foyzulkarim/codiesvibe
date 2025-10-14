@@ -260,6 +260,109 @@ export class CreateToolDto {
   @IsEnum(['active', 'beta', 'deprecated', 'discontinued'])
   status?: 'active' | 'beta' | 'deprecated' | 'discontinued';
 
+  // Enhanced entity relationships (v2.0)
+  @ApiProperty({
+    description: 'Tool types for classification (1-10 entries)',
+    example: ['AI Tool', 'SaaS Platform', 'API Service'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  toolTypes!: string[];
+
+  @ApiProperty({
+    description: 'Domains the tool operates in (1-15 entries)',
+    example: ['Software Development', 'Data Science', 'Machine Learning'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  domains!: string[];
+
+  @ApiProperty({
+    description: 'Tool capabilities (1-20 entries)',
+    example: ['Text Generation', 'Code Completion', 'Data Analysis'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  capabilities!: string[];
+
+  // Search optimization fields (v2.0)
+  @ApiPropertyOptional({
+    description: 'Alternative names or aliases (max 10 entries)',
+    example: ['GPT', 'Chat AI', 'OpenAI Chat'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  aliases?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Search synonyms (max 15 entries)',
+    example: ['AI Assistant', 'Conversational AI', 'Language Model'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  @ApiPropertyOptional({
+    description: 'Similar tools by tool ID (max 10 entries)',
+    example: ['claude', 'bard', 'gemini'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  similarTo?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this is an alternative for by tool ID (max 10 entries)',
+    example: ['copilot', 'code-assistant'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  alternativesFor?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this works with by tool ID (max 15 entries)',
+    example: ['github', 'vscode', 'slack'],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  @ApiProperty({
+    description: 'Common use cases (1-15 entries)',
+    example: ['Content Creation', 'Customer Support', 'Code Generation'],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  commonUseCases!: string[];
+
   static getExampleTool(): CreateToolDto {
     return {
       id: 'chatgpt',
@@ -290,6 +393,16 @@ export class CreateToolDto {
       website: 'https://chat.openai.com',
       documentation: 'https://platform.openai.com/docs',
       status: 'active',
+      // Enhanced v2.0 fields
+      toolTypes: ['AI Tool', 'SaaS Platform', 'API Service'],
+      domains: ['Software Development', 'Data Science', 'Machine Learning'],
+      capabilities: ['Text Generation', 'Code Completion', 'Data Analysis'],
+      aliases: ['GPT', 'Chat AI', 'OpenAI Chat'],
+      synonyms: ['AI Assistant', 'Conversational AI', 'Language Model'],
+      similarTo: ['claude', 'bard', 'gemini'],
+      alternativesFor: ['copilot', 'code-assistant'],
+      worksWith: ['github', 'vscode', 'slack'],
+      commonUseCases: ['Content Creation', 'Customer Support', 'Code Generation'],
     };
   }
 }

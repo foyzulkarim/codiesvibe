@@ -210,6 +210,73 @@ export class ToolResponseDto implements BaseTool {
   })
   updatedAt!: string;
 
+  // Enhanced entity relationships (v2.0)
+  @ApiProperty({
+    description: 'Tool types for classification',
+    type: [String],
+    example: ['AI Tool', 'SaaS Platform', 'API Service'],
+  })
+  toolTypes!: string[];
+
+  @ApiProperty({
+    description: 'Domains the tool operates in',
+    type: [String],
+    example: ['Software Development', 'Data Science', 'Machine Learning'],
+  })
+  domains!: string[];
+
+  @ApiProperty({
+    description: 'Tool capabilities',
+    type: [String],
+    example: ['Text Generation', 'Code Completion', 'Data Analysis'],
+  })
+  capabilities!: string[];
+
+  // Search optimization fields (v2.0)
+  @ApiPropertyOptional({
+    description: 'Alternative names or aliases',
+    type: [String],
+    example: ['GPT', 'Chat AI', 'OpenAI Chat'],
+  })
+  aliases?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Search synonyms',
+    type: [String],
+    example: ['AI Assistant', 'Conversational AI', 'Language Model'],
+  })
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  @ApiPropertyOptional({
+    description: 'Similar tools by tool ID',
+    type: [String],
+    example: ['claude', 'bard', 'gemini'],
+  })
+  similarTo?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this is an alternative for by tool ID',
+    type: [String],
+    example: ['copilot', 'code-assistant'],
+  })
+  alternativesFor?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this works with by tool ID',
+    type: [String],
+    example: ['github', 'vscode', 'slack'],
+  })
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  @ApiProperty({
+    description: 'Common use cases',
+    type: [String],
+    example: ['Content Creation', 'Customer Support', 'Code Generation'],
+  })
+  commonUseCases!: string[];
+
   /**
    * Transform a Mongoose Tool document to ToolResponseDto
    */
@@ -264,6 +331,17 @@ export class ToolResponseDto implements BaseTool {
       createdBy: doc.createdBy?.toString() || 'unknown',
       createdAt: doc.createdAt?.toISOString() || new Date().toISOString(),
       updatedAt: doc.updatedAt?.toISOString() || new Date().toISOString(),
+
+      // Enhanced v2.0 fields
+      toolTypes: doc.toolTypes || [],
+      domains: doc.domains || [],
+      capabilities: doc.capabilities || [],
+      aliases: doc.aliases || [],
+      synonyms: doc.synonyms || [],
+      similarTo: doc.similarTo || [],
+      alternativesFor: doc.alternativesFor || [],
+      worksWith: doc.worksWith || [],
+      commonUseCases: doc.commonUseCases || [],
     };
   }
 }

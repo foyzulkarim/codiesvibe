@@ -17,6 +17,7 @@ import {
   ValidatorConstraintInterface,
   Validate,
   ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -288,4 +289,98 @@ export class CreateToolEnhancedDto {
   @IsString()
   @IsDateString()
   dateAdded!: string;
+
+  // Enhanced entity relationships (v2.0)
+  @ApiProperty({
+    description: 'Tool types for classification (1-10 entries)',
+    type: [String],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  toolTypes!: string[];
+
+  @ApiProperty({
+    description: 'Domains the tool operates in (1-15 entries)',
+    type: [String],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  domains!: string[];
+
+  @ApiProperty({
+    description: 'Tool capabilities (1-20 entries)',
+    type: [String],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  capabilities!: string[];
+
+  // Search optimization fields (v2.0)
+  @ApiPropertyOptional({
+    description: 'Alternative names or aliases (max 10 entries)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  aliases?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Search synonyms (max 15 entries)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  @ApiPropertyOptional({
+    description: 'Similar tools by tool ID (max 10 entries)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  similarTo?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this is an alternative for by tool ID (max 10 entries)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  alternativesFor?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Tools this works with by tool ID (max 15 entries)',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  @ApiProperty({
+    description: 'Common use cases (1-15 entries)',
+    type: [String],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(15)
+  @IsString({ each: true })
+  commonUseCases!: string[];
 }
