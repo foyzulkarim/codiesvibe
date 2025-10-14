@@ -2,6 +2,7 @@ import { Annotation, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
 import { Intent, IntentSchema } from "./intent";
 import { Plan, PlanSchema } from "./plan";
+import { EntityStatisticsSchema, MetadataContextSchema } from "./enhanced-state";
 
 // State Schema using LangGraph's Annotation
 export const StateAnnotation = Annotation.Root({
@@ -88,7 +89,11 @@ export const StateAnnotation = Annotation.Root({
     recoveryTime?: Date;
     rollbackTime?: Date;
     name: string;
-  }>
+  }>,
+  
+  // Context Enrichment
+  entityStatistics: Annotation<Record<string, z.infer<typeof EntityStatisticsSchema>>>,
+  metadataContext: Annotation<z.infer<typeof MetadataContextSchema>>
 });
 
 export type State = typeof StateAnnotation.State;

@@ -8,26 +8,167 @@ import { StateAnnotation } from "./state";
 // This extends the existing StateAnnotation with new fields for context enrichment,
 // local NLP processing, multi-vector search results, execution plans, and performance metrics.
 
+// Enhanced source attribution for entity statistics
+export const EntitySourceAttributionSchema = z.object({
+  toolId: z.string(),
+  toolName: z.string(),
+  sources: z.array(z.object({
+    vectorType: z.string(),
+    score: z.number(),
+    rank: z.number(),
+    weight: z.number().optional(),
+    reliability: z.number().optional()
+  })),
+  combinedScore: z.number(),
+  confidenceFactors: z.object({
+    vectorReliability: z.number(),
+    crossValidation: z.number(),
+    consistency: z.number()
+  }).optional()
+});
+
+// Vector type reliability metrics
+export const VectorTypeReliabilitySchema = z.object({
+  vectorType: z.string(),
+  reliability: z.number(), // 0-1 score based on historical performance
+  sampleSize: z.number(),
+  avgSimilarity: z.number(),
+  consistency: z.number(),
+  lastUpdated: z.date()
+});
+
+// Enhanced confidence breakdown
+export const ConfidenceBreakdownSchema = z.object({
+  overall: z.number(),
+  sampleSize: z.number(),
+  avgSimilarity: z.number(),
+  vectorTypeReliability: z.number(),
+  crossValidation: z.number(),
+  consistency: z.number(),
+  dataQuality: z.number(),
+  sourceDiversity: z.number(),
+  factors: z.array(z.object({
+    name: z.string(),
+    value: z.number(),
+    weight: z.number(),
+    description: z.string()
+  }))
+});
+
+// Conflict detection and resolution
+export const DataConflictSchema = z.object({
+  type: z.enum(['category', 'interface', 'pricing', 'attribute']),
+  conflictingValues: z.array(z.object({
+    value: z.string(),
+    sources: z.array(z.string()),
+    confidence: z.number(),
+    percentage: z.number()
+  })),
+  resolution: z.enum(['high_confidence', 'weighted_average', 'merge_all', 'flag_for_review']).optional(),
+  resolvedValue: z.string().optional(),
+  confidenceInResolution: z.number().optional()
+});
+
+// Enhanced entity statistics with comprehensive confidence scoring
+export const EnhancedEntityStatisticsSchema = z.object({
+  commonInterfaces: z.array(z.object({
+    interface: z.string(),
+    percentage: z.number(),
+    confidence: z.number(),
+    sources: z.array(z.string())
+  })),
+  commonPricing: z.array(z.object({
+    pricing: z.string(),
+    percentage: z.number(),
+    confidence: z.number(),
+    sources: z.array(z.string())
+  })),
+  commonCategories: z.array(z.object({
+    category: z.string(),
+    percentage: z.number(),
+    confidence: z.number(),
+    sources: z.array(z.string())
+  })),
+  totalCount: z.number(),
+  confidence: z.number(),
+  confidenceBreakdown: ConfidenceBreakdownSchema,
+  semanticMatches: z.number(),
+  avgSimilarityScore: z.number(),
+  source: z.enum(['semantic_search']),
+  sampleTools: z.array(z.string()),
+  sourceAttribution: z.array(EntitySourceAttributionSchema),
+  vectorTypeContributions: z.record(z.object({
+    count: z.number(),
+    avgScore: z.number(),
+    reliability: z.number(),
+    contribution: z.number()
+  })),
+  dataConflicts: z.array(DataConflictSchema),
+  qualityIndicators: z.object({
+    dataFreshness: z.number(),
+    sourceDiversity: z.number(),
+    crossValidationScore: z.number(),
+    consistencyScore: z.number()
+  }),
+  lowSampleWarning: z.string().optional(),
+  processingOptimization: z.string().optional(),
+  transparency: z.object({
+    dataSources: z.array(z.string()),
+    methodology: z.string(),
+    limitations: z.array(z.string()),
+    confidenceLevel: z.string()
+  })
+});
+
 // Context Enrichment Types
 export const EntityStatisticsSchema = z.object({
   commonInterfaces: z.array(z.object({
     interface: z.string(),
-    percentage: z.number()
+    percentage: z.number(),
+    confidence: z.number().optional(),
+    sources: z.array(z.string()).optional()
   })),
   commonPricing: z.array(z.object({
     pricing: z.string(),
-    percentage: z.number()
+    percentage: z.number(),
+    confidence: z.number().optional(),
+    sources: z.array(z.string()).optional()
   })),
   commonCategories: z.array(z.object({
     category: z.string(),
-    percentage: z.number()
+    percentage: z.number(),
+    confidence: z.number().optional(),
+    sources: z.array(z.string()).optional()
   })),
   totalCount: z.number(),
   confidence: z.number(),
+  confidenceBreakdown: ConfidenceBreakdownSchema.optional(),
   semanticMatches: z.number(),
   avgSimilarityScore: z.number(),
   source: z.enum(['semantic_search']),
-  sampleTools: z.array(z.string())
+  sampleTools: z.array(z.string()),
+  sourceAttribution: z.array(EntitySourceAttributionSchema).optional(),
+  vectorTypeContributions: z.record(z.object({
+    count: z.number(),
+    avgScore: z.number(),
+    reliability: z.number(),
+    contribution: z.number()
+  })).optional(),
+  dataConflicts: z.array(DataConflictSchema).optional(),
+  qualityIndicators: z.object({
+    dataFreshness: z.number(),
+    sourceDiversity: z.number(),
+    crossValidationScore: z.number(),
+    consistencyScore: z.number()
+  }).optional(),
+  lowSampleWarning: z.string().optional(),
+  processingOptimization: z.string().optional(),
+  transparency: z.object({
+    dataSources: z.array(z.string()),
+    methodology: z.string(),
+    limitations: z.array(z.string()),
+    confidenceLevel: z.string()
+  }).optional()
 });
 
 export const MetadataContextSchema = z.object({

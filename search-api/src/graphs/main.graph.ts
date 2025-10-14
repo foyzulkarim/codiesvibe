@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Import individual nodes
 import { intentExtractionNode } from "@/nodes/intent-extraction.node";
+import { contextEnrichmentNode } from "@/nodes/context-enrichment.node";
 import { queryPlanningNode } from "@/nodes/query-planning.node";
 import { executionNode } from "@/nodes/execution.node";
 import { completionNode } from "@/nodes/execution/completion.node";
@@ -35,7 +36,8 @@ function createValidatedNode(nodeName: string, originalNode: any) {
       // Validate state before node execution
       const beforeValidation = stateValidator.validateState(state,
         nodeName === "intent-extraction" ? "initial" :
-        nodeName === "query-planning" ? "intentExtraction" :
+        nodeName === "context-enrichment" ? "intentExtraction" :
+        nodeName === "query-planning" ? "contextEnrichment" :
         nodeName === "execution" ? "queryPlanning" : "execution"
       );
 
@@ -63,6 +65,7 @@ function createValidatedNode(nodeName: string, originalNode: any) {
       // Validate state after node execution
       const afterValidation = stateValidator.validateState(result,
         nodeName === "intent-extraction" ? "intentExtraction" :
+        nodeName === "context-enrichment" ? "contextEnrichment" :
         nodeName === "query-planning" ? "queryPlanning" :
         nodeName === "execution" ? "execution" : "completion"
       );
@@ -133,13 +136,15 @@ function createValidatedNode(nodeName: string, originalNode: any) {
 export function createMainGraph() {
   const workflow = new StateGraph(StateAnnotation)
     .addNode("intent-extraction", createValidatedNode("intent-extraction", intentExtractionNode))
+    .addNode("context-enrichment", createValidatedNode("context-enrichment", contextEnrichmentNode))
     .addNode("query-planning", createValidatedNode("query-planning", queryPlanningNode))
     .addNode("execution", createValidatedNode("execution", executionNode))
     .addNode("final-completion", createValidatedNode("final-completion", completionNode))
     
     // Define the main flow
     .addEdge(START, "intent-extraction")
-    .addEdge("intent-extraction", "query-planning")
+    .addEdge("intent-extraction", "context-enrichment")
+    .addEdge("context-enrichment", "query-planning")
     .addEdge("query-planning", "execution")
     .addEdge("execution", "final-completion")
     .addEdge("final-completion", END);

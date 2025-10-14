@@ -300,7 +300,7 @@ export class RollbackManager {
             ...toState.metadata,
             threadId: fromState.metadata?.threadId,
             rollbackTime: new Date(),
-            originalQuery: fromState.query,
+            originalQuery: fromState.metadata?.originalQuery || toState.metadata?.originalQuery || fromState.query,
             executionPath: [
               ...(toState.metadata?.executionPath || []),
               "rollback"
@@ -325,7 +325,7 @@ export class RollbackManager {
             ...toState.metadata,
             threadId: fromState.metadata?.threadId,
             rollbackTime: new Date(),
-            originalQuery: fromState.query,
+            originalQuery: fromState.metadata?.originalQuery || toState.metadata?.originalQuery || fromState.query,
             executionPath: [
               ...(toState.metadata?.executionPath || []),
               "rollback-aggressive"
@@ -355,7 +355,7 @@ export class RollbackManager {
             ...toState.metadata,
             threadId: fromState.metadata?.threadId,
             rollbackTime: new Date(),
-            originalQuery: fromState.query,
+            originalQuery: fromState.metadata?.originalQuery || toState.metadata?.originalQuery || fromState.query,
             executionPath: [
               ...(toState.metadata?.executionPath || []),
               "rollback-conservative"
