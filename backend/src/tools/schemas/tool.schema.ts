@@ -355,8 +355,7 @@ export class Tool {
   @Prop({
     type: [String],
     validate: {
-      validator: (v: string[]) =>
-        !v || (Array.isArray(v) && v.length <= 10),
+      validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 10),
       message: 'aliases must have at most 10 entries',
     },
   })
@@ -365,8 +364,7 @@ export class Tool {
   @Prop({
     type: [String],
     validate: {
-      validator: (v: string[]) =>
-        !v || (Array.isArray(v) && v.length <= 15),
+      validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 15),
       message: 'synonyms must have at most 15 entries',
     },
   })
@@ -376,8 +374,7 @@ export class Tool {
   @Prop({
     type: [String],
     validate: {
-      validator: (v: string[]) =>
-        !v || (Array.isArray(v) && v.length <= 10),
+      validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 10),
       message: 'similarTo must have at most 10 entries',
     },
   })
@@ -386,8 +383,7 @@ export class Tool {
   @Prop({
     type: [String],
     validate: {
-      validator: (v: string[]) =>
-        !v || (Array.isArray(v) && v.length <= 10),
+      validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 10),
       message: 'alternativesFor must have at most 10 entries',
     },
   })
@@ -396,8 +392,7 @@ export class Tool {
   @Prop({
     type: [String],
     validate: {
-      validator: (v: string[]) =>
-        !v || (Array.isArray(v) && v.length <= 15),
+      validator: (v: string[]) => !v || (Array.isArray(v) && v.length <= 15),
       message: 'worksWith must have at most 15 entries',
     },
   })
@@ -529,11 +524,17 @@ ToolSchema.index({ synonyms: 1 }, { name: 'tool_synonyms_index' });
 
 // Context relationship indexes (v2.0)
 ToolSchema.index({ similarTo: 1 }, { name: 'tool_similar_to_index' });
-ToolSchema.index({ alternativesFor: 1 }, { name: 'tool_alternatives_for_index' });
+ToolSchema.index(
+  { alternativesFor: 1 },
+  { name: 'tool_alternatives_for_index' },
+);
 ToolSchema.index({ worksWith: 1 }, { name: 'tool_works_with_index' });
 
 // Usage pattern indexes (v2.0)
-ToolSchema.index({ commonUseCases: 1 }, { name: 'tool_common_use_cases_index' });
+ToolSchema.index(
+  { commonUseCases: 1 },
+  { name: 'tool_common_use_cases_index' },
+);
 
 // Pricing indexes
 ToolSchema.index(

@@ -402,7 +402,11 @@ export class CreateToolDto {
       similarTo: ['claude', 'bard', 'gemini'],
       alternativesFor: ['copilot', 'code-assistant'],
       worksWith: ['github', 'vscode', 'slack'],
-      commonUseCases: ['Content Creation', 'Customer Support', 'Code Generation'],
+      commonUseCases: [
+        'Content Creation',
+        'Customer Support',
+        'Code Generation',
+      ],
     };
   }
 }
