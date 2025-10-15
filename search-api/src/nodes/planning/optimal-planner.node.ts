@@ -1,45 +1,106 @@
 import { StateAnnotation } from "@/types/state";
 import { Plan, Function } from "@/types/plan";
+import { EntityStatisticsSchema, MetadataContextSchema } from "@/types/enhanced-state";
+
+interface PlanReasoning {
+  stage: string;
+  decision: string;
+  confidence: number;
+  supportingEvidence: string[];
+}
+
+interface PlanContext {
+  complexity: "simple" | "moderate" | "complex";
+  confidenceLevel: number;
+  entityStatsAvailable: boolean;
+  metadataConfidence: number;
+  suggestedStrategies: string[];
+}
 
 /**
  * Generate a single, optimal execution plan for high-confidence queries
  * This node creates a comprehensive plan with tool lookup, semantic search, filtering, and ranking
+ * Enhanced to use context and entity statistics for better planning decisions
  */
 export async function optimalPlannerNode(state: typeof StateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
-  const { intent, query } = state;
+  const { intent, query, entityStatistics, metadataContext } = state;
   
   if (!intent) {
     throw new Error("Intent is required for optimal planning");
   }
   
   try {
+    // Analyze context and determine plan strategy
+    const planContext = analyzePlanContext(state);
+    const planReasoning: PlanReasoning[] = [];
+    
     const steps: Function[] = [];
     let description = "Optimal plan: ";
     
+    // Add reasoning for initial strategy selection
+    planReasoning.push({
+      stage: "strategy_selection",
+      decision: `Using optimal strategy for ${planContext.complexity} query`,
+      confidence: planContext.confidenceLevel,
+      supportingEvidence: [
+        `Overall confidence: ${planContext.confidenceLevel}`,
+        `Entity statistics available: ${planContext.entityStatsAvailable}`,
+        `Metadata confidence: ${planContext.metadataConfidence}`,
+        `Suggested strategies: ${planContext.suggestedStrategies.join(", ")}`
+      ]
+    });
+    
     // Step 1: Tool name lookup if we have specific tool names
     if (intent.toolNames && intent.toolNames.length > 0) {
+      // Use	entity statistics to optimize lookup parameters
+      const lookupThreshold = getOptimizedLookupThreshold(planContext, entityStatistics);
+      
       steps.push({
         name: "lookup-by-name",
         parameters: {
           toolNames: intent.toolNames,
           fuzzyMatch: true,
-          threshold: 0.8
+          threshold: lookupThreshold
         }
       });
-      description += `lookup tools by name (${intent.toolNames.join(", ")}), `;
+      
+      planReasoning.push({
+        stage: "tool_lookup",
+        decision: `Tool name lookup with threshold ${lookupThreshold}`,
+        confidence: 0.9,
+        supportingEvidence: [
+          `Tool names provided: ${intent.toolNames.join(", ")}`,
+          `Optimized threshold based on context: ${lookupThreshold}`,
+          `Expected precision: ${lookupThreshold > 0.7 ? 'high' : 'medium'}`
+        ]
+      });
+      
+      description += `lookup tools by name (${intent.toolNames.join(", ")}) with optimized threshold ${lookupThreshold}, `;
     }
     
     // Step 2: Semantic search for broader coverage
     if (intent.semanticQuery) {
+      // Use entity statistics to optimize search parameters
+      const searchParams = getOptimizedSearchParams(planContext, entityStatistics, intent.semanticQuery);
+      
       steps.push({
         name: "semantic-search",
-        parameters: {
-          query: intent.semanticQuery,
-          limit: 50, // Higher limit for comprehensive search
-          threshold: 0.7
-        }
+        parameters: searchParams
       });
-      description += `semantic search for "${intent.semanticQuery}", `;
+      
+      planReasoning.push({
+        stage: "semantic_search",
+        decision: `Semantic search with adaptive parameters`,
+        confidence: searchParams.threshold / 0.8, // Normalized confidence
+        supportingEvidence: [
+          `Semantic query: "${intent.semanticQuery}"`,
+          `Adaptive limit: ${searchParams.limit}`,
+          `Adaptive threshold: ${searchParams.threshold}`,
+          `Context-based optimization: ${planContext.entityStatsAvailable ? 'enabled' : 'disabled'}`
+        ]
+      });
+      
+      description += `semantic search for "${intent.semanticQuery}" (limit: ${searchParams.limit}, threshold: ${searchParams.threshold}), `;
     }
     
     // Step 3: Find similar tools if we have a reference tool
@@ -187,13 +248,22 @@ export async function optimalPlannerNode(state: typeof StateAnnotation.State): P
     
     const plan: Plan = {
       steps,
-      description: description.replace(/, $/, "") // Remove trailing comma
+      description: description.replace(/, $/, ""), // Remove trailing comma
+      reasoning: planReasoning,
+      context: planContext,
+      strategy: "optimal",
+      adaptive: true,
+      validationPassed: true
     };
     
     return {
       plan,
       metadata: {
-        ...state.metadata
+        ...state.metadata,
+        planReasoning,
+        planContext,
+        planningStrategy: "optimal",
+        adaptivePlanning: true
       }
     };
   } catch (error) {
@@ -210,14 +280,148 @@ export async function optimalPlannerNode(state: typeof StateAnnotation.State): P
           }
         }
       ],
-      description: "Emergency fallback plan due to planning error"
+      description: "Emergency fallback plan due to planning error",
+      reasoning: [{
+        stage: "error_recovery",
+        decision: "Using emergency fallback",
+        confidence: 0.3,
+        supportingEvidence: ["Planning error occurred", "Using basic semantic search"]
+      }],
+      strategy: "fallback",
+      adaptive: false,
+      validationPassed: false
     };
     
     return {
       plan: fallbackPlan,
       metadata: {
-        ...state.metadata
+        ...state.metadata,
+        planningStrategy: "fallback",
+        adaptivePlanning: false
       }
     };
   }
+}
+
+/**
+ * Analyze the context to determine optimal planning strategy
+ */
+function analyzePlanContext(state: typeof StateAnnotation.State): PlanContext {
+  const { entityStatistics, metadataContext, confidence, intent } = state;
+  
+  // Determine complexity based on intent and confidence
+  let complexity: "simple" | "moderate" | "complex" = "simple";
+  let suggestedStrategies: string[] = ["optimal"];
+  
+  if (intent) {
+    const factorCount = [
+      intent.toolNames?.length || 0,
+      intent.categories?.length || 0,
+      intent.functionality?.length || 0,
+      intent.interface?.length || 0,
+      intent.userTypes?.length || 0,
+      intent.deployment?.length || 0
+    ].reduce((sum, count) => sum + (count > 0 ? 1 : 0), 0);
+    
+    if (factorCount >= 4 || intent.isComparative) {
+      complexity = "complex";
+      suggestedStrategies = ["optimal", "multi-strategy"];
+    } else if (factorCount >= 2) {
+      complexity = "moderate";
+      suggestedStrategies = ["optimal"];
+    }
+  }
+  
+  const entityStatsAvailable = !!(entityStatistics && Object.keys(entityStatistics).length > 0);
+  const metadataConfidence = metadataContext?.metadataConfidence || 0;
+  const confidenceLevel = confidence?.overall || 0.5;
+  
+  return {
+    complexity,
+    confidenceLevel,
+    entityStatsAvailable,
+    metadataConfidence,
+    suggestedStrategies
+  };
+}
+
+/**
+ * Get optimized lookup threshold based on context and statistics
+ */
+function getOptimizedLookupThreshold(
+  planContext: PlanContext,
+  entityStatistics?: Record<string, any>
+): number {
+  // Base threshold depends on confidence level
+  let threshold = 0.8;
+  
+  // Adjust based on context
+  if (planContext.confidenceLevel > 0.8) {
+    threshold = 0.9; // Higher threshold for high confidence
+  } else if (planContext.confidenceLevel < 0.5) {
+    threshold = 0.7; // Lower threshold for low confidence
+  }
+  
+  // Adjust based on entity statistics
+  if (entityStatistics && Object.keys(entityStatistics).length > 0) {
+    const avgConfidence = Object.values(entityStatistics)
+      .reduce((sum: number, stats: any) => sum + (stats.confidence || 0), 0) / Object.keys(entityStatistics).length;
+    
+    if (avgConfidence > 0.8) {
+      threshold = Math.min(threshold + 0.05, 0.95);
+    } else if (avgConfidence < 0.5) {
+      threshold = Math.max(threshold - 0.1, 0.6);
+    }
+  }
+  
+  return threshold;
+}
+
+/**
+ * Get optimized search parameters based on context and statistics
+ */
+function getOptimizedSearchParams(
+  planContext: PlanContext,
+  entityStatistics?: Record<string, any>,
+  query?: string
+): { query: string; limit: number; threshold: number } {
+  // Base parameters
+  let limit = 50;
+  let threshold = 0.7;
+  
+  // Adjust based on complexity
+  switch (planContext.complexity) {
+    case "simple":
+      limit = 30;
+      threshold = 0.8;
+      break;
+    case "moderate":
+      limit = 50;
+      threshold = 0.7;
+      break;
+    case "complex":
+      limit = 80;
+      threshold = 0.6;
+      break;
+  }
+  
+  // Adjust based on entity statistics
+  if (entityStatistics && Object.keys(entityStatistics).length > 0) {
+    const totalCount = Object.values(entityStatistics)
+      .reduce((sum: number, stats: any) => sum + (stats.totalCount || 0), 0);
+    
+    if (totalCount > 1000) {
+      limit = Math.min(limit * 1.2, 100);
+      threshold = Math.max(threshold - 0.05, 0.5);
+    } else if (totalCount < 100) {
+      limit = Math.max(limit * 0.8, 20);
+      threshold = Math.min(threshold + 0.05, 0.9);
+    }
+  }
+  
+  return {
+    query: query || "",
+    limit: Math.round(limit),
+    threshold: Math.round(threshold * 100) / 100
+  };
 }

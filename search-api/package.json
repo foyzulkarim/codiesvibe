@@ -30,7 +30,9 @@
     "test-multi-vector-search": "ts-node -r tsconfig-paths/register debug-scripts/test-multi-vector-search.ts",
     "test-ner-only": "ts-node -r tsconfig-paths/register debug-scripts/test-ner-only.ts",
     "test-transformers-integration": "ts-node -r tsconfig-paths/register debug-scripts/test-transformers-integration.ts",
-    "test-zero-shot-intent": "ts-node -r tsconfig-paths/register debug-scripts/test-zero-shot-intent.ts"
+    "test-zero-shot-intent": "ts-node -r tsconfig-paths/register debug-scripts/test-zero-shot-intent.ts",
+    "test-enhanced-graph": "ts-node -r tsconfig-paths/register debug-scripts/test-enhanced-graph.ts",
+    "test-dynamic-planning": "ts-node -r tsconfig-paths/register debug-scripts/test-dynamic-planning.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.14",

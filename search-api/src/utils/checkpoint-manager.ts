@@ -451,6 +451,12 @@ export class CheckpointManager {
       case "intent-extraction":
         stage = "intentExtraction";
         break;
+      case "context-enrichment":
+        stage = "contextEnrichment";
+        break;
+      case "skip-context-enrichment":
+        stage = "contextEnrichment"; // Use same validation stage as context enrichment
+        break;
       case "query-planning":
         stage = "queryPlanning";
         break;

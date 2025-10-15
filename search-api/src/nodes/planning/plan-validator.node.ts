@@ -1,41 +1,198 @@
 import { StateAnnotation, State } from "../../types/state";
-import { Plan, MultiStrategyPlan, Function } from "../../types/plan";
+import { Plan, MultiStrategyPlan, Function, PlanReasoning, PlanContext } from "../../types/plan";
+import { EntityStatisticsSchema, MetadataContextSchema } from "../../types/enhanced-state";
+import { executionPlanSafetyValidator, SafetyValidationResult } from "../../utils/execution-plan-safety-validator";
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  confidence: number;
+  reasoning: PlanReasoning[];
+}
 
 /**
- * Plan Validator Node
- * 
- * Validates the structure of both single and multi-strategy plans.
+ * Enhanced Plan Validator Node
+ *
+ * Validates the structure of both single and multi-strategy plans with context awareness.
  * Checks for missing function names, unknown functions, invalid inputFromStep values,
- * correct weight distribution in multi-strategy plans, and valid merge strategies.
+ * correct weight distribution in multi-strategy plans, valid merge strategies, and
+ * validates plan decisions against entity statistics and context.
  */
-export const planValidatorNode = (state: State): Partial<State> => {
+export const planValidatorNode = async (state: State): Promise<Partial<State>> => {
   try {
-    const { plan } = state;
+    const { plan, entityStatistics, metadataContext } = state;
     
     if (!plan) {
       throw new Error("No plan found in state");
     }
     
     const validationErrors: string[] = [];
+    const validationWarnings: string[] = [];
     let validatedPlan = plan;
+    const validationReasoning: PlanReasoning[] = [];
+    
+    // Add initial validation reasoning
+    validationReasoning.push({
+      stage: "validation_start",
+      decision: "Starting comprehensive plan validation",
+      confidence: 0.9,
+      supportingEvidence: [
+        "Plan structure validation",
+        "Context-aware validation",
+        "Entity statistics validation",
+        "Safety and security validation"
+      ]
+    });
+    
+    // NEW: T035 - Enhanced safety validation
+    console.log("[plan-validator] Starting enhanced safety validation");
+    const safetyValidation = await executionPlanSafetyValidator.validatePlanSafety(plan, state);
+    
+    // Integrate safety validation results
+    validationErrors.push(...safetyValidation.criticalErrors);
+    validationErrors.push(...safetyValidation.errors);
+    validationWarnings.push(...safetyValidation.warnings);
+    
+    // Add safety validation reasoning
+    validationReasoning.push({
+      stage: "safety_validation",
+      decision: `Safety validation completed: ${safetyValidation.safetyLevel}`,
+      confidence: safetyValidation.confidence,
+      supportingEvidence: [
+        `Safety level: ${safetyValidation.safetyLevel}`,
+        `Loop detection: ${safetyValidation.loopDetection.hasLoops ? 'FAILED' : 'PASSED'}`,
+        `Resource validation: ${safetyValidation.resourceValidation.withinLimits ? 'PASSED' : 'FAILED'}`,
+        `State validation: ${safetyValidation.stateValidation.requirementsMet ? 'PASSED' : 'FAILED'}`,
+        `Sanitization: ${safetyValidation.sanitizationResult.sanitized ? 'REQUIRED' : 'NOT NEEDED'}`,
+        `Critical errors: ${safetyValidation.criticalErrors.length}`,
+        `Total errors: ${safetyValidation.errors.length}`,
+        `Warnings: ${safetyValidation.warnings.length}`,
+        `Recommendations: ${safetyValidation.recommendations.length}`
+      ]
+    });
+    
+    // If safety validation failed catastrophically, create emergency fallback
+    if (safetyValidation.safetyLevel === "unsafe" || safetyValidation.criticalErrors.length > 0) {
+      console.error("[plan-validator] Critical safety issues detected, creating emergency fallback");
+      validatedPlan = createEmergencyFallbackPlan(state, safetyValidation, validationReasoning);
+      validationErrors.push("Plan replaced with emergency fallback due to critical safety issues");
+    }
+    // If plan was sanitized, use the sanitized version
+    else if (safetyValidation.sanitizationResult.sanitized) {
+      console.warn("[plan-validator] Plan was sanitized for security");
+      // The safety validator already sanitized the plan in place
+      validatedPlan = plan;
+      validationWarnings.push("Plan parameters were sanitized for security");
+    }
     
     // Check if it's a multi-strategy plan
     if ('strategies' in plan) {
-      validatedPlan = validateMultiStrategyPlan(plan as MultiStrategyPlan, validationErrors);
+      const multiStrategyResult = validateMultiStrategyPlan(
+        plan as MultiStrategyPlan,
+        validationErrors,
+        validationWarnings,
+        entityStatistics,
+        metadataContext,
+        validationReasoning
+      );
+      validatedPlan = multiStrategyResult.plan;
+      validationErrors.push(...multiStrategyResult.errors);
+      validationWarnings.push(...multiStrategyResult.warnings);
     } else {
-      validatedPlan = validateSinglePlan(plan, validationErrors);
+      const singlePlanResult = validateSinglePlan(
+        plan,
+        validationErrors,
+        validationWarnings,
+        entityStatistics,
+        metadataContext,
+        validationReasoning
+      );
+      validatedPlan = singlePlanResult.plan;
+      validationErrors.push(...singlePlanResult.errors);
+      validationWarnings.push(...singlePlanResult.warnings);
     }
     
-    // If there are validation errors, create a fallback plan
-    if (validationErrors.length > 0) {
+    // Validate plan against context and statistics
+    const contextValidationResult = validatePlanContext(
+      validatedPlan,
+      entityStatistics,
+      metadataContext,
+      validationReasoning
+    );
+    
+    validationErrors.push(...contextValidationResult.errors);
+    validationWarnings.push(...contextValidationResult.warnings);
+    
+    // Calculate overall validation confidence
+    const overallConfidence = calculateValidationConfidence(
+      validationErrors,
+      validationWarnings,
+      contextValidationResult.confidence
+    );
+    
+    // Add final validation reasoning
+    validationReasoning.push({
+      stage: "validation_complete",
+      decision: `Validation ${validationErrors.length === 0 ? 'passed' : 'failed with errors'}`,
+      confidence: overallConfidence,
+      supportingEvidence: [
+        `Errors: ${validationErrors.length}`,
+        `Warnings: ${validationWarnings.length}`,
+        `Overall confidence: ${overallConfidence}`,
+        `Context validation: ${contextValidationResult.confidence}`
+      ]
+    });
+    
+    // If there are remaining validation errors (non-critical), create a fallback plan
+    if (validationErrors.length > 0 && safetyValidation.safetyLevel !== "unsafe") {
       console.warn("Plan validation errors:", validationErrors);
-      validatedPlan = createFallbackPlan(state, validationErrors);
+      validatedPlan = createFallbackPlan(state, validationErrors, validationReasoning);
     }
+    
+    // Update plan with validation results
+    const finalPlan = {
+      ...validatedPlan,
+      validationPassed: validationErrors.length === 0 && safetyValidation.safetyLevel !== "unsafe",
+      validationConfidence: Math.min(overallConfidence, safetyValidation.confidence),
+      validationErrors: validationErrors.length > 0 ? validationErrors : undefined,
+      validationWarnings: validationWarnings.length > 0 ? validationWarnings : undefined,
+      // NEW: T035 - Enhanced safety metadata
+      safetyValidation: {
+        safetyLevel: safetyValidation.safetyLevel,
+        loopDetection: safetyValidation.loopDetection,
+        resourceValidation: safetyValidation.resourceValidation,
+        stateValidation: safetyValidation.stateValidation,
+        sanitizationResult: safetyValidation.sanitizationResult,
+        recommendations: safetyValidation.recommendations
+      }
+    };
     
     return {
-      plan: validatedPlan,
+      plan: finalPlan,
       metadata: {
         ...state.metadata,
+        planValidation: {
+          passed: validationErrors.length === 0 && safetyValidation.safetyLevel !== "unsafe",
+          confidence: Math.min(overallConfidence, safetyValidation.confidence),
+          errors: validationErrors,
+          warnings: validationWarnings,
+          reasoning: validationReasoning
+        },
+        // NEW: T035 - Enhanced safety metadata
+        safetyValidation: {
+          safetyLevel: safetyValidation.safetyLevel,
+          loopDetection: safetyValidation.loopDetection,
+          resourceValidation: safetyValidation.resourceValidation,
+          stateValidation: safetyValidation.stateValidation,
+          sanitizationResult: safetyValidation.sanitizationResult,
+          recommendations: safetyValidation.recommendations,
+          confidence: safetyValidation.confidence,
+          isValid: safetyValidation.isValid,
+          errors: safetyValidation.errors,
+          warnings: safetyValidation.warnings,
+          criticalErrors: safetyValidation.criticalErrors
+        },
         executionPath: [...(state.metadata?.executionPath || []), "plan-validator"],
         nodeExecutionTimes: {
           ...(state.metadata?.nodeExecutionTimes || {}),
@@ -48,7 +205,17 @@ export const planValidatorNode = (state: State): Partial<State> => {
     console.error("Error in plan validator:", error);
     
     // Create emergency fallback plan
-    const emergencyPlan = createFallbackPlan(state, ["Plan validation failed completely"]);
+    const emergencyReasoning: PlanReasoning[] = [{
+      stage: "validation_error",
+      decision: "Emergency fallback due to validation error",
+      confidence: 0.2,
+      supportingEvidence: [
+        "Validation process failed",
+        "Using emergency fallback plan"
+      ]
+    }];
+    
+    const emergencyPlan = createFallbackPlan(state, ["Plan validation failed completely"], emergencyReasoning);
     
     return {
       plan: emergencyPlan,
@@ -62,6 +229,13 @@ export const planValidatorNode = (state: State): Partial<State> => {
       ],
       metadata: {
         ...state.metadata,
+        planValidation: {
+          passed: false,
+          confidence: 0.2,
+          errors: ["Plan validation failed completely"],
+          warnings: [],
+          reasoning: emergencyReasoning
+        },
         executionPath: [...(state.metadata?.executionPath || []), "plan-validator"],
         nodeExecutionTimes: {
           ...(state.metadata?.nodeExecutionTimes || {}),
@@ -73,16 +247,28 @@ export const planValidatorNode = (state: State): Partial<State> => {
 };
 
 /**
- * Validates a single strategy plan
+ * Validates a single strategy plan with context awareness
  */
-function validateSinglePlan(plan: Plan, validationErrors: string[]): Plan {
+function validateSinglePlan(
+  plan: Plan,
+  validationErrors: string[],
+  validationWarnings: string[],
+  entityStatistics?: Record<string, any>,
+  metadataContext?: any,
+  validationReasoning?: PlanReasoning[]
+): { plan: Plan; errors: string[]; warnings: string[] } {
   if (!plan.steps || plan.steps.length === 0) {
     validationErrors.push("Plan has no steps");
-    return plan;
+    return {
+      plan,
+      errors: validationErrors,
+      warnings: validationWarnings
+    };
   }
   
   const validatedSteps: Function[] = [];
   const knownFunctions = getKnownFunctions();
+  const stepWarnings: string[] = [];
   
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i];
@@ -104,12 +290,34 @@ function validateSinglePlan(plan: Plan, validationErrors: string[]): Plan {
       }
     }
     
+    // Context-aware parameter validation
+    if (step.parameters && entityStatistics) {
+      const paramValidation = validateStepParameters(step, entityStatistics, metadataContext);
+      stepWarnings.push(...paramValidation.warnings);
+      if (paramValidation.errors.length > 0) {
+        stepErrors.push(...paramValidation.errors);
+      }
+    }
+    
+    // Add validation reasoning for critical steps
+    if (validationReasoning && (stepErrors.length > 0 || stepWarnings.length > 0)) {
+      validationReasoning.push({
+        stage: `step_validation_${i}`,
+        decision: `Step ${i} (${step.name}) validation ${stepErrors.length > 0 ? 'failed' : 'passed with warnings'}`,
+        confidence: stepErrors.length === 0 ? 0.8 : 0.4,
+        supportingEvidence: [
+          ...stepErrors.map(e => `Error: ${e}`),
+          ...stepWarnings.map(w => `Warning: ${w}`)
+        ]
+      });
+    }
+    
     // If step has errors, try to fix or skip
     if (stepErrors.length > 0) {
       validationErrors.push(...stepErrors);
       
       // Try to fix the step
-      const fixedStep = fixStep(step, i, knownFunctions);
+      const fixedStep = fixStep(step, i, knownFunctions, entityStatistics);
       if (fixedStep) {
         validatedSteps.push(fixedStep);
       }
@@ -117,6 +325,9 @@ function validateSinglePlan(plan: Plan, validationErrors: string[]): Plan {
       validatedSteps.push(step);
     }
   }
+  
+  // Add warnings to the main list
+  validationWarnings.push(...stepWarnings);
   
   // Check if plan seems too fragile (too few steps)
   if (validatedSteps.length < 2) {
@@ -136,18 +347,33 @@ function validateSinglePlan(plan: Plan, validationErrors: string[]): Plan {
   }
   
   return {
-    ...plan,
-    steps: validatedSteps
+    plan: {
+      ...plan,
+      steps: validatedSteps
+    },
+    errors: validationErrors,
+    warnings: validationWarnings
   };
 }
 
 /**
- * Validates a multi-strategy plan
+ * Validates a multi-strategy plan with context awareness
  */
-function validateMultiStrategyPlan(plan: MultiStrategyPlan, validationErrors: string[]): MultiStrategyPlan {
+function validateMultiStrategyPlan(
+  plan: MultiStrategyPlan,
+  validationErrors: string[],
+  validationWarnings: string[],
+  entityStatistics?: Record<string, any>,
+  metadataContext?: any,
+  validationReasoning?: PlanReasoning[]
+): { plan: MultiStrategyPlan; errors: string[]; warnings: string[] } {
   if (!plan.strategies || plan.strategies.length === 0) {
     validationErrors.push("Multi-strategy plan has no strategies");
-    return plan;
+    return {
+      plan,
+      errors: validationErrors,
+      warnings: validationWarnings
+    };
   }
   
   if (!plan.weights || plan.weights.length !== plan.strategies.length) {
@@ -178,13 +404,25 @@ function validateMultiStrategyPlan(plan: MultiStrategyPlan, validationErrors: st
   for (let i = 0; i < plan.strategies.length; i++) {
     const strategy = plan.strategies[i];
     const strategyErrors: string[] = [];
-    const validatedStrategy = validateSinglePlan(strategy, strategyErrors);
+    const strategyWarnings: string[] = [];
+    const validatedStrategyResult = validateSinglePlan(
+      strategy,
+      strategyErrors,
+      strategyWarnings,
+      entityStatistics,
+      metadataContext,
+      validationReasoning
+    );
     
     if (strategyErrors.length > 0) {
       validationErrors.push(`Strategy ${i}: ${strategyErrors.join(", ")}`);
     }
     
-    validatedStrategies.push(validatedStrategy);
+    if (strategyWarnings.length > 0) {
+      validationWarnings.push(`Strategy ${i}: ${strategyWarnings.join(", ")}`);
+    }
+    
+    validatedStrategies.push(validatedStrategyResult.plan);
   }
   
   // Check for strategy diversity
@@ -202,7 +440,7 @@ function validateMultiStrategyPlan(plan: MultiStrategyPlan, validationErrors: st
         plan = {
           ...plan,
           strategies: validatedStrategies,
-          weights: [...(plan.weights || []), 0.2].map((w, i, arr) => 
+          weights: [...(plan.weights || []), 0.2].map((w, i, arr) =>
             i === arr.length - 1 ? 0.2 : w * 0.8
           )
         };
@@ -211,15 +449,166 @@ function validateMultiStrategyPlan(plan: MultiStrategyPlan, validationErrors: st
   }
   
   return {
-    ...plan,
-    strategies: validatedStrategies
+    plan: {
+      ...plan,
+      strategies: validatedStrategies
+    },
+    errors: validationErrors,
+    warnings: validationWarnings
   };
 }
 
 /**
- * Attempts to fix a problematic step
+ * Validates step parameters against entity statistics and context
  */
-function fixStep(step: Function, stepIndex: number, knownFunctions: string[]): Function | null {
+function validateStepParameters(
+  step: Function,
+  entityStatistics?: Record<string, any>,
+  metadataContext?: any
+): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  if (!step.parameters || !entityStatistics) {
+    return { errors, warnings };
+  }
+  
+  // Validate threshold parameters
+  if (step.parameters.threshold !== undefined) {
+    const threshold = step.parameters.threshold;
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
+      errors.push(`Invalid threshold: ${threshold}. Must be between 0 and 1.`);
+    } else if (threshold > 0.9) {
+      warnings.push(`Very high threshold (${threshold}) may return few results.`);
+    } else if (threshold < 0.3) {
+      warnings.push(`Very low threshold (${threshold}) may return low-quality results.`);
+    }
+  }
+  
+  // Validate limit parameters
+  if (step.parameters.limit !== undefined) {
+    const limit = step.parameters.limit;
+    if (typeof limit !== 'number' || limit < 1) {
+      errors.push(`Invalid limit: ${limit}. Must be a positive number.`);
+    } else if (limit > 100) {
+      warnings.push(`High limit (${limit}) may impact performance.`);
+    }
+  }
+  
+  // Validate toolNames against entity statistics
+  if (step.parameters.toolNames && Array.isArray(step.parameters.toolNames)) {
+    const availableTools = Object.keys(entityStatistics);
+    const missingTools = step.parameters.toolNames.filter(name =>
+      !availableTools.some(available =>
+        available.toLowerCase().includes(name.toLowerCase()) ||
+        name.toLowerCase().includes(available.toLowerCase())
+      )
+    );
+    
+    if (missingTools.length > 0) {
+      warnings.push(`Tool names not found in entity statistics: ${missingTools.join(", ")}`);
+    }
+  }
+  
+  return { errors, warnings };
+}
+
+/**
+ * Validates plan against context and statistics
+ */
+function validatePlanContext(
+  plan: Plan,
+  entityStatistics?: Record<string, any>,
+  metadataContext?: any,
+  validationReasoning?: PlanReasoning[]
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let confidence = 0.8; // Base confidence
+  
+  // Check if plan uses context appropriately
+  if (entityStatistics && Object.keys(entityStatistics).length > 0) {
+    if (!plan.adaptive) {
+      warnings.push("Entity statistics available but plan is not adaptive");
+      confidence -= 0.1;
+    }
+    
+    // Check if plan complexity matches context
+    const avgConfidence = Object.values(entityStatistics)
+      .reduce((sum: number, stats: any) => sum + (stats.confidence || 0), 0) / Object.keys(entityStatistics).length;
+    
+    if (avgConfidence > 0.8 && plan.strategy === "fallback") {
+      warnings.push("High confidence context but using fallback strategy");
+      confidence -= 0.2;
+    }
+  } else {
+    if (plan.adaptive) {
+      warnings.push("Plan is adaptive but no entity statistics available");
+      confidence -= 0.1;
+    }
+  }
+  
+  // Validate metadata context
+  if (metadataContext) {
+    if (metadataContext.metadataConfidence < 0.3 && plan.strategy === "optimal") {
+      warnings.push("Low metadata confidence but using optimal strategy");
+      confidence -= 0.15;
+    }
+  }
+  
+  // Add validation reasoning
+  if (validationReasoning) {
+    validationReasoning.push({
+      stage: "context_validation",
+      decision: `Context validation ${errors.length === 0 ? 'passed' : 'failed'}`,
+      confidence,
+      supportingEvidence: [
+        `Entity statistics available: ${!!entityStatistics && Object.keys(entityStatistics).length > 0}`,
+        `Plan adaptive: ${plan.adaptive || false}`,
+        `Plan strategy: ${plan.strategy || 'unknown'}`,
+        `Errors: ${errors.length}`,
+        `Warnings: ${warnings.length}`
+      ]
+    });
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    confidence: Math.max(0.1, Math.min(1.0, confidence)),
+    reasoning: validationReasoning || []
+  };
+}
+
+/**
+ * Calculates overall validation confidence
+ */
+function calculateValidationConfidence(
+  errors: string[],
+  warnings: string[],
+  contextConfidence: number
+): number {
+  let confidence = contextConfidence;
+  
+  // Reduce confidence based on errors
+  confidence -= errors.length * 0.15;
+  
+  // Reduce confidence based on warnings
+  confidence -= warnings.length * 0.05;
+  
+  return Math.max(0.1, Math.min(1.0, confidence));
+}
+
+/**
+ * Attempts to fix a problematic step with context awareness
+ */
+function fixStep(
+  step: Function,
+  stepIndex: number,
+  knownFunctions: string[],
+  entityStatistics?: Record<string, any>
+): Function | null {
   const fixedStep = { ...step };
   
   // Fix missing function name
@@ -317,9 +706,13 @@ function createDiverseStrategy(baseStrategy: Plan): Plan | null {
 }
 
 /**
- * Creates a fallback plan when validation fails
+ * Creates a fallback plan when validation fails with reasoning
  */
-function createFallbackPlan(state: State, errors: string[]): Plan {
+function createFallbackPlan(
+  state: State,
+  errors: string[],
+  reasoning?: PlanReasoning[]
+): Plan {
   const query = state.preprocessedQuery || state.query || "fallback search";
   
   return {
@@ -341,8 +734,59 @@ function createFallbackPlan(state: State, errors: string[]): Plan {
         inputFromStep: 0
       }
     ],
-    description: `Fallback plan due to validation errors: ${errors.join(", ")}`
+    description: `Fallback plan due to validation errors: ${errors.join(", ")}`,
+    reasoning: reasoning || [{
+      stage: "fallback_creation",
+      decision: "Created fallback plan due to validation errors",
+      confidence: 0.3,
+      supportingEvidence: errors.map(e => `Error: ${e}`)
+    }],
+    strategy: "fallback-validation",
+    adaptive: false,
+    validationPassed: false
   };
+}
+
+/**
+ * NEW: T035 - Create emergency fallback plan for critical safety issues
+ */
+function createEmergencyFallbackPlan(
+  state: State,
+  safetyValidation: SafetyValidationResult,
+  reasoning?: PlanReasoning[]
+): Plan {
+  const query = state.preprocessedQuery || state.query || "emergency fallback search";
+  
+  // Create minimal safe plan with no dangerous operations
+  const emergencyPlan: Plan = {
+    steps: [
+      {
+        name: "semantic-search",
+        parameters: {
+          query,
+          limit: 10, // Very conservative limit
+          safeMode: true // Flag to indicate safe mode
+        },
+        inputFromStep: undefined
+      }
+    ],
+    description: `EMERGENCY FALLBACK PLAN due to critical safety issues: ${safetyValidation.criticalErrors.join(", ")}`,
+    reasoning: reasoning || [{
+      stage: "emergency_fallback",
+      decision: "Created emergency fallback plan due to critical safety issues",
+      confidence: 0.1, // Very low confidence
+      supportingEvidence: [
+        ...safetyValidation.criticalErrors.map(e => `Critical: ${e}`),
+        ...safetyValidation.recommendations.map(r => `Recommendation: ${r}`)
+      ]
+    }],
+    strategy: "emergency-fallback",
+    adaptive: false,
+    validationPassed: false
+  };
+  
+  console.warn("[plan-validator] Emergency fallback plan created with minimal safe operations");
+  return emergencyPlan;
 }
 
 /**
@@ -351,13 +795,17 @@ function createFallbackPlan(state: State, errors: string[]): Plan {
 function getKnownFunctions(): string[] {
   return [
     "semantic-search",
+    "lookup-by-name",
     "tool-name-lookup",
     "find-similar-tools",
+    "find-similar-by-features",
     "merge-results",
+    "merge-and-dedupe",
     "filter-by-price",
     "filter-by-category",
     "filter-by-interface",
     "filter-by-functionality",
+    "filter-by-user-type",
     "filter-by-user-types",
     "filter-by-deployment",
     "exclude-tools",

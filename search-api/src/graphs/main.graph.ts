@@ -7,6 +7,7 @@ import { stateValidator } from "@/utils/state-validator";
 import { rollbackManager } from "@/utils/rollback-manager";
 import { stateMonitor } from "@/utils/state-monitor";
 import { v4 as uuidv4 } from "uuid";
+import { defaultEnhancedSearchConfig } from "@/config/enhanced-search-config";
 
 // Import individual nodes
 import { intentExtractionNode } from "@/nodes/intent-extraction.node";
@@ -37,6 +38,7 @@ function createValidatedNode(nodeName: string, originalNode: any) {
       const beforeValidation = stateValidator.validateState(state,
         nodeName === "intent-extraction" ? "initial" :
         nodeName === "context-enrichment" ? "intentExtraction" :
+        nodeName === "skip-context-enrichment" ? "intentExtraction" :
         nodeName === "query-planning" ? "contextEnrichment" :
         nodeName === "execution" ? "queryPlanning" : "execution"
       );
@@ -66,6 +68,7 @@ function createValidatedNode(nodeName: string, originalNode: any) {
       const afterValidation = stateValidator.validateState(result,
         nodeName === "intent-extraction" ? "intentExtraction" :
         nodeName === "context-enrichment" ? "contextEnrichment" :
+        nodeName === "skip-context-enrichment" ? "contextEnrichment" :
         nodeName === "query-planning" ? "queryPlanning" :
         nodeName === "execution" ? "execution" : "completion"
       );
@@ -133,18 +136,83 @@ function createValidatedNode(nodeName: string, originalNode: any) {
  * Creates the main state graph for the intelligent search system
  * @returns StateGraph instance
  */
+/**
+ * Context enrichment router - determines if context enrichment should be executed
+ */
+function contextEnrichmentRouter(state: typeof StateAnnotation.State): "context-enrichment" | "skip-context-enrichment" {
+  console.log(`[contextEnrichmentRouter] Deciding for query: "${state.query}"`);
+  
+  // Check if context enrichment is enabled in configuration
+  const config = defaultEnhancedSearchConfig?.contextEnrichment;
+  console.log(`[contextEnrichmentRouter] Config enabled: ${config?.enabled}`);
+  if (config && !config.enabled) {
+    console.log(`[contextEnrichmentRouter] Decision: skip-context-enrichment (config disabled)`);
+    return "skip-context-enrichment";
+  }
+  
+  // Check if there are entities to enrich
+  const nerResults = state.extractionSignals?.nerResults?.length || 0;
+  const resolvedToolNames = state.extractionSignals?.resolvedToolNames?.length || 0;
+  const fuzzyMatches = state.extractionSignals?.fuzzyMatches?.length || 0;
+  
+  console.log(`[contextEnrichmentRouter] Entity counts - NER: ${nerResults}, Resolved: ${resolvedToolNames}, Fuzzy: ${fuzzyMatches}`);
+  
+  const hasEntities = nerResults > 0 || resolvedToolNames > 0 || fuzzyMatches > 0;
+  
+  if (!hasEntities) {
+    console.log(`[contextEnrichmentRouter] Decision: skip-context-enrichment (no entities)`);
+    return "skip-context-enrichment";
+  }
+  
+  // Check if we're in recovery mode - skip enrichment to speed up recovery
+  if (state.metadata?.recoveryTime) {
+    console.log(`[contextEnrichmentRouter] Decision: skip-context-enrichment (recovery mode)`);
+    return "skip-context-enrichment";
+  }
+  
+  console.log(`[contextEnrichmentRouter] Decision: context-enrichment (proceed)`);
+  return "context-enrichment";
+}
+
+/**
+ * Skip context enrichment node - passes through state unchanged
+ */
+async function skipContextEnrichmentNode(state: typeof StateAnnotation.State): Promise<Partial<typeof StateAnnotation.State>> {
+  console.log(`[skip-context-enrichment] Skipping context enrichment for query: "${state.query}"`);
+  
+  return {
+    metadata: {
+      ...state.metadata,
+      executionPath: [...(state.metadata?.executionPath || []), "skip-context-enrichment"],
+      nodeExecutionTimes: {
+        ...(state.metadata?.nodeExecutionTimes || {}),
+        "skip-context-enrichment": 0
+      }
+    }
+  };
+}
+
 export function createMainGraph() {
   const workflow = new StateGraph(StateAnnotation)
     .addNode("intent-extraction", createValidatedNode("intent-extraction", intentExtractionNode))
     .addNode("context-enrichment", createValidatedNode("context-enrichment", contextEnrichmentNode))
+    .addNode("skip-context-enrichment", createValidatedNode("skip-context-enrichment", skipContextEnrichmentNode))
     .addNode("query-planning", createValidatedNode("query-planning", queryPlanningNode))
     .addNode("execution", createValidatedNode("execution", executionNode))
     .addNode("final-completion", createValidatedNode("final-completion", completionNode))
     
-    // Define the main flow
+    // Define the main flow with conditional context enrichment
     .addEdge(START, "intent-extraction")
-    .addEdge("intent-extraction", "context-enrichment")
+    .addConditionalEdges(
+      "intent-extraction",
+      contextEnrichmentRouter,
+      {
+        "context-enrichment": "context-enrichment",
+        "skip-context-enrichment": "skip-context-enrichment"
+      }
+    )
     .addEdge("context-enrichment", "query-planning")
+    .addEdge("skip-context-enrichment", "query-planning")
     .addEdge("query-planning", "execution")
     .addEdge("execution", "final-completion")
     .addEdge("final-completion", END);

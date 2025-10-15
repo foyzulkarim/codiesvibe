@@ -89,6 +89,54 @@ export const StateAnnotation = Annotation.Root({
     recoveryTime?: Date;
     rollbackTime?: Date;
     name: string;
+    planReasoning?: any[];
+    planContext?: any;
+    planningStrategy?: string;
+    adaptivePlanning?: boolean;
+    strategyWeights?: Array<{ name: string; weight: number }>;
+    planValidation?: {
+      passed: boolean;
+      confidence: number;
+      errors: string[];
+      warnings: string[];
+      reasoning: any[];
+    };
+    // Dynamic stage skipping metadata
+    stageSkippingDecisions?: any;
+    complexityAnalysis?: any;
+    performanceMetrics?: any;
+    qualityValidation?: any;
+    // T035: Enhanced safety validation metadata
+    safetyValidation?: {
+      safetyLevel: "safe" | "caution" | "unsafe";
+      loopDetection: {
+        hasLoops: boolean;
+        loopPaths: string[];
+        circularDependencies: string[];
+      };
+      resourceValidation: {
+        withinLimits: boolean;
+        estimatedTime: number;
+        memoryUsage: number;
+        timeoutRisk: boolean;
+      };
+      stateValidation: {
+        requirementsMet: boolean;
+        missingStates: string[];
+        invalidStates: string[];
+      };
+      sanitizationResult: {
+        sanitized: boolean;
+        removedSteps: string[];
+        modifiedParams: Array<{ step: string; param: string; reason: string }>;
+      };
+      recommendations: string[];
+      confidence: number;
+      isValid: boolean;
+      errors: string[];
+      warnings: string[];
+      criticalErrors: string[];
+    };
   }>,
   
   // Context Enrichment
