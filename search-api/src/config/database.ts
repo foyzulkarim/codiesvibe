@@ -43,6 +43,14 @@ export async function disconnectFromMongoDB(): Promise<void> {
   }
 }
 
+import {
+  enhancedCollectionConfig,
+  enhancedCollectionNames,
+  defaultEnhancedCollectionOptions,
+  isEnhancedVectorTypeSupported,
+  getEnabledVectorTypes
+} from "./enhanced-qdrant-schema";
+
 // Qdrant Configuration
 export const qdrantConfig = {
   host: process.env.QDRANT_HOST || "localhost",
@@ -53,7 +61,7 @@ export const qdrantConfig = {
     size: 1024, // Size of the embedding model (mxbai-embed-large)
     distance: "Cosine" as const,
   },
-  // Multi-vector configuration with named vectors
+  // Multi-vector configuration with named vectors (legacy - for backward compatibility)
   multiVectorsConfig: {
     semantic: {
       size: 1024,
@@ -76,14 +84,18 @@ export const qdrantConfig = {
       distance: "Cosine" as const,
     },
   },
-  // Collection names for different vector types
+  // Collection names for different vector types (legacy - for backward compatibility)
   collectionNames: {
     semantic: process.env.QDRANT_COLLECTION_SEMANTIC || "tools_semantic",
     "entities.categories": process.env.QDRANT_COLLECTION_CATEGORIES || "tools_categories",
     "entities.functionality": process.env.QDRANT_COLLECTION_FUNCTIONALITY || "tools_functionality",
     "entities.aliases": process.env.QDRANT_COLLECTION_ALIASES || "tools_aliases",
     "composites.toolType": process.env.QDRANT_COLLECTION_TOOL_TYPE || "tools_tool_type",
-  }
+  },
+  // Enhanced collection configuration
+  enhancedCollectionConfig,
+  enhancedCollectionNames,
+  enhancedCollectionOptions: defaultEnhancedCollectionOptions,
 };
 
 // Qdrant connection management
@@ -108,12 +120,12 @@ export async function connectToQdrant(): Promise<QdrantClient> {
       console.log(`Created Qdrant collection: ${qdrantConfig.collectionName}`);
     }
 
-    // Create multi-vector collections
+    // Create multi-vector collections (legacy approach)
     for (const [vectorType, collectionName] of Object.entries(qdrantConfig.collectionNames)) {
-      if (!existingCollectionNames.includes(collectionName)) {
+      if (!existingCollectionNames.includes(collectionName as string)) {
         const vectorConfig = qdrantConfig.multiVectorsConfig[vectorType as keyof typeof qdrantConfig.multiVectorsConfig];
         if (vectorConfig) {
-          await qdrantClient.createCollection(collectionName, {
+          await qdrantClient.createCollection(collectionName as string, {
             vectors: vectorConfig,
           });
           console.log(`Created Qdrant collection for ${vectorType}: ${collectionName}`);
@@ -121,7 +133,20 @@ export async function connectToQdrant(): Promise<QdrantClient> {
       }
     }
 
-    console.log("Connected to Qdrant with multi-vector support");
+    // Create enhanced collection with named vectors
+    if (!existingCollectionNames.includes(qdrantConfig.enhancedCollectionNames.primary)) {
+      await qdrantClient.createCollection(
+        qdrantConfig.enhancedCollectionNames.primary,
+        qdrantConfig.enhancedCollectionOptions
+      );
+      console.log(`Created enhanced Qdrant collection: ${qdrantConfig.enhancedCollectionNames.primary}`);
+      
+      // Log enabled vector types
+      const enabledTypes = getEnabledVectorTypes();
+      console.log(`Enhanced collection supports ${enabledTypes.length} vector types: ${enabledTypes.join(', ')}`);
+    }
+
+    console.log("Connected to Qdrant with enhanced multi-vector support");
     return qdrantClient;
   } catch (error) {
     console.error("Failed to connect to Qdrant:", error);
@@ -144,8 +169,39 @@ export function isSupportedVectorType(vectorType: string): boolean {
 }
 
 /**
- * Get all supported vector types
+ * Get all supported vector types (legacy)
  */
 export function getSupportedVectorTypes(): string[] {
   return Object.keys(qdrantConfig.multiVectorsConfig);
+}
+
+/**
+ * Get enhanced collection name
+ */
+export function getEnhancedCollectionName(): string {
+  return qdrantConfig.enhancedCollectionNames.primary;
+}
+
+/**
+ * Check if enhanced collection should be used
+ */
+export function shouldUseEnhancedCollection(): boolean {
+  return process.env.QDRANT_USE_ENHANCED_COLLECTION === 'true';
+}
+
+/**
+ * Get appropriate collection name based on vector type and configuration
+ */
+export function getCollectionNameForVectorType(vectorType?: string): string {
+  // Use enhanced collection if enabled and vector type is supported
+  if (shouldUseEnhancedCollection() && (!vectorType || isEnhancedVectorTypeSupported(vectorType))) {
+    return qdrantConfig.enhancedCollectionNames.primary;
+  }
+  
+  // Fall back to legacy collections
+  if (vectorType && vectorType in qdrantConfig.collectionNames) {
+    return qdrantConfig.collectionNames[vectorType as keyof typeof qdrantConfig.collectionNames];
+  }
+  
+  return qdrantConfig.collectionName;
 }

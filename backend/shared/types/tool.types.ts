@@ -61,6 +61,26 @@ export interface ToolDocument extends BaseTool {
   updatedAt: string;
 }
 
+// Enhanced tool interface with v2.0 relationship fields
+export interface EnhancedTool extends BaseTool {
+  // Enhanced entity relationships (v2.0)
+  toolTypes: string[];
+  domains: string[];
+  capabilities: string[];
+
+  // Search optimization fields (v2.0)
+  aliases?: string[];
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  similarTo?: string[];
+  alternativesFor?: string[];
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  commonUseCases: string[];
+}
+
 // Create tool payload (for API requests)
 export interface CreateToolPayload {
   // Identity fields
@@ -92,4 +112,21 @@ export interface CreateToolPayload {
   website?: string;
   documentation?: string;
   status?: 'active' | 'beta' | 'deprecated' | 'discontinued';
+
+  // Enhanced entity relationships (v2.0)
+  toolTypes: string[];
+  domains: string[];
+  capabilities: string[];
+
+  // Search optimization fields (v2.0)
+  aliases?: string[];
+  synonyms?: string[];
+
+  // Context relationships (v2.0)
+  similarTo?: string[];
+  alternativesFor?: string[];
+  worksWith?: string[];
+
+  // Usage patterns (v2.0)
+  commonUseCases: string[];
 }

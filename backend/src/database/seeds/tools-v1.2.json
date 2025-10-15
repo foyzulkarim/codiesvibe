@@ -47,7 +47,17 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z",
+
+      "toolTypes": ["AI Tool", "Code Editor", "IDE", "Development Platform"],
+      "domains": ["Software Development", "AI Programming", "Code Generation", "Developer Tools"],
+      "capabilities": ["Code Completion", "AI Chat", "Debugging", "Refactoring", "Multi-language Support"],
+      "aliases": ["Cursor Editor", "AI Cursor", "Cursor AI Editor"],
+      "synonyms": ["AI Code Editor", "Intelligent IDE", "Smart Code Editor"],
+      "similarTo": ["vscode", "copilot", "tabnine"],
+      "alternativesFor": ["vscode-copilot", "codeium"],
+      "worksWith": ["github", "gitlab", "docker", "nodejs", "python", "typescript"],
+      "commonUseCases": ["Code Development", "AI-Assisted Programming", "Debugging", "Code Refactoring", "Multi-language Development"]
     },
     {
       "id": "replit",
@@ -86,7 +96,17 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z",
+
+      "toolTypes": ["Cloud IDE", "AI Platform", "Development Environment", "Collaboration Platform"],
+      "domains": ["Cloud Computing", "Web Development", "Education", "Collaborative Development"],
+      "capabilities": ["AI Coding", "Instant Deployment", "Real-time Collaboration", "Multi-language Support", "Database Management"],
+      "aliases": ["Replit IDE", "Cloud Replit", "AI Replit"],
+      "synonyms": ["Online IDE", "Cloud Development", "Collaborative Coding"],
+      "similarTo": ["codesandbox", "codepen", "glitch"],
+      "alternativesFor": ["local-ide", "traditional-development"],
+      "worksWith": ["github", "discord", "slack", "python", "javascript", "nodejs"],
+      "commonUseCases": ["Education", "Rapid Prototyping", "Collaborative Development", "Cloud Deployment", "Learning Programming"]
     },
     {
       "id": "lovable",
@@ -195,7 +215,17 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z",
+
+      "toolTypes": ["AI App Builder", "No-Code Platform", "Full-Stack Generator", "Rapid Prototyping Tool"],
+      "domains": ["App Development", "No-Code Development", "Startup Tools", "Rapid Prototyping"],
+      "capabilities": ["Natural Language Programming", "Full-Stack Generation", "Database Setup", "Authentication", "Deployment"],
+      "aliases": ["Lovable AI", "AI App Generator", "Lovable Platform"],
+      "synonyms": ["AI App Builder", "No-Code Development", "Natural Language Programming"],
+      "similarTo": ["bubble", "webflow", "retool"],
+      "alternativesFor": ["traditional-development", "custom-coding"],
+      "worksWith": ["supabase", "react", "tailwind", "vite", "github"],
+      "commonUseCases": ["MVP Development", "Rapid Prototyping", "Idea Validation", "Non-Technical App Creation", "Startup Projects"]
     },
     {
       "id": "ollama",
@@ -234,7 +264,17 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z",
+
+      "toolTypes": ["Local LLM", "AI Model Runner", "Privacy Tool", "Open Source Platform"],
+      "domains": ["Local AI", "Privacy Computing", "Open Source AI", "Edge Computing"],
+      "capabilities": ["Local Inference", "Model Management", "Privacy Protection", "Offline AI", "Multiple Model Support"],
+      "aliases": ["Ollama AI", "Local Ollama", "Ollama Platform"],
+      "synonyms": ["Local LLM Runner", "AI Privacy Tool", "Offline AI"],
+      "similarTo": ["lm-studio", "text-generation-webui", "jan-ai"],
+      "alternativesFor": ["cloud-ai", "api-based-ai"],
+      "worksWith": ["llama", "mistral", "codellama", "python", "docker"],
+      "commonUseCases": ["Privacy-Focused AI", "Local Development", "Research", "Offline Computing", "Cost Optimization"]
     },
     {
       "id": "lm-studio",
@@ -273,7 +313,17 @@
       "status": "active",
       "contributor": "LM Studio Team",
       "dateAdded": "2024-01-15",
-      "lastUpdated": "2024-12-15"
+      "lastUpdated": "2024-12-15",
+
+      "toolTypes": ["Desktop AI", "Local LLM", "GUI Tool", "AI Model Manager"],
+      "domains": ["Local AI", "User-Friendly AI", "Desktop Applications", "AI Model Management"],
+      "capabilities": ["GUI Interface", "Model Management", "Document RAG", "Local API Server", "Cross-Platform Support"],
+      "aliases": ["LM Studio AI", "Local LM Studio", "LM Studio Desktop"],
+      "synonyms": ["Desktop AI Tool", "GUI LLM Runner", "User-Friendly Local AI"],
+      "similarTo": ["ollama", "text-generation-webui", "jan-ai"],
+      "alternativesFor": ["command-line-ai", "complex-local-ai"],
+      "worksWith": ["llama", "mistral", "phi", "documents", "pdfs"],
+      "commonUseCases": ["User-Friendly Local AI", "Document Processing", "RAG Applications", "Non-Technical AI", "Desktop AI Computing"]
     }
   ]
 }

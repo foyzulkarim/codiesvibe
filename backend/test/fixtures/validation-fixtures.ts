@@ -41,6 +41,32 @@ export const VALIDATION_FIXTURES = {
     },
     contributor: 'test-user',
     dateAdded: '2025-09-12T10:00:00Z',
+
+    // Enhanced entity relationships (v2.0)
+    toolTypes: ['AI Tool', 'SaaS Platform', 'API Service'],
+    domains: [
+      'Natural Language Processing',
+      'AI Assistant',
+      'Content Creation',
+    ],
+    capabilities: [
+      'Text Generation',
+      'Conversation',
+      'Code Assistance',
+      'Translation',
+    ],
+
+    // Search optimization fields (v2.0)
+    aliases: ['GPT', 'Chat AI', 'OpenAI Chat'],
+    synonyms: ['AI Assistant', 'Conversational AI', 'Language Model'],
+
+    // Context relationships (v2.0)
+    similarTo: ['claude', 'bard', 'gemini'],
+    alternativesFor: ['copilot', 'code-assistant'],
+    worksWith: ['github', 'vscode', 'slack'],
+
+    // Usage patterns (v2.0)
+    commonUseCases: ['Content Creation', 'Customer Support', 'Code Generation'],
   },
 
   // Valid minimal tool data (only required fields)
@@ -59,6 +85,14 @@ export const VALIDATION_FIXTURES = {
     },
     contributor: 'test-user',
     dateAdded: '2025-09-12T10:00:00Z',
+
+    // Enhanced entity relationships (v2.0) - Required fields
+    toolTypes: ['Basic Tool', 'Utility App'],
+    domains: ['General Purpose', 'Productivity'],
+    capabilities: ['Basic Functionality', 'Simple Operations'],
+
+    // Usage patterns (v2.0) - Required field
+    commonUseCases: ['Basic Tasks', 'Simple Operations'],
   },
 
   // Edge case fixtures for validation testing

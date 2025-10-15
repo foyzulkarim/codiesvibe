@@ -35,10 +35,10 @@ export type MultiVectorSearchConfig = z.infer<typeof MultiVectorSearchConfigSche
 export const LocalNLPConfigSchema = z.object({
   enabled: z.boolean().default(true),
   nerModel: z.string().default('Xenova/bert-base-NER'),
-  classificationModel: z.string().default('Xenova/distilbert-base-uncased'),
+  classificationModel: z.string().default('Xenova/nli-deberta-v3-base'),
   modelCacheEnabled: z.boolean().default(true),
   modelCacheSize: z.number().default(2), // number of models to cache
-  confidenceThreshold: z.number().default(0.7),
+  confidenceThreshold: z.number().default(0.5),
   maxProcessingTime: z.number().default(100), // ms
   fallbackEnabled: z.boolean().default(true),
   fallbackThreshold: z.number().default(0.5),
@@ -166,10 +166,10 @@ export const defaultEnhancedSearchConfig: EnhancedSearchConfig = {
   localNLP: {
     enabled: true,
     nerModel: 'Xenova/bert-base-NER',
-    classificationModel: 'Xenova/distilbert-base-uncased',
+    classificationModel: 'Xenova/nli-deberta-v3-base',
     modelCacheEnabled: true,
     modelCacheSize: 2,
-    confidenceThreshold: 0.7,
+    confidenceThreshold: 0.5,
     maxProcessingTime: 100,
     fallbackEnabled: true,
     fallbackThreshold: 0.5,
@@ -260,10 +260,10 @@ export const getEnhancedSearchConfigFromEnv = (): Partial<EnhancedSearchConfig> 
   localNLP: {
     enabled: process.env.LOCAL_NLP_ENABLED !== 'false',
     nerModel: process.env.LOCAL_NLP_NER_MODEL || 'Xenova/bert-base-NER',
-    classificationModel: process.env.LOCAL_NLP_CLASSIFICATION_MODEL || 'Xenova/distilbert-base-uncased',
+    classificationModel: process.env.LOCAL_NLP_CLASSIFICATION_MODEL || 'Xenova/nli-deberta-v3-base',
     modelCacheEnabled: process.env.LOCAL_NLP_MODEL_CACHE_ENABLED !== 'false',
     modelCacheSize: parseInt(process.env.LOCAL_NLP_MODEL_CACHE_SIZE || '2'),
-    confidenceThreshold: parseFloat(process.env.LOCAL_NLP_CONFIDENCE_THRESHOLD || '0.7'),
+    confidenceThreshold: parseFloat(process.env.LOCAL_NLP_CONFIDENCE_THRESHOLD || '0.5'),
     maxProcessingTime: parseInt(process.env.LOCAL_NLP_MAX_TIME || '100'),
     fallbackEnabled: process.env.LOCAL_NLP_FALLBACK_ENABLED !== 'false',
     fallbackThreshold: parseFloat(process.env.LOCAL_NLP_FALLBACK_THRESHOLD || '0.5'),

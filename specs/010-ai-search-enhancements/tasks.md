@@ -90,9 +90,6 @@
 - [ ] T048 Add search architecture comparison experiments
 
 ## Phase 8: Performance & Monitoring
-- [ ] T049 Unit test enhanced embedding cache in tests/unit/test-enhanced-cache.ts
-- [ ] T050 Unit test context enrichment performance in tests/unit/test-context-performance.ts
-- [ ] T051 Unit test local NLP performance in tests/unit/test-nlp-performance.ts
 - [ ] T052 Implement intelligent caching layer in search-api/src/services/intelligent-cache.service.ts
 - [ ] T053 Create search analytics service in search-api/src/services/search-analytics.service.ts
 - [ ] T054 Implement enhanced performance monitoring

@@ -12,13 +12,13 @@
    → Only plan.md available (comprehensive enough for full implementation)
 3. Generate tasks by category:
    → Setup: dependencies, configuration, state schema
-   → Tests: service tests, integration tests
+   → Tests:  tests with real services
    → Core: context enrichment, local NLP, multi-vector search
-   → Integration: enhanced graph flow, result merging
+   → : enhanced graph flow, result merging
    → Polish: performance optimization, monitoring, docs
 4. Apply task rules:
    → Sequential execution only (no parallel tasks)
-   → Tests before implementation (TDD)
+   → Implementation first, then  testing
 5. Number tasks sequentially (T001, T002...)
 6. Generate dependency graph
 7. Validate task completeness
@@ -266,9 +266,9 @@ Create an enhanced embedding cache that supports multiple vector types and inclu
 **Dependencies on other tasks:**
 - T001 (Enhanced state schema) - for type definitions
 - T003 (Enhanced configuration) - for cache settings
-- T006 (Multi-vector search service) - for cache integration
+- T006 (Multi-vector search service) - for cache 
 
-## Phase 2: Enhanced Qdrant Integration (Priority: High)
+## Phase 2: Enhanced Qdrant  (Priority: High)
 
 ### [ ] T008 Enhance Qdrant collection schema for multi-vector support
 
@@ -433,78 +433,82 @@ Create utilities for deduplicating search results across different vector types 
 
 ## Phase 3: Context Enrichment Implementation (Priority: High)
 
-### [ ] T014 Contract test context enrichment service in tests/contract/test-context-enrichment.ts
+### [ ] T014 Debug script for context enrichment service with real Qdrant and LLM (in search-api/debug-scripts)
 
 **What needs to be implemented:**
-Create contract tests for the context enrichment service to ensure it meets its specifications and handles edge cases correctly.
+Create a debug script for the context enrichment service that allows developers to directly test the service with real Qdrant instances and LLM services to validate functionality.
 
 **Key technical details from plan.md:**
-- Test entity statistics generation for various entity types
-- Test multi-vector search integration
-- Test caching behavior and performance
-- Test error handling and fallback mechanisms
-- Test result quality and accuracy
-- Test performance under load
+- Test entity statistics generation with real Qdrant multi-vector search
+- Test actual LLM  for context enrichment
+- Test real-world performance with actual data
+- Allow developers to test different scenarios and configurations
+- Validate actual search result quality
+- Test real caching behavior and effectiveness
 
 **Implementation approach:**
-1. Create contract test file following existing patterns
-2. Test entity statistics generation with sample entities
-3. Test multi-vector search integration
-4. Test caching behavior and invalidation
-5. Test error scenarios and fallbacks
-6. Add performance benchmarks
-7. Validate test coverage
+1. Create debug script in search-api/debug-scripts/test-context-enrichment.ts
+2. Follow the pattern of existing debug scripts with service health checks
+3. Test entity statistics generation with actual tool data
+4. Validate multi-vector search results quality
+5. Test end-to-end context enrichment flow
+6. Measure actual performance metrics
+7. Allow developers to test different entities and scenarios
+8. Include detailed logging and error reporting
 
 **Success criteria:**
-- All contract tests pass consistently
-- Edge cases are handled correctly
-- Performance meets requirements (<200ms)
-- Error handling works as expected
-- Test coverage exceeds 90%
-- Tests are maintainable and clear
+- Debug script can be run independently to test context enrichment
+- Developers can test different entities and scenarios
+- Multi-vector search finds 10x+ more relevant tools than baseline
+- Performance meets <200ms requirement in realistic conditions
+- Script provides detailed output for debugging
+- Script follows the same pattern as existing debug scripts
+- Script shares utilities with existing debug scripts
 
 **Dependencies on other tasks:**
-- T004 (Context enrichment service) - for service to test
+- T004 (Context enrichment service) - for service implementation
 - T018 (Entity statistics implementation) - for functionality to test
 
-### [ ] T015 Integration test entity statistics generation in tests/integration/test-entity-statistics.ts
+### [ ] T015 Debug script for entity statistics generation in search-api/debug-scripts/test-entity-statistics.ts  (in search-api/debug-scripts)
 
 **What needs to be implemented:**
-Create integration tests for the entity statistics generation to ensure it works correctly with the full system including Qdrant and MongoDB.
+Create a debug script for the entity statistics generation that allows developers to directly test the functionality with the full system including Qdrant and MongoDB.
 
 **Key technical details from plan.md:**
 - Test end-to-end entity statistics generation
-- Test integration with Qdrant multi-vector search
+- Test  with Qdrant multi-vector search
 - Test statistics quality and accuracy
 - Test performance with real data
 - Test caching behavior in system context
 - Test error handling in production scenarios
 
 **Implementation approach:**
-1. Create integration test file following existing patterns
-2. Set up test environment with Qdrant and MongoDB
-3. Test entity statistics with real tool data
-4. Validate statistics accuracy and quality
-5. Measure performance against requirements
-6. Test error scenarios and recovery
-7. Clean up test data properly
+1. Create debug script in search-api/debug-scripts/test-entity-statistics.ts
+2. Follow the pattern of existing debug scripts with service health checks
+3. Set up test environment with Qdrant and MongoDB
+4. Test entity statistics with real tool data
+5. Validate statistics accuracy and quality
+6. Measure performance against requirements
+7. Test error scenarios and recovery
+8. Allow developers to test different entities and configurations
 
 **Success criteria:**
-- Integration tests pass consistently
+- Debug script can be run independently to test entity statistics
+- Developers can test different entities and scenarios
 - Entity statistics are accurate and useful
 - Performance meets requirements in real environment
-- Error handling works in production scenarios
-- Tests cover realistic use cases
-- Test environment is properly isolated
+- Script provides detailed output for debugging
+- Script follows the same pattern as existing debug scripts
+- Script shares utilities with existing debug scripts
 
 **Dependencies on other tasks:**
 - T004 (Context enrichment service) - for service to test
 - T018 (Entity statistics implementation) - for functionality to test
 
-### [ ] T016 Integration test Qdrant multi-vector search in tests/integration/test-multi-vector-search.ts
+### [ ] T016 Debug script for Qdrant multi-vector search in search-api/debug-scripts/test-multi-vector-search.ts  (in search-api/debug-scripts)
 
 **What needs to be implemented:**
-Create integration tests for the Qdrant multi-vector search functionality to ensure it works correctly with the enhanced collection schema.
+Create a debug script for the Qdrant multi-vector search functionality that allows developers to directly test the enhanced collection schema and search capabilities.
 
 **Key technical details from plan.md:**
 - Test multi-vector search across all vector types
@@ -515,21 +519,24 @@ Create integration tests for the Qdrant multi-vector search functionality to ens
 - Test search quality and relevance
 
 **Implementation approach:**
-1. Create integration test file following existing patterns
-2. Set up test environment with enhanced Qdrant collection
-3. Test multi-vector search with sample queries
-4. Validate result merging and deduplication
-5. Measure search performance and quality
-6. Test error scenarios and fallbacks
-7. Clean up test data properly
+1. Create debug script in search-api/debug-scripts/test-multi-vector-search.ts
+2. Follow the pattern of existing debug scripts with service health checks
+3. Set up test environment with enhanced Qdrant collection
+4. Test multi-vector search with sample queries
+5. Validate result merging and deduplication
+6. Measure search performance and quality
+7. Test error scenarios and fallbacks
+8. Allow developers to test different queries and vector combinations
 
 **Success criteria:**
+- Debug script can be run independently to test multi-vector search
+- Developers can test different queries and vector combinations
 - Multi-vector search finds relevant results
 - Result merging produces high-quality results
 - Performance meets requirements (<200ms)
-- Source attribution is accurate
-- Error handling works correctly
-- Tests cover realistic search scenarios
+- Script provides detailed output for debugging
+- Script follows the same pattern as existing debug scripts
+- Script shares utilities with existing debug scripts
 
 **Dependencies on other tasks:**
 - T006 (Multi-vector search service) - for service to test
@@ -556,7 +563,7 @@ Create a LangGraph node for context enrichment that integrates with the existing
 4. Generate statistics for each entity
 5. Update state with enriched context
 6. Add error handling and fallbacks
-7. Test node integration with graph
+7. Test node  with graph
 
 **Success criteria:**
 - Node integrates seamlessly with existing graph
@@ -672,44 +679,44 @@ Add confidence scoring and source attribution to entity statistics to help the L
 
 ## Phase 4: Local NLP Processing (Priority: High)
 
-### [ ] T021 Contract test local NLP entity extraction in tests/contract/test-local-nlp.ts
+### [ ] T021 debug script based test local NLP with real transformers.js models (following debug-scripts)
 
 **What needs to be implemented:**
-Create contract tests for the local NLP service to ensure it correctly extracts entities from user queries using transformers.js.
+Create  tests for the local NLP service that work with actual transformers.js models to validate real-world entity extraction performance.
 
 **Key technical details from plan.md:**
-- Test entity extraction with various query types
-- Test confidence scoring and filtering
-- Test model loading and caching
-- Test performance with different query complexities
-- Test error handling and fallback mechanisms
-- Test accuracy compared to LLM baseline
+- Test entity extraction with real transformers.js models on actual queries
+- Test actual model loading, initialization, and caching behavior
+- Validate real-world performance with various query complexities
+- Test system behavior with actual model memory requirements
+- Test real fallback to LLM when confidence is low
+- Measure actual accuracy against real user queries
 
 **Implementation approach:**
-1. Create contract test file following existing patterns
-2. Test entity extraction with sample queries
-3. Validate confidence scoring and filtering
-4. Test model initialization and caching
-5. Measure performance against requirements
-6. Test error scenarios and fallbacks
-7. Compare accuracy with LLM baseline
+1. Set up  test environment with real transformers.js models
+2. Test entity extraction with diverse real-world queries
+3. Validate actual model loading and caching performance
+4. Test system behavior under realistic memory constraints
+5. Test actual LLM fallback 
+6. Measure real-world accuracy and performance metrics
+7. Validate end-to-end NLP processing flow
 
 **Success criteria:**
-- Entity extraction works with 95% accuracy
-- Confidence scoring filters irrelevant entities
-- Model loading is efficient and cached
-- Performance meets requirements (<100ms)
-- Error handling prevents failures
-- Accuracy matches or exceeds LLM baseline
+- Entity extraction works with real models on actual queries
+- Model loading and caching work efficiently in practice
+- Performance meets <100ms requirement with real models
+- System handles actual memory constraints gracefully
+- LLM fallback works seamlessly when needed
+- Real-world accuracy meets or exceeds expectations
 
 **Dependencies on other tasks:**
-- T005 (Local NLP service structure) - for service to test
+- T005 (Local NLP service structure) - for service implementation
 - T024 (NER pipeline implementation) - for functionality to test
 
-### [ ] T022 Integration test transformers.js model loading in tests/integration/test-transformers.ts
+### [ ] T022  test transformers.js model loading in tests//test-transformers.ts (following debug-scripts)
 
 **What needs to be implemented:**
-Create integration tests for transformers.js model loading to ensure models are correctly initialized, cached, and perform as expected.
+Create  tests for transformers.js model loading to ensure models are correctly initialized, cached, and perform as expected.
 
 **Key technical details from plan.md:**
 - Test model initialization and loading
@@ -720,7 +727,7 @@ Create integration tests for transformers.js model loading to ensure models are 
 - Test performance under load
 
 **Implementation approach:**
-1. Create integration test file following existing patterns
+1. Create  test file following existing patterns
 2. Test model initialization with different configurations
 3. Validate model caching and memory usage
 4. Test concurrent access patterns
@@ -740,10 +747,10 @@ Create integration tests for transformers.js model loading to ensure models are 
 - T005 (Local NLP service structure) - for service to test
 - T024 (NER pipeline implementation) - for models to test
 
-### [ ] T023 Integration test NLP fallback to LLM in tests/integration/test-nlp-fallback.ts
+### [ ] T023  test NLP fallback to LLM in tests//test-nlp-fallback.ts (following debug-scripts)
 
 **What needs to be implemented:**
-Create integration tests for the NLP fallback mechanism to ensure the system gracefully falls back to LLM processing when local NLP fails or confidence is low.
+Create  tests for the NLP fallback mechanism to ensure the system gracefully falls back to LLM processing when local NLP fails or confidence is low.
 
 **Key technical details from plan.md:**
 - Test fallback triggers for low confidence
@@ -754,7 +761,7 @@ Create integration tests for the NLP fallback mechanism to ensure the system gra
 - Test cost tracking for fallback usage
 
 **Implementation approach:**
-1. Create integration test file following existing patterns
+1. Create  test file following existing patterns
 2. Test fallback triggers and conditions
 3. Validate fallback accuracy and performance
 4. Test hybrid processing scenarios
@@ -943,26 +950,26 @@ Add performance monitoring to track the efficiency and cost savings of local NLP
 - T005 (Local NLP service structure) - for service to monitor
 - T027 (LLM fallback implementation) - for fallback tracking
 
-## Phase 5: Enhanced Graph Flow Integration
+## Phase 5: Enhanced Graph Flow 
 
-### [ ] T029 Integration test enhanced state transitions in tests/integration/test-enhanced-graph.ts
+### [ ] T029  test enhanced state transitions in tests//test-enhanced-graph.ts
 
 **What needs to be implemented:**
-Create integration tests for the enhanced graph with new state transitions to ensure the multi-stage pipeline works correctly.
+Create  tests for the enhanced graph with new state transitions to ensure the multi-stage pipeline works correctly.
 
 **Key technical details from plan.md:**
 - Test state transitions through all enhanced stages
-- Test context enrichment integration
-- Test local NLP processing integration
+- Test context enrichment 
+- Test local NLP processing 
 - Test dynamic execution planning
 - Test error handling and recovery
 - Test performance of enhanced pipeline
 
 **Implementation approach:**
-1. Create integration test file for enhanced graph
+1. Create  test file for enhanced graph
 2. Test complete flow with sample queries
 3. Validate state transitions at each stage
-4. Test integration of all new components
+4. Test  of all new components
 5. Measure performance against requirements
 6. Test error scenarios and recovery
 7. Validate enhanced functionality
@@ -979,10 +986,10 @@ Create integration tests for the enhanced graph with new state transitions to en
 - T017 (Context enrichment node) - for new node to test
 - T031 (Enhanced main graph) - for enhanced graph structure
 
-### [ ] T030 Integration test dynamic execution planning in tests/integration/test-dynamic-planning.ts
+### [ ] T030  test dynamic execution planning in tests//test-dynamic-planning.ts
 
 **What needs to be implemented:**
-Create integration tests for the dynamic execution planning feature to ensure it correctly generates and executes adaptive plans based on query complexity.
+Create  tests for the dynamic execution planning feature to ensure it correctly generates and executes adaptive plans based on query complexity.
 
 **Key technical details from plan.md:**
 - Test plan generation for different query types
@@ -993,7 +1000,7 @@ Create integration tests for the dynamic execution planning feature to ensure it
 - Test fallback to basic execution plans
 
 **Implementation approach:**
-1. Create integration test file for dynamic planning
+1. Create  test file for dynamic planning
 2. Test plan generation with various query types
 3. Validate conditional execution paths
 4. Test stage skipping logic
@@ -1033,7 +1040,7 @@ Update the main search graph to include the new context enrichment stage between
 4. Add conditional paths for optimization
 5. Update checkpointing configuration
 6. Add error handling for new stage
-7. Test integration with existing flow
+7. Test  with existing flow
 
 **Success criteria:**
 - Context enrichment integrates seamlessly
@@ -1185,44 +1192,44 @@ Add validation and safety checks to execution plans to prevent infinite loops, i
 
 ## Phase 6: Advanced Result Processing
 
-### [ ] T036 Contract test result merging service in tests/contract/test-result-merging.ts
+### [ ] T036  test result merging with real search sources
 
 **What needs to be implemented:**
-Create contract tests for the result merging service to ensure it correctly combines and ranks results from multiple sources.
+Create  tests for the result merging service that work with actual search results from Qdrant, LLM, and local NLP to validate real-world merging performance.
 
 **Key technical details from plan.md:**
-- Test reciprocal rank fusion implementation
-- Test result deduplication across sources
-- Test source-specific weighting
-- Test result diversity promotion
-- Test performance with large result sets
-- Test quality of merged results
+- Test reciprocal rank fusion with actual search results from all sources
+- Test real result deduplication across different search engines
+- Test source-specific weighting with actual relevance scores
+- Test result diversity promotion with real content
+- Test performance with actual large result sets from production
+- Test quality of merged results against real user queries
 
 **Implementation approach:**
-1. Create contract test file following existing patterns
-2. Test RRF implementation with sample data
-3. Validate deduplication logic
-4. Test weighting strategies for different sources
-5. Measure performance against requirements
-6. Test diversity promotion algorithms
-7. Validate merged result quality
+1. Set up  test environment with real search sources
+2. Test RRF implementation with actual search results
+3. Validate deduplication with real duplicate content
+4. Test weighting strategies with actual relevance data
+5. Measure performance with realistic result volumes
+6. Test diversity promotion with real content variety
+7. Validate merged result quality against user expectations
 
 **Success criteria:**
-- RRF implementation produces correct rankings
-- Deduplication removes duplicates effectively
-- Source weighting improves relevance
-- Diversity promotion creates varied results
-- Performance meets requirements
-- Merged results show improved relevance
+- RRF works correctly with real search results from all sources
+- Deduplication effectively handles real duplicate content
+- Source weighting improves actual relevance in practice
+- Diversity promotion creates meaningful variety in real results
+- Performance meets requirements with actual data volumes
+- Merged results demonstrate improved relevance for real queries
 
 **Dependencies on other tasks:**
-- T038 (Result merger service) - for service to test
-- T039 (Source-specific weighting) - for weighting to test
+- T038 (Result merger service) - for service implementation
+- T039 (Source-specific weighting) - for weighting implementation
 
-### [ ] T037 Integration test reciprocal rank fusion in tests/integration/test-rrf.ts
+### [ ] T037  test reciprocal rank fusion in tests//test-rrf.ts
 
 **What needs to be implemented:**
-Create integration tests for the reciprocal rank fusion algorithm to ensure it correctly merges results from different search sources.
+Create  tests for the reciprocal rank fusion algorithm to ensure it correctly merges results from different search sources.
 
 **Key technical details from plan.md:**
 - Test RRF with different result sets
@@ -1233,7 +1240,7 @@ Create integration tests for the reciprocal rank fusion algorithm to ensure it c
 - Test quality of RRF results
 
 **Implementation approach:**
-1. Create integration test file for RRF
+1. Create  test file for RRF
 2. Test RRF with various result combinations
 3. Validate parameter tuning effects
 4. Test with different result set sizes
@@ -1425,44 +1432,44 @@ Create a result explanation and source attribution system that provides transpar
 
 ## Phase 7: A/B Testing Framework
 
-### [ ] T043 Contract test A/B testing service in tests/contract/test-ab-testing.ts
+### [ ] T043  test A/B testing with real experiment scenarios
 
 **What needs to be implemented:**
-Create contract tests for the A/B testing service to ensure it correctly manages experiments and assigns users to variants.
+Create  tests for the A/B testing service that work with actual experiment configurations and real user scenarios to validate end-to-end A/B testing functionality.
 
 **Key technical details from plan.md:**
-- Test experiment configuration and management
-- Test user assignment to variants
-- Test metrics collection and tracking
-- Test experiment isolation and independence
-- Test configuration validation
-- Test performance under load
+- Test real experiment configuration and management with actual config files
+- Test actual user assignment to variants with real user sessions
+- Test real metrics collection and tracking with actual search interactions
+- Test experiment isolation with concurrent real experiments
+- Test configuration validation with real configuration scenarios
+- Test performance under realistic load with actual user traffic patterns
 
 **Implementation approach:**
-1. Create contract test file following existing patterns
-2. Test experiment configuration loading
-3. Validate user assignment consistency
-4. Test metrics collection accuracy
-5. Verify experiment isolation
-6. Test configuration validation
-7. Measure performance under load
+1. Set up  test environment with real experiment configurations
+2. Test experiment configuration loading with actual config files
+3. Validate user assignment consistency with real user sessions
+4. Test metrics collection with actual search interactions
+5. Verify experiment isolation with concurrent experiments
+6. Test configuration validation with real scenarios
+7. Measure performance under realistic load conditions
 
 **Success criteria:**
-- Experiment configuration loads correctly
-- User assignment is consistent and correct
-- Metrics are collected accurately
-- Experiments are properly isolated
-- Invalid configurations are rejected
-- Performance meets requirements
+- Real experiment configurations load and work correctly
+- User assignment works consistently with actual user sessions
+- Metrics are collected accurately from real search interactions
+- Multiple experiments run independently without interference
+- Invalid configurations are properly rejected in practice
+- Performance meets requirements under realistic conditions
 
 **Dependencies on other tasks:**
-- T045 (A/B testing service) - for service to test
-- T046 (Experiment configuration) - for configuration to test
+- T045 (A/B testing service) - for service implementation
+- T046 (Experiment configuration) - for configuration implementation
 
-### [ ] T044 Integration test experiment configuration in tests/integration/test-experiments.ts
+### [ ] T044  test experiment configuration in tests//test-experiments.ts
 
 **What needs to be implemented:**
-Create integration tests for the experiment configuration system to ensure experiments are correctly configured and applied.
+Create  tests for the experiment configuration system to ensure experiments are correctly configured and applied.
 
 **Key technical details from plan.md:**
 - Test experiment configuration loading from files
@@ -1473,7 +1480,7 @@ Create integration tests for the experiment configuration system to ensure exper
 - Test configuration updates and changes
 
 **Implementation approach:**
-1. Create integration test file for experiments
+1. Create  test file for experiments
 2. Test configuration loading from files
 3. Validate experiment activation/deactivation
 4. Test variant assignment consistency
@@ -1593,7 +1600,7 @@ Implement metrics collection for A/B experiments to track performance, relevance
 
 **Dependencies on other tasks:**
 - T045 (A/B testing service) - for service to track
-- T053 (Search analytics service) - for analytics integration
+- T053 (Search analytics service) - for analytics 
 
 ### [ ] T048 Add search architecture comparison experiments
 
@@ -1630,105 +1637,6 @@ Add specific experiments to compare the enhanced search architecture with the or
 - T047 (Metrics collection) - for measurement
 
 ## Phase 8: Performance & Monitoring
-
-### [ ] T049 Unit test enhanced embedding cache in tests/unit/test-enhanced-cache.ts
-
-**What needs to be implemented:**
-Create unit tests for the enhanced embedding cache to ensure it correctly handles multiple vector types and cache management.
-
-**Key technical details from plan.md:**
-- Test multi-vector cache operations
-- Test cache cleanup and management
-- Test cache hit rate tracking
-- Test performance under load
-- Test cache warming strategies
-- Test configuration and limits
-
-**Implementation approach:**
-1. Create unit test file following existing patterns
-2. Test multi-vector cache operations
-3. Validate cache cleanup functionality
-4. Test cache hit rate tracking
-5. Measure performance under load
-6. Test cache warming strategies
-7. Validate configuration and limits
-
-**Success criteria:**
-- Multi-vector cache operations work correctly
-- Cache cleanup prevents memory leaks
-- Hit rate tracking is accurate
-- Performance meets requirements
-- Cache warming improves performance
-- Configuration limits are enforced
-
-**Dependencies on other tasks:**
-- T007 (Enhanced embedding cache) - for cache to test
-
-### [ ] T050 Unit test context enrichment performance in tests/unit/test-context-performance.ts
-
-**What needs to be implemented:**
-Create unit tests for context enrichment performance to ensure it meets the <200ms latency requirement.
-
-**Key technical details from plan.md:**
-- Test context enrichment with various entity types
-- Measure performance against <200ms requirement
-- Test caching effectiveness for performance
-- Test performance with high entity counts
-- Test performance under concurrent load
-- Test fallback performance
-
-**Implementation approach:**
-1. Create unit test file for context enrichment performance
-2. Test with various entity types and counts
-3. Measure performance against requirements
-4. Test caching effectiveness
-5. Test under concurrent load
-6. Test fallback performance
-7. Optimize based on results
-
-**Success criteria:**
-- Context enrichment meets <200ms requirement
-- Performance is consistent across entity types
-- Caching improves performance significantly
-- Concurrent load is handled efficiently
-- Fallback performance is acceptable
-- Performance metrics meet all requirements
-
-**Dependencies on other tasks:**
-- T018 (Entity statistics generation) - for functionality to test
-
-### [ ] T051 Unit test local NLP performance in tests/unit/test-nlp-performance.ts
-
-**What needs to be implemented:**
-Create unit tests for local NLP performance to ensure it meets the <100ms processing requirement.
-
-**Key technical details from plan.md:**
-- Test NLP processing with various query types
-- Measure performance against <100ms requirement
-- Test model loading and caching performance
-- Test performance with concurrent requests
-- Test fallback performance
-- Test memory usage and efficiency
-
-**Implementation approach:**
-1. Create unit test file for NLP performance
-2. Test with various query types and complexities
-3. Measure performance against requirements
-4. Test model loading and caching
-5. Test under concurrent load
-6. Test memory usage
-7. Optimize based on results
-
-**Success criteria:**
-- NLP processing meets <100ms requirement
-- Performance is consistent across query types
-- Model loading and caching are efficient
-- Concurrent requests are handled well
-- Memory usage is within acceptable limits
-- All performance requirements are met
-
-**Dependencies on other tasks:**
-- T024 (NER pipeline implementation) - for functionality to test
 
 ### [ ] T052 Implement intelligent caching layer in search-api/src/services/intelligent-cache.service.ts
 
@@ -1912,7 +1820,7 @@ Create an enhanced search endpoint that provides access to the new search featur
 - Support configuration options for features
 - Include execution plan visibility
 - Provide enhanced result format
-- Support A/B testing integration
+- Support A/B testing 
 
 **Implementation approach:**
 1. Create enhanced search controller
@@ -1927,11 +1835,11 @@ Create an enhanced search endpoint that provides access to the new search featur
 - Configuration options work correctly
 - Execution plan is visible and useful
 - Response format is comprehensive
-- A/B testing integration works
+- A/B testing  works
 
 **Dependencies on other tasks:**
 - T031 (Enhanced main graph) - for enhanced functionality
-- T045 (A/B testing service) - for experiment integration
+- T045 (A/B testing service) - for experiment 
 
 ### [ ] T058 Add search analytics endpoints GET /api/search/analytics
 

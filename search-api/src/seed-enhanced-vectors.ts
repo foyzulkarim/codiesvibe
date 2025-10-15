@@ -1,186 +1,191 @@
 #!/usr/bin/env node
 
-import { enhancedVectorIndexingService } from "./services/enhanced-vector-indexing.service";
-import { getSupportedVectorTypes } from "./config/database";
+/**
+ * Enhanced Vector Seeding Script
+ * 
+ * This script seeds the enhanced Qdrant collection with multi-vector embeddings
+ * for all existing tools in the MongoDB database.
+ * 
+ * Usage:
+ *   npm run seed:enhanced-vectors
+ *   npm run seed:enhanced-vectors -- --vectorTypes=semantic,entities.categories
+ *   npm run seed:enhanced-vectors -- --batchSize=25
+ *   npm run seed:enhanced-vectors -- --force
+ */
 
-// Command line argument parsing
+import { enhancedVectorIndexingService } from './services/enhanced-vector-indexing.service';
+import { qdrantService } from './services/qdrant.service';
+import { shouldUseEnhancedCollection, getSupportedVectorTypes } from './config/database';
+import { getEnabledVectorTypes as getEnhancedVectorTypes } from './config/enhanced-qdrant-schema';
+
+// Parse command line arguments
 const args = process.argv.slice(2);
-const options = {
-  force: args.includes('--force'),
-  vectorTypes: [] as string[],
-  batchSize: 50,
-  help: args.includes('--help') || args.includes('-h')
-};
+const options: {
+  vectorTypes?: string[];
+  batchSize?: number;
+  force?: boolean;
+  validate?: boolean;
+} = {};
 
-// Parse vector types from command line
-const vectorTypeIndex = args.findIndex(arg => arg === '--vector-types' || arg === '-v');
-if (vectorTypeIndex !== -1 && args[vectorTypeIndex + 1]) {
-  options.vectorTypes = args[vectorTypeIndex + 1].split(',').map(t => t.trim());
-}
-
-// Parse batch size
-const batchSizeIndex = args.findIndex(arg => arg === '--batch-size' || arg === '-b');
-if (batchSizeIndex !== -1 && args[batchSizeIndex + 1]) {
-  const batchSize = parseInt(args[batchSizeIndex + 1]);
-  if (!isNaN(batchSize) && batchSize > 0) {
-    options.batchSize = batchSize;
+// Parse arguments
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg.startsWith('--vectorTypes=')) {
+    options.vectorTypes = arg.split('=')[1].split(',').map(v => v.trim());
+  } else if (arg.startsWith('--batchSize=')) {
+    options.batchSize = parseInt(arg.split('=')[1], 10);
+  } else if (arg === '--force') {
+    options.force = true;
+  } else if (arg === '--validate') {
+    options.validate = true;
   }
 }
 
-// Show help
-if (options.help) {
-  console.log(`
-🚀 Enhanced Vector Seeding Script
-
-Usage: npm run seed-enhanced-vectors [options]
-
-Options:
-  --force, -f           Force re-indexing (clears existing vectors)
-  --vector-types, -v    Comma-separated list of vector types to index
-                        (default: all supported types)
-  --batch-size, -b      Batch size for processing (default: 50)
-  --help, -h            Show this help message
-
-Examples:
-  npm run seed-enhanced-vectors
-  npm run seed-enhanced-vectors -- --force
-  npm run seed-enhanced-vectors -- --vector-types "semantic,entities.categories,entities.functionality"
-  npm run seed-enhanced-vectors -- --force --batch-size 25
-
-Available vector types:
-${getSupportedVectorTypes().map(type => `  - ${type}`).join('\n')}
-`);
-  process.exit(0);
+// Set defaults
+if (!options.vectorTypes || options.vectorTypes.length === 0) {
+  options.vectorTypes = shouldUseEnhancedCollection() ? getEnhancedVectorTypes() : getSupportedVectorTypes();
+}
+if (!options.batchSize) {
+  options.batchSize = 25;
 }
 
-/**
- * Main seeding function
- */
-async function seedEnhancedVectors(): Promise<void> {
-  const startTime = Date.now();
-  
+async function main() {
+  console.log('🚀 Enhanced Vector Seeding Script');
+  console.log('================================');
+  console.log(`Using enhanced collection: ${shouldUseEnhancedCollection() ? 'Yes' : 'No'}`);
+  console.log(`Vector types to process: ${options.vectorTypes.join(', ')}`);
+  console.log(`Batch size: ${options.batchSize}`);
+  console.log(`Force re-indexing: ${options.force ? 'Yes' : 'No'}`);
+  console.log(`Validate after seeding: ${options.validate !== false ? 'Yes' : 'No'}`);
+  console.log('');
+
   try {
-    console.log('🚀 Starting enhanced vector seeding process...\n');
-    
-    // Determine which vector types to process
-    const supportedTypes = getSupportedVectorTypes();
-    const vectorTypesToProcess = options.vectorTypes.length > 0 
-      ? options.vectorTypes.filter(type => supportedTypes.includes(type))
-      : supportedTypes;
-    
-    if (vectorTypesToProcess.length === 0) {
-      console.log('❌ No valid vector types specified');
-      console.log('Available vector types:', supportedTypes.join(', '));
-      process.exit(1);
+    // Check if enhanced collection is available
+    if (shouldUseEnhancedCollection()) {
+      try {
+        const collectionInfo = await qdrantService.getEnhancedCollectionInfo();
+        console.log(`✅ Enhanced collection found with ${collectionInfo.points_count} points`);
+      } catch (error) {
+        console.error('❌ Enhanced collection not found. Please run the enhanced collection creation script first.');
+        process.exit(1);
+      }
+    } else {
+      console.log('⚠️ Using legacy collections (separate collection per vector type)');
     }
-    
-    console.log(`📋 Processing vector types: ${vectorTypesToProcess.join(', ')}`);
-    console.log(`📦 Batch size: ${options.batchSize}`);
-    console.log(`🔄 Force re-indexing: ${options.force}\n`);
-    
-    // Clear existing vectors if force flag is set
+
+    // Force re-indexing if requested
     if (options.force) {
       console.log('🔄 Force re-indexing enabled - clearing existing vectors...');
-      const qdrantService = (await import('./services/qdrant.service')).qdrantService;
       
-      for (const vectorType of vectorTypesToProcess) {
+      if (shouldUseEnhancedCollection()) {
         try {
-          await qdrantService.clearAllPointsForVectorType(vectorType);
-          console.log(`✅ Cleared ${vectorType} collection`);
+          await qdrantService.clearEnhancedCollection();
+          console.log('✅ Cleared enhanced collection');
         } catch (error) {
-          console.warn(`⚠️  Warning: Could not clear ${vectorType} collection:`, error);
+          console.warn('⚠️ Warning: Could not clear enhanced collection:', error);
+        }
+      } else {
+        // Clear individual collections
+        for (const vectorType of options.vectorTypes!) {
+          try {
+            await qdrantService.clearAllPointsForVectorType(vectorType);
+            console.log(`✅ Cleared ${vectorType} collection`);
+          } catch (error) {
+            console.warn(`⚠️ Warning: Could not clear ${vectorType} collection:`, error);
+          }
         }
       }
       console.log('');
     }
-    
-    // Validate index before starting
-    console.log('🔍 Validating current index state...');
-    const beforeReport = await enhancedVectorIndexingService.validateMultiVectorIndex(vectorTypesToProcess);
-    console.log(`📊 Current state: ${beforeReport.mongoToolCount} tools in MongoDB, ${beforeReport.qdrantVectorCount} vectors in Qdrant`);
-    
-    if (beforeReport.vectorTypeHealth) {
-      console.log('📈 Vector type health:');
-      Object.entries(beforeReport.vectorTypeHealth).forEach(([type, health]) => {
-        const status = health.healthy ? '✅' : '❌';
-        console.log(`   ${status} ${type}: ${health.count} vectors${health.error ? ` (${health.error})` : ''}`);
-      });
+
+    // Validate before seeding (unless force is enabled)
+    if (!options.force && options.validate !== false) {
+      console.log('🔍 Validating current index state...');
+      const beforeReport = await enhancedVectorIndexingService.validateMultiVectorIndex(options.vectorTypes);
+      
+      console.log(`📊 MongoDB tools: ${beforeReport.mongoToolCount}`);
+      console.log(`📊 Qdrant vectors: ${beforeReport.qdrantVectorCount}`);
+      
+      if (beforeReport.missingVectors === 0 && beforeReport.orphanedVectors === 0) {
+        console.log('✅ All tools already have complete vector representations');
+        console.log('   Use --force to re-index all tools');
+        process.exit(0);
+      }
+      
+      console.log(`📊 Missing vectors: ${beforeReport.missingVectors}`);
+      console.log(`📊 Orphaned vectors: ${beforeReport.orphanedVectors}`);
+      console.log('');
     }
-    console.log('');
-    
+
     // Start the indexing process
     console.log('🚀 Starting multi-vector indexing...');
-    await enhancedVectorIndexingService.indexAllToolsMultiVector(vectorTypesToProcess, options.batchSize);
+    await enhancedVectorIndexingService.indexAllToolsMultiVector(options.vectorTypes, options.batchSize);
     
-    // Validate index after completion
-    console.log('\n🔍 Validating final index state...');
-    const afterReport = await enhancedVectorIndexingService.validateMultiVectorIndex(vectorTypesToProcess);
-    
-    const duration = Date.now() - startTime;
-    const durationMinutes = Math.round(duration / 60000 * 10) / 10;
-    
-    console.log('\n📊 Final Results:');
-    console.log(`⏱️  Duration: ${durationMinutes} minutes`);
-    console.log(`📁 MongoDB tools: ${afterReport.mongoToolCount}`);
-    console.log(`🔢 Qdrant vectors: ${afterReport.qdrantVectorCount}`);
-    console.log(`✅ Overall health: ${afterReport.collectionHealthy ? 'HEALTHY' : 'ISSUES DETECTED'}`);
-    
-    if (afterReport.vectorTypeHealth) {
-      console.log('\n📈 Vector Type Summary:');
-      Object.entries(afterReport.vectorTypeHealth).forEach(([type, health]) => {
+    // Validate after seeding
+    if (options.validate !== false) {
+      console.log('🔍 Validating index after seeding...');
+      const afterReport = await enhancedVectorIndexingService.validateMultiVectorIndex(options.vectorTypes);
+      
+      console.log(`📊 MongoDB tools: ${afterReport.mongoToolCount}`);
+      console.log(`📊 Qdrant vectors: ${afterReport.qdrantVectorCount}`);
+      console.log(`📊 Missing vectors: ${afterReport.missingVectors}`);
+      console.log(`📊 Orphaned vectors: ${afterReport.orphanedVectors}`);
+      console.log(`📊 Collection healthy: ${afterReport.collectionHealthy ? 'Yes' : 'No'}`);
+      console.log(`📊 Sample validation passed: ${afterReport.sampleValidationPassed ? 'Yes' : 'No'}`);
+      
+      // Print vector type health
+      console.log('\n📊 Vector type health:');
+      options.vectorTypes!.forEach(vectorType => {
+        const health = afterReport.vectorTypeHealth[vectorType];
         const status = health.healthy ? '✅' : '❌';
-        const expectedCount = afterReport.mongoToolCount;
-        const actualCount = health.count;
-        const completionPercent = Math.round((actualCount / expectedCount) * 100);
-        console.log(`   ${status} ${type}: ${actualCount}/${expectedCount} (${completionPercent}%)${health.error ? ` - ${health.error}` : ''}`);
+        console.log(`   ${status} ${vectorType}: ${health.count} vectors${health.error ? ` (${health.error})` : ''}`);
       });
-    }
-    
-    // Show recommendations if any
-    if (afterReport.recommendations.length > 0) {
-      console.log('\n📝 Recommendations:');
-      afterReport.recommendations.forEach(rec => {
-        console.log(`   • ${rec}`);
-      });
-    }
-    
-    // Success message
-    if (afterReport.collectionHealthy && afterReport.sampleValidationPassed) {
-      console.log('\n🎉 Enhanced vector seeding completed successfully!');
-      process.exit(0);
+      
+      // Print recommendations
+      if (afterReport.recommendations.length > 0) {
+        console.log('\n📋 Recommendations:');
+        afterReport.recommendations.forEach(rec => {
+          console.log(`   - ${rec}`);
+        });
+      }
+      
+      if (afterReport.missingVectors > 0) {
+        console.log(`\n⚠️ Warning: ${afterReport.missingVectors} vectors are still missing`);
+        console.log('   You may need to run the script again or check for data issues');
+      }
+      
+      if (afterReport.sampleValidationPassed && afterReport.collectionHealthy) {
+        console.log('\n🎉 Enhanced vector seeding completed successfully!');
+      } else {
+        console.log('\n⚠️ Enhanced vector seeding completed with issues');
+        console.log('   Check the recommendations above for troubleshooting');
+      }
     } else {
-      console.log('\n⚠️  Enhanced vector seeding completed with issues. See recommendations above.');
-      process.exit(1);
+      console.log('\n🎉 Enhanced vector seeding completed!');
+      console.log('   Run with --validate to check the index health');
     }
     
   } catch (error) {
-    console.error('\n💥 Critical error during enhanced vector seeding:', error);
+    console.error('💥 Error during enhanced vector seeding:', error);
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutdown requested by user');
-  if (enhancedVectorIndexingService.isShuttingDownActive) {
-    console.log('✅ Shutdown already in progress');
-  } else {
-    console.log('🔄 Initiating graceful shutdown...');
-    enhancedVectorIndexingService.handleShutdown();
-  }
+  console.log('\n🛑 Shutdown requested - stopping indexing process');
+  enhancedVectorIndexingService.handleShutdown();
+  process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n🛑 Termination signal received');
+  console.log('\n🛑 Shutdown requested - stopping indexing process');
   enhancedVectorIndexingService.handleShutdown();
+  process.exit(0);
 });
 
-// Run the seeding function
-if (require.main === module) {
-  seedEnhancedVectors().catch(error => {
-    console.error('💥 Unhandled error:', error);
-    process.exit(1);
-  });
-}
-
-export { seedEnhancedVectors };
+// Run the main function
+main().catch(error => {
+  console.error('💥 Unhandled error:', error);
+  process.exit(1);
+});

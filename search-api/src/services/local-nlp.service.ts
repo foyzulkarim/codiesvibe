@@ -1,12 +1,13 @@
-import { 
-  LocalNLPConfig, 
-  defaultEnhancedSearchConfig 
+import {
+  LocalNLPConfig,
+  defaultEnhancedSearchConfig
 } from '@/config/enhanced-search-config';
-import { 
+import {
   NLPResultsSchema,
-  EnhancedState 
+  EnhancedState
 } from '@/types/enhanced-state';
 import { z } from 'zod';
+import { pipeline, env } from '@xenova/transformers';
 
 // Cache for NLP models and results
 interface NLPModelCache {
@@ -47,12 +48,19 @@ class LocalNLPService {
   private resultCache: Map<string, NLPResultCache> = new Map();
   private isInitialized = false;
   private modelLoadTime = 0;
+  private nerPipeline: any = null;
+  private classificationPipeline: any = null;
 
   constructor(config?: Partial<LocalNLPConfig>) {
     this.config = {
       ...defaultEnhancedSearchConfig.localNLP,
       ...config
     };
+    
+    // Configure transformers.js environment
+    env.localModelPath = process.env.TRANSFORMERS_CACHE || './models';
+    env.allowRemoteModels = true;
+    env.allowLocalModels = false;
   }
 
   /**
@@ -66,7 +74,7 @@ class LocalNLPService {
     try {
       const startTime = Date.now();
       
-      // Pre-load commonly used models if cache is enabled
+      // Pre-load NER model if cache is enabled (classification model disabled due to transformers.js issues)
       if (this.config.modelCacheEnabled) {
         await this.preloadModels();
       }
@@ -196,53 +204,206 @@ class LocalNLPService {
    */
   private async extractEntities(text: string): Promise<EntityExtractionResult[]> {
     try {
-      const nerModel = await this.getNERModel();
+      const nerPipeline = await this.getNERModel();
       
-      if (!nerModel) {
-        throw new Error('NER model not available');
+      if (!nerPipeline) {
+        throw new Error('NER pipeline not available');
       }
 
-      // Process text with NER model
-      // This would use transformers.js or similar library
+      // Process text with NER pipeline
+      const startTime = Date.now();
+      const nerResults = await nerPipeline(text);
+      const processingTime = Date.now() - startTime;
+      
       const entities: EntityExtractionResult[] = [];
       
-      // Mock implementation - replace with actual model inference
-      const mockEntities = this.performMockEntityExtraction(text);
-      
-      for (const entity of mockEntities) {
-        if (entity.confidence >= this.config.confidenceThreshold) {
+      // Convert transformers.js output to our format
+      for (const result of nerResults) {
+        const entity: EntityExtractionResult = {
+          text: result.word || result.text || '',
+          type: this.mapEntityLabel(result.entity_group || result.entity),
+          confidence: result.score || 0,
+          start: result.start || 0,
+          end: result.end || (result.word || result.text || '').length
+        };
+        
+        // Filter by confidence threshold
+        if (entity.confidence >= this.config.confidenceThreshold && entity.text) {
           entities.push(entity);
         }
       }
 
+      console.log(`NER processing completed in ${processingTime}ms, found ${entities.length} entities`);
       return entities;
     } catch (error) {
       console.error('Error extracting entities:', error);
-      return [];
+      
+      // Fallback to mock extraction if transformers.js fails
+      console.warn('Falling back to mock entity extraction');
+      const mockEntities = this.performMockEntityExtraction(text);
+      
+      return mockEntities.filter(entity => entity.confidence >= this.config.confidenceThreshold);
     }
   }
 
   /**
-   * Classify intent using local classification model
+   * Map transformers.js entity labels to our standard types
+   */
+  private mapEntityLabel(label: string): string {
+    if (!label) {
+      return 'miscellaneous';
+    }
+    
+    const labelMap: Record<string, string> = {
+      'PER': 'person',
+      'ORG': 'organization',
+      'LOC': 'location',
+      'MISC': 'miscellaneous',
+      'PRODUCT': 'technology',
+      'EVENT': 'event',
+      'WORK_OF_ART': 'technology',
+      'LAW': 'technology',
+      'LANGUAGE': 'technology',
+      'DATE': 'miscellaneous',
+      'TIME': 'miscellaneous',
+      'PERCENT': 'miscellaneous',
+      'MONEY': 'pricing',
+      'QUANTITY': 'miscellaneous',
+      'ORDINAL': 'miscellaneous',
+      'CARDINAL': 'miscellaneous',
+      'B-PER': 'person',
+      'I-PER': 'person',
+      'B-ORG': 'organization',
+      'I-ORG': 'organization',
+      'B-LOC': 'location',
+      'I-LOC': 'location',
+      'B-MISC': 'miscellaneous',
+      'I-MISC': 'miscellaneous'
+    };
+    
+    return labelMap[label] || label.toLowerCase();
+  }
+
+  /**
+   * Map classification labels to our intent categories
+   */
+  private mapClassificationLabel(label: string): string {
+    if (!label) {
+      return 'unknown';
+    }
+    
+    const lowerLabel = label.toLowerCase();
+    
+    // Map common classification labels to our intent categories
+    if (lowerLabel.includes('positive') || lowerLabel.includes('good')) {
+      return 'discovery';
+    }
+    
+    if (lowerLabel.includes('negative') || lowerLabel.includes('bad')) {
+      return 'exploration';
+    }
+    
+    if (lowerLabel.includes('question') || lowerLabel.includes('interrogative')) {
+      return 'discovery';
+    }
+    
+    if (lowerLabel.includes('comparison') || lowerLabel.includes('contrast')) {
+      return 'comparison_query';
+    }
+    
+    if (lowerLabel.includes('request') || lowerLabel.includes('command')) {
+      return 'filter_search';
+    }
+    
+    // Default fallback based on keywords
+    if (lowerLabel.includes('label') || lowerLabel.includes('category')) {
+      return 'discovery';
+    }
+    
+    return 'exploration'; // Default intent
+  }
+
+  /**
+   * Classify intent using local zero-shot classification model
    */
   private async classifyIntent(text: string): Promise<IntentClassificationResult> {
     try {
-      const classificationModel = await this.getClassificationModel();
+      const classificationPipeline = await this.getClassificationModel();
       
-      if (!classificationModel) {
-        throw new Error('Classification model not available');
+      if (!classificationPipeline) {
+        throw new Error('Zero-shot classification pipeline not available');
       }
 
-      // Process text with classification model
-      // This would use transformers.js or similar library
+      const startTime = Date.now();
       
-      // Mock implementation - replace with actual model inference
-      const mockIntent = this.performMockIntentClassification(text);
+      // Create hypothesis template that provides better context for classification
+      const hypothesisTemplate = 'The user wants to {intent}.';
       
-      return mockIntent;
+      // Use zero-shot classification with intent labels from configuration
+      const result = await classificationPipeline(text, this.config.intentLabels, {
+        hypothesisTemplate
+      });
+      
+      const processingTime = Date.now() - startTime;
+      
+      // Handle the zero-shot classification result
+      let intent: IntentClassificationResult;
+      
+      // Zero-shot classification typically returns an object with labels and scores arrays
+      if (result && result.labels && result.scores && result.labels.length > 0) {
+        // Find the index of the highest scoring label
+        const maxScoreIndex = result.scores.reduce((maxIndex: number, score: number, currentIndex: number) =>
+          score > result.scores[maxIndex] ? currentIndex : maxIndex, 0);
+        
+        intent = {
+          label: result.labels[maxScoreIndex],
+          confidence: result.scores[maxScoreIndex]
+        };
+      } else if (Array.isArray(result) && result.length > 0) {
+        // Multiple results - take the highest scoring one
+        const topResult = result.reduce((prev, current) =>
+          (prev.score > current.score) ? prev : current
+        );
+        
+        intent = {
+          label: topResult.label,
+          confidence: topResult.score
+        };
+      } else if (result && result.label && result.score) {
+        // Single result
+        intent = {
+          label: result.label,
+          confidence: result.score
+        };
+      } else {
+        throw new Error(`Unexpected result structure from zero-shot classification: ${JSON.stringify(result)}`);
+      }
+      
+      console.log(`Zero-shot intent classification completed in ${processingTime}ms: ${intent.label} (${intent.confidence.toFixed(3)})`);
+      
+      // Check if confidence meets threshold
+      if (intent.confidence < this.config.confidenceThreshold) {
+        console.warn(`Intent confidence ${intent.confidence.toFixed(3)} below threshold ${this.config.confidenceThreshold}`);
+        
+        // If fallback is enabled, use mock classification
+        if (this.config.fallbackEnabled) {
+          console.warn('Falling back to mock intent classification due to low confidence');
+          return this.performMockIntentClassification(text);
+        }
+      }
+      
+      return intent;
     } catch (error) {
-      console.error('Error classifying intent:', error);
-      return { label: 'unknown', confidence: 0 };
+      console.error('Error classifying intent with zero-shot classification:', error);
+      
+      // Fallback to mock classification if transformers.js fails
+      if (this.config.fallbackEnabled) {
+        console.warn('Falling back to mock intent classification due to error');
+        return this.performMockIntentClassification(text);
+      }
+      
+      // Re-throw error if fallback is disabled
+      throw error;
     }
   }
 
@@ -311,33 +472,45 @@ class LocalNLPService {
   private async getNERModel(): Promise<any> {
     const modelName = this.config.nerModel;
     
-    if (this.modelCache.has(modelName)) {
-      const cached = this.modelCache.get(modelName)!;
-      cached.lastUsed = Date.now();
-      return cached.model;
+    // Return cached pipeline if available
+    if (this.nerPipeline) {
+      return this.nerPipeline;
     }
 
     try {
-      // Load model using transformers.js or similar
-      // const model = await pipeline('ner', modelName);
-      const model = null; // Placeholder
+      console.log(`Loading NER model: ${modelName}`);
+      const startTime = Date.now();
+      
+      // Load NER pipeline using transformers.js
+      this.nerPipeline = await pipeline('token-classification', modelName, {
+        progress_callback: (progress: any) => {
+          if (progress.status === 'downloading') {
+            console.log(`Downloading model: ${progress.file} ${progress.progress}%`);
+          } else if (progress.status === 'loading') {
+            console.log(`Loading model: ${progress.file}`);
+          }
+        }
+      });
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`NER model loaded in ${loadTime}ms`);
       
       if (this.config.modelCacheEnabled) {
         this.modelCache.set(modelName, {
-          model,
+          model: this.nerPipeline,
           loadTime: Date.now(),
           lastUsed: Date.now(),
-          size: 1 // Mock size
+          size: 1 // Actual size estimation could be added
         });
         
         // Manage cache size
         this.manageModelCache();
       }
       
-      return model;
+      return this.nerPipeline;
     } catch (error) {
       console.error(`Failed to load NER model ${modelName}:`, error);
-      return null;
+      throw error;
     }
   }
 
@@ -347,33 +520,45 @@ class LocalNLPService {
   private async getClassificationModel(): Promise<any> {
     const modelName = this.config.classificationModel;
     
-    if (this.modelCache.has(modelName)) {
-      const cached = this.modelCache.get(modelName)!;
-      cached.lastUsed = Date.now();
-      return cached.model;
+    // Return cached pipeline if available
+    if (this.classificationPipeline) {
+      return this.classificationPipeline;
     }
 
     try {
-      // Load model using transformers.js or similar
-      // const model = await pipeline('text-classification', modelName);
-      const model = null; // Placeholder
+      console.log(`Loading zero-shot classification model: ${modelName}`);
+      const startTime = Date.now();
+      
+      // Use zero-shot-classification for intent detection
+      this.classificationPipeline = await pipeline('zero-shot-classification', modelName, {
+        progress_callback: (progress: any) => {
+          if (progress.status === 'downloading') {
+            console.log(`Downloading model: ${progress.file} ${progress.progress}%`);
+          } else if (progress.status === 'loading') {
+            console.log(`Loading model: ${progress.file}`);
+          }
+        }
+      });
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`Zero-shot classification model loaded in ${loadTime}ms`);
       
       if (this.config.modelCacheEnabled) {
         this.modelCache.set(modelName, {
-          model,
+          model: this.classificationPipeline,
           loadTime: Date.now(),
           lastUsed: Date.now(),
-          size: 1 // Mock size
+          size: 1 // Actual size estimation could be added
         });
         
         // Manage cache size
         this.manageModelCache();
       }
       
-      return model;
+      return this.classificationPipeline;
     } catch (error) {
-      console.error(`Failed to load classification model ${modelName}:`, error);
-      return null;
+      console.error(`Failed to load zero-shot classification model ${modelName}:`, error);
+      throw error;
     }
   }
 
@@ -382,13 +567,23 @@ class LocalNLPService {
    */
   private async preloadModels(): Promise<void> {
     try {
+      console.log('Preloading NLP models...');
+      const startTime = Date.now();
+      
       await Promise.all([
         this.getNERModel(),
         this.getClassificationModel()
       ]);
-      console.log('NLP models preloaded successfully');
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`NLP models preloaded successfully in ${loadTime}ms`);
     } catch (error) {
       console.warn('Failed to preload some NLP models:', error);
+      
+      // Don't throw error here - allow service to continue with fallback
+      if (!this.config.fallbackEnabled) {
+        throw error;
+      }
     }
   }
 

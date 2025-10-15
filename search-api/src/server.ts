@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import express from 'express';
 import axios from 'axios';
 import { MongoClient } from 'mongodb';

@@ -162,18 +162,50 @@ class MultiVectorSearchService {
       // Generate query embedding once
       const queryEmbedding = await embeddingService.generateEmbedding(query);
 
-      // Initialize search results and metrics
+      // Use enhanced Qdrant service for parallel multi-vector search
+      const searchStartTime = Date.now();
+      const multiVectorResult = await qdrantService.searchMultipleVectorTypes(
+        queryEmbedding,
+        vectorTypes,
+        limit,
+        filter,
+        {
+          timeout: this.config.searchTimeout,
+          includeMetrics: true,
+          maxResultsPerVector: this.config.maxResultsPerVector
+        }
+      );
+      
+      const totalSearchTime = Date.now() - searchStartTime;
+
+      // Convert results to enhanced format
       const vectorSearchResults: Record<string, EnhancedSearchResult[]> = {};
       const searchMetrics: Record<string, any> = {};
 
-      // Enhanced parallel search across vector types
-      const searchStartTime = Date.now();
-      if (this.config.parallelSearchEnabled) {
-        await this.performParallelSearch(queryEmbedding, vectorTypes, limit, filter, vectorSearchResults, searchMetrics);
-      } else {
-        await this.performSequentialSearch(queryEmbedding, vectorTypes, limit, filter, vectorSearchResults, searchMetrics);
-      }
-      const totalSearchTime = Date.now() - searchStartTime;
+      Object.entries(multiVectorResult.results).forEach(([vectorType, results]) => {
+        vectorSearchResults[vectorType] = results.map(result => ({
+          ...result,
+          vectorType,
+          originalScore: result.score,
+          attribution: enableSourceAttribution ? {
+            resultId: result.id,
+            sources: [{
+              vectorType,
+              score: result.score,
+              rank: result.rank,
+              weight: this.getWeightForVectorType(vectorType)
+            }],
+            combinedScore: result.score,
+            rrfScore: result.score,
+            weightedScore: result.score * this.getWeightForVectorType(vectorType)
+          } : undefined
+        }));
+      });
+
+      // Copy metrics from Qdrant service
+      Object.entries(multiVectorResult.metrics).forEach(([vectorType, metrics]) => {
+        searchMetrics[vectorType] = metrics;
+      });
 
       // Update performance metrics
       this.updatePerformanceMetrics(vectorTypes, searchMetrics);
@@ -488,6 +520,8 @@ class MultiVectorSearchService {
     config: MergeStrategyConfig,
     enableSourceAttribution: boolean
   ): Promise<any[]> {
+    console.log(`🔀 Using merge strategy: ${config.strategy} with k=${config.rrfKValue}`);
+    
     switch (config.strategy) {
       case 'reciprocal_rank_fusion':
         return this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
@@ -498,6 +532,7 @@ class MultiVectorSearchService {
       case 'custom':
         return this.customMergeStrategy(results, config, enableSourceAttribution);
       default:
+        console.log(`⚠️ Unknown merge strategy "${config.strategy}", falling back to RRF`);
         return this.reciprocalRankFusionEnhanced(results, config, enableSourceAttribution);
     }
   }
@@ -510,10 +545,15 @@ class MultiVectorSearchService {
     config: MergeStrategyConfig,
     enableSourceAttribution: boolean
   ): any[] {
-    // Use the enhanced RRF utility function
+    // Ensure k=60 is used as specified in the requirements
+    const kValue = 60; // Fixed k=60 as per T012 requirements
+    
+    console.log(`🔢 Using RRF with k=${kValue} for result merging`);
+    
+    // Use the enhanced RRF utility function with fixed k=60
     const rrfResults = mergeResultsWithRRF(
       results,
-      config.rrfKValue,
+      kValue,
       config.vectorWeights,
       enableSourceAttribution
     );
@@ -524,14 +564,26 @@ class MultiVectorSearchService {
       rrfScore: item.rrfScore,
       weightedScore: item.weightedScore,
       sources: enableSourceAttribution ? item.sources : undefined,
-      mergedFromCount: item.mergedFromCount
+      mergedFromCount: item.mergedFromCount,
+      // Add RRF-specific metadata
+      rrfKValue: kValue,
+      mergeStrategy: 'reciprocal_rank_fusion'
     }));
 
     // Apply diversity filtering to ensure result variety
     mergedResults = this.applyDiversityFiltering(mergedResults, config.diversityThreshold);
 
-    // Limit results
-    return mergedResults.slice(0, config.maxResults);
+    // Limit results and add final ranking
+    const finalResults = mergedResults
+      .slice(0, config.maxResults)
+      .map((result, index) => ({
+        ...result,
+        finalRank: index + 1
+      }));
+
+    console.log(`📊 RRF merged ${Object.values(results).reduce((sum, arr) => sum + arr.length, 0)} results into ${finalResults.length} unique results`);
+    
+    return finalResults;
   }
 
   /**
@@ -783,6 +835,14 @@ class MultiVectorSearchService {
       aliases: 0.6,
       composites: 0.5
     };
+  }
+
+  /**
+   * Get weight for a specific vector type
+   */
+  private getWeightForVectorType(vectorType: string): number {
+    const weights = this.getVectorWeights();
+    return weights[vectorType] || 0.5;
   }
 
   /**

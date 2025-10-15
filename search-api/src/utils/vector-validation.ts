@@ -1,4 +1,8 @@
 import { getSupportedVectorTypes, isSupportedVectorType } from "@/config/database";
+import {
+  isEnhancedVectorTypeSupported,
+  validateEnhancedVectors as validateEnhancedVectorsSchema
+} from "@/config/enhanced-qdrant-schema";
 
 /**
  * Validation errors for vector operations
@@ -272,3 +276,176 @@ export function validateBatchOperations(operations: Array<{
     }
   }
 }
+
+/**
+ * Validate enhanced vector operations
+ */
+export function validateEnhancedVectorOperation(params: {
+  toolId: string;
+  vectors: { [vectorType: string]: number[] };
+  payload: Record<string, any>;
+  operation: 'upsert' | 'update' | 'delete';
+}): void {
+  const { toolId, vectors, payload, operation } = params;
+
+  // Validate tool ID
+  validateToolId(toolId);
+
+  // Validate payload
+  validatePayload(payload);
+
+  // Validate vectors using enhanced schema validation
+  validateEnhancedVectorsSchema(vectors);
+
+  // Additional operation-specific validation
+  switch (operation) {
+    case 'upsert':
+      // Ensure all required vector types are present for upsert
+      const requiredTypes = ['semantic']; // At minimum, semantic vector should be present
+      for (const requiredType of requiredTypes) {
+        if (!vectors[requiredType]) {
+          throw new VectorValidationError(
+            `Required vector type missing: ${requiredType}`,
+            'MISSING_REQUIRED_VECTOR_TYPE'
+          );
+        }
+      }
+      break;
+    
+    case 'update':
+      // For updates, at least one vector type should be present
+      if (Object.keys(vectors).length === 0) {
+        throw new VectorValidationError(
+          'At least one vector type must be provided for update',
+          'EMPTY_VECTORS_FOR_UPDATE'
+        );
+      }
+      break;
+    
+    case 'delete':
+      // Delete operations don't need vector validation beyond basic checks
+      break;
+  }
+}
+
+/**
+ * Validate enhanced search parameters
+ */
+export function validateEnhancedSearchParams(params: {
+  embedding?: number[];
+  query?: string;
+  vectorTypes?: string[];
+  limit?: number;
+  filter?: Record<string, any>;
+  useEnhanced?: boolean;
+}): void {
+  const { embedding, query, vectorTypes, limit, filter, useEnhanced } = params;
+
+  // Either embedding or query must be provided
+  if (!embedding && !query) {
+    throw new VectorValidationError('Either embedding or query must be provided', 'MISSING_SEARCH_INPUT');
+  }
+
+  // Validate embedding if provided
+  if (embedding) {
+    validateEmbedding(embedding);
+  }
+
+  // Validate query if provided
+  if (query) {
+    if (typeof query !== 'string' || query.trim().length === 0) {
+      throw new VectorValidationError('Query must be a non-empty string', 'INVALID_QUERY');
+    }
+    if (query.length > 1000) {
+      throw new VectorValidationError('Query length cannot exceed 1000 characters', 'QUERY_TOO_LONG');
+    }
+  }
+
+  // Validate vector types if provided
+  if (vectorTypes && Array.isArray(vectorTypes)) {
+    for (const vectorType of vectorTypes) {
+      if (useEnhanced) {
+        if (!isEnhancedVectorTypeSupported(vectorType)) {
+          throw new VectorValidationError(
+            `Unsupported enhanced vector type: ${vectorType}`,
+            'UNSUPPORTED_ENHANCED_VECTOR_TYPE'
+          );
+        }
+      } else {
+        if (!isSupportedVectorType(vectorType)) {
+          throw new VectorValidationError(
+            `Unsupported vector type: ${vectorType}`,
+            'UNSUPPORTED_VECTOR_TYPE'
+          );
+        }
+      }
+    }
+  }
+
+  // Validate limit if provided
+  if (limit !== undefined) {
+    validateSearchLimit(limit);
+  }
+
+  // Validate filter if provided
+  if (filter) {
+    validateFilter(filter);
+  }
+}
+
+/**
+ * Validate collection configuration for enhanced schema
+ */
+export function validateEnhancedCollectionConfig(config: {
+  vectors_config: { [vectorName: string]: { size: number; distance: string } };
+}): void {
+  if (!config || typeof config !== 'object') {
+    throw new VectorValidationError('Collection config must be an object', 'INVALID_COLLECTION_CONFIG');
+  }
+
+  const { vectors_config } = config;
+  if (!vectors_config || typeof vectors_config !== 'object') {
+    throw new VectorValidationError('vectors_config must be an object', 'INVALID_VECTORS_CONFIG');
+  }
+
+  const requiredVectorTypes = ['semantic', 'entities.categories', 'entities.functionality', 'entities.aliases', 'composites.toolType'];
+  
+  for (const vectorType of requiredVectorTypes) {
+    const vectorConfig = vectors_config[vectorType];
+    if (!vectorConfig) {
+      throw new VectorValidationError(
+        `Missing vector configuration for: ${vectorType}`,
+        'MISSING_VECTOR_CONFIG'
+      );
+    }
+
+    if (typeof vectorConfig.size !== 'number' || vectorConfig.size !== 1024) {
+      throw new VectorValidationError(
+        `Invalid vector size for ${vectorType}: expected 1024, got ${vectorConfig.size}`,
+        'INVALID_VECTOR_SIZE'
+      );
+    }
+
+    if (vectorConfig.distance !== 'Cosine') {
+      throw new VectorValidationError(
+        `Invalid distance metric for ${vectorType}: expected Cosine, got ${vectorConfig.distance}`,
+        'INVALID_DISTANCE_METRIC'
+      );
+    }
+  }
+}
+
+/**
+ * Enhanced error codes for vector validation
+ */
+export const ENHANCED_VECTOR_ERROR_CODES = {
+  INVALID_ENHANCED_VECTOR_TYPE: 'INVALID_ENHANCED_VECTOR_TYPE',
+  MISSING_REQUIRED_VECTOR_TYPE: 'MISSING_REQUIRED_VECTOR_TYPE',
+  EMPTY_VECTORS_FOR_UPDATE: 'EMPTY_VECTORS_FOR_UPDATE',
+  UNSUPPORTED_ENHANCED_VECTOR_TYPE: 'UNSUPPORTED_ENHANCED_VECTOR_TYPE',
+  INVALID_COLLECTION_CONFIG: 'INVALID_COLLECTION_CONFIG',
+  INVALID_VECTORS_CONFIG: 'INVALID_VECTORS_CONFIG',
+  MISSING_VECTOR_CONFIG: 'MISSING_VECTOR_CONFIG',
+  INVALID_VECTOR_SIZE: 'INVALID_VECTOR_SIZE',
+  INVALID_DISTANCE_METRIC: 'INVALID_DISTANCE_METRIC',
+} as const;

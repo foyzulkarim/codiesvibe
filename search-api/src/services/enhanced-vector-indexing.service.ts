@@ -1,7 +1,12 @@
 import { mongoDBService } from "./mongodb.service";
 import { qdrantService } from "./qdrant.service";
 import { embeddingService } from "./embedding.service";
-import { getSupportedVectorTypes, getCollectionName } from "@/config/database";
+import { getSupportedVectorTypes, shouldUseEnhancedCollection } from "@/config/database";
+import {
+  getEnabledVectorTypes,
+  isEnhancedVectorTypeSupported,
+  validateEnhancedVectors
+} from "@/config/enhanced-qdrant-schema";
 
 // Import existing types from VectorIndexingService
 import { ToolData, IndexingProgress, HealthReport } from "./vector-indexing.service";
@@ -153,10 +158,11 @@ export class EnhancedVectorIndexingService {
   }
 
   /**
-   * Get supported vector types
+   * Get supported vector types for enhanced indexing
    */
   getSupportedVectorTypes(): string[] {
-    return getSupportedVectorTypes();
+    // Return enabled vector types from enhanced schema
+    return shouldUseEnhancedCollection() ? getEnabledVectorTypes() : getSupportedVectorTypes();
   }
 
   /**
@@ -333,6 +339,42 @@ export class EnhancedVectorIndexingService {
   }
 
   /**
+   * Generate multiple vectors for multiple tools (batch processing)
+   */
+  async generateMultipleVectorsBatch(tools: ToolData[]): Promise<{ toolId: string; vectors: MultiVectorData }[]> {
+    const results: { toolId: string; vectors: MultiVectorData }[] = [];
+    
+    console.log(`🔄 Generating vectors for ${tools.length} tools in batch...`);
+    
+    // Process tools in parallel with concurrency limit
+    for (let i = 0; i < tools.length; i += this.CONCURRENT_LIMIT) {
+      const batch = tools.slice(i, i + this.CONCURRENT_LIMIT);
+      
+      const promises = batch.map(async (tool) => {
+        try {
+          const toolId = this.deriveToolId(tool);
+          const vectors = await this.generateMultipleVectors(tool);
+          return { toolId, vectors };
+        } catch (error) {
+          console.error(`Error generating vectors for tool ${tool.name}:`, error);
+          throw error;
+        }
+      });
+      
+      const batchResults = await Promise.all(promises);
+      results.push(...batchResults);
+      
+      // Force garbage collection periodically
+      if (global.gc && i % 20 === 0) {
+        global.gc();
+      }
+    }
+    
+    console.log(`✅ Generated vectors for ${results.length} tools`);
+    return results;
+  }
+
+  /**
    * Generate a specific vector type for a tool
    */
   private async generateVectorForType(tool: ToolData, vectorType: string): Promise<number[]> {
@@ -363,7 +405,7 @@ export class EnhancedVectorIndexingService {
   }
 
   /**
-   * Create payload for multi-vector storage
+   * Create payload for multi-vector storage (legacy)
    */
   private createMultiVectorPayload(tool: ToolData, vectorType: string): MultiVectorPayload {
     const toolId = this.deriveToolId(tool);
@@ -384,10 +426,35 @@ export class EnhancedVectorIndexingService {
   }
 
   /**
-   * Process a single tool with multiple vectors
+   * Create enhanced payload for multi-vector storage in enhanced collection
+   */
+  private createEnhancedPayload(tool: ToolData): Record<string, any> {
+    const toolId = this.deriveToolId(tool);
+    
+    return {
+      id: toolId,
+      name: tool.name || '',
+      description: tool.description || '',
+      categories: tool.categories || [],
+      functionality: tool.functionality || [],
+      searchKeywords: tool.searchKeywords || [],
+      useCases: tool.useCases || [],
+      interface: tool.interface || [],
+      deployment: tool.deployment || [],
+      // Include technical information if available
+      ...(tool.technical?.languages ? { languages: tool.technical.languages } : {}),
+      ...(tool.integrations ? { integrations: tool.integrations } : {}),
+      ...(tool.semanticTags ? { semanticTags: tool.semanticTags } : {}),
+      lastIndexed: new Date().toISOString(),
+      // Enhanced collection doesn't need vectorType in payload since it's in the named vectors
+    };
+  }
+
+  /**
+   * Process a single tool with multiple vectors using enhanced collection
    */
   private async processToolMultiVector(
-    tool: ToolData, 
+    tool: ToolData,
     vectorTypes: string[],
     retryCount = 0
   ): Promise<{ successful: string[]; failed: string[] }> {
@@ -403,22 +470,56 @@ export class EnhancedVectorIndexingService {
       // Generate all vectors for the tool
       const vectors = await this.generateMultipleVectors(tool);
 
-      // Store vectors in batches by vector type
-      for (const vectorType of vectorTypes) {
-        if (!vectors[vectorType]) {
+      // Filter vectors to only include supported types
+      const validVectors: { [vectorType: string]: number[] } = {};
+      vectorTypes.forEach(vectorType => {
+        if (vectors[vectorType] && isEnhancedVectorTypeSupported(vectorType)) {
+          validVectors[vectorType] = vectors[vectorType];
+        } else if (!vectors[vectorType]) {
           console.warn(`No vector generated for type ${vectorType} for tool ${tool.name}`);
           failed.push(vectorType);
-          continue;
-        }
-
-        try {
-          const payload = this.createMultiVectorPayload(tool, vectorType);
-          await qdrantService.upsertToolVector(toolId, vectors[vectorType], payload, vectorType);
-          successful.push(vectorType);
-        } catch (error) {
-          console.error(`Error storing ${vectorType} vector for tool ${tool.name}:`, error);
+        } else if (!isEnhancedVectorTypeSupported(vectorType)) {
+          console.warn(`Vector type ${vectorType} not supported in enhanced schema for tool ${tool.name}`);
           failed.push(vectorType);
         }
+      });
+
+      if (Object.keys(validVectors).length === 0) {
+        console.warn(`No valid vectors to store for tool ${tool.name}`);
+        return { successful: [], failed: vectorTypes };
+      }
+
+      try {
+        // Validate vectors against enhanced schema
+        validateEnhancedVectors(validVectors);
+
+        // Create payload for enhanced collection
+        const payload = this.createEnhancedPayload(tool);
+
+        if (shouldUseEnhancedCollection()) {
+          // Store all vectors in enhanced collection with named vectors
+          await qdrantService.upsertToolEnhanced(toolId, validVectors, payload);
+          Object.keys(validVectors).forEach(vectorType => successful.push(vectorType));
+        } else {
+          // Legacy approach: store each vector in separate collection
+          for (const [vectorType, embedding] of Object.entries(validVectors)) {
+            try {
+              const vectorPayload = this.createMultiVectorPayload(tool, vectorType);
+              await qdrantService.upsertToolVector(toolId, embedding, vectorPayload, vectorType);
+              successful.push(vectorType);
+            } catch (error) {
+              console.error(`Error storing ${vectorType} vector for tool ${tool.name}:`, error);
+              failed.push(vectorType);
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error storing vectors for tool ${tool.name}:`, error);
+        vectorTypes.forEach(vectorType => {
+          if (!successful.includes(vectorType)) {
+            failed.push(vectorType);
+          }
+        });
       }
 
       return { successful, failed };
@@ -528,6 +629,200 @@ export class EnhancedVectorIndexingService {
   }
 
   /**
+   * Batch upsert multiple tools with all their vectors to enhanced collection
+   */
+  private async batchUpsertToolsEnhanced(
+    toolsData: { toolId: string; vectors: MultiVectorData; tool: ToolData }[],
+    vectorTypes: string[]
+  ): Promise<{ successful: { toolId: string; vectorTypes: string[] }[]; failed: { toolId: string; vectorTypes: string[] }[] }> {
+    const successful: { toolId: string; vectorTypes: string[] }[] = [];
+    const failed: { toolId: string; vectorTypes: string[] }[] = [];
+
+    console.log(`🔄 Batch upserting ${toolsData.length} tools to enhanced collection...`);
+
+    // Process in smaller batches to avoid memory issues
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < toolsData.length; i += BATCH_SIZE) {
+      const batch = toolsData.slice(i, i + BATCH_SIZE);
+      
+      const upsertPromises = batch.map(async ({ toolId, vectors, tool }) => {
+        try {
+          // Filter and validate vectors
+          const validVectors: { [vectorType: string]: number[] } = {};
+          const validVectorTypes: string[] = [];
+          
+          vectorTypes.forEach(vectorType => {
+            if (vectors[vectorType] && isEnhancedVectorTypeSupported(vectorType)) {
+              validVectors[vectorType] = vectors[vectorType];
+              validVectorTypes.push(vectorType);
+            }
+          });
+          
+          if (Object.keys(validVectors).length === 0) {
+            throw new Error(`No valid vectors for tool ${tool.name}`);
+          }
+          
+          // Validate vectors against enhanced schema
+          validateEnhancedVectors(validVectors);
+          
+          // Create enhanced payload
+          const payload = this.createEnhancedPayload(tool);
+          
+          // Upsert to enhanced collection
+          await qdrantService.upsertToolEnhanced(toolId, validVectors, payload);
+          
+          return { toolId, vectorTypes: validVectorTypes };
+        } catch (error) {
+          console.error(`Error batch upserting tool ${tool.name}:`, error);
+          throw error;
+        }
+      });
+      
+      const batchResults = await Promise.allSettled(upsertPromises);
+      
+      batchResults.forEach((result, index) => {
+        const { toolId, vectors, tool } = batch[index];
+        const allVectorTypes = vectorTypes.filter(vt => vectors[vt]);
+        
+        if (result.status === 'fulfilled') {
+          successful.push(result.value);
+        } else {
+          console.error(`Failed to upsert tool ${tool.name}:`, result.reason);
+          failed.push({ toolId, vectorTypes: allVectorTypes });
+        }
+      });
+      
+      // Small delay between batches to avoid overwhelming the database
+      if (i + BATCH_SIZE < toolsData.length) {
+        await this.delay(100);
+      }
+    }
+    
+    console.log(`✅ Batch upsert complete: ${successful.length} successful, ${failed.length} failed`);
+    return { successful, failed };
+  }
+
+  /**
+   * Process tools in batches using enhanced batch operations for better performance
+   */
+  private async processBatchMultiVectorEnhanced(
+    tools: ToolData[],
+    vectorTypes: string[],
+    batchIndex: number,
+    batchSize: number,
+    progress: EnhancedIndexingProgress
+  ): Promise<{ successful: number; failed: number; vectorProgress: EnhancedIndexingProgress['vectorProgress'] }> {
+    const start = batchIndex * batchSize;
+    const end = Math.min(start + batchSize, tools.length);
+    const batch = tools.slice(start, end);
+    
+    let successful = 0;
+    let failed = 0;
+    const vectorProgress: EnhancedIndexingProgress['vectorProgress'] = {};
+
+    // Initialize vector progress
+    vectorTypes.forEach(type => {
+      vectorProgress[type] = { processed: 0, successful: 0, failed: 0 };
+    });
+
+    console.log(`🔄 Processing batch ${batchIndex + 1}/${progress.totalBatches} (${batch.length} tools, ${vectorTypes.length} vector types) using enhanced batch operations`);
+
+    try {
+      if (shouldUseEnhancedCollection()) {
+        // Enhanced approach: generate all vectors first, then batch upsert
+        console.log(`🔄 Generating vectors for ${batch.length} tools...`);
+        const vectorsData = await this.generateMultipleVectorsBatch(batch);
+        
+        // Combine vectors with tool data
+        const toolsData = vectorsData.map(({ toolId, vectors }, index) => ({
+          toolId,
+          vectors,
+          tool: batch[index]
+        }));
+        
+        console.log(`🔄 Batch upserting ${toolsData.length} tools to enhanced collection...`);
+        const batchResult = await this.batchUpsertToolsEnhanced(toolsData, vectorTypes);
+        
+        // Update progress based on batch results
+        batchResult.successful.forEach(({ toolId, vectorTypes: successfulVectorTypes }) => {
+          successful++;
+          progress.processed++;
+          progress.successful++;
+          
+          // Update vector progress
+          successfulVectorTypes.forEach(vectorType => {
+            vectorProgress[vectorType].processed++;
+            vectorProgress[vectorType].successful++;
+          });
+        });
+        
+        batchResult.failed.forEach(({ toolId, vectorTypes: failedVectorTypes }) => {
+          failed++;
+          progress.processed++;
+          progress.failed++;
+          
+          // Update vector progress
+          failedVectorTypes.forEach(vectorType => {
+            vectorProgress[vectorType].processed++;
+            vectorProgress[vectorType].failed++;
+          });
+        });
+        
+        console.log(`✅ Enhanced batch ${batchIndex + 1} completed: ${successful} successful, ${failed} failed`);
+      } else {
+        // Legacy approach: process tools individually
+        for (let i = 0; i < batch.length; i += this.CONCURRENT_LIMIT) {
+          if (this.isShuttingDown) {
+            console.log('🛑 Shutdown detected, stopping batch processing');
+            break;
+          }
+
+          const concurrentBatch = batch.slice(i, i + this.CONCURRENT_LIMIT);
+          const promises = concurrentBatch.map(async (tool) => {
+            const result = await this.processToolMultiVector(tool, vectorTypes);
+            
+            // Update vector progress
+            vectorTypes.forEach(vectorType => {
+              vectorProgress[vectorType].processed++;
+              if (result.successful.includes(vectorType)) {
+                vectorProgress[vectorType].successful++;
+              } else if (result.failed.includes(vectorType)) {
+                vectorProgress[vectorType].failed++;
+              }
+            });
+
+            // Update overall progress
+            progress.processed++;
+            
+            if (result.successful.length > 0) {
+              successful++;
+              console.log(`✅ Successfully indexed: ${tool.name} (${result.successful.length}/${vectorTypes.length} vectors)`);
+            } else {
+              failed++;
+              console.log(`❌ Failed to index: ${tool.name} (0/${vectorTypes.length} vectors)`);
+            }
+
+            progress.successful += result.successful.length > 0 ? 1 : 0;
+            progress.failed += result.successful.length === 0 ? 1 : 0;
+          });
+
+          await Promise.all(promises);
+          
+          // Force garbage collection periodically to prevent OOM
+          if (global.gc && i % 20 === 0) {
+            global.gc();
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error in enhanced batch processing ${batchIndex + 1}:`, error);
+      throw error;
+    }
+
+    return { successful, failed, vectorProgress };
+  }
+
+  /**
    * Index all tools with multiple vectors
    */
   async indexAllToolsMultiVector(
@@ -580,11 +875,11 @@ export class EnhancedVectorIndexingService {
         progress.currentBatch = batchIndex + 1;
         progress.currentVectorType = supportedTypes.join(',');
         
-        const batchResult = await this.processBatchMultiVector(
-          tools, 
-          supportedTypes, 
-          batchIndex, 
-          batchSize, 
+        const batchResult = await this.processBatchMultiVectorEnhanced(
+          tools,
+          supportedTypes,
+          batchIndex,
+          batchSize,
           progress
         );
         
@@ -665,30 +960,75 @@ export class EnhancedVectorIndexingService {
         };
       });
 
-      // Get collection info for all vector types
+      // Get collection info for enhanced collection or individual collections
       let totalVectorCount = 0;
-      for (const vectorType of supportedTypes) {
+      if (shouldUseEnhancedCollection()) {
         try {
-          const collectionInfo = await qdrantService.getCollectionInfoForVectorType(vectorType);
+          const collectionInfo = await qdrantService.getEnhancedCollectionInfo();
           const count = collectionInfo.points_count || 0;
-          report.vectorTypeHealth[vectorType].count = count;
-          totalVectorCount += count;
           
-          // Check collection configuration
-          const expectedDimensions = 1024; // mxbai-embed-large
-          if (collectionInfo.config.params.vectors.size !== expectedDimensions) {
-            report.vectorTypeHealth[vectorType].healthy = false;
-            report.vectorTypeHealth[vectorType].error = 
-              `Vector dimension mismatch: expected ${expectedDimensions}, got ${collectionInfo.config.params.vectors.size}`;
+          // For enhanced collection, all vector types share the same count
+          supportedTypes.forEach(vectorType => {
+            report.vectorTypeHealth[vectorType].count = count;
+          });
+          
+          totalVectorCount = count * supportedTypes.length;
+          
+          // Check enhanced collection configuration
+          const vectorsConfig = collectionInfo.config.params.vectors;
+          if (vectorsConfig) {
+            supportedTypes.forEach(vectorType => {
+              const vectorConfig = vectorsConfig[vectorType];
+              if (vectorConfig) {
+                const expectedDimensions = 1024; // mxbai-embed-large
+                if (vectorConfig.size !== expectedDimensions) {
+                  report.vectorTypeHealth[vectorType].healthy = false;
+                  report.vectorTypeHealth[vectorType].error =
+                    `Vector dimension mismatch for ${vectorType}: expected ${expectedDimensions}, got ${vectorConfig.size}`;
+                }
+              } else {
+                report.vectorTypeHealth[vectorType].healthy = false;
+                report.vectorTypeHealth[vectorType].error = `Vector configuration not found for ${vectorType}`;
+              }
+            });
+          } else {
+            supportedTypes.forEach(vectorType => {
+              report.vectorTypeHealth[vectorType].healthy = false;
+              report.vectorTypeHealth[vectorType].error = 'No vector configuration found in enhanced collection';
+            });
           }
         } catch (error) {
-          report.vectorTypeHealth[vectorType].healthy = false;
-          report.vectorTypeHealth[vectorType].error = error instanceof Error ? error.message : String(error);
+          console.error('Error getting enhanced collection info:', error);
+          supportedTypes.forEach(vectorType => {
+            report.vectorTypeHealth[vectorType].healthy = false;
+            report.vectorTypeHealth[vectorType].error = error instanceof Error ? error.message : String(error);
+          });
+        }
+      } else {
+        // Legacy approach: check individual collections
+        for (const vectorType of supportedTypes) {
+          try {
+            const collectionInfo = await qdrantService.getCollectionInfoForVectorType(vectorType);
+            const count = collectionInfo.points_count || 0;
+            report.vectorTypeHealth[vectorType].count = count;
+            totalVectorCount += count;
+            
+            // Check collection configuration
+            const expectedDimensions = 1024; // mxbai-embed-large
+            if (collectionInfo.config.params.vectors.size !== expectedDimensions) {
+              report.vectorTypeHealth[vectorType].healthy = false;
+              report.vectorTypeHealth[vectorType].error =
+                `Vector dimension mismatch: expected ${expectedDimensions}, got ${collectionInfo.config.params.vectors.size}`;
+            }
+          } catch (error) {
+            report.vectorTypeHealth[vectorType].healthy = false;
+            report.vectorTypeHealth[vectorType].error = error instanceof Error ? error.message : String(error);
+          }
         }
       }
 
       report.qdrantVectorCount = totalVectorCount;
-      console.log(`📊 Qdrant contains ${report.qdrantVectorCount} total vectors across ${supportedTypes.length} collections`);
+      console.log(`📊 Qdrant contains ${report.qdrantVectorCount} total vectors across ${shouldUseEnhancedCollection() ? 'enhanced collection with' : supportedTypes.length + ' collections for'} ${supportedTypes.length} vector types`);
 
       // Check overall collection health
       const unhealthyCollections = supportedTypes.filter(type => !report.vectorTypeHealth[type].healthy);
@@ -724,15 +1064,22 @@ export class EnhancedVectorIndexingService {
             for (const vectorType of supportedTypes) {
               if (!report.vectorTypeHealth[vectorType].healthy) continue;
               
-              const searchResult = await qdrantService.searchByVectorType(
-                await this.generateVectorForType(tool, vectorType),
-                vectorType,
-                1
-              );
-              
-              if (searchResult.length === 0 || searchResult[0].payload.id !== toolId) {
+              try {
+                const searchResult = await qdrantService.searchByVectorType(
+                  await this.generateVectorForType(tool, vectorType),
+                  vectorType,
+                  1
+                );
+                
+                if (searchResult.length === 0 || searchResult[0].payload.id !== toolId) {
+                  report.sampleValidationPassed = false;
+                  report.recommendations.push(`Embedding validation failed for tool: ${tool.name} (${vectorType})`);
+                  break;
+                }
+              } catch (searchError) {
+                console.warn(`Search validation failed for ${vectorType}:`, searchError);
                 report.sampleValidationPassed = false;
-                report.recommendations.push(`Embedding validation failed for tool: ${tool.name} (${vectorType})`);
+                report.recommendations.push(`Search validation error for tool ${tool.name} (${vectorType}): ${searchError}`);
                 break;
               }
             }
