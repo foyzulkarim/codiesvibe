@@ -713,10 +713,10 @@ Create  tests for the local NLP service that work with actual transformers.js mo
 - T005 (Local NLP service structure) - for service implementation
 - T024 (NER pipeline implementation) - for functionality to test
 
-### [ ] T022  test transformers.js model loading in tests//test-transformers.ts (following debug-scripts)
+### [ ] T022 Create debug script for transformers.js model loading testing
 
 **What needs to be implemented:**
-Create  tests for transformers.js model loading to ensure models are correctly initialized, cached, and perform as expected.
+Create a runnable debug script in `search-api/debug-scripts/test-transformers.ts` to test transformers.js model loading and ensure models are correctly initialized, cached, and perform as expected.
 
 **Key technical details from plan.md:**
 - Test model initialization and loading
@@ -727,7 +727,7 @@ Create  tests for transformers.js model loading to ensure models are correctly i
 - Test performance under load
 
 **Implementation approach:**
-1. Create  test file following existing patterns
+1. Create debug script following existing patterns in debug-scripts directory
 2. Test model initialization with different configurations
 3. Validate model caching and memory usage
 4. Test concurrent access patterns
@@ -736,21 +736,22 @@ Create  tests for transformers.js model loading to ensure models are correctly i
 7. Monitor resource usage during tests
 
 **Success criteria:**
-- Models load efficiently and are cached properly
-- Memory usage remains within acceptable limits
-- Concurrent access is handled correctly
-- Performance meets requirements
-- Fallback mechanisms work correctly
-- Resource usage is optimized
+- Script runs successfully with `node` command
+- Tests models load efficiently and are cached properly
+- Shows memory usage remains within acceptable limits
+- Validates concurrent access is handled correctly
+- Demonstrates performance meets requirements
+- Tests fallback mechanisms work correctly
+- Reports resource usage is optimized
 
 **Dependencies on other tasks:**
 - T005 (Local NLP service structure) - for service to test
 - T024 (NER pipeline implementation) - for models to test
 
-### [ ] T023  test NLP fallback to LLM in tests//test-nlp-fallback.ts (following debug-scripts)
+### [ ] T023 Create debug script for NLP fallback to LLM testing
 
 **What needs to be implemented:**
-Create  tests for the NLP fallback mechanism to ensure the system gracefully falls back to LLM processing when local NLP fails or confidence is low.
+Create a runnable debug script in `search-api/debug-scripts/test-nlp-fallback.ts` to test the NLP fallback mechanism and ensure the system gracefully falls back to LLM processing when local NLP fails or confidence is low.
 
 **Key technical details from plan.md:**
 - Test fallback triggers for low confidence
@@ -761,7 +762,7 @@ Create  tests for the NLP fallback mechanism to ensure the system gracefully fal
 - Test cost tracking for fallback usage
 
 **Implementation approach:**
-1. Create  test file following existing patterns
+1. Create debug script following existing patterns in debug-scripts directory
 2. Test fallback triggers and conditions
 3. Validate fallback accuracy and performance
 4. Test hybrid processing scenarios
@@ -770,226 +771,231 @@ Create  tests for the NLP fallback mechanism to ensure the system gracefully fal
 7. Measure overall system reliability
 
 **Success criteria:**
-- Fallback triggers appropriately for low confidence
-- Fallback maintains accuracy and reliability
-- Performance impact is acceptable during fallback
-- Hybrid processing optimizes cost and quality
-- Error recovery is seamless
-- System reliability is maintained
+- Script runs successfully with `node` command
+- Tests fallback triggers appropriately for low confidence
+- Validates fallback maintains accuracy and reliability
+- Shows performance impact is acceptable during fallback
+- Demonstrates hybrid processing optimizes cost and quality
+- Tests error recovery is seamless
+- Reports system reliability is maintained
 
 **Dependencies on other tasks:**
 - T005 (Local NLP service structure) - for service to test
 - T027 (LLM fallback implementation) - for functionality to test
 
-### [ ] T024 Implement transformers.js NER pipeline in local-nlp.service.ts
+### [ ] T024 Create debug script for transformers.js NER pipeline testing
 
 **What needs to be implemented:**
-Implement the named entity recognition (NER) pipeline using transformers.js to extract entities from user queries locally.
+Create a runnable debug script in `search-api/debug-scripts/test-ner-pipeline.ts` to test the named entity recognition (NER) pipeline using transformers.js with various input queries.
 
 **Key technical details from plan.md:**
-- Use Xenova/bert-base-NER model for entity extraction
-- Filter entities by confidence threshold (>0.7)
-- Remove common stop words from results
-- Combine consecutive tokens for multi-word entities
-- Process results to extract relevant entity types
-- Cache models for efficient reuse
+- Test Xenova/bert-base-NER model loading and performance
+- Validate entity extraction with different query types
+- Test confidence threshold filtering (>0.7)
+- Verify multi-word entity combination
+- Test stop word removal effectiveness
+- Measure processing time and accuracy
 
 **Implementation approach:**
-1. Implement extractEntities method in local NLP service
-2. Load and cache NER model on initialization
-3. Process query with NER pipeline
-4. Filter and process NER results
-5. Combine consecutive tokens appropriately
-6. Remove stop words and low-confidence results
-7. Return formatted entity list with confidence scores
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test NER model loading and caching
+3. Test entity extraction with sample queries (code editors, databases, frameworks)
+4. Validate confidence scoring and filtering
+5. Test multi-word entity handling
+6. Measure and display processing times
+7. Provide detailed output for manual verification
 
 **Success criteria:**
-- Entity extraction works with 95% accuracy
-- Processing time is under 100ms for typical queries
-- Multi-word entities are correctly identified
-- Stop words are effectively filtered
-- Confidence scoring accurately reflects relevance
-- Model caching improves performance
+- Script runs successfully with `node` command
+- Tests various query types and entity extraction scenarios
+- Displays processing times and confidence scores
+- Shows before/after filtering results
+- Provides clear pass/fail indicators for each test
+- Output is suitable for manual verification of accuracy
 
 **Dependencies on other tasks:**
-- T005 (Local NLP service structure) - for service structure
+- T005 (Local NLP service structure) - for service to test
 - T002 (transformers.js dependencies) - for core functionality
 
-### [ ] T025 Implement zero-shot classification for intent detection
+### [ ] T025 Create debug script for zero-shot intent classification testing
 
 **What needs to be implemented:**
-Implement zero-shot classification using transformers.js to detect query intent without requiring predefined categories.
+Create a runnable debug script in `search-api/debug-scripts/test-intent-classification.ts` to test zero-shot classification for intent detection using transformers.js with various query types.
 
 **Key technical details from plan.md:**
-- Use Xenova/distilbert-base-uncased for zero-shot classification
-- Define intent labels (filter_search, comparison_query, discovery, exploration)
-- Process query and return intent with confidence score
-- Cache model for efficient reuse
-- Handle low-confidence scenarios appropriately
+- Test Xenova/distilbert-base-uncased model loading and performance
+- Validate intent classification with predefined labels (filter_search, comparison_query, discovery, exploration)
+- Test confidence scoring accuracy
+- Verify classification without predefined training data
+- Measure processing time and accuracy
+- Test edge cases and low-confidence scenarios
 
 **Implementation approach:**
-1. Implement classifyIntent method in local NLP service
-2. Load and cache zero-shot classification model
-3. Define intent labels for classification
-4. Process query with zero-shot pipeline
-5. Return intent with confidence score
-6. Handle edge cases and low confidence
-7. Validate intent accuracy with sample queries
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test zero-shot classification model loading and caching
+3. Test intent classification with sample queries for each intent type
+4. Validate confidence scoring and thresholds
+5. Test edge cases and ambiguous queries
+6. Measure and display processing times
+7. Provide detailed output for manual verification of classification accuracy
 
 **Success criteria:**
-- Intent classification accurately identifies query types
-- Processing time is under 50ms for classification
-- Confidence scores accurately reflect certainty
-- Model caching improves performance
-- Edge cases are handled appropriately
-- Classification works without predefined training
+- Script runs successfully with `node` command
+- Tests various query types and intent classification scenarios
+- Displays processing times and confidence scores
+- Shows classification results for different intent types
+- Provides clear pass/fail indicators for each test
+- Output is suitable for manual verification of accuracy
 
 **Dependencies on other tasks:**
-- T005 (Local NLP service structure) - for service structure
+- T005 (Local NLP service structure) - for service to test
 - T002 (transformers.js dependencies) - for core functionality
 
-### [ ] T026 Create NLP model management and caching system
+### [ ] T026 Create debug script for NLP model management and caching testing
 
 **What needs to be implemented:**
-Create a model management and caching system for transformers.js models to optimize loading time and memory usage.
+Create a runnable debug script in `search-api/debug-scripts/test-nlp-model-management.ts` to test the model management and caching system for transformers.js models.
 
 **Key technical details from plan.md:**
-- Implement lazy loading for NLP models
-- Cache models in memory for reuse
-- Monitor memory usage and implement cleanup
-- Support model configuration via environment variables
-- Handle model loading errors gracefully
-- Track model performance metrics
+- Test lazy loading behavior for NLP models
+- Validate model caching and memory management
+- Test memory usage monitoring and cleanup
+- Verify model configuration via environment variables
+- Test error handling for model loading failures
+- Measure model performance metrics
 
 **Implementation approach:**
-1. Implement model initialization with lazy loading
-2. Create model cache with memory management
-3. Add memory monitoring and cleanup
-4. Support configurable model settings
-5. Add error handling for model failures
-6. Track performance metrics for models
-7. Optimize model loading and usage patterns
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test model initialization and lazy loading scenarios
+3. Test model cache behavior and memory management
+4. Validate memory monitoring and cleanup mechanisms
+5. Test different model configurations
+6. Test error handling with simulated failures
+7. Measure and display performance metrics
 
 **Success criteria:**
-- Models load efficiently when first needed
-- Memory usage remains within acceptable limits
-- Model caching improves processing speed
-- Configuration allows model customization
-- Error handling prevents system failures
-- Performance metrics provide optimization insights
+- Script runs successfully with `node` command
+- Tests model loading and caching behavior
+- Displays memory usage and cleanup effectiveness
+- Shows configuration options working correctly
+- Tests error handling scenarios
+- Provides performance metrics and timing data
 
 **Dependencies on other tasks:**
-- T005 (Local NLP service structure) - for service structure
-- T024 (NER pipeline implementation) - for models to manage
+- T005 (Local NLP service structure) - for service to test
+- T024 (NER pipeline testing) - for models to manage
 
-### [ ] T027 Implement LLM fallback for low-confidence results
+### [ ] T027 Create debug script for LLM fallback testing
 
 **What needs to be implemented:**
-Implement LLM fallback mechanism for when local NLP processing fails or produces low-confidence results.
+Create a runnable debug script in `search-api/debug-scripts/test-llm-fallback.ts` to test the LLM fallback mechanism for when local NLP processing fails or produces low-confidence results.
 
 **Key technical details from plan.md:**
-- Detect low-confidence NLP results
-- Trigger LLM fallback for entity extraction
-- Maintain performance during fallback
-- Track cost implications of fallback usage
-- Implement hybrid processing when appropriate
-- Ensure seamless user experience
+- Test low-confidence detection and fallback triggers
+- Validate LLM fallback for entity extraction
+- Test performance during fallback scenarios
+- Measure cost implications of fallback usage
+- Test hybrid processing scenarios
+- Verify seamless user experience during fallback
 
 **Implementation approach:**
-1. Implement confidence threshold checking
-2. Create LLM fallback methods for entity extraction
-3. Add cost tracking for fallback usage
-4. Implement hybrid processing logic
-5. Ensure fallback performance is acceptable
-6. Track fallback frequency and effectiveness
-7. Optimize fallback triggers and thresholds
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test confidence threshold checking with various scenarios
+3. Test LLM fallback methods with sample queries
+4. Measure and display cost tracking for fallback usage
+5. Test hybrid processing logic with different confidence levels
+6. Measure fallback performance and response times
+7. Test fallback frequency and effectiveness metrics
 
 **Success criteria:**
-- Fallback triggers appropriately for low confidence
-- LLM results maintain accuracy and relevance
-- Performance impact is minimal during fallback
-- Cost tracking provides visibility into usage
-- Hybrid processing optimizes cost and quality
-- User experience remains seamless
+- Script runs successfully with `node` command
+- Tests fallback triggers for different confidence levels
+- Displays LLM fallback results and accuracy
+- Shows performance impact during fallback
+- Provides cost tracking and usage metrics
+- Tests hybrid processing scenarios effectively
 
 **Dependencies on other tasks:**
-- T005 (Local NLP service structure) - for service structure
-- T024 (NER pipeline implementation) - for primary functionality
+- T005 (Local NLP service structure) - for service to test
+- T024 (NER pipeline testing) - for primary functionality to fallback from
 
-### [ ] T028 Add performance monitoring for local vs LLM processing
+### [ ] T028 Create debug script for performance monitoring testing
 
 **What needs to be implemented:**
-Add performance monitoring to track the efficiency and cost savings of local NLP processing compared to LLM processing.
+Create a runnable debug script in `search-api/debug-scripts/test-performance-monitoring.ts` to test performance monitoring that tracks the efficiency and cost savings of local NLP processing compared to LLM processing.
 
 **Key technical details from plan.md:**
-- Track processing time for local vs LLM processing
-- Monitor cost savings from local processing
-- Calculate percentage of queries processed locally
-- Track accuracy metrics for both approaches
-- Monitor fallback frequency and reasons
-- Generate performance reports and insights
+- Test processing time tracking for local vs LLM processing
+- Validate cost savings calculations from local processing
+- Test percentage calculations of queries processed locally
+- Verify accuracy metrics for both approaches
+- Test fallback frequency and reason monitoring
+- Generate and display performance reports
 
 **Implementation approach:**
-1. Add performance tracking to local NLP service
-2. Implement metrics collection for processing time
-3. Track cost calculations for local vs LLM processing
-4. Monitor accuracy and quality metrics
-5. Log fallback events and reasons
-6. Generate performance reports
-7. Create dashboard metrics for monitoring
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test performance tracking for local NLP service operations
+3. Test metrics collection for processing time comparisons
+4. Test cost calculations for local vs LLM processing scenarios
+5. Test accuracy and quality metrics collection
+6. Test fallback event logging and analysis
+7. Generate and display performance reports with sample data
 
 **Success criteria:**
-- Performance metrics accurately track processing efficiency
-- Cost savings are calculated and reported
-- Local processing percentage is monitored
-- Quality metrics ensure accuracy is maintained
-- Fallback monitoring identifies optimization opportunities
-- Reports provide actionable insights
+- Script runs successfully with `node` command
+- Tests performance metrics tracking accurately
+- Displays cost savings calculations and comparisons
+- Shows local processing percentage calculations
+- Tests quality metrics for accuracy validation
+- Provides fallback monitoring insights and reports
 
 **Dependencies on other tasks:**
+- T005 (Local NLP service structure) - for service to monitor
+- T027 (LLM fallback testing) - for fallback scenarios to monitor
 - T005 (Local NLP service structure) - for service to monitor
 - T027 (LLM fallback implementation) - for fallback tracking
 
 ## Phase 5: Enhanced Graph Flow 
 
-### [ ] T029  test enhanced state transitions in tests//test-enhanced-graph.ts
+### [ ] T029 Create debug script for enhanced graph flow testing
 
 **What needs to be implemented:**
-Create  tests for the enhanced graph with new state transitions to ensure the multi-stage pipeline works correctly.
+Create a runnable debug script in `search-api/debug-scripts/test-enhanced-graph.ts` to test the enhanced graph with new state transitions and ensure the multi-stage pipeline works correctly.
 
 **Key technical details from plan.md:**
 - Test state transitions through all enhanced stages
-- Test context enrichment 
-- Test local NLP processing 
+- Test context enrichment functionality
+- Test local NLP processing integration
 - Test dynamic execution planning
-- Test error handling and recovery
+- Test error handling and recovery mechanisms
 - Test performance of enhanced pipeline
 
 **Implementation approach:**
-1. Create  test file for enhanced graph
-2. Test complete flow with sample queries
-3. Validate state transitions at each stage
-4. Test  of all new components
-5. Measure performance against requirements
-6. Test error scenarios and recovery
-7. Validate enhanced functionality
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test complete flow with sample queries of varying complexity
+3. Validate state transitions at each stage with detailed logging
+4. Test integration of all new components
+5. Measure and display performance against requirements
+6. Test error scenarios and recovery mechanisms
+7. Validate enhanced functionality with different query types
 
 **Success criteria:**
-- Enhanced graph executes all stages correctly
-- State transitions maintain data integrity
-- New components integrate seamlessly
-- Performance meets requirements
-- Error handling prevents failures
-- Enhanced functionality works as expected
+- Script runs successfully with `node` command
+- Tests enhanced graph execution through all stages correctly
+- Displays state transitions and maintains data integrity
+- Shows new components integrating seamlessly
+- Provides performance metrics against requirements
+- Tests error handling and prevents failures
+- Validates enhanced functionality works as expected
 
 **Dependencies on other tasks:**
 - T017 (Context enrichment node) - for new node to test
 - T031 (Enhanced main graph) - for enhanced graph structure
 
-### [ ] T030  test dynamic execution planning in tests//test-dynamic-planning.ts
+### [ ] T030 Create debug script for dynamic execution planning testing
 
 **What needs to be implemented:**
-Create  tests for the dynamic execution planning feature to ensure it correctly generates and executes adaptive plans based on query complexity.
+Create a runnable debug script in `search-api/debug-scripts/test-dynamic-planning.ts` to test the dynamic execution planning feature and ensure it correctly generates and executes adaptive plans based on query complexity.
 
 **Key technical details from plan.md:**
 - Test plan generation for different query types
@@ -1000,21 +1006,22 @@ Create  tests for the dynamic execution planning feature to ensure it correctly 
 - Test fallback to basic execution plans
 
 **Implementation approach:**
-1. Create  test file for dynamic planning
-2. Test plan generation with various query types
-3. Validate conditional execution paths
-4. Test stage skipping logic
-5. Verify plan validation and safety
-6. Measure performance improvements
-7. Test fallback scenarios
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test plan generation with various query types and complexities
+3. Validate conditional execution paths with different scenarios
+4. Test stage skipping logic for simple queries
+5. Verify plan validation and safety checks
+6. Measure and display performance improvements
+7. Test fallback scenarios and reliability
 
 **Success criteria:**
-- Plans are correctly generated for different queries
-- Conditional execution works as expected
-- Simple queries skip unnecessary stages
-- Plan validation prevents unsafe executions
-- Performance is improved for simple queries
-- Fallback ensures reliability
+- Script runs successfully with `node` command
+- Tests plans are correctly generated for different queries
+- Displays conditional execution working as expected
+- Shows simple queries skip unnecessary stages
+- Validates plan validation prevents unsafe executions
+- Demonstrates performance improvements for simple queries
+- Tests fallback ensures reliability
 
 **Dependencies on other tasks:**
 - T032 (Conditional execution router) - for router to test
@@ -1226,35 +1233,36 @@ Create  tests for the result merging service that work with actual search result
 - T038 (Result merger service) - for service implementation
 - T039 (Source-specific weighting) - for weighting implementation
 
-### [ ] T037  test reciprocal rank fusion in tests//test-rrf.ts
+### [ ] T037 Create debug script for reciprocal rank fusion testing
 
 **What needs to be implemented:**
-Create  tests for the reciprocal rank fusion algorithm to ensure it correctly merges results from different search sources.
+Create a runnable debug script in `search-api/debug-scripts/test-rrf.ts` to test the reciprocal rank fusion algorithm and ensure it correctly merges results from different search sources.
 
 **Key technical details from plan.md:**
-- Test RRF with different result sets
-- Test RRF parameter tuning (k value)
-- Test RRF with varying result counts
+- Test RRF with different result sets from multiple sources
+- Test RRF parameter tuning (k value optimization)
+- Test RRF with varying result counts and sizes
 - Test performance with large result sets
 - Test RRF compared to other merging strategies
-- Test quality of RRF results
+- Test quality and relevance of RRF results
 
 **Implementation approach:**
-1. Create  test file for RRF
-2. Test RRF with various result combinations
-3. Validate parameter tuning effects
-4. Test with different result set sizes
-5. Measure performance and quality
-6. Compare with alternative strategies
-7. Optimize RRF parameters
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test RRF with various result combinations from different sources
+3. Validate parameter tuning effects on result quality
+4. Test with different result set sizes and performance
+5. Measure and display performance and quality metrics
+6. Compare with alternative merging strategies
+7. Test and optimize RRF parameters for different scenarios
 
 **Success criteria:**
-- RRF correctly combines results from multiple sources
-- Parameter tuning improves result quality
-- Performance is acceptable for large result sets
-- RRF outperforms simple merging strategies
-- Result quality is improved with RRF
-- Parameters are optimized for different scenarios
+- Script runs successfully with `node` command
+- Tests RRF correctly combines results from multiple sources
+- Displays parameter tuning effects on result quality
+- Shows performance is acceptable for large result sets
+- Demonstrates RRF outperforms simple merging strategies
+- Validates result quality improvements with RRF
+- Tests parameters optimization for different scenarios
 
 **Dependencies on other tasks:**
 - T038 (Result merger service) - for service to test
@@ -1432,10 +1440,10 @@ Create a result explanation and source attribution system that provides transpar
 
 ## Phase 7: A/B Testing Framework
 
-### [ ] T043  test A/B testing with real experiment scenarios
+### [ ] T043 Create debug script for A/B testing with real experiment scenarios
 
 **What needs to be implemented:**
-Create  tests for the A/B testing service that work with actual experiment configurations and real user scenarios to validate end-to-end A/B testing functionality.
+Create a runnable debug script in `search-api/debug-scripts/test-ab-testing.ts` to test the A/B testing service with actual experiment configurations and real user scenarios to validate end-to-end A/B testing functionality.
 
 **Key technical details from plan.md:**
 - Test real experiment configuration and management with actual config files
@@ -1446,30 +1454,31 @@ Create  tests for the A/B testing service that work with actual experiment confi
 - Test performance under realistic load with actual user traffic patterns
 
 **Implementation approach:**
-1. Set up  test environment with real experiment configurations
+1. Create debug script following existing patterns in debug-scripts directory
 2. Test experiment configuration loading with actual config files
 3. Validate user assignment consistency with real user sessions
 4. Test metrics collection with actual search interactions
 5. Verify experiment isolation with concurrent experiments
 6. Test configuration validation with real scenarios
-7. Measure performance under realistic load conditions
+7. Measure and display performance under realistic load conditions
 
 **Success criteria:**
-- Real experiment configurations load and work correctly
-- User assignment works consistently with actual user sessions
-- Metrics are collected accurately from real search interactions
-- Multiple experiments run independently without interference
-- Invalid configurations are properly rejected in practice
-- Performance meets requirements under realistic conditions
+- Script runs successfully with `node` command
+- Tests real experiment configurations load and work correctly
+- Validates user assignment works consistently with actual user sessions
+- Shows metrics are collected accurately from real search interactions
+- Demonstrates multiple experiments run independently without interference
+- Tests invalid configurations are properly rejected in practice
+- Validates performance meets requirements under realistic conditions
 
 **Dependencies on other tasks:**
 - T045 (A/B testing service) - for service implementation
 - T046 (Experiment configuration) - for configuration implementation
 
-### [ ] T044  test experiment configuration in tests//test-experiments.ts
+### [ ] T044 Create debug script for experiment configuration testing
 
 **What needs to be implemented:**
-Create  tests for the experiment configuration system to ensure experiments are correctly configured and applied.
+Create a runnable debug script in `search-api/debug-scripts/test-experiments.ts` to test the experiment configuration system and ensure experiments are correctly configured and applied.
 
 **Key technical details from plan.md:**
 - Test experiment configuration loading from files
@@ -1480,21 +1489,22 @@ Create  tests for the experiment configuration system to ensure experiments are 
 - Test configuration updates and changes
 
 **Implementation approach:**
-1. Create  test file for experiments
-2. Test configuration loading from files
-3. Validate experiment activation/deactivation
-4. Test variant assignment consistency
-5. Verify metrics collection
-6. Test experiment isolation
-7. Test configuration updates
+1. Create debug script following existing patterns in debug-scripts directory
+2. Test configuration loading from files with various scenarios
+3. Validate experiment activation/deactivation functionality
+4. Test variant assignment consistency with different users
+5. Verify metrics collection for active experiments
+6. Test experiment isolation between concurrent experiments
+7. Test configuration updates and their effects
 
 **Success criteria:**
-- Configuration loads correctly from files
-- Experiments activate and deactivate properly
-- Variant assignment is consistent
-- Metrics are collected for active experiments
-- Experiments don't interfere with each other
-- Configuration updates apply correctly
+- Script runs successfully with `node` command
+- Tests configuration loads correctly from files
+- Validates experiments activate and deactivate properly
+- Shows variant assignment is consistent for same users
+- Demonstrates metrics are collected for active experiments
+- Tests experiments don't interfere with each other
+- Validates configuration updates apply correctly
 
 **Dependencies on other tasks:**
 - T045 (A/B testing service) - for service to test
