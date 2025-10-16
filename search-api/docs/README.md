@@ -203,6 +203,10 @@ See `.env.example` for all available options:
 
 See the `docs/` directory for comprehensive documentation:
 - `ARCHITECTURE-GUIDE.md` - Detailed system architecture
+- `ENHANCED-SEARCH-API.md` - Enhanced search API documentation with advanced features
+- `INTEGRATION-GUIDE.md` - Step-by-step integration guide with code examples
+- `ENHANCED-SERVICES.md` - Result merger and duplicate detection service documentation
+- `OPENAPI.YAML` - Complete OpenAPI/Swagger specification
+- `API-REFERENCE.md` - Complete API documentation
 - `DEPLOYMENT-GUIDE.md` - Deployment instructions
 - `CHECKPOINTING-IMPLEMENTATION.md` - State management details
-- `API-REFERENCE.md` - Complete API documentation

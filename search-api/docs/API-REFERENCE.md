@@ -25,6 +25,7 @@ All responses follow a consistent JSON format with appropriate HTTP status codes
 ## Features
 
 - **Intelligent Search**: LangGraph-powered orchestration with intent extraction and query planning
+- **Enhanced Search**: Advanced multi-source search with result merging and duplicate detection
 - **Async Operations**: Non-blocking search with thread management and checkpointing
 - **Error Recovery**: Automatic rollback and recovery from checkpoints
 - **State Validation**: Comprehensive state validation at each pipeline stage
@@ -372,6 +373,277 @@ DELETE /search/cancel/123e4567-e89b-12d3-a456-426614174000
 {
   "error": "Invalid thread ID: Thread not found or expired",
   "status": "not_found"
+}
+```
+
+---
+
+### 7. Enhanced Search
+
+#### POST /api/search/enhanced
+
+Performs an enhanced search operation across multiple sources with result merging and duplicate detection.
+
+**Request:**
+```http
+POST /api/search/enhanced
+Content-Type: application/json
+
+{
+  "query": "React testing tools",
+  "options": {
+    "sources": {
+      "vector": true,
+      "traditional": true,
+      "hybrid": true
+    },
+    "mergeOptions": {
+      "strategy": "reciprocal_rank_fusion",
+      "rrfKValue": 60,
+      "maxResults": 50
+    },
+    "duplicateDetectionOptions": {
+      "enabled": true,
+      "threshold": 0.8,
+      "strategies": ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"]
+    },
+    "pagination": {
+      "page": 1,
+      "limit": 20
+    }
+  }
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "query": "React testing tools",
+  "requestId": "123e4567-e89b-12d3-a456-426614174000",
+  "timestamp": "2025-10-15T20:30:00.000Z",
+  "summary": {
+    "totalResults": 45,
+    "returnedResults": 20,
+    "processingTime": 245,
+    "sourcesSearched": ["vector", "traditional", "hybrid"],
+    "duplicatesRemoved": 8,
+    "searchStrategy": "reciprocal_rank_fusion"
+  },
+  "results": [
+    {
+      "id": "tool-123",
+      "score": 0.95,
+      "payload": {
+        "name": "Jest",
+        "description": "Testing framework for JavaScript"
+      },
+      "rrfScore": 0.92,
+      "originalRankings": {
+        "vector": { "rank": 1, "score": 0.95 },
+        "traditional": { "rank": 2, "score": 0.88 }
+      },
+      "sourceCount": 2,
+      "finalRank": 1
+    }
+  ],
+  "sourceAttribution": [
+    {
+      "source": "vector",
+      "resultCount": 25,
+      "searchTime": 120,
+      "avgScore": 0.85,
+      "weight": 1.0
+    }
+  ],
+  "duplicateDetection": {
+    "enabled": true,
+    "duplicatesRemoved": 8,
+    "duplicateGroups": 4,
+    "strategies": ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"],
+    "processingTime": 15
+  },
+  "metrics": {
+    "totalProcessingTime": 245,
+    "searchTime": 180,
+    "mergeTime": 35,
+    "deduplicationTime": 15,
+    "cacheHitRate": 0.2
+  },
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+```
+
+**For detailed documentation of the enhanced search API, see [Enhanced Search API Documentation](enhanced-search-api.md)**
+
+---
+
+### 8. Enhanced Search Management
+
+#### GET /api/search/enhanced/health
+
+Health check endpoint for the enhanced search service.
+
+**Request:**
+```http
+GET /api/search/enhanced/health
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-10-15T20:30:00.000Z",
+  "service": "enhanced-search",
+  "version": "1.0.0",
+  "cache": {
+    "size": 15,
+    "enabled": true,
+    "ttl": 300000
+  },
+  "configuration": {
+    "defaultSources": ["vector", "traditional", "hybrid"],
+    "defaultMergeStrategy": "reciprocal_rank_fusion",
+    "duplicateDetectionEnabled": true,
+    "maxConcurrentSearches": 5,
+    "defaultTimeout": 5000
+  }
+}
+```
+
+#### POST /api/search/enhanced/cache/clear
+
+Clear the enhanced search cache.
+
+**Request:**
+```http
+POST /api/search/enhanced/cache/clear
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Cache cleared successfully",
+  "timestamp": "2025-10-15T20:30:00.000Z",
+  "before": {
+    "size": 15,
+    "keys": ["enhanced_search_abc123", "enhanced_search_def456"]
+  },
+  "after": {
+    "size": 0,
+    "keys": []
+  }
+}
+```
+
+#### GET /api/search/enhanced/config
+
+Get current enhanced search configuration.
+
+**Request:**
+```http
+GET /api/search/enhanced/config
+```
+
+**Response (200 OK):**
+```json
+{
+  "config": {
+    "defaultSources": {
+      "vector": {
+        "enabled": true,
+        "weight": 1.0,
+        "timeout": 3000
+      },
+      "traditional": {
+        "enabled": true,
+        "weight": 0.9,
+        "timeout": 2000
+      }
+    },
+    "defaultMergeStrategy": "reciprocal_rank_fusion",
+    "defaultDuplicateDetection": true,
+    "maxConcurrentSearches": 5,
+    "defaultTimeout": 5000,
+    "enableCache": true,
+    "cacheTTL": 300000
+  },
+  "timestamp": "2025-10-15T20:30:00.000Z"
+}
+```
+
+#### PUT /api/search/enhanced/config
+
+Update enhanced search configuration.
+
+**Request:**
+```http
+PUT /api/search/enhanced/config
+Content-Type: application/json
+
+{
+  "config": {
+    "defaultMergeStrategy": "hybrid",
+    "enableCache": false,
+    "cacheTTL": 600000,
+    "maxConcurrentSearches": 3
+  }
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Configuration updated successfully",
+  "timestamp": "2025-10-15T20:30:00.000Z",
+  "before": {
+    "defaultSources": ["vector", "traditional", "hybrid"],
+    "defaultMergeStrategy": "reciprocal_rank_fusion",
+    "enableCache": true
+  },
+  "after": {
+    "defaultSources": ["vector", "traditional", "hybrid"],
+    "defaultMergeStrategy": "hybrid",
+    "enableCache": false
+  }
+}
+```
+
+#### GET /api/search/enhanced/stats
+
+Get enhanced search statistics and performance metrics.
+
+**Request:**
+```http
+GET /api/search/enhanced/stats
+```
+
+**Response (200 OK):**
+```json
+{
+  "timestamp": "2025-10-15T20:30:00.000Z",
+  "service": "enhanced-search",
+  "cache": {
+    "size": 15,
+    "enabled": true,
+    "ttl": 300000
+  },
+  "configuration": {
+    "availableSources": ["vector", "traditional", "hybrid"],
+    "defaultMergeStrategy": "reciprocal_rank_fusion",
+    "duplicateDetectionEnabled": true
+  },
+  "performance": {
+    "totalSearches": 1250,
+    "averageResponseTime": 280,
+    "cacheHitRate": 0.35,
+    "errorRate": 0.02
+  }
 }
 ```
 

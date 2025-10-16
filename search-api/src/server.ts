@@ -11,6 +11,9 @@ import { intelligentSearch, SearchResult, searchWithThread, getSearchThreadInfo,
 import { threadManager } from "./utils/thread-manager";
 import { checkpointManager } from "./utils/checkpoint-manager";
 
+// Import enhanced search controller
+import { enhancedSearchController } from "./controllers/enhanced-search.controller";
+
 
 dotenv.config();
 
@@ -504,6 +507,38 @@ app.delete('/search/cancel/:threadId', async (req, res) => {
   }
 });
 
+// Enhanced Search endpoints
+
+/**
+ * POST /api/search/enhanced - Enhanced search with result merging and duplicate detection
+ */
+app.post('/api/search/enhanced', enhancedSearchController.enhancedSearch.bind(enhancedSearchController));
+
+/**
+ * GET /api/search/enhanced/health - Enhanced search health check
+ */
+app.get('/api/search/enhanced/health', enhancedSearchController.healthCheck.bind(enhancedSearchController));
+
+/**
+ * POST /api/search/enhanced/cache/clear - Clear enhanced search cache
+ */
+app.post('/api/search/enhanced/cache/clear', enhancedSearchController.clearCache.bind(enhancedSearchController));
+
+/**
+ * GET /api/search/enhanced/config - Get enhanced search configuration
+ */
+app.get('/api/search/enhanced/config', enhancedSearchController.getConfig.bind(enhancedSearchController));
+
+/**
+ * PUT /api/search/enhanced/config - Update enhanced search configuration
+ */
+app.put('/api/search/enhanced/config', enhancedSearchController.updateConfig.bind(enhancedSearchController));
+
+/**
+ * GET /api/search/enhanced/stats - Get enhanced search statistics
+ */
+app.get('/api/search/enhanced/stats', enhancedSearchController.getStats.bind(enhancedSearchController));
+
 // Start server with vector index validation
 async function startServer() {
   // Perform vector index validation before starting the server
@@ -517,6 +552,11 @@ async function startServer() {
     console.log(`📈 Status endpoint: http://localhost:${PORT}/search/status/:threadId`);
     console.log(`▶️  Resume endpoint: http://localhost:${PORT}/search/resume/:threadId`);
     console.log(`❌ Cancel endpoint: http://localhost:${PORT}/search/cancel/:threadId`);
+    console.log(`🚀 Enhanced search endpoint: http://localhost:${PORT}/api/search/enhanced`);
+    console.log(`🔧 Enhanced search health: http://localhost:${PORT}/api/search/enhanced/health`);
+    console.log(`⚙️  Enhanced search config: http://localhost:${PORT}/api/search/enhanced/config`);
+    console.log(`📊 Enhanced search stats: http://localhost:${PORT}/api/search/enhanced/stats`);
+    console.log(`📚 Enhanced search docs: ./docs/enhanced-search-api.md`);
     console.log(`🔧 Vector validation: ${ENABLE_VECTOR_VALIDATION ? 'enabled' : 'disabled'}`);
   });
 }

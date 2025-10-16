@@ -1,0 +1,1294 @@
+openapi: 3.0.3
+info:
+  title: Enhanced Search API
+  description: Advanced search capabilities with result merging and duplicate detection
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4003/api/search/enhanced
+    description: Development server
+
+paths:
+  /:
+    post:
+      tags:
+        - Enhanced Search
+      summary: Perform enhanced search
+      description: Executes an enhanced search across multiple sources with result merging and duplicate detection
+      operationId: enhancedSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnhancedSearchRequest'
+            examples:
+              basicSearch:
+                summary: Basic search
+                value:
+                  query: "React testing tools"
+                  options:
+                    pagination:
+                      limit: 10
+              advancedSearch:
+                summary: Advanced search with all features
+                value:
+                  query: "React testing libraries"
+                  options:
+                    sources:
+                      vector: true
+                      traditional: true
+                      hybrid: true
+                    vectorOptions:
+                      vectorTypes: ["semantic", "categories"]
+                      limit: 30
+                    mergeOptions:
+                      strategy: "reciprocal_rank_fusion"
+                      rrfKValue: 60
+                      maxResults: 50
+                    duplicateDetectionOptions:
+                      enabled: true
+                      threshold: 0.85
+                      strategies: ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"]
+                    filters:
+                      categories: ["development"]
+                      userTypes: ["developer"]
+                    sort:
+                      field: "relevance"
+                      order: "desc"
+                    performance:
+                      timeout: 8000
+                      enableCache: true
+                    debug: true
+      responses:
+        '200':
+          description: Successful search response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnhancedSearchResponse'
+              examples:
+                basicResponse:
+                  summary: Basic search response
+                  value:
+                    query: "React testing tools"
+                    requestId: "123e4567-e89b-12d3-a456-426614174000"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    summary:
+                      totalResults: 45
+                      returnedResults: 20
+                      processingTime: 245
+                      sourcesSearched: ["vector", "traditional", "hybrid"]
+                      duplicatesRemoved: 8
+                      searchStrategy: "reciprocal_rank_fusion"
+                    results:
+                      - id: "tool-123"
+                        score: 0.95
+                        payload:
+                          name: "Jest"
+                          description: "Testing framework for JavaScript"
+                          category: "development"
+                        rrfScore: 0.92
+                        originalRankings:
+                          vector:
+                            rank: 1
+                            score: 0.95
+                          traditional:
+                            rank: 2
+                            score: 0.88
+                        sourceCount: 2
+                        finalRank: 1
+                        sources:
+                          - source: "vector"
+                            score: 0.95
+                            rank: 1
+                    sourceAttribution:
+                      - source: "vector"
+                        resultCount: 25
+                        searchTime: 120
+                        avgScore: 0.85
+                        weight: 1.0
+                    duplicateDetection:
+                      enabled: true
+                      duplicatesRemoved: 8
+                      duplicateGroups: 4
+                      strategies: ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"]
+                      processingTime: 15
+                    metrics:
+                      totalProcessingTime: 245
+                      searchTime: 180
+                      mergeTime: 35
+                      deduplicationTime: 15
+                      cacheHitRate: 0.2
+                    pagination:
+                      page: 1
+                      limit: 20
+                      totalPages: 3
+                      hasNext: true
+                      hasPrev: false
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validationError:
+                  summary: Validation error
+                  value:
+                    error: "Validation Error"
+                    message: "Invalid request body"
+                    code: "VALIDATION_ERROR"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    details:
+                      - code: "too_small"
+                        minimum: 1
+                        type: "string"
+                        inclusive: true
+                        message: "Query is required"
+                        path: ["query"]
+        '408':
+          description: Request timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                timeoutError:
+                  summary: Timeout error
+                  value:
+                    error: "Timeout Error"
+                    message: "Search request timed out after 5000ms"
+                    code: "TIMEOUT_ERROR"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    details:
+                      processingTime: 5000
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    get:
+      tags:
+        - Enhanced Search
+      summary: Get enhanced search health status
+      description: Checks the health of the enhanced search service and provides configuration information
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthyResponse:
+                  summary: Healthy service
+                  value:
+                    status: "healthy"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    service: "enhanced-search"
+                    version: "1.0.0"
+                    cache:
+                      size: 15
+                      enabled: true
+                      ttl: 300000
+                    configuration:
+                      defaultSources: ["vector", "traditional", "hybrid"]
+                      defaultMergeStrategy: "reciprocal_rank_fusion"
+                      duplicateDetectionEnabled: true
+                      maxConcurrentSearches: 5
+                      defaultTimeout: 5000
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unhealthyResponse:
+                  summary: Unhealthy service
+                  value:
+                    status: "unhealthy"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    service: "enhanced-search"
+                    error: "Service connection failed"
+
+  /cache/clear:
+    post:
+      tags:
+        - Enhanced Search
+      summary: Clear enhanced search cache
+      description: Clears the enhanced search cache and provides statistics about the cleared entries
+      operationId: clearCache
+      responses:
+        '200':
+          description: Cache cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheClearResponse'
+              examples:
+                clearResponse:
+                  summary: Cache cleared successfully
+                  value:
+                    message: "Cache cleared successfully"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    before:
+                      size: 15
+                      keys: ["enhanced_search_abc123", "enhanced_search_def456"]
+                    after:
+                      size: 0
+                      keys: []
+        '500':
+          description: Failed to clear cache
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /config:
+    get:
+      tags:
+        - Enhanced Search
+      summary: Get enhanced search configuration
+      description: Retrieves the current enhanced search configuration (sanitized for security)
+      operationId: getConfig
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+              examples:
+                configResponse:
+                  summary: Current configuration
+                  value:
+                    config:
+                      defaultSources:
+                        vector:
+                          enabled: true
+                          weight: 1.0
+                          timeout: 3000
+                        traditional:
+                          enabled: true
+                          weight: 0.9
+                          timeout: 2000
+                        hybrid:
+                          enabled: true
+                          weight: 0.95
+                          timeout: 4000
+                      defaultMergeStrategy: "reciprocal_rank_fusion"
+                      defaultDuplicateDetection: true
+                      maxConcurrentSearches: 5
+                      defaultTimeout: 5000
+                      enableCache: true
+                      cacheTTL: 300000
+                    timestamp: "2025-10-15T20:30:00.000Z"
+        '500':
+          description: Failed to get configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Enhanced Search
+      summary: Update enhanced search configuration
+      description: Updates the enhanced search configuration at runtime
+      operationId: updateConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config:
+                  $ref: '#/components/schemas/ConfigUpdate'
+              required:
+                - config
+            examples:
+              updateConfig:
+                summary: Update configuration
+                value:
+                  config:
+                    defaultMergeStrategy: "hybrid"
+                    enableCache: false
+                    cacheTTL: 600000
+                    maxConcurrentSearches: 3
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigUpdateResponse'
+              examples:
+                updateResponse:
+                  summary: Configuration updated
+                  value:
+                    message: "Configuration updated successfully"
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    before:
+                      defaultSources: ["vector", "traditional", "hybrid"]
+                      defaultMergeStrategy: "reciprocal_rank_fusion"
+                      enableCache: true
+                    after:
+                      defaultSources: ["vector", "traditional", "hybrid"]
+                      defaultMergeStrategy: "hybrid"
+                      enableCache: false
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to update configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /stats:
+    get:
+      tags:
+        - Enhanced Search
+      summary: Get enhanced search statistics
+      description: Retrieves performance statistics and metrics for the enhanced search service
+      operationId: getStats
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+              examples:
+                statsResponse:
+                  summary: Performance statistics
+                  value:
+                    timestamp: "2025-10-15T20:30:00.000Z"
+                    service: "enhanced-search"
+                    cache:
+                      size: 15
+                      enabled: true
+                      ttl: 300000
+                    configuration:
+                      availableSources: ["vector", "traditional", "hybrid"]
+                      defaultMergeStrategy: "reciprocal_rank_fusion"
+                      duplicateDetectionEnabled: true
+                    performance:
+                      totalSearches: 1250
+                      averageResponseTime: 280
+                      cacheHitRate: 0.35
+                      errorRate: 0.02
+        '500':
+          description: Failed to get statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    EnhancedSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Natural language search query
+          example: "React testing tools"
+        options:
+          $ref: '#/components/schemas/SearchOptions'
+      example:
+        query: "React testing tools"
+        options:
+          pagination:
+            limit: 20
+
+    SearchOptions:
+      type: object
+      properties:
+        sources:
+          $ref: '#/components/schemas/SourcesConfig'
+        vectorOptions:
+          $ref: '#/components/schemas/VectorOptions'
+        mergeOptions:
+          $ref: '#/components/schemas/MergeOptions'
+        duplicateDetectionOptions:
+          $ref: '#/components/schemas/DuplicateDetectionOptions'
+        pagination:
+          $ref: '#/components/schemas/PaginationOptions'
+        sort:
+          $ref: '#/components/schemas/SortOptions'
+        filters:
+          $ref: '#/components/schemas/FilterOptions'
+        performance:
+          $ref: '#/components/schemas/PerformanceOptions'
+        debug:
+          type: boolean
+          default: false
+          description: Enable debug information
+        includeMetadata:
+          type: boolean
+          default: true
+          description: Include metadata in results
+        includeSourceAttribution:
+          type: boolean
+          default: true
+          description: Include source attribution
+
+    SourcesConfig:
+      type: object
+      properties:
+        vector:
+          type: boolean
+          default: true
+          description: Enable vector search
+        traditional:
+          type: boolean
+          default: true
+          description: Enable traditional search
+        hybrid:
+          type: boolean
+          default: true
+          description: Enable hybrid search
+      example:
+        vector: true
+        traditional: true
+        hybrid: false
+
+    VectorOptions:
+      type: object
+      properties:
+        vectorTypes:
+          type: array
+          items:
+            type: string
+          default: ["semantic", "categories", "functionality"]
+          description: Vector types to search
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Maximum results per vector type
+        filter:
+          type: object
+          additionalProperties: true
+          description: Additional vector search filters
+      example:
+        vectorTypes: ["semantic", "categories"]
+        limit: 30
+        filter:
+          category: "development"
+
+    MergeOptions:
+      type: object
+      properties:
+        strategy:
+          type: string
+          enum: ["reciprocal_rank_fusion", "weighted_average", "hybrid"]
+          default: "reciprocal_rank_fusion"
+          description: Merge strategy
+        rrfKValue:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 60
+          description: RRF K value
+        maxResults:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+          description: Maximum results after merging
+        sourceWeights:
+          type: object
+          additionalProperties:
+            type: number
+          default:
+            semantic: 1.0
+            traditional: 0.9
+            hybrid: 0.95
+          description: Weight for each source
+      example:
+        strategy: "reciprocal_rank_fusion"
+        rrfKValue: 60
+        maxResults: 50
+        sourceWeights:
+          semantic: 1.2
+          traditional: 0.8
+
+    DuplicateDetectionOptions:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: true
+          description: Enable duplicate detection
+        useEnhancedDetection:
+          type: boolean
+          default: true
+          description: Use enhanced detection algorithms
+        threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.8
+          description: Similarity threshold
+        strategies:
+          type: array
+          items:
+            type: string
+            enum: ["EXACT_ID", "EXACT_URL", "CONTENT_SIMILARITY", "VERSION_AWARE", "FUZZY_MATCH", "COMBINED"]
+          default: ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"]
+          description: Detection strategies
+      example:
+        enabled: true
+        threshold: 0.85
+        strategies: ["EXACT_ID", "CONTENT_SIMILARITY", "VERSION_AWARE"]
+
+    PaginationOptions:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Page number
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Results per page
+      example:
+        page: 1
+        limit: 20
+
+    SortOptions:
+      type: object
+      properties:
+        field:
+          type: string
+          enum: ["relevance", "name", "category", "score"]
+          default: "relevance"
+          description: Sort field
+        order:
+          type: string
+          enum: ["asc", "desc"]
+          default: "desc"
+          description: Sort order
+      example:
+        field: "relevance"
+        order: "desc"
+
+    FilterOptions:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          description: Filter by categories
+        userTypes:
+          type: array
+          items:
+            type: string
+          description: Filter by user types
+        interfaces:
+          type: array
+          items:
+            type: string
+          description: Filter by interface types
+        deployment:
+          type: array
+          items:
+            type: string
+          description: Filter by deployment types
+        priceRange:
+          type: object
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+          description: Filter by price range
+      example:
+        categories: ["development"]
+        userTypes: ["developer"]
+
+    PerformanceOptions:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          minimum: 100
+          maximum: 30000
+          default: 5000
+          description: Request timeout in milliseconds
+        enableCache:
+          type: boolean
+          default: true
+          description: Enable result caching
+        enableParallel:
+          type: boolean
+          default: true
+          description: Enable parallel search execution
+      example:
+        timeout: 8000
+        enableCache: true
+        enableParallel: true
+
+    EnhancedSearchResponse:
+      type: object
+      required:
+        - query
+        - requestId
+        - timestamp
+        - summary
+        - results
+        - metrics
+        - pagination
+      properties:
+        query:
+          type: string
+          description: Original query
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request ID
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        summary:
+          $ref: '#/components/schemas/SearchSummary'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          description: Search results
+        sourceAttribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceAttribution'
+          description: Source attribution information
+        duplicateDetection:
+          $ref: '#/components/schemas/DuplicateDetectionInfo'
+          description: Duplicate detection information
+        metrics:
+          $ref: '#/components/schemas/SearchMetrics'
+          description: Performance metrics
+        debug:
+          $ref: '#/components/schemas/DebugInfo'
+          description: Debug information (when debug: true)
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+          description: Pagination information
+
+    SearchSummary:
+      type: object
+      required:
+        - totalResults
+        - returnedResults
+        - processingTime
+        - sourcesSearched
+        - duplicatesRemoved
+        - searchStrategy
+      properties:
+        totalResults:
+          type: integer
+          description: Total results found
+        returnedResults:
+          type: integer
+          description: Results returned
+        processingTime:
+          type: integer
+          description: Total processing time in milliseconds
+        sourcesSearched:
+          type: array
+          items:
+            type: string
+          description: Sources that were searched
+        duplicatesRemoved:
+          type: integer
+          description: Number of duplicates removed
+        searchStrategy:
+          type: string
+          description: Search strategy used
+
+    SearchResult:
+      type: object
+      required:
+        - id
+        - score
+        - payload
+        - rrfScore
+        - originalRankings
+        - sourceCount
+        - finalRank
+      properties:
+        id:
+          type: string
+          description: Result ID
+        score:
+          type: number
+          description: Original confidence score
+        payload:
+          type: object
+          additionalProperties: true
+          description: Result data
+        rrfScore:
+          type: number
+          description: Reciprocal rank fusion score
+        originalRankings:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RankingInfo'
+          description: Original rankings by source
+        sourceCount:
+          type: integer
+          description: Number of sources contributing
+        finalRank:
+          type: integer
+          description: Final rank after merging
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceInfo'
+          description: Source attribution
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+
+    RankingInfo:
+      type: object
+      required:
+        - rank
+        - score
+      properties:
+        rank:
+          type: integer
+          description: Rank in this source
+        score:
+          type: number
+          description: Score in this source
+
+    SourceInfo:
+      type: object
+      required:
+        - source
+        - score
+        - rank
+      properties:
+        source:
+          type: string
+          description: Source name
+        score:
+          type: number
+          description: Score from this source
+        rank:
+          type: integer
+          description: Rank in this source
+
+    SourceAttribution:
+      type: object
+      required:
+        - source
+        - resultCount
+        - searchTime
+        - avgScore
+        - weight
+      properties:
+        source:
+          type: string
+          description: Source name
+        resultCount:
+          type: integer
+          description: Results from this source
+        searchTime:
+          type: integer
+          description: Search time for this source in milliseconds
+        avgScore:
+          type: number
+          description: Average score from this source
+        weight:
+          type: number
+          description: Source weight
+
+    DuplicateDetectionInfo:
+      type: object
+      required:
+        - enabled
+        - duplicatesRemoved
+        - duplicateGroups
+        - strategies
+        - processingTime
+      properties:
+        enabled:
+          type: boolean
+          description: Whether detection was enabled
+        duplicatesRemoved:
+          type: integer
+          description: Number of duplicates removed
+        duplicateGroups:
+          type: integer
+          description: Number of duplicate groups
+        strategies:
+          type: array
+          items:
+            type: string
+          description: Strategies used
+        processingTime:
+          type: integer
+          description: Processing time in milliseconds
+
+    SearchMetrics:
+      type: object
+      required:
+        - totalProcessingTime
+        - searchTime
+        - mergeTime
+        - deduplicationTime
+        - cacheHitRate
+      properties:
+        totalProcessingTime:
+          type: integer
+          description: Total processing time in milliseconds
+        searchTime:
+          type: integer
+          description: Time spent searching in milliseconds
+        mergeTime:
+          type: integer
+          description: Time spent merging in milliseconds
+        deduplicationTime:
+          type: integer
+          description: Time spent deduplicating in milliseconds
+        cacheHitRate:
+          type: number
+          description: Cache hit rate
+
+    DebugInfo:
+      type: object
+      properties:
+        executionPath:
+          type: array
+          items:
+            type: string
+          description: Execution path
+        sourceMetrics:
+          type: object
+          additionalProperties: true
+          description: Source-specific metrics
+        mergeConfig:
+          type: object
+          additionalProperties: true
+          description: Merge configuration
+        duplicateDetectionConfig:
+          type: object
+          additionalProperties: true
+          description: Duplicate detection config
+
+    PaginationInfo:
+      type: object
+      required:
+        - page
+        - limit
+        - totalPages
+        - hasNext
+        - hasPrev
+      properties:
+        page:
+          type: integer
+          description: Current page
+        limit:
+          type: integer
+          description: Results per page
+        totalPages:
+          type: integer
+          description: Total pages
+        hasNext:
+          type: boolean
+          description: Has next page
+        hasPrev:
+          type: boolean
+          description: Has previous page
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - service
+        - version
+        - cache
+        - configuration
+      properties:
+        status:
+          type: string
+          enum: ["healthy", "unhealthy"]
+          description: Service health status
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        service:
+          type: string
+          description: Service name
+        version:
+          type: string
+          description: Service version
+        cache:
+          $ref: '#/components/schemas/CacheInfo'
+        configuration:
+          $ref: '#/components/schemas/ConfigurationInfo'
+
+    CacheInfo:
+      type: object
+      required:
+        - size
+        - enabled
+        - ttl
+      properties:
+        size:
+          type: integer
+          description: Current cache size
+        enabled:
+          type: boolean
+          description: Whether cache is enabled
+        ttl:
+          type: integer
+          description: Cache TTL in milliseconds
+
+    ConfigurationInfo:
+      type: object
+      required:
+        - defaultSources
+        - defaultMergeStrategy
+        - duplicateDetectionEnabled
+        - maxConcurrentSearches
+        - defaultTimeout
+      properties:
+        defaultSources:
+          type: array
+          items:
+            type: string
+          description: Default search sources
+        defaultMergeStrategy:
+          type: string
+          description: Default merge strategy
+        duplicateDetectionEnabled:
+          type: boolean
+          description: Whether duplicate detection is enabled by default
+        maxConcurrentSearches:
+          type: integer
+          description: Maximum concurrent searches
+        defaultTimeout:
+          type: integer
+          description: Default timeout in milliseconds
+
+    CacheClearResponse:
+      type: object
+      required:
+        - message
+        - timestamp
+        - before
+        - after
+      properties:
+        message:
+          type: string
+          description: Response message
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        before:
+          $ref: '#/components/schemas/CacheStats'
+        after:
+          $ref: '#/components/schemas/CacheStats'
+
+    CacheStats:
+      type: object
+      required:
+        - size
+        - keys
+      properties:
+        size:
+          type: integer
+          description: Cache size
+        keys:
+          type: array
+          items:
+            type: string
+          description: Cache keys
+
+    ConfigResponse:
+      type: object
+      required:
+        - config
+        - timestamp
+      properties:
+        config:
+          $ref: '#/components/schemas/Configuration'
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+
+    Configuration:
+      type: object
+      required:
+        - defaultSources
+        - defaultMergeStrategy
+        - defaultDuplicateDetection
+        - maxConcurrentSearches
+        - defaultTimeout
+        - enableCache
+        - cacheTTL
+      properties:
+        defaultSources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SearchSourceConfig'
+          description: Default search source configurations
+        defaultMergeStrategy:
+          type: string
+          enum: ["reciprocal_rank_fusion", "weighted_average", "hybrid"]
+          description: Default merge strategy
+        defaultDuplicateDetection:
+          type: boolean
+          description: Default duplicate detection setting
+        maxConcurrentSearches:
+          type: integer
+          description: Maximum concurrent searches
+        defaultTimeout:
+          type: integer
+          description: Default timeout in milliseconds
+        enableCache:
+          type: boolean
+          description: Whether caching is enabled
+        cacheTTL:
+          type: integer
+          description: Cache TTL in milliseconds
+
+    SearchSourceConfig:
+      type: object
+      required:
+        - enabled
+        - weight
+        - timeout
+      properties:
+        enabled:
+          type: boolean
+          description: Whether this source is enabled
+        weight:
+          type: number
+          description: Source weight
+        timeout:
+          type: integer
+          description: Source timeout in milliseconds
+
+    ConfigUpdate:
+      type: object
+      properties:
+        defaultMergeStrategy:
+          type: string
+          enum: ["reciprocal_rank_fusion", "weighted_average", "hybrid"]
+          description: Merge strategy
+        defaultDuplicateDetection:
+          type: boolean
+          description: Default duplicate detection setting
+        maxConcurrentSearches:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Maximum concurrent searches
+        defaultTimeout:
+          type: integer
+          minimum: 1000
+          maximum: 30000
+          description: Default timeout in milliseconds
+        enableCache:
+          type: boolean
+          description: Whether caching is enabled
+        cacheTTL:
+          type: integer
+          minimum: 60000
+          maximum: 3600000
+          description: Cache TTL in milliseconds
+
+    ConfigUpdateResponse:
+      type: object
+      required:
+        - message
+        - timestamp
+        - before
+        - after
+      properties:
+        message:
+          type: string
+          description: Response message
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        before:
+          $ref: '#/components/schemas/ConfigurationSummary'
+        after:
+          $ref: '#/components/schemas/ConfigurationSummary'
+
+    ConfigurationSummary:
+      type: object
+      required:
+        - defaultSources
+        - defaultMergeStrategy
+        - enableCache
+      properties:
+        defaultSources:
+          type: array
+          items:
+            type: string
+          description: Default sources
+        defaultMergeStrategy:
+          type: string
+          description: Default merge strategy
+        enableCache:
+          type: boolean
+          description: Whether cache is enabled
+
+    StatsResponse:
+      type: object
+      required:
+        - timestamp
+        - service
+        - cache
+        - configuration
+        - performance
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        service:
+          type: string
+          description: Service name
+        cache:
+          $ref: '#/components/schemas/CacheInfo'
+        configuration:
+          $ref: '#/components/schemas/StatsConfigurationInfo'
+        performance:
+          $ref: '#/components/schemas/PerformanceStats'
+
+    StatsConfigurationInfo:
+      type: object
+      required:
+        - availableSources
+        - defaultMergeStrategy
+        - duplicateDetectionEnabled
+      properties:
+        availableSources:
+          type: array
+          items:
+            type: string
+          description: Available search sources
+        defaultMergeStrategy:
+          type: string
+          description: Default merge strategy
+        duplicateDetectionEnabled:
+          type: boolean
+          description: Whether duplicate detection is enabled
+
+    PerformanceStats:
+      type: object
+      required:
+        - totalSearches
+        - averageResponseTime
+        - cacheHitRate
+        - errorRate
+      properties:
+        totalSearches:
+          type: integer
+          description: Total number of searches performed
+        averageResponseTime:
+          type: integer
+          description: Average response time in milliseconds
+        cacheHitRate:
+          type: number
+          description: Cache hit rate (0-1)
+        errorRate:
+          type: number
+          description: Error rate (0-1)
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - code
+        - timestamp
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Error code
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        requestId:
+          type: string
+          format: uuid
+          description: Request ID (optional)
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication (planned for future releases)
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Enhanced Search
+    description: Enhanced search operations with result merging and duplicate detection
+
+externalDocs:
+  description: Additional documentation
+  url: https://example.com/docs
