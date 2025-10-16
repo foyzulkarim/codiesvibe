@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Maximum Quality Search Architecture with LangGraph",
   "_moduleAliases": {
-    "@": "dist",
-    "@/config": "dist/config",
-    "@/types": "dist/types",
-    "@/services": "dist/services",
-    "@/utils": "dist/utils"
+    "@": "src",
+    "@/config": "src/config",
+    "@/types": "src/types",
+    "@/services": "src/services",
+    "@/utils": "src/utils"
   },
   "scripts": {
     "build": "tsc",
