@@ -42,7 +42,7 @@ export const EnhancedSearchRequestSchema = z.object({
       threshold: z.number().min(0).max(1).default(0.8),
       strategies: z.array(z.enum([
         'EXACT_ID',
-        'EXACT_URL', 
+        'EXACT_URL',
         'CONTENT_SIMILARITY',
         'VERSION_AWARE',
         'FUZZY_MATCH',
@@ -81,10 +81,33 @@ export const EnhancedSearchRequestSchema = z.object({
       enableParallel: z.boolean().default(true),
     }).default({}),
     
+    // Enhanced search options for v2.0
+    contextEnrichment: z.object({
+      enabled: z.boolean().default(true),
+      maxEntitiesPerQuery: z.number().int().min(1).max(20).default(5),
+      confidenceThreshold: z.number().min(0).max(1).default(0.6),
+    }).default({}),
+    
+    localNLP: z.object({
+      enabled: z.boolean().default(true),
+      intentClassification: z.boolean().default(true),
+      entityExtraction: z.boolean().default(true),
+      confidenceThreshold: z.number().min(0).max(1).default(0.5),
+    }).default({}),
+    
+    multiVectorSearch: z.object({
+      enabled: z.boolean().default(true),
+      vectorTypes: z.array(z.string()).default(['semantic', 'categories', 'functionality', 'aliases', 'composites']),
+      deduplicationEnabled: z.boolean().default(true),
+      deduplicationThreshold: z.number().min(0).max(1).default(0.9),
+    }).default({}),
+    
     // Debug options
     debug: z.boolean().default(false),
     includeMetadata: z.boolean().default(true),
     includeSourceAttribution: z.boolean().default(true),
+    includeExecutionMetrics: z.boolean().default(false),
+    includeConfidenceBreakdown: z.boolean().default(false),
   }).default({})
 });
 
@@ -108,9 +131,10 @@ export const EnhancedSearchResponseSchema = z.object({
     sourcesSearched: z.array(z.string()),
     duplicatesRemoved: z.number(),
     searchStrategy: z.string(),
+    enhancementVersion: z.string().optional(),
   }),
   
-  // Results array
+  // Results array with enhanced fields
   results: z.array(z.object({
     id: z.string(),
     score: z.number(),
@@ -128,41 +152,98 @@ export const EnhancedSearchResponseSchema = z.object({
       rank: z.number(),
     })).optional(),
     metadata: z.any().optional(),
+    // Enhanced fields for v2.0
+    confidenceBreakdown: z.object({
+      overall: z.number(),
+      vector: z.number().optional(),
+      traditional: z.number().optional(),
+      hybrid: z.number().optional(),
+      nlp: z.number().optional(),
+      context: z.number().optional(),
+    }).optional(),
+    explanation: z.string().optional(),
+    matchSignals: z.record(z.any()).optional(),
   })),
   
-  // Source attribution
+  // Enhanced source attribution
   sourceAttribution: z.array(z.object({
     source: z.string(),
     resultCount: z.number(),
     searchTime: z.number(),
     avgScore: z.number(),
     weight: z.number(),
+    // Enhanced fields
+    confidence: z.number().optional(),
+    processingStrategy: z.string().optional(),
+    modelUsed: z.string().optional(),
   })).optional(),
   
-  // Duplicate detection info
+  // Enhanced duplicate detection info
   duplicateDetection: z.object({
     enabled: z.boolean(),
     duplicatesRemoved: z.number(),
     duplicateGroups: z.number(),
     strategies: z.array(z.string()),
     processingTime: z.number(),
+    // Enhanced fields
+    threshold: z.number().optional(),
+    algorithm: z.string().optional(),
   }).optional(),
   
-  // Performance metrics
+  // Enhanced performance metrics
   metrics: z.object({
     totalProcessingTime: z.number(),
     searchTime: z.number(),
     mergeTime: z.number(),
     deduplicationTime: z.number(),
     cacheHitRate: z.number(),
+    // Enhanced fields for v2.0
+    nodeExecutionTimes: z.record(z.number()).optional(),
+    resourceUsage: z.object({
+      peakMemory: z.number().optional(),
+      averageMemory: z.number().optional(),
+      cpuTime: z.number().optional(),
+    }).optional(),
+    cacheMetrics: z.object({
+      embeddingCacheHits: z.number().optional(),
+      embeddingCacheMisses: z.number().optional(),
+      resultCacheHits: z.number().optional(),
+      resultCacheMisses: z.number().optional(),
+    }).optional(),
   }),
   
-  // Debug information
+  // Enhanced debug information
   debug: z.object({
     executionPath: z.array(z.string()),
     sourceMetrics: z.record(z.any()),
     mergeConfig: z.any(),
     duplicateDetectionConfig: z.any(),
+    // Enhanced fields
+    nlpResults: z.any().optional(),
+    contextEnrichment: z.any().optional(),
+    performanceBreakdown: z.record(z.any()).optional(),
+    requestId: z.string().optional(),
+    requestTimestamp: z.string().optional(),
+    enhancedFeatures: z.object({
+      contextEnrichment: z.boolean(),
+      localNLP: z.boolean(),
+      multiVectorSearch: z.boolean(),
+    }).optional(),
+  }).optional(),
+  
+  // Enhanced context information
+  context: z.object({
+    entities: z.array(z.object({
+      name: z.string(),
+      type: z.string(),
+      confidence: z.number(),
+      count: z.number(),
+    })).optional(),
+    intent: z.object({
+      label: z.string(),
+      confidence: z.number(),
+    }).optional(),
+    enrichedQuery: z.string().optional(),
   }).optional(),
   
   // Pagination info
@@ -218,3 +299,78 @@ export const EnhancedSearchConfigSchema = z.object({
 });
 
 export type EnhancedSearchConfig = z.infer<typeof EnhancedSearchConfigSchema>;
+
+/**
+ * Enhanced Search Context Information Schema
+ */
+export const EnhancedSearchContextSchema = z.object({
+  entities: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    confidence: z.number(),
+    count: z.number(),
+  })).optional(),
+  intent: z.object({
+    label: z.string(),
+    confidence: z.number(),
+  }).optional(),
+  enrichedQuery: z.string().optional(),
+});
+
+export type EnhancedSearchContext = z.infer<typeof EnhancedSearchContextSchema>;
+
+/**
+ * Enhanced Search Confidence Breakdown Schema
+ */
+export const ConfidenceBreakdownSchema = z.object({
+  overall: z.number(),
+  vector: z.number().optional(),
+  traditional: z.number().optional(),
+  hybrid: z.number().optional(),
+  nlp: z.number().optional(),
+  context: z.number().optional(),
+});
+
+export type ConfidenceBreakdown = z.infer<typeof ConfidenceBreakdownSchema>;
+
+/**
+ * Enhanced Search Resource Usage Schema
+ */
+export const ResourceUsageSchema = z.object({
+  peakMemory: z.number().optional(),
+  averageMemory: z.number().optional(),
+  cpuTime: z.number().optional(),
+});
+
+export type ResourceUsage = z.infer<typeof ResourceUsageSchema>;
+
+/**
+ * Enhanced Search Cache Metrics Schema
+ */
+export const CacheMetricsSchema = z.object({
+  embeddingCacheHits: z.number().optional(),
+  embeddingCacheMisses: z.number().optional(),
+  resultCacheHits: z.number().optional(),
+  resultCacheMisses: z.number().optional(),
+});
+
+export type CacheMetrics = z.infer<typeof CacheMetricsSchema>;
+
+/**
+ * Enhanced Search Match Signals Schema
+ */
+export const MatchSignalsSchema = z.record(z.any());
+
+export type MatchSignals = z.infer<typeof MatchSignalsSchema>;
+
+/**
+ * Enhanced Search Execution Metrics Schema
+ */
+export const ExecutionMetricsSchema = z.object({
+  nodeExecutionTimes: z.record(z.number()).optional(),
+  resourceUsage: ResourceUsageSchema.optional(),
+  cacheMetrics: CacheMetricsSchema.optional(),
+  performanceBreakdown: z.record(z.any()).optional(),
+});
+
+export type ExecutionMetrics = z.infer<typeof ExecutionMetricsSchema>;

@@ -1,27 +1,30 @@
-import { 
-  qdrantService, 
-  multiVectorSearchService, 
-  resultMergerService, 
-  duplicateDetectionService 
+import {
+  qdrantService,
+  multiVectorSearchService,
+  resultMergerService,
+  duplicateDetectionService
 } from './index';
 import { embeddingService } from './embedding.service';
-import { 
-  EnhancedSearchRequest, 
-  EnhancedSearchResponse, 
+import {
+  EnhancedSearchRequest,
+  EnhancedSearchResponse,
   EnhancedSearchConfig,
-  SearchSourceConfig 
+  SearchSourceConfig
 } from '@/dto/enhanced-search.dto';
-import { 
-  SearchResultItem, 
-  RankedResults, 
-  MergedResult, 
-  MergeConfig 
+import {
+  SearchResultItem,
+  RankedResults,
+  MergedResult,
+  MergeConfig
 } from './result-merger.service';
-import { 
+import {
   DuplicateDetectionConfig,
-  DetectionStrategy 
+  DetectionStrategy
 } from './duplicate-detection.interfaces';
 import { v4 as uuidv4 } from 'uuid';
+import { enhancedSearch } from '@/graphs/enhanced-search.graph';
+import { EnhancedState } from '@/types/enhanced-state';
+import { defaultEnhancedSearchConfig } from '@/config/enhanced-search-config';
 
 /**
  * Enhanced Search Service
@@ -52,14 +55,14 @@ export class EnhancedSearchService {
   }
 
   /**
-   * Perform enhanced search across multiple sources with result merging and duplicate detection
+   * Perform enhanced search using the LangGraph pipeline
    */
   async search(request: EnhancedSearchRequest): Promise<EnhancedSearchResponse> {
     const requestId = uuidv4();
     const startTime = Date.now();
     
     try {
-      console.log(`🔍 [${requestId}] Starting enhanced search for: "${request.query}"`);
+      console.log(`🚀 [${requestId}] Starting enhanced search with LangGraph for: "${request.query}"`);
       
       // Check cache first if enabled
       if (request.options.performance.enableCache && this.config.enableCache) {
@@ -74,87 +77,265 @@ export class EnhancedSearchService {
         }
       }
 
-      // Determine which sources to search
-      const sourcesToSearch = this.determineSourcesToSearch(request);
-      console.log(`📡 [${requestId}] Searching sources: ${sourcesToSearch.join(', ')}`);
-
-      // Execute searches in parallel
-      const searchResults = await this.executeParallelSearches(request, sourcesToSearch, requestId);
-      const searchTime = Date.now() - startTime;
-
-      // Merge results using reciprocal rank fusion
-      const mergeStartTime = Date.now();
-      const mergedResults = await this.mergeResults(searchResults, request);
-      const mergeTime = Date.now() - mergeStartTime;
-
-      // Apply duplicate detection
-      const dedupStartTime = Date.now();
-      const deduplicatedResults = await this.applyDuplicateDetection(mergedResults, request);
-      const dedupTime = Date.now() - dedupStartTime;
-
-      // Apply pagination and sorting
-      const finalResults = this.applyPaginationAndSorting(deduplicatedResults, request);
-
-      // Calculate final metrics
-      const totalProcessingTime = Date.now() - startTime;
-      
-      // Build response
-      const response: EnhancedSearchResponse = {
+      // Initialize enhanced state with proper default values
+      const initialState: Partial<EnhancedState> = {
         query: request.query,
-        requestId,
-        timestamp: new Date().toISOString(),
-        summary: {
-          totalResults: deduplicatedResults.length,
-          returnedResults: finalResults.length,
-          processingTime: totalProcessingTime,
-          sourcesSearched: sourcesToSearch,
-          duplicatesRemoved: mergedResults.length - deduplicatedResults.length,
-          searchStrategy: request.options.mergeOptions.strategy,
-        },
-        results: finalResults,
-        sourceAttribution: this.buildSourceAttribution(searchResults),
-        duplicateDetection: request.options.duplicateDetectionOptions.enabled ? {
-          enabled: true,
-          duplicatesRemoved: mergedResults.length - deduplicatedResults.length,
-          duplicateGroups: Math.floor((mergedResults.length - deduplicatedResults.length) / 2) || 0,
-          strategies: request.options.duplicateDetectionOptions.strategies,
-          processingTime: dedupTime,
-        } : undefined,
-        metrics: {
-          totalProcessingTime,
-          searchTime,
-          mergeTime,
-          deduplicationTime: dedupTime,
-          cacheHitRate: 0, // TODO: Implement cache hit rate tracking
-        },
-        debug: request.options.debug ? {
-          executionPath: ['enhanced-search', 'parallel-search', 'merge-results', 'duplicate-detection'],
-          sourceMetrics: this.buildSourceMetrics(searchResults),
-          mergeConfig: request.options.mergeOptions,
-          duplicateDetectionConfig: request.options.duplicateDetectionOptions,
-        } : undefined,
-        pagination: {
-          page: request.options.pagination.page,
-          limit: request.options.pagination.limit,
-          totalPages: Math.ceil(deduplicatedResults.length / request.options.pagination.limit),
-          hasNext: request.options.pagination.page * request.options.pagination.limit < deduplicatedResults.length,
-          hasPrev: request.options.pagination.page > 1,
-        },
+        // Initialize metadata
+        metadata: {
+          startTime: new Date(),
+          executionPath: ["enhanced-search"],
+          nodeExecutionTimes: {},
+          name: "enhanced-search",
+          enhancementVersion: "2.0",
+          featureFlags: [],
+          resourceUsage: {
+            peakMemory: 0,
+            averageMemory: 0,
+            cpuTime: 0
+          },
+          cacheMetrics: {
+            embeddingCacheHits: 0,
+            embeddingCacheMisses: 0,
+            resultCacheHits: 0,
+            resultCacheMisses: 0
+          }
+        }
       };
+
+      // Execute the LangGraph pipeline
+      const graphResult = await enhancedSearch(request.query, {
+        debug: request.options.debug,
+        enableRecovery: true,
+        enableStateValidation: true
+      });
+
+      console.log(`📊 [${requestId}] LangGraph execution completed`);
+
+      // Format the enhanced response
+      const response = this.formatEnhancedResponse(
+        request,
+        requestId,
+        graphResult,
+        Date.now() - startTime
+      );
 
       // Cache results if enabled
       if (request.options.performance.enableCache && this.config.enableCache) {
         this.setCache(request, response);
       }
 
-      console.log(`✅ [${requestId}] Enhanced search completed in ${totalProcessingTime}ms`);
-      console.log(`📊 [${requestId}] Results: ${finalResults.length} returned, ${mergedResults.length - deduplicatedResults.length} duplicates removed`);
+      console.log(`✅ [${requestId}] Enhanced search completed in ${Date.now() - startTime}ms`);
+      console.log(`📊 [${requestId}] Results: ${response.summary.returnedResults} returned`);
 
       return response;
     } catch (error) {
       console.error(`❌ [${requestId}] Enhanced search failed:`, error);
-      throw error;
+      
+      // Return error response
+      return {
+        query: request.query,
+        requestId,
+        timestamp: new Date().toISOString(),
+        summary: {
+          totalResults: 0,
+          returnedResults: 0,
+          processingTime: Date.now() - startTime,
+          sourcesSearched: [],
+          duplicatesRemoved: 0,
+          searchStrategy: "error",
+        },
+        results: [],
+        metrics: {
+          totalProcessingTime: Date.now() - startTime,
+          searchTime: 0,
+          mergeTime: 0,
+          deduplicationTime: 0,
+          cacheHitRate: 0,
+        },
+        pagination: {
+          page: request.options.pagination.page,
+          limit: request.options.pagination.limit,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
     }
+  }
+
+  /**
+   * Format the LangGraph result into EnhancedSearchResponse
+   */
+  private formatEnhancedResponse(
+    request: EnhancedSearchRequest,
+    requestId: string,
+    graphResult: any,
+    totalProcessingTime: number
+  ): EnhancedSearchResponse {
+    // Extract results from graph result
+    const results = graphResult.results || [];
+    const metadata = graphResult.metadata || {};
+    const executionPath = metadata.executionPath || [];
+    const nodeExecutionTimes = metadata.nodeExecutionTimes || {};
+    
+    // Determine sources searched from execution path
+    const sourcesSearched = executionPath.filter((path: string) =>
+      path.includes('search') || path.includes('vector')
+    );
+
+    // Apply pagination to results
+    const { page, limit } = request.options.pagination;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedResults = results.slice(startIndex, endIndex);
+
+    // Build enhanced results with required metadata
+    const enhancedResults = paginatedResults.map((result: any, index: number) => ({
+      id: result.tool?.id || result.id,
+      score: result.finalScore || result.score || 0,
+      payload: result.tool || result.payload || {},
+      rrfScore: result.finalScore || result.score || 0,
+      originalRankings: result.sourceScores || {},
+      sourceCount: Object.keys(result.sourceScores || {}).length,
+      finalRank: startIndex + index + 1,
+      sources: result.sources || [],
+      metadata: {
+        ...result.metadata,
+        explanation: result.explanation,
+        matchSignals: result.matchSignals,
+        sourceScores: result.sourceScores
+      }
+    }));
+
+    // Build response
+    const response: EnhancedSearchResponse = {
+      query: request.query,
+      requestId,
+      timestamp: new Date().toISOString(),
+      summary: {
+        totalResults: results.length,
+        returnedResults: enhancedResults.length,
+        processingTime: totalProcessingTime,
+        sourcesSearched,
+        duplicatesRemoved: 0, // Handled by the graph
+        searchStrategy: "langgraph-enhanced-v2",
+      },
+      results: enhancedResults,
+      sourceAttribution: this.buildEnhancedSourceAttribution(graphResult),
+      duplicateDetection: request.options.duplicateDetectionOptions.enabled ? {
+        enabled: true,
+        duplicatesRemoved: 0, // Handled by the graph
+        duplicateGroups: 0,
+        strategies: request.options.duplicateDetectionOptions.strategies,
+        processingTime: nodeExecutionTimes['result-merging'] || 0,
+      } : undefined,
+      metrics: {
+        totalProcessingTime,
+        searchTime: nodeExecutionTimes['multi-vector-search'] || 0,
+        mergeTime: nodeExecutionTimes['result-merging'] || 0,
+        deduplicationTime: nodeExecutionTimes['result-merging'] || 0,
+        cacheHitRate: this.calculateCacheHitRate(graphResult),
+      },
+      debug: request.options.debug ? {
+        executionPath,
+        sourceMetrics: this.buildEnhancedSourceMetrics(graphResult),
+        mergeConfig: request.options.mergeOptions,
+        duplicateDetectionConfig: request.options.duplicateDetectionOptions,
+      } : undefined,
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(results.length / limit),
+        hasNext: page * limit < results.length,
+        hasPrev: page > 1,
+      },
+    };
+
+    return response;
+  }
+
+  /**
+   * Build enhanced source attribution from graph result
+   */
+  private buildEnhancedSourceAttribution(graphResult: any): any[] {
+    const attribution: any[] = [];
+    
+    // Extract from vector search metrics
+    if (graphResult.vectorSearchState?.searchMetrics) {
+      Object.entries(graphResult.vectorSearchState.searchMetrics).forEach(([source, metrics]: [string, any]) => {
+        attribution.push({
+          source,
+          resultCount: metrics.resultCount,
+          searchTime: metrics.searchTime,
+          avgScore: metrics.avgSimilarity || 0,
+          weight: 1.0,
+        });
+      });
+    }
+
+    // Add NLP processing if available
+    if (graphResult.nlpResults) {
+      attribution.push({
+        source: 'nlp-processing',
+        resultCount: 1,
+        searchTime: graphResult.nlpResults.processingTime,
+        avgScore: graphResult.nlpResults.intent?.confidence || 0,
+        weight: 0.5,
+      });
+    }
+
+    return attribution;
+  }
+
+  /**
+   * Build enhanced source metrics for debug information
+   */
+  private buildEnhancedSourceMetrics(graphResult: any): Record<string, any> {
+    const metrics: Record<string, any> = {};
+    
+    // Vector search metrics
+    if (graphResult.vectorSearchState?.searchMetrics) {
+      Object.entries(graphResult.vectorSearchState.searchMetrics).forEach(([source, sourceMetrics]: [string, any]) => {
+        metrics[source] = {
+          resultCount: sourceMetrics.resultCount,
+          searchTime: sourceMetrics.searchTime,
+          avgScore: sourceMetrics.avgSimilarity || 0,
+          weight: 1.0,
+        };
+      });
+    }
+
+    // NLP metrics
+    if (graphResult.nlpResults) {
+      metrics['nlp-processing'] = {
+        resultCount: 1,
+        searchTime: graphResult.nlpResults.processingTime,
+        avgScore: graphResult.nlpResults.intent?.confidence || 0,
+        modelUsed: graphResult.nlpResults.modelUsed,
+        processingStrategy: graphResult.nlpResults.processingStrategy,
+      };
+    }
+
+    // Performance metrics
+    if (graphResult.performanceMetrics) {
+      metrics['performance'] = graphResult.performanceMetrics;
+    }
+
+    return metrics;
+  }
+
+  /**
+   * Calculate cache hit rate from graph result
+   */
+  private calculateCacheHitRate(graphResult: any): number {
+    const cacheMetrics = graphResult.metadata?.cacheMetrics;
+    if (!cacheMetrics) return 0;
+    
+    const totalHits = cacheMetrics.embeddingCacheHits + cacheMetrics.resultCacheHits;
+    const totalMisses = cacheMetrics.embeddingCacheMisses + cacheMetrics.resultCacheMisses;
+    const total = totalHits + totalMisses;
+    
+    return total > 0 ? totalHits / total : 0;
   }
 
   /**

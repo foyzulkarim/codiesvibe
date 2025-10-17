@@ -406,4 +406,91 @@ export const validateAndThrow = (config: EnhancedSearchConfig): void => {
   }
 };
 
+// Validation for the simplified enhancedSearchConfig object
+export const validateSimplifiedConfig = (): ValidationResult => {
+  const errors: ConfigurationError[] = [];
+  const warnings: string[] = [];
+
+  // Validate multi-vector search configuration
+  if (process.env.SEARCH_USE_MULTIVECTOR === "true") {
+    const maxResults = parseInt(process.env.MULTIVECTOR_MAX_RESULTS || "20");
+    if (maxResults < 1 || maxResults > 100) {
+      errors.push(new ConfigurationError(
+        'MULTIVECTOR_MAX_RESULTS must be between 1 and 100',
+        'enhancedSearchConfig.maxResultsPerVector'
+      ));
+    }
+
+    const vectorTypes = (process.env.VECTOR_TYPES || "semantic,entities.categories,entities.functionality,entities.aliases,composites.toolType").split(",");
+    if (vectorTypes.length === 0) {
+      errors.push(new ConfigurationError(
+        'VECTOR_TYPES cannot be empty when multi-vector search is enabled',
+        'enhancedSearchConfig.vectorTypes'
+      ));
+    }
+  }
+
+  // Validate RRF configuration
+  const rrfKValue = parseInt(process.env.SEARCH_RRF_K || "60");
+  if (rrfKValue < 1 || rrfKValue > 100) {
+    errors.push(new ConfigurationError(
+      'SEARCH_RRF_K must be between 1 and 100',
+      'enhancedSearchConfig.rrfKValue'
+    ));
+  }
+
+  try {
+    const sourceWeights = JSON.parse(process.env.SEARCH_SOURCE_WEIGHTS || '{"mongodb": 0.3, "qdrant": 0.7}');
+    const totalWeight = Object.values(sourceWeights).reduce((sum: number, weight: any) => sum + (typeof weight === 'number' ? weight : 0), 0);
+    if (Math.abs(totalWeight - 1.0) > 0.01) {
+      warnings.push('SEARCH_SOURCE_WEIGHTS should sum to 1.0 for proper weight distribution');
+    }
+  } catch (error) {
+    errors.push(new ConfigurationError(
+      'SEARCH_SOURCE_WEIGHTS must be valid JSON',
+      'enhancedSearchConfig.sourceWeights'
+    ));
+  }
+
+  const dedupeThreshold = parseFloat(process.env.DEDUPE_THRESHOLD || "0.8");
+  if (dedupeThreshold < 0 || dedupeThreshold > 1) {
+    errors.push(new ConfigurationError(
+      'DEDUPE_THRESHOLD must be between 0 and 1',
+      'enhancedSearchConfig.dedupeThreshold'
+    ));
+  }
+
+  // Validate context enrichment configuration
+  const enrichmentTimeout = parseInt(process.env.ENRICHMENT_TIMEOUT_MS || "2000");
+  if (enrichmentTimeout < 100 || enrichmentTimeout > 10000) {
+    errors.push(new ConfigurationError(
+      'ENRICHMENT_TIMEOUT_MS must be between 100ms and 10000ms',
+      'enhancedSearchConfig.enrichmentTimeoutMs'
+    ));
+  }
+
+  const maxEntityCount = parseInt(process.env.MAX_ENTITY_COUNT || "10");
+  if (maxEntityCount < 1 || maxEntityCount > 50) {
+    errors.push(new ConfigurationError(
+      'MAX_ENTITY_COUNT must be between 1 and 50',
+      'enhancedSearchConfig.maxEntityCount'
+    ));
+  }
+
+  // Validate performance configuration
+  const cacheTTL = parseInt(process.env.CACHE_TTL || "3600");
+  if (cacheTTL < 60 || cacheTTL > 86400) {
+    errors.push(new ConfigurationError(
+      'CACHE_TTL must be between 60 seconds and 24 hours',
+      'enhancedSearchConfig.cacheTTL'
+    ));
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
+};
+
 // All validators are already exported above, no need to re-export

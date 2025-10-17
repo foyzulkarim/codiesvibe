@@ -246,13 +246,13 @@ export const getEnhancedSearchConfigFromEnv = (): Partial<EnhancedSearchConfig> 
     fallbackEnabled: process.env.CONTEXT_ENRICHMENT_FALLBACK_ENABLED !== 'false',
   },
   multiVectorSearch: {
-    enabled: process.env.MULTI_VECTOR_SEARCH_ENABLED !== 'false',
-    vectorTypes: process.env.MULTI_VECTOR_TYPES?.split(',') || ['semantic', 'categories', 'functionality', 'aliases', 'composites'],
+    enabled: process.env.SEARCH_USE_MULTIVECTOR === 'true',
+    vectorTypes: (process.env.VECTOR_TYPES || "semantic,entities.categories,entities.functionality,entities.aliases,composites.toolType").split(","),
     mergeStrategy: (process.env.MULTI_VECTOR_MERGE_STRATEGY as any) || 'reciprocal_rank_fusion',
-    rrfKValue: parseInt(process.env.MULTI_VECTOR_RRF_K || '60'),
-    maxResultsPerVector: parseInt(process.env.MULTI_VECTOR_MAX_RESULTS || '20'),
+    rrfKValue: parseInt(process.env.SEARCH_RRF_K || '60'),
+    maxResultsPerVector: parseInt(process.env.MULTIVECTOR_MAX_RESULTS || '20'),
     deduplicationEnabled: process.env.MULTI_VECTOR_DEDUP_ENABLED !== 'false',
-    deduplicationThreshold: parseFloat(process.env.MULTI_VECTOR_DEDUP_THRESHOLD || '0.9'),
+    deduplicationThreshold: parseFloat(process.env.DEDUPE_THRESHOLD || '0.8'),
     sourceAttributionEnabled: process.env.MULTI_VECTOR_ATTRIBUTION_ENABLED !== 'false',
     parallelSearchEnabled: process.env.MULTI_VECTOR_PARALLEL_ENABLED !== 'false',
     searchTimeout: parseInt(process.env.MULTI_VECTOR_SEARCH_TIMEOUT || '5000'),
@@ -272,10 +272,10 @@ export const getEnhancedSearchConfigFromEnv = (): Partial<EnhancedSearchConfig> 
     intentLabels: process.env.LOCAL_NLP_INTENT_LABELS?.split(',') || ['filter_search', 'comparison_query', 'discovery', 'exploration'],
   },
   performance: {
-    cacheEnabled: process.env.PERFORMANCE_CACHE_ENABLED !== 'false',
+    cacheEnabled: process.env.ENABLE_CACHE !== 'false',
     embeddingCacheSize: parseInt(process.env.PERFORMANCE_EMBEDDING_CACHE_SIZE || '1000'),
     resultCacheSize: parseInt(process.env.PERFORMANCE_RESULT_CACHE_SIZE || '500'),
-    cacheTTL: parseInt(process.env.PERFORMANCE_CACHE_TTL || '3600'),
+    cacheTTL: parseInt(process.env.CACHE_TTL || '3600'),
     intelligentCacheEnabled: process.env.PERFORMANCE_INTELLIGENT_CACHE_ENABLED !== 'false',
     semanticSimilarityThreshold: parseFloat(process.env.PERFORMANCE_SEMANTIC_THRESHOLD || '0.8'),
     adaptiveTTLEnabled: process.env.PERFORMANCE_ADAPTIVE_TTL_ENABLED !== 'false',
@@ -325,3 +325,24 @@ export const getEnhancedSearchConfigFromEnv = (): Partial<EnhancedSearchConfig> 
     enhancedMonitoring: process.env.FEATURE_ENHANCED_MONITORING !== 'false',
   },
 });
+
+// Simplified configuration object for direct access (as specified in the implementation plan)
+export const enhancedSearchConfig = {
+  // Multi-vector search configuration
+  useMultiVector: process.env.SEARCH_USE_MULTIVECTOR === "true",
+  maxResultsPerVector: parseInt(process.env.MULTIVECTOR_MAX_RESULTS || "20"),
+  vectorTypes: (process.env.VECTOR_TYPES || "semantic,entities.categories,entities.functionality,entities.aliases,composites.toolType").split(","),
+  
+  // RRF configuration
+  rrfKValue: parseInt(process.env.SEARCH_RRF_K || "60"),
+  sourceWeights: JSON.parse(process.env.SEARCH_SOURCE_WEIGHTS || '{"mongodb": 0.3, "qdrant": 0.7}'),
+  dedupeThreshold: parseFloat(process.env.DEDUPE_THRESHOLD || "0.8"),
+  
+  // Context enrichment configuration
+  enrichmentTimeoutMs: parseInt(process.env.ENRICHMENT_TIMEOUT_MS || "2000"),
+  maxEntityCount: parseInt(process.env.MAX_ENTITY_COUNT || "10"),
+  
+  // Performance configuration
+  enableCache: process.env.ENABLE_CACHE !== "false",
+  cacheTTL: parseInt(process.env.CACHE_TTL || "3600")
+};

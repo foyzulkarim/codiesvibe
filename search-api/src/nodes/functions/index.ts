@@ -18,6 +18,10 @@ import { excludeTools, excludeToolsNode } from "./exclude-tools";
 import { mergeAndDedupe, mergeAndDedupeNode } from "./merge-and-dedupe";
 import { rankByRelevance, rankByRelevanceNode } from "./rank-by-relevance";
 
+// Enhanced Search Nodes
+import { multiVectorSearchNode } from "../multi-vector-search.node";
+import { resultMergerNode } from "../result-merger.node";
+
 // Re-export all functions
 export {
   lookupByName,
@@ -43,7 +47,11 @@ export {
   mergeAndDedupe,
   mergeAndDedupeNode,
   rankByRelevance,
-  rankByRelevanceNode
+  rankByRelevanceNode,
+  
+  // Enhanced Search Nodes
+  multiVectorSearchNode,
+  resultMergerNode
 };
 
 // Function registry for dynamic execution
@@ -65,6 +73,10 @@ export const functionRegistry = {
   "exclude-tools": excludeToolsNode,
   "merge-and-dedupe": mergeAndDedupeNode,
   "rank-by-relevance": rankByRelevanceNode,
+  
+  // Enhanced Search Nodes
+  "multi-vector-search": multiVectorSearchNode,
+  "result-merger": resultMergerNode,
 };
 
 // Function categories for organization
@@ -86,6 +98,10 @@ export const functionCategories = {
   "processing": [
     "merge-and-dedupe",
     "rank-by-relevance"
+  ],
+  "enhanced": [
+    "multi-vector-search",
+    "result-merger"
   ]
 };
 
