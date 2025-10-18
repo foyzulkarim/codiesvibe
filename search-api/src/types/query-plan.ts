@@ -23,7 +23,7 @@ export const QueryPlanSchema = z.object({
       "semantic_variant"
     ]).describe("Source for the query vector"),
     topK: z.number().min(1).max(200).describe("Number of results to retrieve")
-  })).optional().describe(
+  })).optional().nullable().describe(
     "List of vector collections and embedding types to query"
   ),
 
@@ -33,17 +33,17 @@ export const QueryPlanSchema = z.object({
       field: z.string(),
       operator: z.string(),
       value: z.any()
-    })).optional().describe("Filters to apply"),
-    limit: z.number().min(1).max(200).optional().describe("Maximum results to return")
-  })).optional().describe(
+    })).optional().nullable().describe("Filters to apply"),
+    limit: z.number().min(1).max(200).optional().nullable().describe("Maximum results to return")
+  })).optional().nullable().describe(
     "Structured databases or APIs with filters to apply"
   ),
 
   reranker: z.object({
     type: z.enum(["cross-encoder", "LTR", "none"]).describe("Reranking strategy"),
-    model: z.string().optional().describe("Reranker model name"),
-    maxCandidates: z.number().optional().describe("Maximum candidates for reranking")
-  }).optional().describe(
+    model: z.string().optional().nullable().describe("Reranker model name"),
+    maxCandidates: z.number().optional().nullable().describe("Maximum candidates for reranking")
+  }).optional().nullable().describe(
     "Optional reranking strategy configuration"
   ),
 
@@ -52,15 +52,15 @@ export const QueryPlanSchema = z.object({
     "weighted_sum",
     "concat",
     "none"
-  ]).optional().describe(
+  ]).optional().nullable().describe(
     "Fusion method for combining scores across sources"
   ),
 
-  maxRefinementCycles: z.number().min(0).max(5).optional().describe(
+  maxRefinementCycles: z.number().min(0).max(5).optional().nullable().describe(
     "How many refinement iterations to allow if low confidence"
   ),
 
-  explanation: z.string().optional().describe(
+  explanation: z.string().optional().nullable().describe(
     "Natural-language rationale for why this plan is suitable"
   ),
 

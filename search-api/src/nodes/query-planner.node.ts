@@ -1,7 +1,8 @@
 import { StateAnnotation } from '../types/state';
 import { QueryPlan, QueryPlanSchema } from '../types/query-plan';
-import { chatVllmClient } from '../config/models';
+import { vllmConfig } from '../config/models';
 import { z } from 'zod';
+import { ChatOpenAI } from '@langchain/openai';
 
 // Configuration for logging
 const LOG_CONFIG = {
@@ -63,6 +64,8 @@ Fusion Methods:
 - "none" - No fusion needed
 
 Do not exceed topK=200 for any source.
+
+Return ONLY a JSON object that follows the QueryPlan schema exactly. Do not provide any explanations or conversational text.
 `;
 
 /**
@@ -125,68 +128,38 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
       intentComplexity: intentState.constraints?.length || 0 + intentState.desiredFeatures?.length || 0
     });
 
-    // Call the LLM
-    const response = await chatVllmClient.invoke([
+    // Create LangChain client with structured output
+    const llmWithStructuredOutput = new ChatOpenAI({
+      modelName: vllmConfig.model,
+      apiKey: "not-needed",
+      configuration: {
+        baseURL: `${vllmConfig.baseUrl}/v1`
+      }
+    }).withStructuredOutput<z.infer<typeof QueryPlanSchema>>(
+      QueryPlanSchema,
+      {
+        name: "query_plan_generator",
+      }
+    );
+
+    // Call the LLM with structured output
+    const queryPlan = await llmWithStructuredOutput.invoke([
       { role: 'system', content: QUERY_PLANNING_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt }
     ]);
 
-    log('LLM response received', {
-      contentType: typeof response.content,
-      responseLength: response.content?.length || 0
+    // raw queryPlan log 
+    log('Raw query plan generated', {
+      plan: JSON.stringify(queryPlan)
     });
 
-    // Extract JSON from response
-    let jsonText: string;
-    if (typeof response.content === 'string') {
-      jsonText = response.content.trim();
-    } else {
-      jsonText = JSON.stringify(response.content);
-    }
-
-    // Remove any markdown code blocks
-    jsonText = jsonText.replace(/^```json\s*|\s*```$/g, '').trim();
-
-    if (!jsonText || jsonText.length === 0) {
-      throw new Error('Empty response from LLM');
-    }
-
-    log('Extracted JSON text', { length: jsonText.length });
-
-    // Parse the JSON response
-    let parsedPlan: any;
-    try {
-      parsedPlan = JSON.parse(jsonText);
-      log('JSON parsed successfully', {
-        strategy: parsedPlan.strategy,
-        hasVectorSources: !!(parsedPlan.vectorSources && parsedPlan.vectorSources.length > 0),
-        hasStructuredSources: !!(parsedPlan.structuredSources && parsedPlan.structuredSources.length > 0)
-      });
-    } catch (parseError) {
-      // Try to fix common JSON issues
-      const fixedJsonText = jsonText.replace(/,\s*([}\]])/g, '$1');
-      try {
-        parsedPlan = JSON.parse(fixedJsonText);
-        log('JSON parsing issues fixed', {
-          originalLength: jsonText.length,
-          fixedLength: fixedJsonText.length
-        });
-      } catch (secondError) {
-        throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-      }
-    }
-
-    // Validate against the schema
-    const validationResult = QueryPlanSchema.safeParse(parsedPlan);
-    if (!validationResult.success) {
-      logError('Query plan validation failed', {
-        errors: validationResult.error.issues,
-        plan: parsedPlan
-      });
-      throw new Error(`Query plan validation failed: ${validationResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
-    }
-
-    const queryPlan: QueryPlan = validationResult.data;
+    log('Query plan generated successfully', {
+      strategy: queryPlan.strategy,
+      vectorSourcesCount: queryPlan.vectorSources?.length || 0,
+      structuredSourcesCount: queryPlan.structuredSources?.length || 0,
+      fusionMethod: queryPlan.fusion || 'none',
+      confidence: queryPlan.confidence
+    });
     const executionTime = Date.now() - startTime;
 
     log('Query planning completed successfully', {
