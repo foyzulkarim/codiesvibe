@@ -153,7 +153,9 @@ export async function searchWithAgenticPipeline(
 
 /**
  * Batch processing for multiple queries
+ * TODO: Uncomment and test after basic pipeline is working
  */
+/*
 export async function batchSearchWithAgenticPipeline(
   queries: string[],
   options: {
@@ -218,6 +220,7 @@ export async function batchSearchWithAgenticPipeline(
 
   return results;
 }
+*/
 
 /**
  * Stream search for real-time feedback (experimental)

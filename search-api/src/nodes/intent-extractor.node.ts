@@ -1,6 +1,7 @@
 import { StateAnnotation } from '../types/state';
 import { IntentState, IntentStateSchema } from '../types/intent-state';
-import { chatVllmClient } from '../config/models';
+import { vllmConfig } from '../config/models';
+import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
 
 // Configuration for logging
@@ -24,42 +25,40 @@ const logError = (message: string, error?: any) => {
  * System prompt for intent extraction
  */
 const INTENT_EXTRACTION_SYSTEM_PROMPT = `
-You are an AI Intent Extractor for a search engine that helps users discover and compare AI tools and technologies (e.g., IDEs, APIs, frameworks, CLIs, agents).
+You are an AI intent extractor. Your ONLY job is to return a valid JSON object. Do not provide explanations, do not engage in conversation, do not say "let me think about this" or any other conversational text.
 
-Your task is to analyze the user query and produce a structured JSON object that conforms exactly to the provided IntentState schema.
+Return ONLY a JSON object with this structure:
+{
+  "primaryGoal": "find" | "compare" | "recommend" | "explore" | "analyze" | "explain" | null,
+  "referenceTool": string | null,
+  "comparisonMode": "similar_to" | "vs" | "alternative_to" | null,
+  "desiredFeatures": string[],
+  "filters": [],
+  "pricing": "free" | "freemium" | "paid" | "enterprise" | null,
+  "category": "IDE" | "API" | "CLI" | "Framework" | "Agent" | "Plugin" | null,
+  "platform": "web" | "desktop" | "cli" | "api" | null,
+  "semanticVariants": string[],
+  "constraints": string[],
+  "confidence": number
+}
 
-Rules:
-1. Use only the allowed enum values for fields like primaryGoal, comparisonMode, pricing, category, platform
-2. If a value is unknown or not mentioned, return null or an empty array
-3. Extract tool names exactly as mentioned (preserve casing)
-4. For comparison queries, identify the reference tool and comparison mode
-5. Extract pricing constraints (free, paid, cheaper, etc.)
-6. Identify platform preferences (web, desktop, cli, api)
-7. List any explicit features mentioned from the allowed features list
-8. Generate 2-3 semantic variants of the query for search expansion
-9. Provide a confidence score (0-1) based on query clarity
+IMPORTANT GUIDELINES:
+- "desiredFeatures" can ONLY be: "AI code assist", "local inference", "RAG support", "multi-agent orchestration", "LLM integration", "context awareness", "CLI mode", "open-source"
+- Put general constraints like "offline", "python support", "cheaper" in "constraints" array
+- Do not make up features - only use the exact allowed values
 
 Examples:
-- "free cli" → primaryGoal: "find", pricing: "free", platform: "cli"
-- "Cursor alternative but cheaper" → primaryGoal: "find", referenceTool: "Cursor IDE", comparisonMode: "alternative_to", constraints: ["cheaper"]
-- "Amazon Q vs GitHub Copilot" → primaryGoal: "compare", referenceTool: "Amazon Q", comparisonMode: "vs"
+Query: "free cli" → {"primaryGoal": "find", "pricing": "free", "platform": "cli", "referenceTool": null, "comparisonMode": null, "desiredFeatures": ["CLI mode"], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
 
-Enum Values:
-- primaryGoal: "find", "compare", "recommend", "explore", "analyze", "explain"
-- comparisonMode: "similar_to", "vs", "alternative_to"
-- pricing: "free", "freemium", "paid", "enterprise"
-- category: "IDE", "API", "CLI", "Framework", "Agent", "Plugin"
-- platform: "web", "desktop", "cli", "api"
-- features: "AI code assist", "local inference", "RAG support", "multi-agent orchestration", "LLM integration", "context awareness", "CLI mode", "open-source"
+Query: "Cursor alternative but cheaper" → {"primaryGoal": "find", "referenceTool": "Cursor IDE", "comparisonMode": "alternative_to", "constraints": ["cheaper"], "pricing": "freemium", "platform": null, "category": "IDE", "desiredFeatures": ["AI code assist"], "filters": [], "semanticVariants": [], "confidence": 0.8}
 
-Respond with a JSON object only, no additional text.
+Query: "AI code generator that works offline and supports Python" → {"primaryGoal": "find", "pricing": "free", "platform": null, "referenceTool": null, "comparisonMode": null, "desiredFeatures": ["AI code assist", "local inference"], "filters": [], "semanticVariants": [], "constraints": ["supports Python"], "confidence": 0.9}
+
+DO NOT include any text before or after the JSON. Return ONLY the JSON object.
 `;
 
 /**
- * IntentExtractorNode - LLM-based intent extraction using function calling
- *
- * Input: Raw user query from state
- * Output: Structured IntentState JSON with schema validation
+ * Intent Extractor Node - Uses LangChain's structured output for reliable intent extraction
  */
 export async function intentExtractorNode(
   state: typeof StateAnnotation.State
@@ -83,78 +82,43 @@ export async function intentExtractorNode(
   }
 
   const startTime = Date.now();
-  log('Starting intent extraction', { query: query.substring(0, 100) });
+  log('Starting intent extraction with LangChain structured output', { query: query.substring(0, 100) });
 
   try {
-    // Create the user prompt
-    const userPrompt = `Extract the intent from this query: "${query}"`;
-
-    log('Sending request to LLM', {
-      promptLength: userPrompt.length,
-      model: process.env.VLLM_MODEL || 'unknown'
+    // Initialize LangChain VLLM client
+    const chatVllmClient = new ChatOpenAI({
+      apiKey: "not-needed",
+      configuration: {
+        baseURL: `${vllmConfig.baseUrl}/v1`,
+      },
+      modelName: vllmConfig.model,
+      temperature: 0.1,
+      maxTokens: 500,
     });
 
-    // Call the LLM
-    const response = await chatVllmClient.invoke([
+    // Create structured output model with explicit type annotation
+    const structuredModel = chatVllmClient.withStructuredOutput<z.infer<typeof IntentStateSchema>>(
+      IntentStateSchema,
+      {
+        name: "intent_extraction",
+      }
+    );
+
+    log('Sending request to LLM with structured output', {
+      model: vllmConfig.model,
+      baseUrl: vllmConfig.baseUrl
+    });
+
+    // Extract intent using structured output
+    const userPrompt = `Extract the intent from this query: "${query}"`;
+    const intentState = await structuredModel.invoke([
       { role: 'system', content: INTENT_EXTRACTION_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt }
     ]);
 
-    log('LLM response received', {
-      contentType: typeof response.content,
-      responseLength: response.content?.length || 0
-    });
-
-    // Extract JSON from response
-    let jsonText: string;
-    if (typeof response.content === 'string') {
-      jsonText = response.content.trim();
-    } else {
-      jsonText = JSON.stringify(response.content);
-    }
-
-    // Remove any markdown code blocks
-    jsonText = jsonText.replace(/^```json\s*|\s*```$/g, '').trim();
-
-    if (!jsonText || jsonText.length === 0) {
-      throw new Error('Empty response from LLM');
-    }
-
-    log('Extracted JSON text', { length: jsonText.length });
-
-    // Parse the JSON response
-    let parsedIntent: any;
-    try {
-      parsedIntent = JSON.parse(jsonText);
-      log('JSON parsed successfully', { keys: Object.keys(parsedIntent) });
-    } catch (parseError) {
-      // Try to fix common JSON issues
-      const fixedJsonText = jsonText.replace(/,\s*([}\]])/g, '$1');
-      try {
-        parsedIntent = JSON.parse(fixedJsonText);
-        log('JSON parsing issues fixed', {
-          originalLength: jsonText.length,
-          fixedLength: fixedJsonText.length
-        });
-      } catch (secondError) {
-        throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-      }
-    }
-
-    // Validate against the schema
-    const validationResult = IntentStateSchema.safeParse(parsedIntent);
-    if (!validationResult.success) {
-      logError('Intent validation failed', {
-        errors: validationResult.error.issues,
-        intent: parsedIntent
-      });
-      throw new Error(`Intent validation failed: ${validationResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')}`);
-    }
-
-    const intentState: IntentState = validationResult.data;
     const executionTime = Date.now() - startTime;
 
-    log('Intent extraction completed successfully', {
+    log('Intent extraction completed successfully with LangChain', {
       primaryGoal: intentState.primaryGoal,
       hasReferenceTool: !!intentState.referenceTool,
       confidence: intentState.confidence,
