@@ -4,9 +4,7 @@
  * Debug script to test the refactored 3-node LLM-first pipeline
  */
 
-import { intentExtractionNode } from '../nodes/intent-extraction.node';
 import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph';
-import { StateAnnotation } from '../types/state';
 
 // Test cases from the specification
 const testCases = [
@@ -39,112 +37,6 @@ const testCases = [
     }
   }
 ];
-
-/**
- * Run a single test case (Node Level)
- */
-async function runTestCase(testCase: any) {
-  console.log(`\n🧪 Testing: ${testCase.name} (Node Level)`);
-  console.log(`📝 Query: "${testCase.query}"`);
-  console.log(`─`.repeat(50));
-
-  try {
-    // Create initial state
-    const initialState: typeof StateAnnotation.State = {
-      query: testCase.query,
-      intentState: null,
-      executionPlan: null,
-      candidates: [],
-      executionStats: {
-        totalTimeMs: 0,
-        nodeTimings: {},
-        vectorQueriesExecuted: 0,
-        structuredQueriesExecuted: 0
-      },
-      errors: [],
-      metadata: {
-        startTime: new Date(),
-        executionPath: [],
-        nodeExecutionTimes: {},
-        totalNodesExecuted: 0,
-        pipelineVersion: "2.0-llm-first"
-      }
-    };
-
-    const startTime = Date.now();
-
-    // Run the pipeline at node level
-    const result = await intentExtractionNode(initialState);
-
-    const totalTime = Date.now() - startTime;
-
-    // Display results
-    console.log(`✅ Pipeline completed in ${totalTime}ms`);
-    console.log(`🎯 Intent State:`, result.intentState ? {
-      primaryGoal: result.intentState.primaryGoal,
-      referenceTool: result.intentState.referenceTool,
-      comparisonMode: result.intentState.comparisonMode,
-      pricing: result.intentState.pricing,
-      platform: result.intentState.platform,
-      confidence: result.intentState.confidence,
-      constraintsCount: result.intentState.constraints?.length || 0
-    } : '❌ NULL');
-
-    console.log(`🗺️ Execution Plan:`, result.executionPlan ? {
-      strategy: result.executionPlan.strategy,
-      vectorSources: result.executionPlan.vectorSources?.length || 0,
-      structuredSources: result.executionPlan.structuredSources?.length || 0,
-      fusionMethod: result.executionPlan.fusion || 'none',
-      confidence: result.executionPlan.confidence
-    } : '❌ NULL');
-
-    console.log(`⚡ Candidates:`, {
-      count: result.candidates?.length || 0,
-      topScore: result.candidates?.[0]?.score || 0,
-      sources: [...new Set(result.candidates?.map(c => c.source))].join(', ')
-    });
-
-    console.log(`📊 Execution Stats:`, {
-      totalTime: result.executionStats?.totalTimeMs || 0,
-      vectorQueries: result.executionStats?.vectorQueriesExecuted || 0,
-      structuredQueries: result.executionStats?.structuredQueriesExecuted || 0,
-      fusionMethod: result.executionStats?.fusionMethod || 'none'
-    });
-
-    // Check for errors
-    if (result.errors && result.errors.length > 0) {
-      console.log(`❌ Errors:`, result.errors.map(e => ({
-        node: e.node,
-        error: e.error.message,
-        recovered: e.recovered
-      })));
-    }
-
-    // Basic validation
-    const validationResults = {
-      hasIntentState: !!result.intentState,
-      hasExecutionPlan: !!result.executionPlan,
-      hasCandidates: !!(result.candidates && result.candidates.length > 0),
-      noErrors: !result.errors || result.errors.length === 0
-    };
-
-    console.log(`✅ Validation:`, validationResults);
-
-    return {
-      success: Object.values(validationResults).every(Boolean),
-      result,
-      totalTime
-    };
-
-  } catch (error) {
-    console.error(`❌ Test failed:`, error instanceof Error ? error.message : String(error));
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-      totalTime: 0
-    };
-  }
-}
 
 /**
  * Run a single test case (Graph Level)
@@ -216,13 +108,6 @@ async function main() {
   console.log('='.repeat(60));
 
   const results = [];
-
-  // Test at node level
-  console.log('\n📋 Node Level Tests:');
-  for (const testCase of testCases) {
-    const result = await runTestCase(testCase);
-    results.push({ ...testCase, ...result, level: 'node' });
-  }
 
   // Test at graph level
   console.log('\n📋 Graph Level Tests:');

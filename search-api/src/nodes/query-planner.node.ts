@@ -50,6 +50,24 @@ Available Collections:
 - "descriptions" - Collection for tool description embeddings
 - "features" - Collection for feature-specific embeddings
 
+MongoDB Structured Fields (for filtering):
+- "pricingModel" - Array of pricing models: ["free", "freemium", "paid"]
+- "categories" - Array of tool categories (1-5 entries)
+- "industries" - Array of industry verticals (1-10 entries)
+- "userTypes" - Array of target user types (1-10 entries)
+- "toolTypes" - Array of tool classifications (1-10 entries)
+- "domains" - Array of operational domains (1-15 entries)
+- "capabilities" - Array of tool capabilities (1-20 entries)
+- "commonUseCases" - Array of common use cases (1-15 entries)
+- "interface" - Array of interface types
+- "functionality" - Array of functionality types
+- "deployment" - Array of deployment types
+- "status" - Tool status: "active" | "beta" | "deprecated" | "discontinued"
+- "popularity" - Numeric popularity score
+- "rating" - Numeric rating (0-5)
+- "hasFreeTier" - Boolean indicating free tier availability
+- "hasCustomPricing" - Boolean indicating custom pricing support
+
 Strategy Types:
 - "hybrid" - Combine vector search with metadata filtering (most common)
 - "multi-vector" - Search multiple vector collections
@@ -119,6 +137,15 @@ Consider:
 - Features requested: ${intentState.desiredFeatures?.join(', ') || 'None'}
 - Constraints: ${intentState.constraints?.join(', ') || 'None'}
 - Semantic variants available: ${intentState.semanticVariants?.length || 0}
+
+MongoDB Structured Sources Usage:
+- Use "mongodb" as structuredSource when intentState has ANY of these:
+  * pricing constraint (free/freemium/paid)
+  * platform preference (web/desktop/cli/api)
+  * category preference (IDE/API/CLI/Framework/Agent/Plugin)
+  * specific features that map to MongoDB fields
+- For hybrid strategy, ALWAYS include both vectorSources AND structuredSources
+- Set appropriate MongoDB filters based on intentState constraints
 
 Respond with a JSON object only, following the QueryPlan schema exactly.
 `;

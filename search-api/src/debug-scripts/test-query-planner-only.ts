@@ -156,31 +156,34 @@ async function testQueryPlanner(testCase: any) {
     // Display detailed results
     console.log(`⏱️  Query planning completed in ${executionTime}ms`);
 
-    if (result.executionPlan) {
-      console.log(`\n🗺️ Execution Plan:`);
-      console.log(`  Strategy: ${result.executionPlan.strategy || 'Not specified'}`);
-      console.log(`  Confidence: ${result.executionPlan.confidence || 'No confidence score'}`);
-      console.log(`  Fusion Method: ${result.executionPlan.fusion || 'None'}`);
-      console.log(`  Vector Sources: ${result.executionPlan.vectorSources?.join(', ') || 'None'}`);
-      console.log(`  Structured Sources: ${result.executionPlan.structuredSources?.join(', ') || 'None'}`);
-      // console.log(`  Query Transformations: ${result.executionPlan.queryTransformations?.join(', ') || 'None'}`);
-      // console.log(`  Filters Applied: ${result.executionPlan.filtersApplied?.join(', ') || 'None'}`);
-      // console.log(`  Priority Features: ${result.executionPlan.priorityFeatures?.join(', ') || 'None'}`);
-    } else {
-      console.log(`❌ No execution plan returned!`);
-    }
+    // log the result
+    console.log(`\n🔍 Result:`, result);
+
+    // if (result.executionPlan) {
+    //   console.log(`\n🗺️ Execution Plan:`);
+    //   console.log(`  Strategy: ${result.executionPlan.strategy || 'Not specified'}`);
+    //   console.log(`  Confidence: ${result.executionPlan.confidence || 'No confidence score'}`);
+    //   console.log(`  Fusion Method: ${result.executionPlan.fusion || 'None'}`);
+    //   console.log(`  Vector Sources: ${result.executionPlan.vectorSources?.join(', ') || 'None'}`);
+    //   console.log(`  Structured Sources: ${result.executionPlan.structuredSources?.join(', ') || 'None'}`);
+    //   // console.log(`  Query Transformations: ${result.executionPlan.queryTransformations?.join(', ') || 'None'}`);
+    //   // console.log(`  Filters Applied: ${result.executionPlan.filtersApplied?.join(', ') || 'None'}`);
+    //   // console.log(`  Priority Features: ${result.executionPlan.priorityFeatures?.join(', ') || 'None'}`);
+    // } else {
+    //   console.log(`❌ No execution plan returned!`);
+    // }
 
     // Check for errors
-    if (result.errors && result.errors.length > 0) {
-      console.log(`\n❌ Errors encountered:`);
-      result.errors.forEach((error, index) => {
-        console.log(`  ${index + 1}. ${error.node}: ${error.error.message}`);
-        console.log(`     Recovered: ${error.recovered}`);
-        if (error.recoveryStrategy) {
-          console.log(`     Recovery: ${error.recoveryStrategy}`);
-        }
-      });
-    }
+    // if (result.errors && result.errors.length > 0) {
+    //   console.log(`\n❌ Errors encountered:`);
+    //   result.errors.forEach((error, index) => {
+    //     console.log(`  ${index + 1}. ${error.node}: ${error.error.message}`);
+    //     console.log(`     Recovered: ${error.recovered}`);
+    //     if (error.recoveryStrategy) {
+    //       console.log(`     Recovery: ${error.recoveryStrategy}`);
+    //     }
+    //   });
+    // }
 
     // Basic validation
     const validationResults = {
@@ -198,14 +201,14 @@ async function testQueryPlanner(testCase: any) {
     });
 
     // Compare with expected plan (if provided)
-    if (testCase.expectedPlan) {
-      console.log(`\n📋 Expected vs Actual Plan:`);
-      Object.entries(testCase.expectedPlan).forEach(([key, expected]) => {
-        const actual = result.executionPlan?.[key as keyof typeof result.executionPlan];
-        const matches = JSON.stringify(actual) === JSON.stringify(expected);
-        console.log(`  ${key}: ${expected} → ${actual} ${matches ? '✅' : '❌'}`);
-      });
-    }
+    // if (testCase.expectedPlan) {
+    //   console.log(`\n📋 Expected vs Actual Plan:`);
+    //   Object.entries(testCase.expectedPlan).forEach(([key, expected]) => {
+    //     const actual = result.executionPlan?.[key as keyof typeof result.executionPlan];
+    //     const matches = JSON.stringify(actual) === JSON.stringify(expected);
+    //     console.log(`  ${key}: ${expected} → ${actual} ${matches ? '✅' : '❌'}`);
+    //   });
+    // }
 
     return {
       success: Object.values(validationResults).every(Boolean),
@@ -300,10 +303,8 @@ async function main() {
       return acc;
     }, {} as Record<string, number>);
 
-  Object.entries(strategyCounts).forEach(([strategy, count]) => {
-    // const percentage = Math.round((count / passedTests) * 100);
-    console.log(`  ${strategy}: ${count}/${passedTests}`);
-  });
+ 
+    console.log('strategyCounts  └───', strategyCounts);
 
   if (passedTests === totalTests) {
     console.log('\n🎉 All QueryPlannerNode tests passed!');
