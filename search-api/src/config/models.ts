@@ -1,5 +1,5 @@
 import { Ollama } from "ollama";
-import { ChatOllama } from "@langchain/ollama";
+// import { ChatOllama } from "@langchain/ollama"; // Temporarily commented for build
 import { ChatOpenAI } from "@langchain/openai";
 
 // Ollama Configuration
@@ -20,11 +20,11 @@ export const ollamaClient = new Ollama({
 });
 
 // LangChain ChatOllama client
-export const chatOllamaClient = new ChatOllama({
-  baseUrl: ollamaConfig.baseUrl,
-  model: ollamaConfig.model,
-  temperature: ollamaConfig.options.temperature,
-});
+// export const chatOllamaClient = new ChatOllama({
+//   baseUrl: ollamaConfig.baseUrl,
+//   model: ollamaConfig.model,
+//   temperature: ollamaConfig.options.temperature,
+// });
 
 // vLLM Configuration
 export const vllmConfig = {

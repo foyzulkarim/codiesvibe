@@ -6,8 +6,8 @@ import dotenv from 'dotenv';
 import { StateAnnotation } from "./types/state";
 import { vectorIndexingService, HealthReport } from "./services";
 
-// Import LangGraph orchestration
-import { intelligentSearch, SearchResult, searchWithThread, getSearchThreadInfo, deleteSearchThread } from "./graphs/main.graph";
+// Import LangGraph orchestration - NEW 3-Node Pipeline
+import { searchWithAgenticPipeline, batchSearchWithAgenticPipeline } from "./graphs/agentic-search.graph";
 import { threadManager } from "./utils/thread-manager";
 import { checkpointManager } from "./utils/checkpoint-manager";
 
@@ -143,41 +143,45 @@ app.post('/search', async (req, res) => {
     console.log(`\n🚀 Starting search for query: "${query}"`);
     const startTime = Date.now();
 
-    // Intelligent search orchestration
-    const searchResult = await intelligentSearch(query, {
-      debug: debug
+    // NEW: Agentic search orchestration with 3-node LLM-first pipeline
+    const searchResult = await searchWithAgenticPipeline(query, {
+      enableCheckpoints: false,
+      metadata: { debug: debug }
     });
 
     const executionTime = Date.now() - startTime;
 
     const response = {
       query,
-      intent: searchResult.intent || {
-        toolNames: [],
-        categories: [],
-        functionality: [],
-        userTypes: [],
-        interface: [],
-        deployment: [],
-        isComparative: false,
-        referenceTool: undefined,
-        semanticQuery: "",
-        keywords: [],
-        excludeTools: []
+      // NEW: Intent from our 3-node pipeline
+      intentState: searchResult.intentState || null,
+      executionPlan: searchResult.executionPlan || null,
+      candidates: searchResult.candidates?.slice(0, limit) || [],
+      executionStats: searchResult.executionStats || {
+        totalTimeMs: executionTime,
+        nodeTimings: {},
+        vectorQueriesExecuted: 0,
+        structuredQueriesExecuted: 0
       },
-      confidence: searchResult.confidence || {
-        overall: searchResult.metadata?.confidence || 0,
-        breakdown: {}
-      },
-      results: searchResult.results?.slice(0, limit) || [],
       executionTime: `${executionTime}ms`,
-      phase: "LangGraph Integration",
-      strategy: searchResult.strategy || "intelligent-search",
-      explanation: searchResult.explanation || "Search completed using intelligent orchestration",
+      phase: "3-Node LLM-First Pipeline",
+      strategy: searchResult.executionPlan?.strategy || "agentic-search",
+      explanation: searchResult.executionPlan?.explanation || "Search completed using 3-node LLM-first agentic pipeline",
+      // Convert candidates to results format for backward compatibility
+      results: searchResult.candidates?.slice(0, limit).map(candidate => ({
+        id: candidate.id,
+        name: candidate.metadata.name,
+        description: candidate.metadata.description,
+        category: candidate.metadata.category,
+        score: candidate.score,
+        source: candidate.source,
+        metadata: candidate.metadata
+      })) || [],
       debug: debug ? {
         metadata: searchResult.metadata,
         executionPath: searchResult.metadata?.executionPath || [],
-        nodeExecutionTimes: searchResult.metadata?.nodeExecutionTimes || {}
+        nodeExecutionTimes: searchResult.metadata?.nodeExecutionTimes || {},
+        errors: searchResult.errors || []
       } : undefined
     };
 
@@ -237,11 +241,11 @@ app.post('/search/async', async (req, res) => {
 
     console.log(`[AsyncSearch] Created thread ${threadId} for async search`);
 
-    // Start the search in the background (fire and forget)
-    // In a production environment, you might want to use a proper job queue
-    searchWithThread(query, threadId, {
-      debug,
-      continueFromCheckpoint: true
+    // Start the search in the background using the new pipeline
+    searchWithAgenticPipeline(query, {
+      threadId: threadId,
+      enableCheckpoints: false,
+      metadata: { debug, asyncMode: true }
     }).catch(error => {
       console.error(`[AsyncSearch] Error in thread ${threadId}:`, error);
       // Update thread status to error
@@ -412,10 +416,11 @@ app.post('/search/resume/:threadId', async (req, res) => {
 
     console.log(`[AsyncSearch] Resuming search for thread ${threadId} with query: "${resumeQuery}"`);
 
-    // Resume the search in the background
-    searchWithThread(resumeQuery, threadId, {
-      debug,
-      continueFromCheckpoint: true
+    // Resume the search in the background using new pipeline
+    searchWithAgenticPipeline(resumeQuery, {
+      threadId: threadId,
+      enableCheckpoints: false,
+      metadata: { debug, resumingFrom: true }
     }).catch(error => {
       console.error(`[AsyncSearch] Error resuming thread ${threadId}:`, error);
       // Update thread status to error
@@ -481,13 +486,13 @@ app.delete('/search/cancel/:threadId', async (req, res) => {
     // Clear checkpoints for this thread
     const clearedCheckpoints = await checkpointManager.clearThreadCheckpoints(threadId);
 
-    // Delete the thread
-    const deleted = deleteSearchThread(threadId);
+    // Delete the thread (using threadManager instead of old function)
+    const deleted = threadManager.deleteThread(threadId);
 
     if (deleted) {
       console.log(`[AsyncSearch] Successfully cancelled and cleaned up thread ${threadId}`);
       console.log(`[AsyncSearch] Cleared ${clearedCheckpoints} checkpoints`);
-      
+
       res.json({
         threadId,
         status: 'cancelled',

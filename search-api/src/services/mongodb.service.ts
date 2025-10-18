@@ -153,6 +153,27 @@ export class MongoDBService {
   }
 
   /**
+   * Search tools with criteria (alias for filterTools)
+   */
+  async searchTools(criteria: Record<string, any>, limit?: number): Promise<any[]> {
+    const db = await this.ensureConnected();
+
+    try {
+      const collection = db.collection("tools");
+      let query = collection.find(criteria);
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      return await query.toArray();
+    } catch (error) {
+      console.error("Error searching tools:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Count tools matching criteria
    */
   async countTools(criteria: Record<string, any>): Promise<number> {

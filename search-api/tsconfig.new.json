@@ -10,9 +10,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "moduleResolution": "node",
@@ -26,27 +23,28 @@
       "@/utils/*": ["utils/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/graphs/agentic-search.graph.ts",
+    "src/nodes/intent-extractor.node.ts",
+    "src/nodes/query-planner.node.ts",
+    "src/nodes/query-executor.node.ts",
+    "src/nodes/intent-extraction.node.ts",
+    "src/types/intent-state.ts",
+    "src/types/query-plan.ts",
+    "src/types/candidate.ts",
+    "src/types/state.ts",
+    "src/utils/fusion.ts",
+    "src/debug-scripts/test-refactored-pipeline.ts",
+    "src/services/mongodb.service.ts",
+    "src/services/qdrant.service.ts",
+    "src/services/embedding.service.ts",
+    "src/config/models.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
     "src/graphs/_archived_graphs/**/*",
-    "src/nodes/_archived_extraction/**/*",
-    "src/nodes/conditional-executor.node.ts",
-    "src/nodes/context-enrichment.node.ts",
-    "src/nodes/dynamic-stage-skipper.node.ts",
-    "src/nodes/multi-vector-search.node.ts",
-    "src/nodes/result-merger.node.ts",
-    "src/nodes/local-nlp-processing.node.ts",
-    "src/nodes/query-planning-node.ts",
-    "src/nodes/execution-node.ts",
-    "src/nodes/execution.node.ts",
-    "src/routers/**/*",
-    "src/utils/checkpoint-manager.ts",
-    "src/utils/rollback-manager.ts",
-    "src/utils/state-monitor.ts",
-    "src/services/enhanced-search.service.ts",
-    "src/config/config-validator.ts"
+    "src/nodes/_archived_extraction/**/*"
   ]
 }
