@@ -107,7 +107,8 @@ export async function queryExecutorNode(
     // Execute structured searches
     if (executionPlan.structuredSources && executionPlan.structuredSources.length > 0) {
       log('Executing structured searches', {
-        sourcesCount: executionPlan.structuredSources.length
+        sourcesCount: executionPlan.structuredSources.length,
+        sources: executionPlan.structuredSources.map(source => JSON.stringify(source))
       });
 
       for (const structuredSource of executionPlan.structuredSources) {
@@ -339,32 +340,82 @@ async function executeStructuredSearch(
 ): Promise<Candidate[]> {
   try {
     // Build MongoDB query from filters
-    const query: any = {};
+    let query: any = {};
+
+    log('Structured search query:', structuredSource);
 
     if (structuredSource.filters && structuredSource.filters.length > 0) {
       for (const filter of structuredSource.filters) {
+        log('Structured search filter:', filter);
         switch (filter.operator) {
           case '=':
-            query[filter.field] = filter.value;
+            log('Structured filter.field:', filter.field);
+            query = {
+              ...query,
+              [filter.field]: filter.value
+            };
+            log('Structured query:', query);
             break;
           case 'contains':
-            query[filter.field] = { $regex: filter.value, $options: 'i' };
+            query = {
+              ...query,
+              [filter.field]: { $regex: filter.value, $options: 'i' }
+            };
             break;
           case '>':
-            query[filter.field] = { $gt: filter.value };
+            query = {
+              ...query,
+              [filter.field]: { $gt: filter.value }
+            };
             break;
           case '<':
-            query[filter.field] = { $lt: filter.value };
+            query = {
+              ...query,
+              [filter.field]: { $lt: filter.value }
+            };
             break;
           case '>=':
-            query[filter.field] = { $gte: filter.value };
+
+            query = {
+              ...query,
+              [filter.field]: { $gte: filter.value }
+            };
             break;
           case '<=':
-            query[filter.field] = { $lte: filter.value };
+
+            query = {
+              ...query,
+              [filter.field]: { $lte: filter.value }
+            };
+            break;
+          case 'in':
+            // Handle array of values - MongoDB $in operator
+            if (Array.isArray(filter.value)) {
+              query = {
+                ...query,
+                [filter.field]: { $in: filter.value }
+              };
+            } else {
+              // Single value - treat as equals
+              query = {
+                ...query,
+                [filter.field]: filter.value
+              };
+            }
+            break;
+          default:
+            // Handle unknown operators by treating them as equals
+            logWarning(`Unknown operator '${filter.operator}' for field '${filter.field}', treating as equals`);
+            query = {
+              ...query,
+              [filter.field]: filter.value
+            };
             break;
         }
       }
     }
+
+    log('Structured search query:', query);
 
     // Execute query
     const results = await mongoService.searchTools(query, structuredSource.limit || 50);
