@@ -441,7 +441,7 @@ export const validateSimplifiedConfig = (): ValidationResult => {
 
   try {
     const sourceWeights = JSON.parse(process.env.SEARCH_SOURCE_WEIGHTS || '{"mongodb": 0.3, "qdrant": 0.7}');
-    const totalWeight = Object.values(sourceWeights).reduce((sum: number, weight: any) => sum + (typeof weight === 'number' ? weight : 0), 0);
+    const totalWeight = Object.values(sourceWeights).reduce((sum: number, weight: number) => sum + weight, 0) as number;
     if (Math.abs(totalWeight - 1.0) > 0.01) {
       warnings.push('SEARCH_SOURCE_WEIGHTS should sum to 1.0 for proper weight distribution');
     }

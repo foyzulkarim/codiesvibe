@@ -9,7 +9,6 @@ export { localNLPService } from './local-nlp.service';
 export { multiVectorSearchService } from './multi-vector-search.service';
 export { resultMergerService } from './result-merger.service';
 export { duplicateDetectionService, DuplicateDetectionService } from './duplicate-detection.service';
-export { enhancedSearchService, EnhancedSearchService } from './enhanced-search.service';
 
 // Export types if needed
 export type { ToolData, IndexingProgress, HealthReport } from './vector-indexing.service';

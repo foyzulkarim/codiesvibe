@@ -24,7 +24,7 @@
  */
 
 import dotenv from 'dotenv';
-import { queryExecutorNode } from '../nodes/query-executor.node';
+import { queryExecutorNode } from '../graphs/nodes/query-executor.node';
 import { StateAnnotation } from '../types/state';
 import net from 'net';
 

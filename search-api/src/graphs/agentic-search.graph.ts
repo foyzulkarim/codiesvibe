@@ -3,9 +3,9 @@ import { StateAnnotation } from "@/types/state";
 import { MemorySaver } from "@langchain/langgraph";
 
 // Import our 3-node pipeline components
-import { intentExtractorNode } from "@/nodes/intent-extractor.node";
-import { queryPlannerNode } from "@/nodes/query-planner.node";
-import { queryExecutorNode } from "@/nodes/query-executor.node";
+import { intentExtractorNode } from "@/graphs/nodes/intent-extractor.node";
+import { queryPlannerNode } from "@/graphs/nodes/query-planner.node";
+import { queryExecutorNode } from "@/graphs/nodes/query-executor.node";
 
 /**
  * Agentic Search Graph - 3-Node LLM-First Pipeline

@@ -12,7 +12,7 @@
  */
 
 import dotenv from 'dotenv';
-import { intentExtractorNode } from '../nodes/intent-extractor.node';
+import { intentExtractorNode } from '../graphs/nodes/intent-extractor.node';
 import { StateAnnotation } from '../types/state';
 
 // Load environment variables

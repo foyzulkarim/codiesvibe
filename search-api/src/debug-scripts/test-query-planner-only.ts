@@ -12,7 +12,7 @@
  */
 
 import dotenv from 'dotenv';
-import { queryPlannerNode } from '../nodes/query-planner.node';
+import { queryPlannerNode } from '../graphs/nodes/query-planner.node';
 import { StateAnnotation } from '../types/state';
 
 // Load environment variables
