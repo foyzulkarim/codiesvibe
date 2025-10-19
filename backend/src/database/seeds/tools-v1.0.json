@@ -18,10 +18,8 @@
       "longDescription": "ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, help with writing, answer questions, and assist with various tasks. It represents one of the most sophisticated conversational AI systems available, capable of understanding context and providing helpful responses across a wide range of topics.",
       "tagline": "Your AI conversation partner for every task",
       "categories": [
-        "AI",
         "Chatbot",
-        "Productivity",
-        "Communication"
+        "Productivity"
       ],
       "industries": [
         "Technology",
@@ -35,21 +33,19 @@
         "Professionals",
         "Developers"
       ],
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 20,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": [
-          "month"
-        ],
-        "pricingModel": [
-          "free",
-          "freemium",
-          "paid"
-        ]
-      },
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
       "pricingUrl": "https://openai.com/pricing",
       "interface": [
         "Web",
@@ -60,14 +56,13 @@
       "functionality": [
         "Text Generation",
         "Translation",
-        "Code Generation"
+        "Code Generation",
+        "Image Generation",
+        "Video Generation"
       ],
       "deployment": [
         "Cloud"
       ],
-      "popularity": 95,
-      "rating": 4.5,
-      "reviewCount": 2500,
       "logoUrl": "https://example.com/chatgpt-logo.png",
       "website": "https://chat.openai.com",
       "documentation": "https://platform.openai.com/docs",
@@ -84,10 +79,8 @@
       "longDescription": "GitHub Copilot is an AI programming assistant that helps developers write code faster by providing intelligent code suggestions and completions directly in their IDE. Powered by OpenAI Codex, it understands dozens of programming languages and can suggest whole lines or entire functions, making it an invaluable tool for both experienced developers and those learning to code.",
       "tagline": "Your AI pair programmer for faster development",
       "categories": [
-        "AI",
         "Development",
-        "Productivity",
-        "Code"
+        "Productivity"
       ],
       "industries": [
         "Technology",
@@ -96,33 +89,27 @@
       ],
       "userTypes": [
         "Developers",
-        "Software Engineers",
-        "Students",
-        "DevOps Engineers"
+        "Students"
       ],
-      "pricingSummary": {
-        "lowestMonthlyPrice": 10,
-        "highestMonthlyPrice": 19,
-        "currency": "USD",
-        "hasFreeTier": false,
-        "hasCustomPricing": true,
-        "billingPeriods": [
-          "month",
-          "year"
-        ],
-        "pricingModel": [
-          "free",
-          "paid",
-          "freemium"
-        ]
-      },
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
       "pricingUrl": "https://github.com/pricing/copilot",
       "interface": [
         "Web",
         "IDE Extension",
         "Mobile",
-        "CLI",
-        "IDE"
+        "CLI"
       ],
       "functionality": [
         "Code Generation",
@@ -132,9 +119,6 @@
       "deployment": [
         "Cloud"
       ],
-      "popularity": 88,
-      "rating": 4.2,
-      "reviewCount": 1800,
       "logoUrl": "https://example.com/copilot-logo.png",
       "website": "https://github.com/features/copilot",
       "documentation": "https://docs.github.com/en/copilot",

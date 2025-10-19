@@ -31,22 +31,19 @@
         "Analysts",
         "Content Creators"
       ],
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 29.99,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": [
-          "month",
-          "year"
-        ]
-      },
-      "pricingModel": [
-        "free",
-        "freemium",
-        "paid"
-      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "monthly",
+          "price": 20
+        }
+      ],      
+      "pricingModel": "Freemium",
       "pricingUrl": "https://example.com/sample-tool/pricing",
       "interface": [
         "Web",
@@ -62,9 +59,6 @@
         "Cloud",
         "On-Premise"
       ],
-      "popularity": 75,
-      "rating": 4.2,
-      "reviewCount": 850,
       "logoUrl": "https://example.com/sample-logo.png",
       "website": "https://example.com/sample-tool",
       "documentation": "https://docs.example.com/sample-tool",

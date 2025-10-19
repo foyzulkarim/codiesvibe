@@ -1,17 +1,14 @@
+
+
 // Core tool interfaces shared between frontend and backend
 
 // Enum for pricing models
-export type PricingModelEnum = 'free' | 'freemium' | 'paid';
+export type PricingModelEnum = 'Free' | 'Freemium' | 'Paid';
 
-// Pricing summary structure
-export interface PricingSummary {
-  lowestMonthlyPrice: number;
-  highestMonthlyPrice: number;
-  currency: string;
-  hasFreeTier: boolean;
-  hasCustomPricing: boolean;
-  billingPeriods: string[];
-  pricingModel: PricingModelEnum[];
+export interface Pricing {
+  tier: string;
+  price: number;
+  billingPeriod: string;
 }
 
 // Base tool interface (shared between frontend and backend)
@@ -30,17 +27,15 @@ export interface BaseTool {
   userTypes: string[];
 
   // Pricing (simplified)
-  pricingSummary: PricingSummary;
+  pricing: Pricing[];
+  pricingModel: PricingModelEnum;
   pricingUrl?: string;
 
   // Legacy fields (maintained for compatibility)
   interface: string[];
   functionality: string[];
   deployment: string[];
-  popularity: number;
-  rating: number;
-  reviewCount: number;
-
+  
   // Metadata
   logoUrl?: string;
   website?: string;
@@ -96,7 +91,8 @@ export interface CreateToolPayload {
   userTypes: string[];
 
   // Pricing (simplified)
-  pricingSummary: PricingSummary;
+  pricing: Pricing[];
+  pricingModel: PricingModelEnum;
   pricingUrl?: string;
 
   // Legacy fields (for backward compatibility)

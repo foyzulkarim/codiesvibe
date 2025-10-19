@@ -6,6 +6,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Development',
     'Productivity',
     'Analytics',
+    'Chatbot',
     // Tool Types
     'Code Editor',
     'IDE',
@@ -26,7 +27,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Offline',
   ],
 
-  interface: ['Web', 'Desktop', 'Mobile', 'CLI', 'API', 'IDE'],
+  interface: ['Web', 'Desktop', 'Mobile', 'CLI', 'API', 'IDE', 'IDE Extension'],
 
   functionality: [
     // Code-related
@@ -34,16 +35,20 @@ export const CONTROLLED_VOCABULARIES = {
     'Code Completion',
     'Debugging',
     'Refactoring',
+    'Documentation',
     // AI Features
     'AI Chat',
     'AI Assistant',
     'Text Generation',
     'Translation',
+    'Image Generation',
+    'Video Generation',
     // Development
     'Deployment',
     'Database Setup',
     'Authentication',
     'Collaboration',
+    'UI Prototyping',
     // Management
     'Model Management',
     'Local Inference',
@@ -53,6 +58,9 @@ export const CONTROLLED_VOCABULARIES = {
     'Chat Interface',
     'Document RAG',
     'App Generation',
+
+    // niche
+    'AWS Support',
   ],
 
   deployment: ['Cloud', 'Local', 'Self-Hosted'],
@@ -66,6 +74,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Remote Work',
     'Innovation',
     'Small Business',
+    'Enterprise',
     'Consulting',
     'Privacy-Focused',
     'Edge Computing',
@@ -73,6 +82,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Non-Profit',
     'Venture Capital',
     'Incubators',
+    'Content Creation',
   ],
 
   userTypes: [
@@ -83,6 +93,7 @@ export const CONTROLLED_VOCABULARIES = {
     'AI Engineers',
     'Researchers',
     'Privacy Advocates',
+    'UX Designers',
     // Business
     'Entrepreneurs',
     'Product Managers',
@@ -97,7 +108,12 @@ export const CONTROLLED_VOCABULARIES = {
     'Non-Technical Users',
     'Freelancers',
     'Consultants',
+    'General Users',
+    'Professionals',
   ],
+
+  pricingModels: ['Free', 'Freemium', 'Paid'],
+  billingPeriods: ['Monthly', 'Yearly'],
 };
 
 export const VOCABULARY_MAPPINGS = {
