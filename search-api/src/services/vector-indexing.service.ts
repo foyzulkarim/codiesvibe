@@ -129,10 +129,10 @@ export class VectorIndexingService {
       if (!content || content.trim().length === 0) {
         throw new Error(`Empty content generated for tool: ${toolId}`);
       }
-      
+
       // Generate embedding
       const embedding = await embeddingService.generateEmbedding(content);
-      
+
       // Prepare metadata for Qdrant
       const payload = {
         id: toolId,
@@ -153,18 +153,18 @@ export class VectorIndexingService {
 
       // Store in Qdrant
       await qdrantService.upsertTool(toolId, embedding, payload);
-      
+
       return true;
     } catch (error) {
       console.error(`❌ Error processing tool ${tool?.name || '[Unnamed]'} (attempt ${retryCount + 1}):`, error);
-      
+
       // Retry logic for transient failures
       if (retryCount < this.MAX_RETRIES && this.isTransientError(error)) {
         console.log(`🔄 Retrying tool ${tool?.name || '[Unnamed]'} in ${this.RETRY_DELAY_MS}ms...`);
         await this.delay(this.RETRY_DELAY_MS);
         return this.processTool(tool, retryCount + 1);
       }
-      
+
       return false;
     }
   }
@@ -175,9 +175,9 @@ export class VectorIndexingService {
   private isTransientError(error: any): boolean {
     const errorMessage = error?.message?.toLowerCase() || '';
     return errorMessage.includes('timeout') ||
-           errorMessage.includes('network') ||
-           errorMessage.includes('rate limit') ||
-           errorMessage.includes('connection');
+      errorMessage.includes('network') ||
+      errorMessage.includes('rate limit') ||
+      errorMessage.includes('connection');
   }
 
   /**
@@ -191,15 +191,15 @@ export class VectorIndexingService {
    * Process tools in batches with memory management
    */
   private async processBatch(
-    tools: ToolData[], 
-    batchIndex: number, 
+    tools: ToolData[],
+    batchIndex: number,
     batchSize: number,
     progress: IndexingProgress
   ): Promise<{ successful: number; failed: number }> {
     const start = batchIndex * batchSize;
     const end = Math.min(start + batchSize, tools.length);
     const batch = tools.slice(start, end);
-    
+
     let successful = 0;
     let failed = 0;
 
@@ -223,7 +223,7 @@ export class VectorIndexingService {
           failed++;
           console.log(`❌ Failed to index: ${tool.name}`);
         }
-        
+
         // Update progress
         progress.processed++;
         progress.successful += success ? 1 : 0;
@@ -231,7 +231,7 @@ export class VectorIndexingService {
       });
 
       await Promise.all(promises);
-      
+
       // Force garbage collection periodically to prevent OOM
       if (global.gc && i % 20 === 0) {
         global.gc();
@@ -250,7 +250,7 @@ export class VectorIndexingService {
     }
 
     console.log('🚀 Starting vector indexing process...');
-    
+
     try {
       // Get all tools from MongoDB
       const tools = await mongoDBService.getAllTools();
@@ -282,7 +282,9 @@ export class VectorIndexingService {
 
         progress.currentBatch = batchIndex + 1;
         const batchResult = await this.processBatch(tools, batchIndex, batchSize, progress);
-        
+
+        console.log(`🔄 Batch ${batchIndex + 1} results: ${batchResult.successful} successful, ${batchResult.failed} failed`);
+
         // Log batch progress
         const progressPercent = Math.round((progress.processed / progress.total) * 100);
         console.log(
@@ -357,7 +359,7 @@ export class VectorIndexingService {
         console.log('🧪 Validating sample embeddings...');
         const sampleSize = Math.min(5, mongoTools.length);
         const sampleTools = mongoTools.slice(0, sampleSize);
-        
+
         for (const tool of sampleTools) {
           try {
             // Derive ID the same way as when indexing, to ensure consistency
@@ -369,7 +371,7 @@ export class VectorIndexingService {
               await embeddingService.generateEmbedding(tool.name || ''),
               1
             );
-            
+
             if (searchResult.length === 0 || searchResult[0].payload.id !== derivedId) {
               report.sampleValidationPassed = false;
               report.recommendations.push(`Embedding validation failed for tool: ${tool.name}`);
@@ -381,7 +383,7 @@ export class VectorIndexingService {
             break;
           }
         }
-        
+
         if (report.sampleValidationPassed) {
           console.log('🧪 Sample validation passed');
         }

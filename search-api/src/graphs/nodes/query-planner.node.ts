@@ -3,6 +3,7 @@ import { QueryPlan, QueryPlanSchema } from '../../types/query-plan';
 import { vllmConfig } from '../../config/models';
 import { z } from 'zod';
 import { ChatOpenAI } from '@langchain/openai';
+import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
 
 // Configuration for logging
 const LOG_CONFIG = {
@@ -51,22 +52,14 @@ Available Collections:
 - "features" - Collection for feature-specific embeddings
 
 MongoDB Structured Fields (for filtering):
-- "pricingModel" - Array of pricing models: ["free", "freemium", "paid"]
-- "categories" - Array of tool categories (1-5 entries)
-- "industries" - Array of industry verticals (1-10 entries)
-- "userTypes" - Array of target user types (1-10 entries)
-- "toolTypes" - Array of tool classifications (1-10 entries)
-- "domains" - Array of operational domains (1-15 entries)
-- "capabilities" - Array of tool capabilities (1-20 entries)
-- "commonUseCases" - Array of common use cases (1-15 entries)
-- "interface" - Array of interface types
-- "functionality" - Array of functionality types
-- "deployment" - Array of deployment types
+- "pricingModel" - Array of pricing models: [${CONTROLLED_VOCABULARIES.pricingModels.map(p => `"${p}"`).join(', ')}]
+- "categories" - Array of tool categories from: [${CONTROLLED_VOCABULARIES.categories.map(c => `"${c}"`).join(', ')}]
+- "industries" - Array of industry verticals from: [${CONTROLLED_VOCABULARIES.industries.map(i => `"${i}"`).join(', ')}]
+- "userTypes" - Array of target user types from: [${CONTROLLED_VOCABULARIES.userTypes.map(u => `"${u}"`).join(', ')}]
+- "interface" - Array of interface types from: [${CONTROLLED_VOCABULARIES.interface.map(i => `"${i}"`).join(', ')}]
+- "functionality" - Array of functionality types from: [${CONTROLLED_VOCABULARIES.functionality.map(f => `"${f}"`).join(', ')}]
+- "deployment" - Array of deployment types from: [${CONTROLLED_VOCABULARIES.deployment.map(d => `"${d}"`).join(', ')}]
 - "status" - Tool status: "active" | "beta" | "deprecated" | "discontinued"
-- "popularity" - Numeric popularity score
-- "rating" - Numeric rating (0-5)
-- "hasFreeTier" - Boolean indicating free tier availability
-- "hasCustomPricing" - Boolean indicating custom pricing support
 
 Strategy Types:
 - "hybrid" - Combine vector search with metadata filtering (most common)

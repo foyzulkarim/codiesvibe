@@ -24,21 +24,8 @@
     "test:integration": "ts-node -r tsconfig-paths/register test-complete-integration.ts",
     "lint": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
-    "seed-vectors": "ts-node -r tsconfig-paths/register src/seed-vectors.ts",
-    "seed-vectors:build": "npm run build && node dist/src/seed-vectors.js",
-    "test-search": "ts-node -r tsconfig-paths/register test-intelligent-search.ts",
-    "create-enhanced-collections": "ts-node -r tsconfig-paths/register src/scripts/create-enhanced-collections.ts",
-    "test-enhanced-schema": "ts-node -r tsconfig-paths/register debug-scripts/test-enhanced-schema.ts",
-    "seed-enhanced-vectors": "ts-node -r tsconfig-paths/register src/seed-enhanced-vectors.ts",
-    "test-enhanced-vector-quality": "ts-node -r tsconfig-paths/register debug-scripts/test-enhanced-vector-quality.ts",
-    "validate-enhanced-integration": "ts-node -r tsconfig-paths/register debug-scripts/validate-enhanced-integration.ts",
-    "test-deduplication-quality": "ts-node -r tsconfig-paths/register debug-scripts/test-deduplication-quality.ts",
-    "test-multi-vector-search": "ts-node -r tsconfig-paths/register debug-scripts/test-multi-vector-search.ts",
-    "test-ner-only": "ts-node -r tsconfig-paths/register debug-scripts/test-ner-only.ts",
-    "test-transformers-integration": "ts-node -r tsconfig-paths/register debug-scripts/test-transformers-integration.ts",
-    "test-zero-shot-intent": "ts-node -r tsconfig-paths/register debug-scripts/test-zero-shot-intent.ts",
-    "test-enhanced-graph": "ts-node -r tsconfig-paths/register debug-scripts/test-enhanced-graph.ts",
-    "test-dynamic-planning": "ts-node -r tsconfig-paths/register debug-scripts/test-dynamic-planning.ts"
+    "seed-vectors": "ts-node -r tsconfig-paths/register src/seed-vectors.ts --force",
+    "seed-vectors:build": "npm run build && node dist/src/seed-vectors.js"
   },
   "dependencies": {
     "@langchain/community": "^0.3.14",
