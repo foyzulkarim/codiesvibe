@@ -1,8 +1,6 @@
 import { StateAnnotation } from '../../types/state';
-import { IntentState, IntentStateSchema } from '../../types/intent-state';
-import { vllmConfig } from '../../config/models';
-import { ChatOpenAI } from '@langchain/openai';
-import { z } from 'zod';
+import { IntentStateSchema } from '../../types/intent-state';
+import { llmService } from '../../services/llm.service';
 import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
 
 // Configuration for logging
@@ -127,28 +125,11 @@ export async function intentExtractorNode(
   log('Starting intent extraction with LangChain structured output', { query: query.substring(0, 100) });
 
   try {
-    // Initialize LangChain VLLM client
-    const chatVllmClient = new ChatOpenAI({
-      apiKey: "not-needed",
-      configuration: {
-        baseURL: `${vllmConfig.baseUrl}/v1`,
-      },
-      modelName: vllmConfig.model,
-      temperature: 0.1,
-      maxTokens: 500,
-    });
-
-    // Create structured output model with explicit type annotation
-    const structuredModel = chatVllmClient.withStructuredOutput<z.infer<typeof IntentStateSchema>>(
-      IntentStateSchema,
-      {
-        name: "intent_extraction",
-      }
-    );
+    // Create structured output model using LLM service
+    const structuredModel = llmService.createStructuredClient('intent-extraction', IntentStateSchema);
 
     log('Sending request to LLM with structured output', {
-      model: vllmConfig.model,
-      baseUrl: vllmConfig.baseUrl
+      taskType: 'intent-extraction'
     });
 
     // Extract intent using structured output

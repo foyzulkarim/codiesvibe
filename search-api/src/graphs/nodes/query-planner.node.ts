@@ -1,8 +1,6 @@
 import { StateAnnotation } from '../../types/state';
-import { QueryPlan, QueryPlanSchema } from '../../types/query-plan';
-import { vllmConfig } from '../../config/models';
-import { z } from 'zod';
-import { ChatOpenAI } from '@langchain/openai';
+import { QueryPlanSchema } from '../../types/query-plan';
+import { llmService } from '../../services/llm.service';
 import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
 import { CollectionConfigService } from '../../services/collection-config.service';
 import { VectorTypeRegistryService } from '../../services/vector-type-registry.service';
@@ -668,19 +666,8 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
       recommendedStrategy: intentAnalysis.recommendedStrategy
     });
 
-    // Create LangChain client with structured output
-    const llmWithStructuredOutput = new ChatOpenAI({
-      modelName: vllmConfig.model,
-      apiKey: "not-needed",
-      configuration: {
-        baseURL: `${vllmConfig.baseUrl}/v1`
-      }
-    }).withStructuredOutput<z.infer<typeof QueryPlanSchema>>(
-      QueryPlanSchema,
-      {
-        name: "multi_collection_query_plan_generator",
-      }
-    );
+    // Create LangChain client with structured output using LLM service
+    const llmWithStructuredOutput = llmService.createStructuredClient('query-planning', QueryPlanSchema);
 
     // Call the LLM with dynamic structured output
     const queryPlan = await llmWithStructuredOutput.invoke([

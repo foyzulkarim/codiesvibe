@@ -1,5 +1,5 @@
-import { ollamaClient, modelConfigs } from "@/config/models";
-import { embeddingConfig } from "@/config/constants";
+import { ollamaClient, embeddingConfig } from "@/config/models";
+import { embeddingConfig as embeddingConstants } from "@/config/constants";
 import { connectToQdrant } from "@/config/database";
 import { QdrantClient } from "@qdrant/js-client-rest";
 
@@ -22,20 +22,20 @@ export class EmbeddingService {
    */
   async generateEmbedding(text: string): Promise<number[]> {
     // Check cache first
-    if (embeddingConfig.cacheEnabled && embeddingCache.has(text)) {
+    if (embeddingConstants.cacheEnabled && embeddingCache.has(text)) {
       return embeddingCache.get(text)!;
     }
 
     try {
       const response = await ollamaClient.embeddings({
-        model: modelConfigs.embedding.model || 'mxbai-embed-large',
+        model: embeddingConfig.model,
         prompt: text,
       });
 
       const embedding = response.embedding;
 
       // Cache the result
-      if (embeddingConfig.cacheEnabled) {
+      if (embeddingConstants.cacheEnabled) {
         embeddingCache.set(text, embedding);
 
         // Simple cache size management
@@ -61,8 +61,8 @@ export class EmbeddingService {
     const embeddings: number[][] = [];
 
     // Process in batches
-    for (let i = 0; i < texts.length; i += embeddingConfig.batchSize) {
-      const batch = texts.slice(i, i + embeddingConfig.batchSize);
+    for (let i = 0; i < texts.length; i += embeddingConstants.batchSize) {
+      const batch = texts.slice(i, i + embeddingConstants.batchSize);
       const batchPromises = batch.map(text => this.generateEmbedding(text));
       const batchResults = await Promise.all(batchPromises);
       embeddings.push(...batchResults);
