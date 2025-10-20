@@ -21,13 +21,20 @@ export class ToolsController {
     status: 200,
     description: 'Search results retrieved successfully',
   })
-  async searchGet(@Query('q') query: string, @Query('limit') limit?: number, @Query('debug') debug?: boolean) {
+  async searchGet(
+    @Query('q') query: string,
+    @Query('limit') limit?: number,
+    @Query('debug') debug?: boolean,
+  ) {
     if (!query) {
       return { error: 'Query parameter "q" is required' };
     }
 
     try {
-      const searchApiUrl = this.configService.get<string>('SEARCH_API_URL', 'http://localhost:4004');
+      const searchApiUrl = this.configService.get<string>(
+        'SEARCH_API_URL',
+        'http://localhost:4004',
+      );
       const response = await fetch(`${searchApiUrl}/search`, {
         method: 'POST',
         headers: {
