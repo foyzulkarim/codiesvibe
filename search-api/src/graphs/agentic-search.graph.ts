@@ -99,9 +99,22 @@ export async function searchWithAgenticPipeline(
 
     // Use the compiled graph for proper 3-node execution
     const compiledGraph = createCompiledAgenticSearchGraph();
-    const result = await compiledGraph.invoke(initialState);
+    console.log(`🚀 Invoking agentic search pipeline with query: ${query}`);
+
+    // Generate thread_id if not provided (required for MemorySaver)
+    const threadId = options.threadId || `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Invoke with proper configuration including thread_id
+    const result = await compiledGraph.invoke(initialState, {
+      configurable: {
+        thread_id: threadId
+      }
+    });
 
     const totalTime = Date.now() - startTime;
+
+    // Log the final candidates
+    console.log(`✅ Final candidates:`, { query, result: JSON.stringify(result) });
 
     return {
       ...result,

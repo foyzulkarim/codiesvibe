@@ -158,7 +158,8 @@ async function runSeeding(options: SeedCommandOptions): Promise<void> {
       force: options.force || false,
       batchSize: 50,
       validateAfter: true,
-      onProgress
+      onProgress,
+      parallelProcessing: false,
     };
 
     // Start seeding

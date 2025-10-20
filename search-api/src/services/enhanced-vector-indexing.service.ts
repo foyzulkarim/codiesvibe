@@ -8,8 +8,9 @@ import {
   validateEnhancedVectors
 } from "@/config/enhanced-qdrant-schema";
 
-// Import existing types from VectorIndexingService
-import { ToolData, IndexingProgress, HealthReport } from "./vector-indexing.service";
+// Import existing types from centralized location
+import { ToolData } from "../types/tool.types";
+import { IndexingProgress, HealthReport } from "./vector-indexing.service";
 
 // Enhanced types for multi-vector indexing
 export interface MultiVectorPayload {
@@ -855,7 +856,8 @@ export class EnhancedVectorIndexingService {
         currentBatch: 0,
         totalBatches: Math.ceil(tools.length / batchSize),
         vectorTypes: supportedTypes,
-        vectorProgress: {}
+        vectorProgress: {},
+        multiCollectionMode: false
       };
 
       // Initialize vector progress

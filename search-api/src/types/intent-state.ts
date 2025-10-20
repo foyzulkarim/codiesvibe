@@ -57,6 +57,24 @@ export const IntentStateSchema = z.object({
     "Primary pricing filter if explicitly mentioned"
   ),
 
+  priceRange: z.object({
+    min: z.number().nullable().optional().describe("Minimum price threshold"),
+    max: z.number().nullable().optional().describe("Maximum price threshold"),
+    currency: z.string().default("USD").describe("Currency for price values"),
+    billingPeriod: z.enum(["Monthly", "Yearly", "One-time", "Per-use"]).nullable().optional().describe("Billing period for price comparison")
+  }).nullable().optional().describe(
+    "Specific price range or threshold mentioned in query"
+  ),
+
+  priceComparison: z.object({
+    operator: z.enum(["less_than", "greater_than", "equal_to", "around", "between"]).describe("Price comparison operator"),
+    value: z.number().describe("Reference price value"),
+    currency: z.string().default("USD").describe("Currency for comparison"),
+    billingPeriod: z.enum(["Monthly", "Yearly", "One-time", "Per-use"]).nullable().optional().describe("Billing period context")
+  }).nullable().optional().describe(
+    "Price comparison constraint (e.g., 'under $50', 'around $20/month')"
+  ),
+
   category: z.enum([
     "IDE",
     "API",

@@ -36,6 +36,18 @@ Return ONLY a JSON object with this structure:
   "filters": [],
   "pricingModel": string | null,
   "billingPeriod": string | null,
+  "priceRange": {
+    "min": number | null,
+    "max": number | null,
+    "currency": "USD",
+    "billingPeriod": string | null
+  } | null,
+  "priceComparison": {
+    "operator": "less_than" | "greater_than" | "equal_to" | "around" | "between",
+    "value": number,
+    "currency": "USD",
+    "billingPeriod": string | null
+  } | null,
   "category": string | null,
   "interface": string | null,
   "functionality": string,
@@ -58,12 +70,31 @@ IMPORTANT GUIDELINES:
 - "billingPeriod" can be one of: ${CONTROLLED_VOCABULARIES.billingPeriods.map(b => `"${b}"`).join(', ')}
 - Use exact values from the controlled vocabularies - do not make up new values
 
+PRICE EXTRACTION RULES:
+- Extract specific price values, ranges, and comparisons from user queries
+- For "priceRange": Extract when user mentions price ranges like "between $10-50", "$20 to $100"
+- For "priceComparison": Extract when user mentions price constraints like "under $50", "less than $20/month", "around $30"
+- Always normalize currency to USD if not specified
+- Detect billing periods from context: "per month", "/mo", "monthly", "yearly", "annual", "one-time"
+- Price operators:
+  * "less_than": "under", "below", "less than", "cheaper than"
+  * "greater_than": "over", "above", "more than", "expensive than"
+  * "equal_to": "exactly", "costs", "priced at"
+  * "around": "about", "approximately", "roughly", "around"
+  * "between": "between X and Y", "from X to Y"
+
 Examples:
-Query: "free cli" → {"primaryGoal": "find", "pricingModel": "Free", "interface": "CLI", "referenceTool": null, "comparisonMode": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
+Query: "free cli" → {"primaryGoal": "find", "pricingModel": "Free", "interface": "CLI", "priceRange": null, "priceComparison": null, "referenceTool": null, "comparisonMode": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
 
-Query: "Cursor alternative but cheaper" → {"primaryGoal": "find", "referenceTool": "Cursor IDE", "comparisonMode": "alternative_to", "constraints": ["cheaper"], "pricingModel": "freemium", "billingPeriod": null, "category": "Code Editor", "functionality": ["Code Generation"], "filters": [], "semanticVariants": [], "confidence": 0.8}
+Query: "AI tools under $50 per month" → {"primaryGoal": "find", "pricingModel": null, "priceComparison": {"operator": "less_than", "value": 50, "currency": "USD", "billingPeriod": "Monthly"}, "priceRange": null, "functionality": ["AI Integration"], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
 
-Query: "AI code generator that works offline and free" → {"primaryGoal": "find", "pricingModel": "free", "interface": null, "referenceTool": null, "comparisonMode": null, "functionality": ["Code Generation", "Local Inference"], "filters": [], "semanticVariants": [], "constraints": ["offline"], "confidence": 0.9}
+Query: "code editor between $20-100 monthly" → {"primaryGoal": "find", "category": "Code Editor", "priceRange": {"min": 20, "max": 100, "currency": "USD", "billingPeriod": "Monthly"}, "priceComparison": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.8}
+
+Query: "Cursor alternative but cheaper" → {"primaryGoal": "find", "referenceTool": "Cursor IDE", "comparisonMode": "alternative_to", "constraints": ["cheaper"], "priceComparison": {"operator": "less_than", "value": 20, "currency": "USD", "billingPeriod": "Monthly"}, "pricingModel": null, "category": "Code Editor", "functionality": ["Code Generation"], "filters": [], "semanticVariants": [], "confidence": 0.8}
+
+Query: "free offline AI code generator" → {"primaryGoal": "find", "pricingModel": "Free", "priceRange": null, "priceComparison": null, "interface": null, "referenceTool": null, "comparisonMode": null, "functionality": ["Code Generation", "Local Inference"], "filters": [], "semanticVariants": [], "constraints": ["offline"], "confidence": 0.9}
+
+Query: "API tools around $30 per month" → {"primaryGoal": "find", "category": "API", "priceComparison": {"operator": "around", "value": 30, "currency": "USD", "billingPeriod": "Monthly"}, "priceRange": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.85}
 
 DO NOT include any text before or after the JSON. Return ONLY the JSON object.
 `;

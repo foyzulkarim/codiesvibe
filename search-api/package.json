@@ -24,6 +24,7 @@
     "test:integration": "ts-node -r tsconfig-paths/register test-complete-integration.ts",
     "lint": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
+    "create-collections": "ts-node -r tsconfig-paths/register src/create-collections.ts",
     "seed-vectors": "ts-node -r tsconfig-paths/register src/seed-vectors.ts --force",
     "seed-vectors:build": "npm run build && node dist/src/seed-vectors.js"
   },

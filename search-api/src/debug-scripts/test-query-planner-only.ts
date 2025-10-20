@@ -157,7 +157,7 @@ async function testQueryPlanner(testCase: any) {
     console.log(`⏱️  Query planning completed in ${executionTime}ms`);
 
     // log the result
-    console.log(`\n🔍 Result:`, result);
+    console.log(`\n🔍 Result:`, JSON.stringify(result));
 
     // if (result.executionPlan) {
     //   console.log(`\n🗺️ Execution Plan:`);
@@ -303,8 +303,8 @@ async function main() {
       return acc;
     }, {} as Record<string, number>);
 
- 
-    console.log('strategyCounts  └───', strategyCounts);
+
+  console.log('strategyCounts  └───', strategyCounts);
 
   if (passedTests === totalTests) {
     console.log('\n🎉 All QueryPlannerNode tests passed!');

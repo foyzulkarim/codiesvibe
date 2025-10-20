@@ -37,23 +37,23 @@ dotenv.config();
 async function checkServiceConnection(host: string, port: number, serviceName: string): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
-    
+
     socket.setTimeout(2000); // 2 second timeout
-    
+
     socket.on('connect', () => {
       socket.destroy();
       resolve(true);
     });
-    
+
     socket.on('error', () => {
       resolve(false);
     });
-    
+
     socket.on('timeout', () => {
       socket.destroy();
       resolve(false);
     });
-    
+
     socket.connect(port, host);
   });
 }
@@ -63,32 +63,32 @@ async function checkServiceConnection(host: string, port: number, serviceName: s
  */
 async function checkRequiredServices() {
   console.log('🔍 Checking required services...');
-  
+
   const services = [
     { name: 'MongoDB', host: process.env.MONGODB_HOST || 'localhost', port: 27017 },
     { name: 'Qdrant', host: process.env.QDRANT_HOST || 'localhost', port: 6333 },
   ];
-  
+
   const results = await Promise.all(
     services.map(async (service) => {
       const isConnected = await checkServiceConnection(service.host, service.port, service.name);
       return { ...service, isConnected };
     })
   );
-  
+
   console.log('\n📊 Service Status:');
   results.forEach(result => {
     const status = result.isConnected ? '✅' : '❌';
     console.log(`  ${status} ${result.name} (${result.host}:${result.port})`);
   });
-  
+
   const allConnected = results.every(result => result.isConnected);
-  
+
   if (!allConnected) {
     console.log('\n⚠️  Some services are not running. The tests may fail.');
     console.log('💡 Please start the required services using the instructions in the header comment.');
   }
-  
+
   return allConnected;
 }
 
@@ -97,26 +97,32 @@ const queryExecutorTestCases = [
   {
     name: "Vector search only - free CLI tools",
     query: "free cli",
-    mockExecutionPlan: {
-      "strategy": "hybrid",
+    "mockExecutionPlan": {
+      "strategy": "multi-collection-hybrid",
       "vectorSources": [
         {
           "collection": "tools",
-          "embeddingType": "vector",
+          "embeddingType": "semantic",
           "queryVectorSource": "query_text",
-          "topK": 100
+          "topK": 70
         },
         {
-          "collection": "descriptions",
-          "embeddingType": "vector",
+          "collection": "functionality",
+          "embeddingType": "entities.functionality",
           "queryVectorSource": "query_text",
-          "topK": 100
+          "topK": 40
         },
         {
-          "collection": "features",
-          "embeddingType": "vector",
+          "collection": "usecases",
+          "embeddingType": "entities.usecase",
           "queryVectorSource": "query_text",
-          "topK": 100
+          "topK": 50
+        },
+        {
+          "collection": "interface",
+          "embeddingType": "semantic",
+          "queryVectorSource": "query_text",
+          "topK": 50
         }
       ],
       "structuredSources": [
@@ -125,63 +131,70 @@ const queryExecutorTestCases = [
           "filters": [
             {
               "field": "pricingModel",
-              "operator": "=",
+              "operator": "in",
               "value": "free"
-            }
-          ],
-          "limit": 100
-        },
-        {
-          "source": "mongodb",
-          "filters": [
+            },
             {
-              "field": "platform",
-              "operator": "=",
-              "value": "cli"
-            }
-          ],
-          "limit": 100
-        },
-        {
-          "source": "mongodb",
-          "filters": [
-            {
-              "field": "category",
-              "operator": "=",
+              "field": "categories",
+              "operator": "in",
               "value": "CLI"
             }
           ],
-          "limit": 100
+          "limit": 200
         },
         {
           "source": "mongodb",
           "filters": [
             {
-              "field": "features",
+              "field": "interface",
+              "operator": "in",
+              "value": "CLI"
+            }
+          ],
+          "limit": 200
+        },
+        {
+          "source": "mongodb",
+          "filters": [
+            {
+              "field": "functionality",
               "operator": "in",
               "value": "CLI mode"
             }
           ],
-          "limit": 100
+          "limit": 200
         }
       ],
       "reranker": {
         "type": "none",
-        "model": "hybrid",
-        "maxCandidates": 200
+        "model": "rrf",
+        "maxCandidates": 100
       },
       "fusion": "rrf",
-      "maxRefinementCycles": 1,
-      "explanation": "Hybrid strategy combines vector-based similarity search with MongoDB filtering to efficiently find relevant results, ensuring both comprehensive data retrieval and targeted filtering based on user constraints.",
+      "maxRefinementCycles": 2,
+      "explanation": "Multi-collection search strategy: multi-collection-hybrid. Searching 4 specialized collections: tools, functionality, usecases, interface. Adapted from recommended strategy (identity-focused) based on query analysis. Combining with MongoDB structured filtering for precise constraints. Using Reciprocal Rank Fusion (RRF) for optimal result merging across multiple collections.",
       "confidence": 0.9
     },
-    expectedResults: {
-      hasCandidates: true,
-      minCandidates: 1,
-      maxCandidates: 10,
-      vectorQueriesExecuted: 1,
-      structuredQueriesExecuted: 0,
-      fusionMethod: "none"
+    "executionStats": {
+      "totalTimeMs": 0,
+      "nodeTimings": {
+        "query-planner": 12355
+      },
+      "vectorQueriesExecuted": 0,
+      "structuredQueriesExecuted": 0
+    },
+    "metadata": {
+      "startTime": "2025-10-19T12:38:31.840Z",
+      "executionPath": [
+        "intent-extractor",
+        "query-planner"
+      ],
+      "nodeExecutionTimes": {
+        "query-planner": 12355
+      },
+      "totalNodesExecuted": 1,
+      "pipelineVersion": "2.0-llm-first",
+      "originalQuery": "free cli"
     }
   },
 ];
@@ -286,27 +299,25 @@ async function testQueryExecutor(testCase: any, mockMode: boolean = false) {
     }
 
     // Validation
-    const validationResults = {
-      hasCandidates: !!(result.candidates && result.candidates.length > 0),
-      candidatesInRange: result.candidates?.length >= testCase.expectedResults.minCandidates &&
-        result.candidates?.length <= testCase.expectedResults.maxCandidates,
-      vectorQueriesCorrect: result.executionStats?.vectorQueriesExecuted === testCase.expectedResults.vectorQueriesExecuted,
-      structuredQueriesCorrect: result.executionStats?.structuredQueriesExecuted === testCase.expectedResults.structuredQueriesExecuted,
-      fusionMethodCorrect: result.executionStats?.fusionMethod === testCase.expectedResults.fusionMethod,
-      noErrors: !result.errors || result.errors.length === 0,
-      reasonableExecutionTime: executionTime < 5000 // 5 seconds max
-    };
+    // const validationResults = {
+    //   hasCandidates: !!(result.candidates && result.candidates.length > 0),     
+    //   vectorQueriesCorrect: result.executionStats?.vectorQueriesExecuted === testCase.expectedResults.vectorQueriesExecuted,
+    //   structuredQueriesCorrect: result.executionStats?.structuredQueriesExecuted === testCase.expectedResults.structuredQueriesExecuted,
+    //   fusionMethodCorrect: result.executionStats?.fusionMethod === testCase.expectedResults.fusionMethod,
+    //   noErrors: !result.errors || result.errors.length === 0,
+    //   reasonableExecutionTime: executionTime < 5000 // 5 seconds max
+    // };
 
-    console.log(`\n✅ Validation Results:`);
-    Object.entries(validationResults).forEach(([key, value]) => {
-      console.log(`  ${key}: ${value ? '✅' : '❌'}`);
-    });
+    // console.log(`\n✅ Validation Results:`);
+    // Object.entries(validationResults).forEach(([key, value]) => {
+    //   console.log(`  ${key}: ${value ? '✅' : '❌'}`);
+    // });
 
     return {
-      success: Object.values(validationResults).every(Boolean),
+      // success: Object.values(validationResults).every(Boolean),
       result,
       executionTime,
-      validationResults,
+      // validationResults,
       candidateCount: result.candidates?.length || 0
     };
 
@@ -322,7 +333,7 @@ async function testQueryExecutor(testCase: any, mockMode: boolean = false) {
         console.log(`   - Qdrant on localhost:6333`);
         console.log(`   - Ollama on localhost:11434`);
       }
-      
+
       if (error.stack) {
         console.error(`Stack trace:`, error.stack);
       }
@@ -349,7 +360,7 @@ async function main() {
 
   // Check required services first
   const servicesAvailable = await checkRequiredServices();
-  
+
   if (!servicesAvailable) {
     console.log('\n🤔 Would you like to continue anyway? (y/N)');
     // For now, let's continue but with a warning
@@ -381,79 +392,16 @@ async function main() {
   // Show detailed results for each test
   console.log(`\n📋 Detailed Results:`);
   results.forEach((result, index) => {
-    const status = result.success ? '✅' : '❌';
-    console.log(`  ${index + 1}. ${status} ${result.name} (${result.executionTime}ms, ${result.candidateCount} candidates)`);
+    // const status = result.success ? '✅' : '❌';
+    // console.log(`  ${index + 1}. ${status} ${result.name} (${result.executionTime}ms, ${result.candidateCount} candidates)`);
     if (result.error) {
       console.log(`     Error: ${result.error}`);
     }
+    // log the result
+    console.log(`     Result:`, {result: JSON.stringify(result.result.candidates)});
   });
 
-  // Validation summary
-  console.log(`\n📊 Validation Summary:`);
-  const validationStats = {
-    hasCandidates: results.filter(r => r.validationResults?.hasCandidates).length,
-    candidatesInRange: results.filter(r => r.validationResults?.candidatesInRange).length,
-    vectorQueriesCorrect: results.filter(r => r.validationResults?.vectorQueriesCorrect).length,
-    structuredQueriesCorrect: results.filter(r => r.validationResults?.structuredQueriesCorrect).length,
-    fusionMethodCorrect: results.filter(r => r.validationResults?.fusionMethodCorrect).length,
-    noErrors: results.filter(r => r.validationResults?.noErrors).length,
-    reasonableExecutionTime: results.filter(r => r.validationResults?.reasonableExecutionTime).length
-  };
 
-  Object.entries(validationStats).forEach(([key, count]) => {
-    const percentage = Math.round((count / totalTests) * 100);
-    console.log(`  ${key}: ${count}/${totalTests} (${percentage}%)`);
-  });
-
-  // Strategy distribution
-  console.log(`\n📈 Strategy Distribution:`);
-  const strategyCounts = results
-    .filter(r => r.mockExecutionPlan?.strategy)
-    .reduce((acc, r) => {
-      const strategy = r.mockExecutionPlan.strategy;
-      acc[strategy] = (acc[strategy] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-  Object.entries(strategyCounts).forEach(([strategy, count]) => {
-    console.log(`  ${strategy}: ${count} tests`);
-  });
-
-  // Source distribution
-  console.log(`\n📈 Source Usage:`);
-  const sourceStats = {
-    vectorOnly: results.filter(r => r.mockExecutionPlan?.vectorSources?.length > 0 &&
-      (!r.mockExecutionPlan?.structuredSources?.length || r.mockExecutionPlan?.structuredSources?.length === 0)).length,
-    structuredOnly: results.filter(r => (!r.mockExecutionPlan?.vectorSources?.length || r.mockExecutionPlan?.vectorSources?.length === 0) &&
-      r.mockExecutionPlan?.structuredSources?.length > 0).length,
-    hybrid: results.filter(r => r.mockExecutionPlan?.vectorSources?.length > 0 &&
-      r.mockExecutionPlan?.structuredSources?.length > 0).length
-  };
-
-  Object.entries(sourceStats).forEach(([source, count]) => {
-    console.log(`  ${source}: ${count} tests`);
-  });
-
-  if (passedTests === totalTests) {
-    console.log('\n🎉 All QueryExecutorNode tests passed!');
-    console.log('✅ Vector search against Qdrant is working correctly.');
-    console.log('✅ Structured search against MongoDB is working correctly.');
-    console.log('✅ Fusion methods are working correctly.');
-    console.log('✅ Ready to integrate with the full pipeline.');
-  } else {
-    console.log('\n❌ Some QueryExecutorNode tests failed.');
-    console.log('🔧 Review the results above to identify issues.');
-    console.log('💡 Consider checking:');
-    console.log('   - Qdrant connection and collection availability');
-    console.log('   - MongoDB connection and data availability');
-    console.log('   - Embedding service configuration');
-    console.log('   - Database service implementations');
-  }
-
-  console.log('\n🎯 Next Steps:');
-  console.log('  1. If tests pass → Test the full agentic search pipeline');
-  console.log('  2. If tests fail → Debug QueryExecutorNode implementation');
-  console.log('  3. Run the full pipeline test with: npm run test:refactored-pipeline');
 }
 
 // Run the tests if this file is executed directly

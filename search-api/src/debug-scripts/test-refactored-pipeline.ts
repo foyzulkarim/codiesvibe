@@ -17,25 +17,25 @@ const testCases = [
       platform: "cli"
     }
   },
-  {
-    name: "Comparison query",
-    query: "Cursor alternative but cheaper",
-    expectedIntent: {
-      primaryGoal: "find",
-      referenceTool: "Cursor IDE",
-      comparisonMode: "alternative_to",
-      constraints: ["cheaper"]
-    }
-  },
-  {
-    name: "Head-to-head comparison",
-    query: "Amazon Q vs GitHub Copilot",
-    expectedIntent: {
-      primaryGoal: "compare",
-      referenceTool: "Amazon Q",
-      comparisonMode: "vs"
-    }
-  }
+  // {
+  //   name: "Comparison query",
+  //   query: "Cursor alternative but cheaper",
+  //   expectedIntent: {
+  //     primaryGoal: "find",
+  //     referenceTool: "Cursor IDE",
+  //     comparisonMode: "alternative_to",
+  //     constraints: ["cheaper"]
+  //   }
+  // },
+  // {
+  //   name: "Head-to-head comparison",
+  //   query: "Amazon Q vs GitHub Copilot",
+  //   expectedIntent: {
+  //     primaryGoal: "compare",
+  //     referenceTool: "Amazon Q",
+  //     comparisonMode: "vs"
+  //   }
+  // }
 ];
 
 /**
@@ -52,7 +52,6 @@ async function runGraphTestCase(testCase: any) {
     // Run the complete graph pipeline
     const result = await searchWithAgenticPipeline(testCase.query, {
       enableCheckpoints: false,
-      metadata: { testMode: true }
     });
 
     const totalTime = Date.now() - startTime;

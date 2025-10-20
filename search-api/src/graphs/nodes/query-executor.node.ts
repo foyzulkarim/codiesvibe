@@ -296,7 +296,8 @@ async function executeVectorSearch(
       queryVector,
       vectorSource.topK,
       filter,
-      vectorSource.embeddingType
+      vectorSource.embeddingType,
+      vectorSource.collection,
     );
 
     // Convert to Candidate format

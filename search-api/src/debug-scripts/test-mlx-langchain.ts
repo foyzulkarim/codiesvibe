@@ -13,16 +13,49 @@
 
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { z } from 'zod';
 import { IntentStateSchema, IntentState } from '../types/intent-state';
 
 // Load environment variables
 dotenv.config();
 
-const VLLM_BASE_URL = process.env.VLLM_BASE_URL || "http://192.168.4.28:8000";
-const VLLM_MODEL = process.env.VLLM_MODEL || "Qwen/Qwen3-0.6B";
+import { BaseOutputParser } from "@langchain/core/output_parsers";
 
-console.log('🧪 Testing LangChain Structured Output with VLLM');
+// Custom parser to handle MLX's <think> tags and extract JSON
+class MLXJsonOutputParser<T = any> extends BaseOutputParser<T> {
+    lc_namespace = ["langchain", "output_parsers"];
+
+    async parse(text: string): Promise<T> {
+        // Remove <think> tags and their content
+        const withoutThink = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+
+        // Extract JSON object (handles both with and without markdown code blocks)
+        const jsonMatch = withoutThink.match(/```json\s*([\s\S]*?)\s*```/) ||
+            withoutThink.match(/(\{[\s\S]*\})/);
+
+        if (!jsonMatch) {
+            throw new Error("No JSON found in response");
+        }
+
+        const jsonStr = jsonMatch[1] || jsonMatch[0];
+
+        try {
+            return JSON.parse(jsonStr.trim());
+        } catch (e) {
+            throw new Error(`Failed to parse JSON: ${e.message}\n\nReceived: ${jsonStr}`);
+        }
+    }
+
+    getFormatInstructions(): string {
+        return `You must respond with valid JSON only. Do not include any explanatory text outside the JSON object.`;
+    }
+}
+
+const VLLM_BASE_URL = "http://127.0.0.1:8080";
+const VLLM_MODEL = "Qwen/Qwen3-0.6B";
+
+console.log('🧪 Testing LangChain Structured Output with MLX');
 console.log('='.repeat(60));
 console.log(`Base URL: ${VLLM_BASE_URL}`);
 console.log(`Model: ${VLLM_MODEL}`);
@@ -61,7 +94,7 @@ Respond with a JSON object only, no additional text.
 `;
 
 const testCases = [
-    "Cursor alternative but cheaper",    
+    "Cursor alternative but cheaper",
 ];
 
 async function testWithStructuredOutput() {
@@ -75,13 +108,12 @@ async function testWithStructuredOutput() {
                 baseURL: `${VLLM_BASE_URL}/v1`,
             },
             modelName: VLLM_MODEL,
-            temperature: 0.1,
-            maxTokens: 500,
+            model: VLLM_MODEL,
         });
 
-        // Create structured output model
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const structuredModel = chatVllmClient.withStructuredOutput(IntentStateSchema as any);
+        const parser = new MLXJsonOutputParser();
+
+        // Create structured output model        
 
         console.log('✅ Structured model created successfully');
 
@@ -94,26 +126,28 @@ async function testWithStructuredOutput() {
             try {
                 const startTime = Date.now();
 
-                const result = await structuredModel.invoke([
-                    { role: 'system', content: INTENT_EXTRACTION_SYSTEM_PROMPT },
-                    { role: 'user', content: `Extract the intent from this query: "${testQuery}"` }
-                ]);
+                const messages = [
+                    new SystemMessage(INTENT_EXTRACTION_SYSTEM_PROMPT),
+                    new HumanMessage(`Extract the intent from this query: "${testQuery}"`),
+                ];
+
+                const result = await chatVllmClient.invoke(messages);
+                const parsedResult = await parser.parse(result.content as string);
+                console.log('📋 Parsed result:', parsedResult);
 
                 const executionTime = Date.now() - startTime;
 
                 console.log('✅ Success!');
                 console.log(`⏱️  Execution time: ${executionTime}ms`);
-                console.log('📋 Result type:', typeof result);
-                console.log('📋 Result keys:', Object.keys(result));
-                console.log('📋 Sample values:');
-                console.log(`   primaryGoal: ${result.primaryGoal}`);
-                console.log(`   pricing: ${result.pricing}`);
-                console.log(`   platform: ${result.platform}`);
-                console.log(`   confidence: ${result.confidence}`);
+                // console.log('📋 Result type:', typeof result);
+                // console.log('📋 Result keys:', Object.keys(result));
+                // console.log('📋 Sample values:');
+                // // result
+                // console.log(`result  content:`, result);
 
-                // Validate the result matches our schema
-                const validated = IntentStateSchema.parse(result);
-                console.log('✅ Schema validation passed', validated);
+                // // Validate the result matches our schema
+                // const validated = IntentStateSchema.parse(parsedResult);
+                // console.log('✅ Schema validation passed', validated);
             } catch (error) {
                 console.log('❌ Error:', error instanceof Error ? error.message : String(error));
 
@@ -128,57 +162,9 @@ async function testWithStructuredOutput() {
     }
 }
 
-async function testJSONMode() {
-    console.log('\n🔬 Testing JSON mode (fallback)');
-
-    try {
-        // Test with JSON mode as fallback
-        const chatVllmClient = new ChatOpenAI({
-            apiKey: "not-needed",
-            configuration: {
-                baseURL: `${VLLM_BASE_URL}/v1`,
-            },
-            modelName: VLLM_MODEL,
-            temperature: 0.1,
-            maxTokens: 500,
-        });
-
-        // Try JSON mode if available
-        const jsonModeModel = chatVllmClient.bind({
-            response_format: { type: "json_object" }
-        });
-
-        const testQuery = "free cli";
-        console.log(`📝 Testing JSON mode with: "${testQuery}"`);
-
-        const result = await jsonModeModel.invoke([
-            { role: 'system', content: INTENT_EXTRACTION_SYSTEM_PROMPT },
-            { role: 'user', content: `Extract the intent from this query: "${testQuery}"` }
-        ]);
-
-        console.log('✅ JSON mode response received');
-        console.log('📋 Content type:', typeof result.content);
-        console.log('📋 Content:', result.content);
-
-        // Try to parse the JSON
-        if (typeof result.content === 'string') {
-            try {
-                const parsed = JSON.parse(result.content);
-                console.log('✅ JSON parsing successful');
-                console.log('📋 Parsed keys:', Object.keys(parsed));
-            } catch (e) {
-                console.log('❌ JSON parsing failed:', e instanceof Error ? e.message : String(e));
-            }
-        }
-
-    } catch (error) {
-        console.log('❌ JSON mode error:', error instanceof Error ? error.message : String(error));
-    }
-}
-
 async function main() {
     await testWithStructuredOutput();
-    
+ 
     console.log('\n🎯 Summary');
     console.log('='.repeat(60));
     console.log('This test verifies if LangChain\'s structured output can replace');

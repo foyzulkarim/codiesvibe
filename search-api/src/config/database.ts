@@ -26,7 +26,7 @@ export async function connectToMongoDB(): Promise<Db> {
     mongoClient = new MongoClient(mongoConfig.uri, mongoConfig.options);
     await mongoClient.connect();
     db = mongoClient.db(mongoConfig.dbName);
-    console.log("Connected to MongoDB");
+    console.log("Connected to MongoDB", mongoConfig.dbName);
     return db;
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
@@ -39,7 +39,7 @@ export async function disconnectFromMongoDB(): Promise<void> {
     await mongoClient.close();
     mongoClient = null;
     db = null;
-    console.log("Disconnected from MongoDB");
+    console.log("Disconnected from MongoDB", mongoConfig.dbName);
   }
 }
 
@@ -75,6 +75,18 @@ export const qdrantConfig = {
       size: 1024,
       distance: "Cosine" as const,
     },
+    "entities.interface": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.industries": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.userTypes": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
     "entities.aliases": {
       size: 1024,
       distance: "Cosine" as const,
@@ -89,6 +101,9 @@ export const qdrantConfig = {
     semantic: process.env.QDRANT_COLLECTION_SEMANTIC || "tools_semantic",
     "entities.categories": process.env.QDRANT_COLLECTION_CATEGORIES || "tools_categories",
     "entities.functionality": process.env.QDRANT_COLLECTION_FUNCTIONALITY || "tools_functionality",
+    "entities.interface": process.env.QDRANT_COLLECTION_INTERFACE || "tools_interface",
+    "entities.industries": process.env.QDRANT_COLLECTION_INDUSTRIES || "tools_industries",
+    "entities.userTypes": process.env.QDRANT_COLLECTION_USER_TYPES || "tools_user_types",
     "entities.aliases": process.env.QDRANT_COLLECTION_ALIASES || "tools_aliases",
     "composites.toolType": process.env.QDRANT_COLLECTION_TOOL_TYPE || "tools_tool_type",
   },
@@ -120,30 +135,39 @@ export async function connectToQdrant(): Promise<QdrantClient> {
       console.log(`Created Qdrant collection: ${qdrantConfig.collectionName}`);
     }
 
-    // Create multi-vector collections (legacy approach)
-    for (const [vectorType, collectionName] of Object.entries(qdrantConfig.collectionNames)) {
-      if (!existingCollectionNames.includes(collectionName as string)) {
-        const vectorConfig = qdrantConfig.multiVectorsConfig[vectorType as keyof typeof qdrantConfig.multiVectorsConfig];
-        if (vectorConfig) {
-          await qdrantClient.createCollection(collectionName as string, {
-            vectors: vectorConfig,
-          });
-          console.log(`Created Qdrant collection for ${vectorType}: ${collectionName}`);
+    // Create multi-vector collections (legacy approach) - only if explicitly enabled
+    if (process.env.QDRANT_CREATE_LEGACY_COLLECTIONS === 'true') {
+      console.log('🔧 Creating legacy collections (enabled via QDRANT_CREATE_LEGACY_COLLECTIONS=true)');
+      for (const [vectorType, collectionName] of Object.entries(qdrantConfig.collectionNames)) {
+        if (!existingCollectionNames.includes(collectionName as string)) {
+          const vectorConfig = qdrantConfig.multiVectorsConfig[vectorType as keyof typeof qdrantConfig.multiVectorsConfig];
+          if (vectorConfig) {
+            await qdrantClient.createCollection(collectionName as string, {
+              vectors: vectorConfig,
+            });
+            console.log(`Created Qdrant collection for ${vectorType}: ${collectionName}`);
+          }
         }
       }
+    } else {
+      console.log('📝 Legacy collection creation disabled - using collection-config service instead');
     }
 
-    // Create enhanced collection with named vectors
-    if (!existingCollectionNames.includes(qdrantConfig.enhancedCollectionNames.primary)) {
-      await qdrantClient.createCollection(
-        qdrantConfig.enhancedCollectionNames.primary,
-        qdrantConfig.enhancedCollectionOptions
-      );
-      console.log(`Created enhanced Qdrant collection: ${qdrantConfig.enhancedCollectionNames.primary}`);
-      
-      // Log enabled vector types
-      const enabledTypes = getEnabledVectorTypes();
-      console.log(`Enhanced collection supports ${enabledTypes.length} vector types: ${enabledTypes.join(', ')}`);
+    // Create enhanced collection with named vectors - only if explicitly enabled
+    if (process.env.QDRANT_CREATE_ENHANCED_COLLECTION === 'true') {
+      if (!existingCollectionNames.includes(qdrantConfig.enhancedCollectionNames.primary)) {
+        await qdrantClient.createCollection(
+          qdrantConfig.enhancedCollectionNames.primary,
+          qdrantConfig.enhancedCollectionOptions
+        );
+        console.log(`Created enhanced Qdrant collection: ${qdrantConfig.enhancedCollectionNames.primary}`);
+
+        // Log enabled vector types
+        const enabledTypes = getEnabledVectorTypes();
+        console.log(`Enhanced collection supports ${enabledTypes.length} vector types: ${enabledTypes.join(', ')}`);
+      }
+    } else {
+      console.log('📝 Enhanced collection creation disabled - using simple collection approach');
     }
 
     console.log("Connected to Qdrant with enhanced multi-vector support");
@@ -156,9 +180,22 @@ export async function connectToQdrant(): Promise<QdrantClient> {
 
 /**
  * Get collection name for a specific vector type
+ * Updated to return simple collection names that match our 4 collections
  */
 export function getCollectionName(vectorType: string): string {
-  return qdrantConfig.collectionNames[vectorType as keyof typeof qdrantConfig.collectionNames] || qdrantConfig.collectionName;
+  // Map vector types to our simple collection names
+  const vectorToCollectionMap: Record<string, string> = {
+    'semantic': 'tools',
+    'entities.functionality': 'functionality',
+    'entities.categories': 'functionality', // Map categories to functionality for simplicity
+    'entities.interface': 'interface',
+    'entities.industries': 'usecases', // Map industries to usecases
+    'entities.userTypes': 'usecases', // Map userTypes to usecases
+    'entities.aliases': 'tools', // Map aliases to tools
+    'composites.toolType': 'tools' // Map toolType to tools
+  };
+
+  return vectorToCollectionMap[vectorType] || 'tools';
 }
 
 /**

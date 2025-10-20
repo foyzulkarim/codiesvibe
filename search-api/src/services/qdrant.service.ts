@@ -25,11 +25,52 @@ import {
   validateToolId,
   validateEmbedding
 } from "@/utils/vector-validation";
+import { CollectionConfigService } from "./collection-config.service";
+import { ContentGeneratorFactory } from "./content-generator-factory.service";
+
+// Multi-collection management interfaces
+export interface CollectionInfo {
+  name: string;
+  exists: boolean;
+  pointsCount: number;
+  vectorSize: number;
+  distance: string;
+  status: 'green' | 'yellow' | 'red';
+  optimizerStatus?: any;
+  indexedVectorsCount?: number;
+  config?: any;
+}
+
+export interface MultiCollectionStats {
+  totalCollections: number;
+  healthyCollections: number;
+  totalVectors: number;
+  collections: Record<string, CollectionInfo>;
+  summary: {
+    healthy: string[];
+    unhealthy: string[];
+    missing: string[];
+  };
+}
+
+export interface CollectionOperationResult {
+  success: boolean;
+  collection: string;
+  operation: string;
+  message?: string;
+  error?: string;
+  duration?: number;
+}
 
 export class QdrantService {
   private client: QdrantClient | null = null;
+  private collectionConfig: CollectionConfigService;
+  private contentFactory: ContentGeneratorFactory;
 
   constructor() {
+    // Initialize multi-collection services
+    this.collectionConfig = new CollectionConfigService();
+    this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
     this.init();
   }
 
@@ -54,11 +95,53 @@ export class QdrantService {
   /**
    * Search for similar tools based on embedding
    */
+  /**
+   * Search directly on a specific collection without vector type validation
+   * Used for collection health checks and accessibility tests
+   */
+  async searchDirectOnCollection(
+    embedding: number[],
+    collectionName: string,
+    limit: number = 1,
+    filter?: Record<string, any>
+  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      // Validate only the embedding, not the vector type
+      validateEmbedding(embedding, 1024);
+
+      const searchParams: any = {
+        vector: embedding,
+        limit,
+        with_payload: true,
+        with_vector: false
+      };
+
+      if (filter) {
+        searchParams.filter = filter;
+      }
+
+      const response = await this.client.search(collectionName, searchParams);
+
+      return response.map((point: any) => ({
+        id: point.id.toString(),
+        score: point.score,
+        payload: point.payload || {}
+      }));
+
+    } catch (error) {
+      console.error(`❌ Error searching collection ${collectionName}:`, error.message);
+      throw error;
+    }
+  }
+
   async searchByEmbedding(
     embedding: number[],
     limit: number = 10,
     filter?: Record<string, any>,
-    vectorType?: string
+    vectorType?: string,
+    collection?: string
   ): Promise<Array<{ id: string; score: number; payload: any }>> {
     if (!this.client) throw new Error("Qdrant client not connected");
 
@@ -67,9 +150,9 @@ export class QdrantService {
       validateSearchParams({ embedding, limit, filter, vectorType });
 
       // Determine collection name based on vector type and configuration
-      const collectionName = getCollectionNameForVectorType(vectorType);
+      const collectionName = collection || getCollectionNameForVectorType(vectorType);
       const useEnhanced = shouldUseEnhancedCollection() && (!vectorType || isEnhancedVectorTypeSupported(vectorType));
-      
+
       console.log("🔍 Qdrant searchByEmbedding called with:");
       console.log("   - collection:", collectionName);
       console.log("   - vectorType:", vectorType || 'default');
@@ -172,11 +255,11 @@ export class QdrantService {
     // Create search promises for parallel execution
     const searchPromises = vectorTypes.map(async (vectorType) => {
       const vectorStartTime = Date.now();
-      
+
       try {
         // Validate vector type
         validateVectorType(vectorType);
-        
+
         // Search with timeout
         const searchPromise = this.searchByVectorType(
           embedding,
@@ -211,9 +294,9 @@ export class QdrantService {
       } catch (error) {
         const searchTime = Date.now() - vectorStartTime;
         const errorMessage = error instanceof Error ? error.message : String(error);
-        
+
         console.warn(`⚠️ Search failed for vector type ${vectorType}:`, errorMessage);
-        
+
         results[vectorType] = [];
         metrics[vectorType] = {
           searchTime,
@@ -265,7 +348,7 @@ export class QdrantService {
   async checkVectorTypeAvailability(vectorTypes: string[]): Promise<Record<string, boolean>> {
     const availableTypes = await this.getAvailableVectorTypes();
     const availability: Record<string, boolean> = {};
-    
+
     for (const vectorType of vectorTypes) {
       availability[vectorType] = availableTypes.includes(vectorType);
     }
@@ -354,7 +437,7 @@ export class QdrantService {
       // Determine collection name based on vector type and configuration
       const collectionName = getCollectionNameForVectorType(vectorType);
       const useEnhanced = shouldUseEnhancedCollection() && (!vectorType || isEnhancedVectorTypeSupported(vectorType));
-      
+
       // Get the reference tool's embedding
       const pointId = this.toPointId(toolId);
       const retrieveParams: any = {
@@ -451,14 +534,17 @@ export class QdrantService {
     vectorType: string
   ): Promise<void> {
     if (!this.client) throw new Error("Qdrant client not connected");
-
+    console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
+      embedding,
+      payload,
+    });
     try {
       // Validate upsert parameters
       validateUpsertParams({ toolId, vectors: embedding, payload, vectorType });
 
       const pointId = this.toPointId(toolId);
       const collectionName = getCollectionName(vectorType);
-      
+      console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId} to collection ${collectionName}`);
       await this.client.upsert(collectionName, {
         points: [
           {
@@ -497,7 +583,7 @@ export class QdrantService {
       if (shouldUseEnhancedCollection()) {
         // Validate all vectors against enhanced schema
         validateEnhancedVectors(vectors);
-        
+
         // Upsert to enhanced collection with named vectors
         await this.client.upsert(getEnhancedCollectionName(), {
           points: [
@@ -549,7 +635,7 @@ export class QdrantService {
     try {
       // Validate parameters
       validateUpsertParams({ toolId, vectors, payload });
-      
+
       // Validate against enhanced schema
       validateEnhancedVectors(vectors);
 
@@ -590,12 +676,12 @@ export class QdrantService {
     try {
       // Validate parameters
       validateUpsertParams({ toolId, vectors: embedding, payload, vectorType });
-      
+
       // Validate against enhanced schema
       if (!isEnhancedVectorTypeSupported(vectorType)) {
         throw new Error(`Unsupported vector type for enhanced collection: ${vectorType}`);
       }
-      
+
       validateEnhancedVectors({ [vectorType]: embedding });
 
       const pointId = this.toPointId(toolId);
@@ -651,7 +737,7 @@ export class QdrantService {
     try {
       const pointId = this.toPointId(toolId);
       const collectionName = getCollectionName(vectorType);
-      
+
       await this.client.delete(collectionName, {
         points: [pointId],
       });
@@ -720,7 +806,7 @@ export class QdrantService {
 
     try {
       const collectionName = getCollectionName(vectorType);
-      
+
       // Delete all points by using an empty filter (matches all)
       await this.client.delete(collectionName, {
         filter: {},
@@ -975,6 +1061,607 @@ export class QdrantService {
       supportedTypes: getSupportedVectorTypes().filter(type => isEnhancedVectorTypeSupported(type)),
       collectionName: getEnhancedCollectionName(),
     };
+  }
+
+  // ========================================
+  // MULTI-COLLECTION MANAGEMENT METHODS
+  // ========================================
+
+  /**
+   * Get comprehensive statistics for all multi-collection architecture collections
+   */
+  async getMultiCollectionStats(): Promise<MultiCollectionStats> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    const collections: Record<string, CollectionInfo> = {};
+    let totalVectors = 0;
+    let healthyCount = 0;
+
+    console.log(`🔍 Getting stats for ${enabledCollections.length} collections...`);
+
+    for (const collectionName of enabledCollections) {
+      try {
+        const info = await this.getCollectionInfoForCollection(collectionName);
+        collections[collectionName] = info;
+        totalVectors += info.pointsCount;
+        if (info.status === 'green') healthyCount++;
+      } catch (error) {
+        collections[collectionName] = {
+          name: collectionName,
+          exists: false,
+          pointsCount: 0,
+          vectorSize: 0,
+          distance: 'unknown',
+          status: 'red',
+          config: { error: error instanceof Error ? error.message : String(error) }
+        };
+      }
+    }
+
+    return {
+      totalCollections: enabledCollections.length,
+      healthyCollections: healthyCount,
+      totalVectors,
+      collections,
+      summary: {
+        healthy: Object.entries(collections)
+          .filter(([_, info]) => info.status === 'green')
+          .map(([name]) => name),
+        unhealthy: Object.entries(collections)
+          .filter(([_, info]) => info.status !== 'green')
+          .map(([name]) => name),
+        missing: Object.entries(collections)
+          .filter(([_, info]) => !info.exists)
+          .map(([name]) => name)
+      }
+    };
+  }
+
+  /**
+   * Get information for a specific collection by name
+   */
+  async getCollectionInfoForCollection(collectionName: string): Promise<CollectionInfo> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const collection = await this.client.getCollection(collectionName);
+
+      const vectors = collection.config.params.vectors;
+
+      // Handle different vector configuration formats
+      let vectorSize: number;
+      let distance: string;
+
+      if (typeof vectors === 'object' && vectors !== null) {
+        // Check if it's a direct vector config with size and distance
+        if ('size' in vectors && 'distance' in vectors && typeof vectors.size === 'number' && typeof vectors.distance === 'string') {
+          vectorSize = vectors.size;
+          distance = vectors.distance;
+        } else {
+          // Multiple named vectors - take the first one
+          const firstVectorName = Object.keys(vectors)[0];
+          const firstVector = vectors[firstVectorName];
+          if (firstVector && typeof firstVector === 'object' && 'size' in firstVector && 'distance' in firstVector) {
+            vectorSize = firstVector.size as number;
+            distance = firstVector.distance as string;
+          } else {
+            vectorSize = 0;
+            distance = 'unknown';
+          }
+        }
+      } else {
+        // Legacy single vector configuration or unknown format
+        vectorSize = 0;
+        distance = 'unknown';
+      }
+      const status = (collection.status === 'grey' ? 'yellow' : collection.status) || 'green';
+
+      return {
+        name: collectionName,
+        exists: true,
+        pointsCount: collection.points_count || 0,
+        vectorSize: vectorSize,
+        distance: distance,
+        status: status as 'green' | 'yellow' | 'red',
+        optimizerStatus: collection.optimizer_status,
+        indexedVectorsCount: collection.indexed_vectors_count,
+        config: collection.config
+      };
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        return {
+          name: collectionName,
+          exists: false,
+          pointsCount: 0,
+          vectorSize: 0,
+          distance: 'unknown',
+          status: 'red'
+        };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Create collections based on collection configuration
+   */
+  async createMultiCollections(): Promise<CollectionOperationResult[]> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    const results: CollectionOperationResult[] = [];
+
+    console.log(`🔧 Creating ${enabledCollections.length} collections...`);
+
+    for (const collectionName of enabledCollections) {
+      const startTime = Date.now();
+      try {
+        const result = await this.createCollection(collectionName);
+        results.push({
+          ...result,
+          duration: Date.now() - startTime
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          collection: collectionName,
+          operation: 'create',
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - startTime
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`✅ Created ${successCount}/${enabledCollections.length} collections successfully`);
+
+    return results;
+  }
+
+  /**
+   * Create a single collection with proper configuration
+   */
+  async createCollection(collectionName: string): Promise<CollectionOperationResult> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      // Check if collection already exists
+      const existingInfo = await this.getCollectionInfoForCollection(collectionName);
+      if (existingInfo.exists) {
+        return {
+          success: true,
+          collection: collectionName,
+          operation: 'create',
+          message: 'Collection already exists'
+        };
+      }
+
+      // Get collection configuration
+      const collectionConfig = this.collectionConfig.getCollectionByName(collectionName);
+      if (!collectionConfig) {
+        throw new Error(`No configuration found for collection: ${collectionName}`);
+      }
+
+      // Create collection with standard vector configuration
+      await this.client.createCollection(collectionName, {
+        vectors: {
+          size: 1024, // mxbai-embed-large dimensions
+          distance: 'Cosine'
+        },
+        // optimizers_config: { // Commented out as it's not supported by current Qdrant API version
+        //   default_segment_number: 2,
+        //   max_segment_size: 200000,
+        //   memmap_threshold: 20000,
+        //   indexing_threshold: 20000,
+        //   flush_interval_sec: 5,
+        //   max_optimization_threads: 1
+        // },
+        // replication_factor: 1,
+        // write_consistency_factor: 1 // Commented out as not supported by current API
+      });
+
+      return {
+        success: true,
+        collection: collectionName,
+        operation: 'create',
+        message: `Collection ${collectionName} created successfully`
+      };
+    } catch (error) {
+      throw new Error(`Failed to create collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Delete collections (use with caution!)
+   */
+  async deleteMultiCollections(collectionNames?: string[]): Promise<CollectionOperationResult[]> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    const collectionsToDelete = collectionNames || this.collectionConfig.getEnabledCollectionNames();
+    const results: CollectionOperationResult[] = [];
+
+    console.log(`🗑️ Deleting ${collectionsToDelete.length} collections...`);
+
+    for (const collectionName of collectionsToDelete) {
+      const startTime = Date.now();
+      try {
+        const result = await this.deleteCollection(collectionName);
+        results.push({
+          ...result,
+          duration: Date.now() - startTime
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          collection: collectionName,
+          operation: 'delete',
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - startTime
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`✅ Deleted ${successCount}/${collectionsToDelete.length} collections successfully`);
+
+    return results;
+  }
+
+  /**
+   * Delete a single collection
+   */
+  async deleteCollection(collectionName: string): Promise<CollectionOperationResult> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      // Check if collection exists
+      const existingInfo = await this.getCollectionInfoForCollection(collectionName);
+      if (!existingInfo.exists) {
+        return {
+          success: true,
+          collection: collectionName,
+          operation: 'delete',
+          message: 'Collection does not exist'
+        };
+      }
+
+      await this.client.deleteCollection(collectionName);
+
+      return {
+        success: true,
+        collection: collectionName,
+        operation: 'delete',
+        message: `Collection ${collectionName} deleted successfully`
+      };
+    } catch (error) {
+      throw new Error(`Failed to delete collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Clear all points from specific collections
+   */
+  async clearMultiCollections(collectionNames?: string[]): Promise<CollectionOperationResult[]> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    const collectionsToClear = collectionNames || this.collectionConfig.getEnabledCollectionNames();
+    const results: CollectionOperationResult[] = [];
+
+    console.log(`🧹 Clearing ${collectionsToClear.length} collections...`);
+
+    for (const collectionName of collectionsToClear) {
+      const startTime = Date.now();
+      try {
+        await this.client.delete(collectionName, { filter: {} });
+        console.log(`✅ Collection ${collectionName} cleared successfully`);
+        results.push({
+          success: true,
+          collection: collectionName,
+          operation: 'clear',
+          message: `Collection ${collectionName} cleared successfully`,
+          duration: Date.now() - startTime
+        });
+      } catch (error) {
+        console.error(`❌ Failed to clear collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
+        results.push({
+          success: false,
+          collection: collectionName,
+          operation: 'clear',
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - startTime
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`✅ Cleared ${successCount}/${collectionsToClear.length} collections successfully`);
+
+    return results;
+  }
+
+  /**
+   * Enhanced search across multiple collections with result merging
+   */
+  async searchMultiCollection(
+    embedding: number[],
+    options: {
+      collections?: string[];
+      limit?: number;
+      filter?: Record<string, any>;
+      mergeStrategy?: 'weighted' | 'ranked' | 'best';
+      timeout?: number;
+    } = {}
+  ): Promise<{
+    results: Array<{
+      id: string;
+      score: number;
+      payload: any;
+      collection: string;
+      rank: number;
+    }>;
+    collectionStats: Record<string, { resultCount: number; avgScore: number; searchTime: number }>;
+    totalSearchTime: number;
+  }> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    const {
+      collections: specifiedCollections,
+      limit = 10,
+      filter,
+      mergeStrategy = 'weighted',
+      timeout = 5000
+    } = options;
+
+    const collections = specifiedCollections || this.collectionConfig.getEnabledCollectionNames();
+    const startTime = Date.now();
+
+    console.log(`🔍 Searching across ${collections.length} collections...`);
+
+    // Create search promises for parallel execution
+    const searchPromises = collections.map(async (collectionName) => {
+      const collectionStartTime = Date.now();
+
+      try {
+        const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
+        const searchPromise = this.searchByEmbedding(embedding, limit, filter, vectorType);
+        const results = timeout > 0
+          ? await this.withTimeout(searchPromise, timeout)
+          : await searchPromise;
+
+        const searchTime = Date.now() - collectionStartTime;
+        const avgScore = results.length > 0
+          ? results.reduce((sum, result) => sum + result.score, 0) / results.length
+          : 0;
+
+        return {
+          collectionName,
+          results: results.map((result, index) => ({
+            ...result,
+            collection: collectionName,
+            rank: index + 1
+          })),
+          stats: {
+            resultCount: results.length,
+            avgScore,
+            searchTime
+          }
+        };
+      } catch (error) {
+        const searchTime = Date.now() - collectionStartTime;
+        console.warn(`⚠️ Search failed for collection ${collectionName}:`, error);
+
+        return {
+          collectionName,
+          results: [],
+          stats: {
+            resultCount: 0,
+            avgScore: 0,
+            searchTime,
+            error: error instanceof Error ? error.message : String(error)
+          }
+        };
+      }
+    });
+
+    // Execute all searches in parallel
+    const searchResults = await Promise.allSettled(searchPromises);
+
+    // Process and merge results
+    const allResults: Array<{
+      id: string;
+      score: number;
+      payload: any;
+      collection: string;
+      rank: number;
+    }> = [];
+    const collectionStats: Record<string, { resultCount: number; avgScore: number; searchTime: number }> = {};
+
+    for (const result of searchResults) {
+      if (result.status === 'fulfilled') {
+        allResults.push(...result.value.results);
+        collectionStats[result.value.collectionName] = result.value.stats;
+      }
+    }
+
+    // Apply merge strategy
+    const mergedResults = this.mergeSearchResults(allResults, mergeStrategy, limit);
+
+    const totalSearchTime = Date.now() - startTime;
+    console.log(`🔍 Multi-collection search completed in ${totalSearchTime}ms across ${collections.length} collections`);
+    console.log(`📊 Total results: ${mergedResults.length}`);
+
+    return {
+      results: mergedResults,
+      collectionStats,
+      totalSearchTime
+    };
+  }
+
+  /**
+   * Merge search results from multiple collections using different strategies
+   */
+  private mergeSearchResults(
+    results: Array<{
+      id: string;
+      score: number;
+      payload: any;
+      collection: string;
+      rank: number;
+    }>,
+    strategy: 'weighted' | 'ranked' | 'best',
+    limit: number
+  ): Array<{
+    id: string;
+    score: number;
+    payload: any;
+    collection: string;
+    rank: number;
+  }> {
+    // Remove duplicates (same toolId across collections)
+    const uniqueResults = new Map<string, any>();
+
+    for (const result of results) {
+      const toolId = result.payload?.toolId || result.id;
+
+      if (!uniqueResults.has(toolId)) {
+        uniqueResults.set(toolId, result);
+      } else {
+        // Merge if tool appears in multiple collections
+        const existing = uniqueResults.get(toolId);
+        if (strategy === 'best') {
+          if (result.score > existing.score) {
+            uniqueResults.set(toolId, result);
+          }
+        } else if (strategy === 'weighted') {
+          // Weight by collection priority and combine scores
+          const collectionPriority = this.getCollectionPriority(result.collection);
+          const existingPriority = this.getCollectionPriority(existing.collection);
+
+          if (result.score * collectionPriority > existing.score * existingPriority) {
+            uniqueResults.set(toolId, result);
+          }
+        }
+      }
+    }
+
+    // Sort and limit results
+    const merged = Array.from(uniqueResults.values());
+
+    if (strategy === 'ranked') {
+      merged.sort((a, b) => b.rank - a.rank);
+    } else {
+      merged.sort((a, b) => b.score - a.score);
+    }
+
+    return merged.slice(0, limit).map((result, index) => ({
+      ...result,
+      rank: index + 1
+    }));
+  }
+
+  /**
+   * Get priority weight for a collection
+   */
+  private getCollectionPriority(collectionName: string): number {
+    const config = this.collectionConfig.getCollectionByName(collectionName);
+    if (!config) return 1.0;
+
+    // Higher priority for identity collections
+    switch (config.purpose) {
+      case 'identity': return 3.0;
+      case 'capability': return 2.0;
+      case 'usecase': return 2.0;
+      case 'technical': return 1.5;
+      default: return 1.0;
+    }
+  }
+
+  /**
+   * Validate collection integrity and consistency
+   */
+  async validateMultiCollectionIntegrity(): Promise<{
+    isValid: boolean;
+    issues: string[];
+    recommendations: string[];
+    collectionStatus: Record<string, { healthy: boolean; issues: string[] }>;
+  }> {
+    const stats = await this.getMultiCollectionStats();
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+    const collectionStatus: Record<string, { healthy: boolean; issues: string[] }> = {};
+
+    // Check each collection
+    for (const [collectionName, info] of Object.entries(stats.collections)) {
+      const collectionIssues: string[] = [];
+
+      if (!info.exists) {
+        collectionIssues.push('Collection does not exist');
+        issues.push(`Collection ${collectionName} does not exist`);
+        recommendations.push(`Create collection ${collectionName}`);
+      } else {
+        if (info.status !== 'green') {
+          collectionIssues.push(`Collection status is ${info.status}`);
+          issues.push(`Collection ${collectionName} has status ${info.status}`);
+        }
+
+        if (info.vectorSize !== 1024) {
+          collectionIssues.push(`Invalid vector size: ${info.vectorSize} (expected 1024)`);
+          issues.push(`Collection ${collectionName} has incorrect vector size`);
+          recommendations.push(`Recreate collection ${collectionName} with correct vector size`);
+        }
+
+        if (info.pointsCount === 0) {
+          collectionIssues.push('Collection is empty');
+        }
+      }
+
+      collectionStatus[collectionName] = {
+        healthy: collectionIssues.length === 0,
+        issues: collectionIssues
+      };
+    }
+
+    // Overall health check
+    const healthyCount = stats.healthyCollections;
+    const totalCount = stats.totalCollections;
+
+    if (healthyCount < totalCount) {
+      issues.push(`${totalCount - healthyCount} of ${totalCount} collections are unhealthy`);
+    }
+
+    if (stats.totalVectors === 0) {
+      issues.push('No vectors found in any collection');
+      recommendations.push('Run indexing process to populate collections');
+    }
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+      recommendations,
+      collectionStatus
+    };
+  }
+
+  /**
+   * Get access to collection configuration
+   */
+  getCollectionConfiguration(): CollectionConfigService {
+    return this.collectionConfig;
+  }
+
+  /**
+   * Get access to content factory
+   */
+  getContentFactory(): ContentGeneratorFactory {
+    return this.contentFactory;
+  }
+
+  /**
+   * Get enabled collection names
+   */
+  getEnabledCollections(): string[] {
+    return this.collectionConfig.getEnabledCollectionNames();
   }
 }
 
