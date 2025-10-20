@@ -1,546 +1,355 @@
 # Search API Services
 
-This directory contains the core services for the search API, providing functionality for data access, vector operations, and context enrichment.
+This directory contains the core services for the search API, providing functionality for data access, vector operations, multi-collection orchestration, and content generation.
 
 ## Services Overview
 
-### Core Services
+### Core Data Services
 
-- **MongoDBService** (`mongodb.service.ts`) - Handles all MongoDB operations for tool data
-- **QdrantService** (`qdrant.service.ts`) - Manages vector database operations
-- **EmbeddingService** (`embedding.service.ts`) - Generates and manages text embeddings
-- **VectorIndexingService** (`vector-indexing.service.ts`) - Handles vector indexing operations
-- **VectorSeedingService** (`vector-seeding.service.ts`) - Manages vector data seeding
+- **MongoDBService** (`mongodb.service.ts`) - Handles all MongoDB operations for tool data storage and retrieval
+- **QdrantService** (`qdrant.service.ts`) - Manages vector database operations with multi-collection support
+- **EmbeddingService** (`embedding.service.ts`) - Generates and caches text embeddings using Ollama
 
-### Enhanced Services
+### Indexing & Vector Services
 
-- **ContextEnrichmentService** (`context-enrichment.service.ts`) - Enriches search context with entity statistics and metadata
-- **LocalNLPService** (`local-nlp.service.ts`) - Provides local natural language processing capabilities for entity extraction, intent classification, and vocabulary analysis
-- **MultiVectorSearchService** (`multi-vector-search.service.ts`) - Performs multi-vector search across different vector types with advanced merging strategies
+- **VectorIndexingService** (`vector-indexing.service.ts`) - Handles vector indexing operations with progress tracking
+- **EnhancedVectorIndexingService** (`enhanced-vector-indexing.service.ts`) - Advanced multi-vector indexing with enhanced schema support
+- **VectorSeedingService** (`vector-seeding.service.ts`) - Manages vector data seeding with progress monitoring
 
-## Context Enrichment Service
+### Collection Management Services
 
-The ContextEnrichmentService provides intelligent context enrichment for search queries by analyzing entity statistics and generating metadata to improve search relevance.
+- **CollectionConfigService** (`collection-config.service.ts`) - Configuration management for multiple collections with purposes and weightings
+- **MultiCollectionOrchestrator** (`multi-collection-orchestrator.service.ts`) - Orchestrates search across multiple collections with intelligent routing
+- **VectorTypeRegistryService** (`vector-type-registry.service.ts`) - Registry for vector types with metadata and combinations
 
-### Features
+### Content Generation Services
 
-- **Multiple Enrichment Strategies**: Supports Qdrant multi-vector search, MongoDB aggregation, and hybrid approaches
-- **Entity Statistics**: Analyzes categories, interfaces, pricing models, and functionality patterns
-- **Intelligent Caching**: Configurable caching with TTL support for improved performance
-- **Fallback Mechanisms**: Graceful degradation when enrichment fails
-- **Performance Monitoring**: Built-in metrics and processing time tracking
+- **ContentGeneratorFactory** (`content-generator-factory.service.ts`) - Factory for creating collection-specific content generators
 
-### Configuration
+## Collection Architecture
 
-The service uses the `ContextEnrichmentConfig` from the enhanced search configuration:
+The system uses a multi-collection approach with four primary collections:
+
+### 1. Tools Collection (`tools`)
+- **Purpose**: Identity - Core tool information
+- **Content**: name, description, longDescription, tagline
+- **Vector Types**: semantic
+- **Weightings**: name (3.0), description (2.0), longDescription (1.5), tagline (1.0)
+
+### 2. Functionality Collection (`functionality`)
+- **Purpose**: Capability - Tool features and capabilities
+- **Content**: functionality, categories
+- **Vector Types**: semantic, entities.functionality
+- **Weightings**: functionality (2.5), categories (2.0)
+
+### 3. Usecases Collection (`usecases`)
+- **Purpose**: Use Case - Industry and deployment targeting
+- **Content**: industries, userTypes, deployment
+- **Vector Types**: semantic, entities.industries, entities.userTypes
+- **Weightings**: industries (2.0), userTypes (2.0), deployment (1.5)
+
+### 4. Interface Collection (`interface`)
+- **Purpose**: Technical - Implementation details
+- **Content**: interface, pricingModel, status
+- **Vector Types**: semantic, entities.interface
+- **Weightings**: interface (2.0), pricingModel (1.5), status (1.0)
+
+## Vector Type System
+
+### Categories of Vector Types
+
+#### Semantic Vectors
+- **semantic**: Core semantic understanding of tool content
+
+#### Entity Vectors
+- **entities.functionality**: Specific functionality and feature entities
+- **entities.industries**: Industry and sector entities
+- **entities.userTypes**: User type and role entities
+- **entities.interface**: Technical interface entities
+
+#### Composite Vectors
+- **composites.identity**: Combined identity information (name + description)
+- **composites.capabilities**: Combined capabilities and features
+- **composites.usecase**: Combined use case information
+- **composites.technical**: Combined technical specifications
+
+#### Domain Vectors
+- **domain.pricing**: Pricing and business model information
+- **domain.deployment**: Deployment and infrastructure information
+
+## Service Usage Examples
+
+### Collection Configuration Service
 
 ```typescript
-interface ContextEnrichmentConfig {
-  enabled: boolean;
-  maxEntitiesPerQuery: number;
-  minSampleSize: number;
-  confidenceThreshold: number;
-  cacheEnabled: boolean;
-  cacheTTL: number;
-  enrichmentStrategy: 'qdrant_multi_vector';
-  maxProcessingTime: number;
-  fallbackEnabled: boolean;
-}
+import { CollectionConfigService } from './services/collection-config.service';
+
+const collectionConfig = new CollectionConfigService();
+
+// Get all enabled collections
+const enabledCollections = collectionConfig.getEnabledCollections();
+
+// Get collection by name
+const toolsCollection = collectionConfig.getCollectionByName('tools');
+
+// Validate collection configuration
+const isValid = collectionConfig.validateCollectionConfig(config);
+
+// Get collections for specific vector types
+const semanticCollections = collectionConfig.getCollectionsForVectorTypes(['semantic']);
 ```
 
-### Usage Examples
-
-#### Basic Context Enrichment
+### Multi-Collection Orchestrator
 
 ```typescript
-import { contextEnrichmentService } from './services';
+import { MultiCollectionOrchestrator } from './services/multi-collection-orchestrator.service';
 
-// Initialize the service
-await contextEnrichmentService.initialize();
+const orchestrator = new MultiCollectionOrchestrator(
+  collectionConfig,
+  vectorTypeRegistry,
+  contentFactory
+);
 
-// Enrich context for a search query
-const query = 'react components for dashboard';
-const result = await contextEnrichmentService.enrichContext(query);
-
-console.log('Entity Statistics:', result.entityStatistics);
-console.log('Metadata Context:', result.metadataContext);
-```
-
-#### Configuration Updates
-
-```typescript
-// Update service configuration
-contextEnrichmentService.updateConfig({
-  maxEntitiesPerQuery: 10,
-  confidenceThreshold: 0.8,
-  enrichmentStrategy: 'qdrant_multi_vector'
+// Search across multiple collections
+const result = await orchestrator.search({
+  query: 'react components for dashboard',
+  collections: ['tools', 'functionality'],
+  limit: 20
 });
 
-// Get current configuration
-const config = contextEnrichmentService.getConfig();
+console.log('Search results:', result.results);
+console.log('Collection stats:', result.collectionStats);
+console.log('Query analysis:', result.queryAnalysis);
 ```
 
-#### Cache Management
+### Enhanced Vector Indexing
 
 ```typescript
-// Get cache statistics
-const stats = contextEnrichmentService.getCacheStats();
-console.log('Cache size:', stats.size);
+import { enhancedVectorIndexingService } from './services/enhanced-vector-indexing.service';
 
-// Clear cache
-contextEnrichmentService.clearCache();
+// Index all tools with multiple vectors
+await enhancedVectorIndexingService.indexAllToolsMultiVector([
+  'semantic',
+  'entities.functionality',
+  'entities.categories'
+]);
+
+// Validate multi-vector index
+const healthReport = await enhancedVectorIndexingService.validateMultiVectorIndex();
+console.log('Index health:', healthReport);
 ```
 
-### Enrichment Strategies
-
-#### MongoDB Aggregation
-- Analyzes tool data using MongoDB aggregation pipelines
-- Provides category, interface, pricing, and functionality statistics
-- Fast and efficient for large datasets
-- No vector dependencies
-
-#### Qdrant Multi-Vector Search
-- Uses semantic similarity across multiple vector types
-- Provides context-aware entity statistics
-- Higher quality results for semantic queries
-- Requires vector embeddings
-
-#### Hybrid Approach
-- Combines MongoDB and Qdrant strategies
-- Merges results preferring higher confidence scores
-- Provides comprehensive context enrichment
-- Best of both approaches
-
-### Entity Statistics Structure
-
-The service returns entity statistics following the `EntityStatisticsSchema`:
+### Content Generation
 
 ```typescript
-interface EntityStatistics {
-  commonCategories: Array<{ category: string; percentage: number }>;
-  commonInterfaces: Array<{ interface: string; percentage: number }>;
-  commonPricing: Array<{ pricing: string; percentage: number }>;
-  totalCount: number;
-  confidence: number;
-  semanticMatches: number;
-  avgSimilarityScore: number;
-  source: 'semantic_search';
-  sampleTools: string[];
-}
+import { ContentGeneratorFactory } from './services/content-generator-factory.service';
+
+const contentFactory = new ContentGeneratorFactory(collectionConfig);
+
+// Generate content for specific collection
+const toolsGenerator = contentFactory.createGenerator('tools');
+const content = toolsGenerator.generate(toolData);
+
+// Validate tool data for collection
+const validation = toolsGenerator.validate(toolData);
+console.log('Validation:', validation);
+
+// Generate content for multiple collections
+const multiContent = contentFactory.generateForCollections(toolData, [
+  'tools',
+  'functionality',
+  'interface'
+]);
 ```
 
-### Metadata Context Structure
-
-The metadata context provides information about the enrichment process:
+### Vector Type Registry
 
 ```typescript
-interface MetadataContext {
-  searchSpaceSize: number;
-  metadataConfidence: number;
-  assumptions: string[];
-  lastUpdated: Date;
-  enrichmentStrategy: 'qdrant_multi_vector';
-  processingTime: number;
-}
+import { VectorTypeRegistryService } from './services/vector-type-registry.service';
+
+const vectorRegistry = new VectorTypeRegistryService(collectionConfig);
+
+// Get all available vector types
+const vectorTypes = vectorRegistry.getVectorTypes();
+
+// Get recommended vector types for query
+const recommended = vectorRegistry.getRecommendedVectorTypes(
+  'react api components for developers'
+);
+
+// Validate vector type combination
+const validation = vectorRegistry.validateVectorTypeCombination([
+  'semantic',
+  'entities.functionality',
+  'composites.capabilities'
+]);
+
+// Get vector type combinations for use cases
+const combinations = vectorRegistry.getVectorTypeCombinations();
 ```
 
-### Performance Considerations
+## Multi-Vector Search Strategy
 
-- **Caching**: Enable caching for frequently used queries to improve performance
-- **Processing Time**: Monitor processing times and adjust `maxProcessingTime` accordingly
-- **Sample Size**: Balance between accuracy and performance with `minSampleSize`
-- **Confidence Threshold**: Adjust based on your quality requirements
+### Vector Type Combinations
 
-### Error Handling
+The system provides predefined combinations for common use cases:
 
-The service includes comprehensive error handling:
+1. **General Tool Discovery**
+   - Types: `semantic`, `composites.identity`
+   - Collections: `tools`
+   - Use Case: Users searching for tools by name or general description
 
-- Automatic fallback to MongoDB aggregation when Qdrant fails
-- Graceful degradation with minimal context when all strategies fail
-- Detailed error logging for debugging
-- Configurable timeout handling
+2. **Feature-Specific Search**
+   - Types: `semantic`, `entities.functionality`, `composites.capabilities`
+   - Collections: `functionality`
+   - Use Case: Users looking for specific capabilities or features
 
-### Integration with Enhanced Search
+3. **Industry and Role-Based Search**
+   - Types: `semantic`, `entities.industries`, `entities.userTypes`, `composites.usecase`
+   - Collections: `usecases`
+   - Use Case: Users in specific industries or roles looking for relevant tools
 
-The ContextEnrichmentService is designed to integrate with the enhanced search system:
+4. **Technical Implementation Search**
+   - Types: `semantic`, `entities.interface`, `composites.technical`
+   - Collections: `interface`
+   - Use Case: Developers looking for specific technical requirements
 
-1. **Stage 0.5**: Enriches context before query planning
-2. **State Management**: Updates `entityStatistics` and `metadataContext` in enhanced state
-3. **Performance Metrics**: Tracks enrichment performance for monitoring
+### Query Routing
 
-## Development
+The orchestrator uses intelligent routing to select optimal collections:
+
+1. **Vocabulary-Based Routing**: Matches query keywords against controlled vocabularies
+2. **Semantic Routing**: Falls back to semantic analysis when vocabulary matching fails
+3. **Manual Routing**: Uses explicitly specified collections when provided
+
+## Performance Features
+
+### Caching
+- **Embedding Cache**: In-memory caching for generated embeddings
+- **Configurable TTL**: Cache time-to-live configuration
+- **Size Management**: Automatic cache size management
+
+### Batch Processing
+- **Concurrent Processing**: Parallel processing with configurable concurrency limits
+- **Batch Operations**: Efficient batch upserts and searches
+- **Progress Tracking**: Detailed progress reporting for long operations
+
+### Error Handling & Resilience
+- **Retry Logic**: Automatic retry for transient failures
+- **Graceful Degradation**: Fallback mechanisms for service failures
+- **Health Monitoring**: Continuous health checks and reporting
+
+## Configuration
+
+### Environment Variables
+
+Key environment variables for service configuration:
+
+```bash
+# MongoDB Configuration
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB_NAME=toolsearch
+
+# Qdrant Configuration
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+QDRANT_USE_ENHANCED_COLLECTION=true
+
+# Embedding Configuration
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=mxbai-embed-large:latest
+ENABLE_CACHE=true
+CACHE_TTL=3600
+
+# Performance Configuration
+DEFAULT_BATCH_SIZE=50
+MAX_CONCURRENT_REQUESTS=10
+```
+
+### Service Configuration
+
+Each service can be configured through:
+
+1. **Environment Variables**: For deployment-specific settings
+2. **Configuration Objects**: For runtime configuration
+3. **Collection Configurations**: For collection-specific settings
+
+## Development Guidelines
 
 ### Adding New Services
 
 When adding new services:
 
-1. Follow the existing service pattern with singleton export
-2. Include proper TypeScript types and Zod schemas
-3. Add comprehensive error handling
-4. Include performance monitoring
-5. Update the services index file
+1. Follow the existing service pattern with proper error handling
+2. Include comprehensive TypeScript types and interfaces
+3. Add progress tracking for long-running operations
+4. Include health check methods
+5. Update the services index file (`index.ts`)
 
-### Testing
+### Adding New Collections
 
-Run the example file to test the context enrichment service:
+1. Define collection configuration in `CollectionConfigService`
+2. Create content generator in `ContentGeneratorFactory`
+3. Update vector type mappings in `VectorTypeRegistryService`
+4. Add collection-specific validation logic
+
+### Adding New Vector Types
+
+1. Register vector type in `VectorTypeRegistryService`
+2. Define vector configuration in enhanced schema
+3. Update content generators for new vector type
+4. Add validation logic for the new vector type
+
+## Testing
+
+### Service Health Checks
+
+```typescript
+// Check MongoDB service health
+const mongoTools = await mongoDBService.getAllTools();
+
+// Check Qdrant service health
+const qdrantHealth = await qdrantService.getCollectionInfo();
+
+// Check collection consistency
+const isConsistent = await orchestrator.validateCollectionConsistency();
+
+// Check vector index health
+const indexHealth = await enhancedVectorIndexingService.validateMultiVectorIndex();
+```
+
+### Integration Testing
+
+The services are designed for integration testing:
 
 ```bash
-cd search-api
-npm run dev
-# In another terminal:
-node -r ts-node/register src/services/context-enrichment.example.ts
+# Test individual services
+npm test -- services/mongodb.service.test.ts
+npm test -- services/qdrant.service.test.ts
+
+# Test service integration
+npm test -- services/integration/
 ```
 
 ## Dependencies
 
-- **MongoDB**: For tool data storage and aggregation
-- **Qdrant**: For vector similarity search (optional)
-- **Enhanced Search Config**: For configuration management
-- **Enhanced State Types**: For type safety
-
-## Local NLP Service
-
-The LocalNLPService provides on-device natural language processing capabilities for text analysis, entity extraction, intent classification, and vocabulary candidate extraction. It uses transformers.js for local model inference with fallback to rule-based processing.
-
-### Features
-
-- **Local Model Inference**: Uses transformers.js for on-device NLP processing
-- **Entity Recognition**: Extracts named entities like technologies, pricing models, and interfaces
-- **Intent Classification**: Classifies user queries into intent categories (filter_search, comparison_query, discovery, exploration)
-- **Vocabulary Extraction**: Identifies potential vocabulary candidates for categories, interfaces, pricing, and functionality
-- **Batch Processing**: Efficiently processes multiple queries in batches
-- **Intelligent Caching**: Caches models and results for improved performance
-- **Fallback Mechanisms**: Graceful degradation to rule-based processing when models fail
-- **Performance Monitoring**: Built-in metrics and processing time tracking
-
-### Configuration
-
-The service uses the `LocalNLPConfig` from the enhanced search configuration:
-
-```typescript
-interface LocalNLPConfig {
-  enabled: boolean;
-  nerModel: string;          // Model for named entity recognition
-  classificationModel: string; // Model for intent classification
-  modelCacheEnabled: boolean;
-  modelCacheSize: number;
-  confidenceThreshold: number;
-  maxProcessingTime: number;
-  fallbackEnabled: boolean;
-  fallbackThreshold: number;
-  batchProcessingEnabled: boolean;
-  maxBatchSize: number;
-  intentLabels: string[];
-}
-```
-
-### Usage Examples
-
-#### Basic Text Processing
-
-```typescript
-import { localNLPService } from './services';
-
-// Initialize the service
-await localNLPService.initialize();
-
-// Process text with all features enabled
-const result = await localNLPService.processText('Find free React components for dashboard');
-
-console.log('Entities:', result.entities);
-console.log('Intent:', result.intent);
-console.log('Vocabulary Candidates:', result.vocabularyCandidates);
-console.log('Processing Time:', result.processingTime);
-```
-
-#### Selective Processing
-
-```typescript
-// Process with specific features only
-const result = await localNLPService.processText('Compare React vs Vue', {
-  extractEntities: true,
-  classifyIntent: true,
-  extractVocabulary: false
-});
-
-console.log('Intent:', result.intent.label); // "comparison_query"
-```
-
-#### Batch Processing
-
-```typescript
-const queries = [
-  'Find free React components',
-  'Compare Vue and Angular',
-  'API library for Node.js'
-];
-
-const results = await localNLPService.processBatch(queries);
-results.forEach((result, index) => {
-  console.log(`Query ${index + 1}: ${result.intent.label}`);
-});
-```
-
-#### Configuration Management
-
-```typescript
-// Update service configuration
-localNLPService.updateConfig({
-  confidenceThreshold: 0.8,
-  maxProcessingTime: 150,
-  batchProcessingEnabled: true,
-  maxBatchSize: 20
-});
-
-// Get current configuration
-const config = localNLPService.getConfig();
-```
-
-#### Performance Monitoring
-
-```typescript
-// Get cache statistics
-const stats = localNLPService.getCacheStats();
-console.log('Model cache size:', stats.modelCache.size);
-console.log('Result cache size:', stats.resultCache.size);
-
-// Health check
-const health = await localNLPService.healthCheck();
-console.log('Service status:', health.status);
-console.log('Details:', health.details);
-```
-
-### Processing Strategies
-
-The service supports multiple processing strategies:
-
-1. **Local Processing**: Uses transformers.js models for on-device inference
-2. **LLM Fallback**: Uses rule-based processing when models fail
-3. **Hybrid**: Combines local and fallback approaches
-
-### Entity Types
-
-The service can extract various entity types:
-
-- **Technology**: Frameworks, libraries, programming languages (React, Vue, Node.js)
-- **Pricing**: Cost models (free, paid, premium, open source)
-- **Interface**: Interaction types (API, CLI, GUI, SDK)
-- **Category**: Software categories (frontend, backend, database)
-
-### Intent Classification
-
-Supported intent categories:
-
-- **filter_search**: Queries with specific filters or constraints
-- **comparison_query**: Queries comparing multiple options
-- **discovery**: General search and discovery queries
-- **exploration**: Broad exploration queries
-
-### Vocabulary Candidates
-
-The service extracts vocabulary candidates for:
-
-- **Categories**: Software categories and domains
-- **Interfaces**: API types and interaction patterns
-- **Pricing**: Cost and licensing models
-- **Functionality**: Features and capabilities
-
-### Performance Considerations
-
-- **Model Caching**: Enable model caching for frequently used models
-- **Batch Processing**: Use batch processing for multiple queries
-- **Confidence Thresholds**: Adjust thresholds based on accuracy requirements
-- **Processing Time**: Monitor and adjust time limits for your use case
-- **Fallback Strategy**: Ensure fallback is enabled for reliability
-
-### Error Handling
-
-The service includes comprehensive error handling:
-
-- Automatic fallback when model inference fails
-- Graceful degradation with rule-based processing
-- Timeout handling for long-running operations
-- Detailed error logging for debugging
-
-### Integration with Enhanced Search
-
-The LocalNLPService integrates with the enhanced search system:
-
-1. **Stage 1**: Processes user queries for intent and entities
-2. **State Management**: Updates `nlpResults` in enhanced state
-3. **Performance Metrics**: Tracks NLP processing performance
-
-## Multi-Vector Search Service
-
-The MultiVectorSearchService provides advanced search capabilities across multiple vector types with intelligent result merging and deduplication. It enables comprehensive semantic search by leveraging different vector representations of the same data.
-
-### Features
-
-- **Multiple Vector Types**: Supports semantic, categories, functionality, aliases, and composites vectors
-- **Advanced Merging Strategies**: Reciprocal Rank Fusion (RRF), weighted average, and custom strategies
-- **Parallel Search**: Concurrent searching across vector types for improved performance
-- **Result Deduplication**: Intelligent duplicate detection and removal
-- **Source Attribution**: Tracks which vector types contributed to each result
-- **Intelligent Caching**: Configurable caching with TTL support for improved performance
-- **Timeout Handling**: Configurable timeouts for search operations
-- **Performance Monitoring**: Built-in metrics and timing analysis
-
-### Configuration
-
-The service uses the `MultiVectorSearchConfig` from the enhanced search configuration:
-
-```typescript
-interface MultiVectorSearchConfig {
-  enabled: boolean;
-  vectorTypes: string[];
-  mergeStrategy: 'reciprocal_rank_fusion' | 'weighted_average' | 'custom';
-  rrfKValue: number;
-  maxResultsPerVector: number;
-  deduplicationEnabled: boolean;
-  deduplicationThreshold: number;
-  sourceAttributionEnabled: boolean;
-  parallelSearchEnabled: boolean;
-  searchTimeout: number;
-}
-```
-
-### Usage Examples
-
-#### Basic Multi-Vector Search
-
-```typescript
-import { multiVectorSearchService } from './services';
-
-// Initialize the service
-await multiVectorSearchService.initialize();
-
-// Perform basic search
-const result = await multiVectorSearchService.searchMultiVector('react components', {
-  limit: 10,
-  vectorTypes: ['semantic']
-});
-
-console.log('Search results:', result.vectorSearchResults);
-console.log('Search metrics:', result.searchMetrics);
-```
-
-#### Advanced Search with Multiple Vector Types
-
-```typescript
-// Search across multiple vector types with filters
-const result = await multiVectorSearchService.searchMultiVector('free api tools', {
-  limit: 20,
-  vectorTypes: ['semantic', 'categories', 'functionality'],
-  filter: {
-    must: [
-      { key: 'pricing_model', match: { value: 'free' } }
-    ]
-  }
-});
-
-console.log('Results by vector type:');
-Object.entries(result.vectorSearchResults).forEach(([type, results]) => {
-  console.log(`${type}: ${results.length} results`);
-});
-```
-
-#### Configuration Management
-
-```typescript
-// Update service configuration
-multiVectorSearchService.updateConfig({
-  mergeStrategy: 'weighted_average',
-  maxResultsPerVector: 25,
-  rrfKValue: 100,
-  deduplicationThreshold: 0.85
-});
-
-// Get current configuration
-const config = multiVectorSearchService.getConfig();
-console.log('Current merge strategy:', config.mergeStrategy);
-```
-
-#### Testing Different Merge Strategies
-
-```typescript
-const strategies = ['reciprocal_rank_fusion', 'weighted_average', 'custom'] as const;
-
-for (const strategy of strategies) {
-  multiVectorSearchService.updateConfig({ mergeStrategy: strategy });
-  
-  const results = await multiVectorSearchService.searchMultiVector('javascript framework', {
-    limit: 10,
-    vectorTypes: ['semantic', 'categories']
-  });
-  
-  console.log(`${strategy} strategy: ${Object.values(results.vectorSearchResults).flat().length} results`);
-}
-```
-
-### Merge Strategies
-
-#### Reciprocal Rank Fusion (RRF)
-- Combines rankings from multiple vector types using the formula: 1/(k + rank + 1)
-- Default k-value of 60 provides good balance between rank and score
-- Effective for combining diverse ranking signals
-
-#### Weighted Average
-- Applies different weights to vector types (semantic: 1.0, categories: 0.8, etc.)
-- Useful when certain vector types are more important for your use case
-- Configurable weights can be customized
-
-#### Custom Strategy
-- Extensible framework for domain-specific merging logic
-- Can be implemented based on business requirements
-- Falls back to RRF if not customized
-
-### Performance Considerations
-
-- **Parallel Search**: Enable for better performance with multiple vector types
-- **Caching**: Enable for frequently used queries to improve response time
-- **Deduplication**: Balance between quality and performance with threshold tuning
-- **Timeout Handling**: Set appropriate timeouts based on your latency requirements
-- **Result Limits**: Adjust `maxResultsPerVector` based on quality vs. performance needs
-
-### Integration with Enhanced Search
-
-The MultiVectorSearchService integrates with the enhanced search system:
-
-1. **Stage 2**: Performs multi-vector search as part of the execution plan
-2. **State Management**: Updates `vectorSearchState` in enhanced state
-3. **Performance Metrics**: Tracks search performance and merging efficiency
-
-### Error Handling
-
-The service includes comprehensive error handling:
-
-- Graceful degradation when individual vector types fail
-- Timeout handling for long-running searches
-- Detailed error logging for debugging
-- Fallback to available vector types when some are unavailable
-
-### Health Monitoring
-
-```typescript
-// Check service health
-const health = await multiVectorSearchService.healthCheck();
-console.log('Service status:', health.status);
-console.log('Qdrant connection:', health.details.qdrantConnection);
-
-// Get performance metrics
-const metrics = multiVectorSearchService.getLastSearchMetrics();
-if (metrics) {
-  console.log('Total search time:', metrics.totalSearchTime);
-  console.log('Vector type metrics:', metrics.vectorTypeMetrics);
-}
-```
-
-## Contributing
-
-When contributing to services:
-
-1. Maintain backward compatibility
-2. Add comprehensive error handling
-3. Include performance monitoring
-4. Update documentation
-5. Follow existing code patterns
+### External Dependencies
+- **MongoDB**: Primary data storage
+- **Qdrant**: Vector database for semantic search
+- **Ollama**: Local embedding generation
+
+### Internal Dependencies
+- **@/config/database**: Database configuration
+- **@/config/models**: Model configurations
+- **@/config/constants**: System constants
+- **@/types/tool.types**: Tool data types
+- **@/utils/vector-validation**: Vector validation utilities
+
+## Architecture Benefits
+
+1. **Modularity**: Each service has a single responsibility
+2. **Scalability**: Services can be scaled independently
+3. **Flexibility**: Easy to add new collections and vector types
+4. **Performance**: Optimized for concurrent operations
+5. **Reliability**: Comprehensive error handling and health monitoring
+6. **Maintainability**: Clear separation of concerns and type safety
