@@ -26,7 +26,7 @@ export async function connectToMongoDB(): Promise<Db> {
     mongoClient = new MongoClient(mongoConfig.uri, mongoConfig.options);
     await mongoClient.connect();
     db = mongoClient.db(mongoConfig.dbName);
-    console.log("Connected to MongoDB");
+    console.log("Connected to MongoDB", mongoConfig.dbName);
     return db;
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
@@ -39,18 +39,71 @@ export async function disconnectFromMongoDB(): Promise<void> {
     await mongoClient.close();
     mongoClient = null;
     db = null;
-    console.log("Disconnected from MongoDB");
+    console.log("Disconnected from MongoDB", mongoConfig.dbName);
   }
 }
+
+
 
 // Qdrant Configuration
 export const qdrantConfig = {
   host: process.env.QDRANT_HOST || "localhost",
   port: parseInt(process.env.QDRANT_PORT || "6333"),
   collectionName: process.env.QDRANT_COLLECTION_NAME || "tools",
+  // Enhanced multi-vector configuration
   vectorsConfig: {
     size: 1024, // Size of the embedding model (mxbai-embed-large)
     distance: "Cosine" as const,
+  },
+  // Multi-vector configuration with named vectors (legacy - for backward compatibility)
+  multiVectorsConfig: {
+    semantic: {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.categories": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.functionality": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.interface": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.industries": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.userTypes": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "entities.aliases": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+    "composites.toolType": {
+      size: 1024,
+      distance: "Cosine" as const,
+    },
+  },
+  // Collection names for different vector types (legacy - for backward compatibility)
+  collectionNames: {
+    semantic: process.env.QDRANT_COLLECTION_SEMANTIC || "tools_semantic",
+    "entities.categories": process.env.QDRANT_COLLECTION_CATEGORIES || "tools_categories",
+    "entities.functionality": process.env.QDRANT_COLLECTION_FUNCTIONALITY || "tools_functionality",
+    "entities.interface": process.env.QDRANT_COLLECTION_INTERFACE || "tools_interface",
+    "entities.industries": process.env.QDRANT_COLLECTION_INDUSTRIES || "tools_industries",
+    "entities.userTypes": process.env.QDRANT_COLLECTION_USER_TYPES || "tools_user_types",
+    "entities.aliases": process.env.QDRANT_COLLECTION_ALIASES || "tools_aliases",
+    "composites.toolType": process.env.QDRANT_COLLECTION_TOOL_TYPE || "tools_tool_type",
+  },
+  // Enhanced collection configuration - hardcoded for now
+  enhancedCollectionNames: {
+    primary: 'enhanced_tools'
   }
 };
 
@@ -64,23 +117,88 @@ export async function connectToQdrant(): Promise<QdrantClient> {
     const url = `http://${qdrantConfig.host}:${qdrantConfig.port}`;
     qdrantClient = new QdrantClient({ url });
 
-    // Ensure collection exists
+    // Ensure collections exist for all vector types
     const collections = await qdrantClient.getCollections();
-    const exists = collections.collections.some(
-      collection => collection.name === qdrantConfig.collectionName
-    );
+    const existingCollectionNames = collections.collections.map(c => c.name);
 
-    if (!exists) {
+    // Create legacy collection for backward compatibility
+    if (!existingCollectionNames.includes(qdrantConfig.collectionName)) {
       await qdrantClient.createCollection(qdrantConfig.collectionName, {
         vectors: qdrantConfig.vectorsConfig,
       });
       console.log(`Created Qdrant collection: ${qdrantConfig.collectionName}`);
     }
 
-    console.log("Connected to Qdrant");
+    console.log("Connected to Qdrant with enhanced multi-vector support");
     return qdrantClient;
   } catch (error) {
     console.error("Failed to connect to Qdrant:", error);
     throw error;
   }
+}
+
+/**
+ * Get collection name for a specific vector type
+ * Updated to return simple collection names that match our 4 collections
+ */
+export function getCollectionName(vectorType: string): string {
+  // Map vector types to our simple collection names
+  const vectorToCollectionMap: Record<string, string> = {
+    'semantic': 'tools',
+    'entities.functionality': 'functionality',
+    'entities.categories': 'functionality', // Map categories to functionality for simplicity
+    'entities.interface': 'interface',
+    'entities.industries': 'usecases', // Map industries to usecases
+    'entities.userTypes': 'usecases', // Map userTypes to usecases
+    'entities.aliases': 'tools', // Map aliases to tools
+    'composites.toolType': 'tools' // Map toolType to tools
+  };
+
+  return vectorToCollectionMap[vectorType] || 'tools';
+}
+
+/**
+ * Check if a vector type is supported
+ */
+export function isSupportedVectorType(vectorType: string): boolean {
+  const supportedTypes = ['semantic', 'entities.functionality', 'entities.categories', 'entities.interface', 'entities.industries', 'entities.userTypes', 'entities.aliases', 'composites.toolType'];
+  return supportedTypes.includes(vectorType);
+}
+
+/**
+ * Get all supported vector types (legacy)
+ */
+export function getSupportedVectorTypes(): string[] {
+  return ['semantic', 'entities.functionality', 'entities.categories', 'entities.interface', 'entities.industries', 'entities.userTypes', 'entities.aliases', 'composites.toolType'];
+}
+
+/**
+ * Get enhanced collection name
+ */
+export function getEnhancedCollectionName(): string {
+  return 'enhanced_tools'; // Hardcoded for now
+}
+
+/**
+ * Check if enhanced collection should be used
+ */
+export function shouldUseEnhancedCollection(): boolean {
+  return process.env.QDRANT_USE_ENHANCED_COLLECTION === 'true';
+}
+
+/**
+ * Get appropriate collection name based on vector type and configuration
+ */
+export function getCollectionNameForVectorType(vectorType?: string): string {
+  // Use enhanced collection if enabled and vector type is supported
+  if (shouldUseEnhancedCollection() && (!vectorType || isSupportedVectorType(vectorType || ''))) {
+    return getEnhancedCollectionName();
+  }
+  
+  // Fall back to legacy collections
+  if (vectorType) {
+    return getCollectionName(vectorType);
+  }
+  
+  return 'tools'; // Default collection
 }

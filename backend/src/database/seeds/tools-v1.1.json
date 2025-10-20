@@ -17,30 +17,47 @@
       "description": "AI assistant by Anthropic for helpful, harmless, and honest conversations",
       "longDescription": "Claude is an AI assistant created by Anthropic that can engage in helpful conversations, answer questions, help with analysis and writing, and much more. Claude is designed to be helpful, harmless, and honest, with a focus on safety and constitutional AI principles. It excels at complex reasoning, writing assistance, code generation, and thoughtful analysis across a wide range of topics.",
       "tagline": "Your thoughtful AI assistant for safe and helpful interactions",
-
-      "categories": ["AI", "Assistant", "Productivity", "Analysis"],
-      "industries": ["Technology", "Education", "Research", "Business", "Content Creation"],
-      "userTypes": ["Researchers", "Writers", "Students", "Professionals", "Analysts"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 20,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free","freemium", "paid"]
-      },
-
+      "categories": [
+        "AI",
+        "Chatbot",
+        "Productivity"
+      ],
+      "industries": [
+        "Technology",
+        "Education"
+      ],
+      "userTypes": [
+        "Researchers",
+        "Students",
+        "Professionals"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
       "pricingUrl": "https://claude.ai/pricing",
-
-      "interface": ["Web", "API", "Mobile", "CLI"],
-      "functionality": ["Text Generation", "Analysis", "Code Generation"],
-      "deployment": ["Cloud"],
-      "popularity": 85,
-      "rating": 4.6,
-      "reviewCount": 1200,
-
+      "interface": [
+        "Web",
+        "API",
+        "Mobile",
+        "CLI"
+      ],
+      "functionality": [
+        "Text Generation",
+        "Code Generation"
+      ],
+      "deployment": [
+        "Cloud"
+      ],   
       "logoUrl": "https://example.com/claude-logo.png",
       "website": "https://claude.ai",
       "documentation": "https://docs.anthropic.com",
@@ -56,36 +73,110 @@
       "description": "AI-powered assistant by AWS for developers and business users",
       "longDescription": "Amazon Q is an AI-powered assistant by AWS that helps developers and business users with coding, troubleshooting, and business intelligence. It provides contextual assistance for AWS services, code generation, debugging, and can answer questions about your AWS infrastructure and applications. Amazon Q integrates deeply with AWS services and offers enterprise-grade security and privacy controls.",
       "tagline": "Your AWS-native AI assistant for cloud development and operations",
-
-      "categories": ["AI", "Developer Tools", "AWS", "Cloud", "Business Intelligence"],
-      "industries": ["Technology", "Cloud Computing", "Enterprise", "DevOps"],
-      "userTypes": ["Developers", "DevOps Engineers", "Cloud Architects", "Business Analysts"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 20,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": true,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free","freemium", "paid"]
-      },
-
+      "categories": [
+        "AI",
+        "Development",
+        "Productivity"
+      ],
+      "industries": [
+        "Technology",
+        "Enterprise"
+      ],
+      "userTypes": [
+        "Developers"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
       "pricingUrl": "https://aws.amazon.com/q/pricing/",
-
-      "interface": ["Web", "CLI", "IDE Extension"],
-      "functionality": ["Code Generation", "Debugging", "AWS Support", "Business Intelligence"],
-      "deployment": ["Cloud"],
-      "popularity": 72,
-      "rating": 4.3,
-      "reviewCount": 850,
-
+      "interface": [
+        "Web",
+        "CLI",
+        "IDE Extension",
+        "API",
+        "Desktop"
+      ],
+      "functionality": [
+        "Code Generation",
+        "Debugging",
+        "AWS Support"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
       "logoUrl": "https://example.com/amazon-q-logo.png",
       "website": "https://aws.amazon.com/q/",
       "documentation": "https://docs.aws.amazon.com/amazonq/",
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T10:30:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "cursor-ide",
+      "name": "Cursor IDE",
+      "slug": "cursor-ide",
+      "description": "AI-powered code editor with intelligent completions and chat",
+      "longDescription": "Cursor is an AI-first code editor built on VS Code that provides intelligent code completions, AI chat assistance, and advanced code generation capabilities. It offers different pricing tiers with varying levels of AI requests and features, making it suitable for both individual developers and enterprise teams. Cursor combines the familiar VS Code interface with cutting-edge AI capabilities for enhanced productivity.",
+      "tagline": "The AI-first code editor for the modern developer",
+      "categories": [
+        "IDE",
+        "Productivity",
+        "Desktop App"
+      ],
+      "industries": [
+        "Technology",
+        "Software Development",
+        "Startups"
+      ],
+      "userTypes": [
+        "Developers",
+        "Product Managers"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
+      "pricingUrl": "https://cursor.sh/pricing",
+      "interface": [
+        "IDE",
+        "CLI"
+      ],
+      "functionality": [
+        "Code Generation",
+        "Code Completion",
+        "AI Chat",
+        "Debugging",
+        "Refactoring"
+      ],
+      "deployment": [
+        "Cloud"
+      ],    
+      "logoUrl": "https://example.com/cursor-logo.png",
+      "website": "https://cursor.sh",
+      "documentation": "https://docs.cursor.sh",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
       "lastUpdated": "2025-09-29T08:40:00Z"
     }
   ]

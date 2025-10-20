@@ -1,14 +1,65 @@
-import { Controller, Get, Param, Req, Query } from '@nestjs/common';
+import { Controller, Get, Param, Req, Query, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { ToolsService, SearchFilters, SearchOptions } from './tools.service';
-
 import { ToolResponseDto } from './dto/tool-response.dto';
 import { GetToolsQueryDto } from './dto/get-tools-query.dto';
 
 @ApiTags('Tools')
 @Controller('tools') // Will be /api/tools with global prefix
 export class ToolsController {
-  constructor(private readonly toolsService: ToolsService) {}
+  constructor(
+    private readonly toolsService: ToolsService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Search AI tools using query parameter',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results retrieved successfully',
+  })
+  async searchGet(
+    @Query('q') query: string,
+    @Query('limit') limit?: number,
+    @Query('debug') debug?: boolean,
+  ) {
+    if (!query) {
+      return { error: 'Query parameter "q" is required' };
+    }
+
+    try {
+      const searchApiUrl = this.configService.get<string>(
+        'SEARCH_API_URL',
+        'http://localhost:4004',
+      );
+      const response = await fetch(`${searchApiUrl}/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: query,
+          limit: limit || 10,
+          debug: debug || false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Search API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        error: 'Search service unavailable',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 
   @Get()
   @ApiOperation({

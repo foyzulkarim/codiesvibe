@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BaseTool, PricingModelEnum } from '@shared/types/tool.types';
+import type {
+  BaseTool,
+  Pricing,
+  PricingModelEnum,
+} from '@shared/types/tool.types';
+import { ToolDocument } from '../schemas/tool.schema';
+import { PricingDto } from './pricing.dto';
 
 class ResponsePricingSummaryDto {
   @ApiProperty({ description: 'Lowest monthly price', example: 0 })
@@ -29,6 +35,20 @@ class ResponsePricingSummaryDto {
 }
 
 export class ToolResponseDto implements BaseTool {
+  @ApiProperty({
+    description: 'Pricing details',
+    type: [PricingDto],
+    example: [{}],
+  })
+  pricing!: Pricing[];
+
+  @ApiProperty({
+    description: 'Pricing models',
+    example: 'freemium',
+    enum: ['free', 'freemium', 'paid'],
+  })
+  pricingModel!: PricingModelEnum;
+
   // Identity fields
   @ApiProperty({
     description: 'Tool unique identifier',
@@ -88,13 +108,6 @@ export class ToolResponseDto implements BaseTool {
   })
   userTypes!: string[];
 
-  // Pricing (simplified)
-  @ApiProperty({
-    description: 'Pricing summary',
-    type: ResponsePricingSummaryDto,
-  })
-  pricingSummary!: ResponsePricingSummaryDto;
-
   @ApiPropertyOptional({
     description: 'Pricing page URL',
     example: 'https://openai.com/pricing',
@@ -122,30 +135,6 @@ export class ToolResponseDto implements BaseTool {
     example: ['Cloud', 'On-premise'],
   })
   deployment!: string[];
-
-  @ApiProperty({
-    description: 'Popularity score',
-    example: 85000,
-    minimum: 0,
-    maximum: 1000000,
-  })
-  popularity!: number;
-
-  @ApiProperty({
-    description: 'User rating',
-    example: 4.5,
-    minimum: 0,
-    maximum: 5,
-  })
-  rating!: number;
-
-  @ApiProperty({
-    description: 'Number of reviews',
-    example: 1250,
-    minimum: 0,
-    maximum: 1000000,
-  })
-  reviewCount!: number;
 
   // Metadata
   @ApiPropertyOptional({
@@ -191,29 +180,10 @@ export class ToolResponseDto implements BaseTool {
   })
   lastUpdated!: string;
 
-  // Backend-specific fields
-  @ApiProperty({
-    description: 'User who created the tool',
-    example: '507f1f77bcf86cd799439012',
-  })
-  createdBy!: string;
-
-  @ApiProperty({
-    description: 'Creation timestamp',
-    example: '2024-01-10T08:15:30.000Z',
-  })
-  createdAt!: string;
-
-  @ApiProperty({
-    description: 'Update timestamp',
-    example: '2024-01-15T10:30:00.000Z',
-  })
-  updatedAt!: string;
-
   /**
    * Transform a Mongoose Tool document to ToolResponseDto
    */
-  static fromDocument(doc: any): ToolResponseDto {
+  static fromDocument(doc: ToolDocument): ToolResponseDto {
     return {
       // Identity
       id: doc.id || doc._id?.toString(),
@@ -229,24 +199,15 @@ export class ToolResponseDto implements BaseTool {
       userTypes: doc.userTypes || [],
 
       // Pricing (simplified)
-      pricingSummary: {
-        lowestMonthlyPrice: doc.pricingSummary?.lowestMonthlyPrice || 0,
-        highestMonthlyPrice: doc.pricingSummary?.highestMonthlyPrice || 0,
-        currency: doc.pricingSummary?.currency || 'USD',
-        hasFreeTier: doc.pricingSummary?.hasFreeTier || false,
-        hasCustomPricing: doc.pricingSummary?.hasCustomPricing || false,
-        billingPeriods: doc.pricingSummary?.billingPeriods || [],
-        pricingModel: doc.pricingSummary?.pricingModel || [],
-      },
+      pricingModel: doc.pricingModel,
+      pricing: doc.pricing || [],
+
       pricingUrl: doc.pricingUrl,
 
       // Legacy fields
       interface: doc.interface || [],
       functionality: doc.functionality || [],
       deployment: doc.deployment || [],
-      popularity: doc.popularity || 0,
-      rating: doc.rating || 0,
-      reviewCount: doc.reviewCount || 0,
 
       // Metadata
       logoUrl: doc.logoUrl,
@@ -255,15 +216,7 @@ export class ToolResponseDto implements BaseTool {
       status: doc.status || 'active',
       contributor: doc.contributor || 'system',
       dateAdded: doc.dateAdded?.toISOString() || new Date().toISOString(),
-      lastUpdated:
-        doc.lastUpdated?.toISOString() ||
-        doc.updatedAt?.toISOString() ||
-        new Date().toISOString(),
-
-      // Backend-specific
-      createdBy: doc.createdBy?.toString() || 'unknown',
-      createdAt: doc.createdAt?.toISOString() || new Date().toISOString(),
-      updatedAt: doc.updatedAt?.toISOString() || new Date().toISOString(),
+      lastUpdated: doc.lastUpdated?.toISOString() || new Date().toISOString(),
     };
   }
 }

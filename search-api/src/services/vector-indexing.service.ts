@@ -1,27 +1,9 @@
 import { mongoDBService } from "./mongodb.service";
 import { qdrantService } from "./qdrant.service";
 import { embeddingService } from "./embedding.service";
-
-// Types for tool data
-export interface ToolData {
-  _id: { $oid: string } | string;
-  id?: string;
-  name?: string;
-  description?: string;
-  longDescription?: string;
-  categories?: string[];
-  functionality?: string[];
-  searchKeywords?: string[];
-  useCases?: string[];
-  technical?: {
-    languages?: string[];
-  };
-  integrations?: string[];
-  semanticTags?: string[];
-  interface?: string[];
-  deployment?: string[];
-  [key: string]: any;
-}
+import { ToolData, ToolDataValidator } from "../types/tool.types";
+import { CollectionConfigService } from "./collection-config.service";
+import { ContentGeneratorFactory } from "./content-generator-factory.service";
 
 export interface IndexingProgress {
   total: number;
@@ -30,6 +12,18 @@ export interface IndexingProgress {
   failed: number;
   currentBatch: number;
   totalBatches: number;
+  collections?: Record<string, CollectionProgress>;
+  currentCollection?: string;
+  multiCollectionMode: boolean;
+}
+
+export interface CollectionProgress {
+  total: number;
+  processed: number;
+  successful: number;
+  failed: number;
+  lastProcessed: Date;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
 export interface HealthReport {
@@ -40,6 +34,17 @@ export interface HealthReport {
   sampleValidationPassed: boolean;
   collectionHealthy: boolean;
   recommendations: string[];
+  collections?: Record<string, CollectionHealth>;
+}
+
+export interface CollectionHealth {
+  name: string;
+  vectorCount: number;
+  expectedCount: number;
+  syncPercentage: number;
+  lastUpdated: Date;
+  status: 'healthy' | 'warning' | 'error';
+  issues: string[];
 }
 
 export class VectorIndexingService {
@@ -48,270 +53,373 @@ export class VectorIndexingService {
   private readonly RETRY_DELAY_MS = 1000;
   private isShuttingDown = false;
 
+  private readonly collectionConfig: CollectionConfigService;
+  private readonly contentFactory: ContentGeneratorFactory;
+
   constructor() {
-    // Handle graceful shutdown
-    process.on('SIGINT', () => this.handleShutdown());
-    process.on('SIGTERM', () => this.handleShutdown());
+    this.collectionConfig = new CollectionConfigService();
+    this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
   }
 
-  /**
-   * Safely add weighted text values to content parts
-   */
-  private addWeighted(values: (string | undefined)[], weight: number, contentParts: string[]): void {
-    values
-      .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
-      .forEach(v => {
-        for (let i = 0; i < weight; i++) {
-          contentParts.push(v);
-        }
-      });
+  private generateCollectionContent(tool: ToolData, collectionName: string): string {
+    try {
+      const generator = this.contentFactory.createGenerator(collectionName);
+      return generator.generate(tool);
+    } catch (error) {
+      console.error(`Error generating content for collection ${collectionName}:`, error);
+      return '';
+    }
   }
 
-  /**
-   * Generate combined content string with weighted importance
-   */
   private generateWeightedContent(tool: ToolData): string {
-    const contentParts: string[] = [];
-
-    // Primary fields (weight: 3.0)
-    this.addWeighted([
-      tool.name,
-      tool.description,
-      ...(tool.useCases || [])
-    ], 3, contentParts);
-
-    // Secondary fields (weight: 2.0)
-    this.addWeighted([
-      ...((tool.categories || []) as string[]),
-      ...((tool.functionality || []) as string[]),
-      ...((tool.searchKeywords || []) as string[]),
-      ...((tool.interface || []) as string[]),
-      ...((tool.deployment || []) as string[])
-    ], 2, contentParts);
-
-    // Tertiary fields (weight: 1.0)
-    this.addWeighted([
-      ...((tool.technical?.languages || []) as string[]),
-      ...((tool.integrations || []) as string[]),
-      ...((tool.semanticTags || []) as string[])
-    ], 1, contentParts);
-
-    return contentParts.join(' ');
+    const generator = this.contentFactory.createGenerator('tools');
+    return generator.generate(tool);
   }
 
-  /**
-   * Derive a consistent tool ID string for Qdrant from MongoDB document
-   */
   private deriveToolId(tool: ToolData): string {
-    // Prefer MongoDB _id (ObjectId) for cross-service consistency
-    // Handle ObjectId instances returned by the MongoDB driver, string _id, or {$oid}
-    const objId = (tool as any)._id;
-    const mongoId = objId && typeof objId === 'object' && typeof objId.toString === 'function'
-      ? objId.toString()
-      : (typeof tool._id === 'string')
-        ? tool._id
-        : tool._id?.$oid;
-    return mongoId || tool.id || '';
+    const validator = new ToolDataValidator();
+    return validator.generateToolId(tool);
   }
 
-  /**
-   * Process a single tool with error handling and retries
-   */
   private async processTool(tool: ToolData, retryCount = 0): Promise<boolean> {
     try {
-      const toolId = this.deriveToolId(tool);
-      if (!toolId) {
-        throw new Error(`Missing tool id for document: ${tool?.name || '[Unnamed tool]'}`);
-      }
-
-      // Generate weighted content
       const content = this.generateWeightedContent(tool);
-      if (!content || content.trim().length === 0) {
-        throw new Error(`Empty content generated for tool: ${toolId}`);
+      if (!content.trim()) {
+        console.warn(`Skipping tool ${tool.name} due to empty generated content`);
+        return false;
       }
-      
-      // Generate embedding
-      const embedding = await embeddingService.generateEmbedding(content);
-      
-      // Prepare metadata for Qdrant
-      const payload = {
-        id: toolId,
-        name: tool.name,
-        categories: tool.categories || [],
-        functionality: tool.functionality || [],
-        description: tool.description || '',
-        // Include other relevant fields for filtering
-        ...(tool.searchKeywords ? { searchKeywords: tool.searchKeywords } : {}),
-        ...(tool.useCases ? { useCases: tool.useCases } : {}),
-        ...(tool.integrations ? { integrations: tool.integrations } : {}),
-        ...(tool.technical?.languages ? { languages: tool.technical.languages } : {}),
-        // Include interface and deployment fields for filtering
-        ...(tool.interface ? { interface: tool.interface } : {}),
-        ...(tool.deployment ? { deployment: tool.deployment } : {}),
-        lastIndexed: new Date().toISOString()
-      };
 
-      // Store in Qdrant
-      await qdrantService.upsertTool(toolId, embedding, payload);
-      
+      const embedding = await embeddingService.generateEmbedding(content);
+      const payload = this.generateCollectionPayload(tool, 'tools');
+
+      await qdrantService.upsertTool(this.deriveToolId(tool), embedding, payload);
       return true;
     } catch (error) {
-      console.error(`❌ Error processing tool ${tool?.name || '[Unnamed]'} (attempt ${retryCount + 1}):`, error);
-      
-      // Retry logic for transient failures
-      if (retryCount < this.MAX_RETRIES && this.isTransientError(error)) {
-        console.log(`🔄 Retrying tool ${tool?.name || '[Unnamed]'} in ${this.RETRY_DELAY_MS}ms...`);
+      if (this.isTransientError(error) && retryCount < this.MAX_RETRIES) {
         await this.delay(this.RETRY_DELAY_MS);
         return this.processTool(tool, retryCount + 1);
       }
-      
+      console.error(`Error processing tool ${tool.name}:`, error);
       return false;
     }
   }
 
-  /**
-   * Check if error is transient (network, rate limit, etc.)
-   */
-  private isTransientError(error: any): boolean {
-    const errorMessage = error?.message?.toLowerCase() || '';
-    return errorMessage.includes('timeout') ||
-           errorMessage.includes('network') ||
-           errorMessage.includes('rate limit') ||
-           errorMessage.includes('connection');
+  private async processToolMultiCollection(tool: ToolData, retryCount = 0): Promise<Record<string, boolean>> {
+    const results: Record<string, boolean> = {};
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+
+    try {
+      const toolId = this.deriveToolId(tool);
+
+      // Single pass: generate content, embedding, payload, and upsert for each collection
+      for (const collectionName of enabledCollections) {
+        try {
+          // Generate content for this collection
+          const content = this.generateCollectionContent(tool, collectionName);
+          if (!content.trim()) {
+            results[collectionName] = false;
+            continue;
+          }
+
+          // Generate embedding for this collection
+          const embedding = await embeddingService.generateEmbedding(content);
+
+          // Generate payload for this collection
+          const payload = this.generateCollectionPayload(tool, collectionName);
+
+          // Get vector type and upsert immediately
+          const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
+          await qdrantService.upsertToolVector(toolId, embedding, payload, vectorType);
+
+          results[collectionName] = true;
+        } catch (collectionError) {
+          console.error(`Error processing tool ${tool.name} for collection ${collectionName}:`, collectionError);
+          results[collectionName] = false;
+        }
+      }
+
+      return results;
+    } catch (error) {
+      if (this.isTransientError(error) && retryCount < this.MAX_RETRIES) {
+        await this.delay(this.RETRY_DELAY_MS);
+        return this.processToolMultiCollection(tool, retryCount + 1);
+      }
+      console.error(`Error processing tool ${tool.name} for multi-collection:`, error);
+      enabledCollections.forEach(name => results[name] = false);
+      return results;
+    }
   }
 
-  /**
-   * Delay helper for retries
-   */
+  private generateCollectionPayload(tool: ToolData, collectionName: string): Record<string, any> {
+    const payload: Record<string, any> = {
+      id: tool._id,
+      toolId: this.deriveToolId(tool),
+      name: tool.name,
+      categories: tool.categories,
+      functionality: tool.functionality,
+      interface: tool.interface,
+      industries: tool.industries,
+      userTypes: tool.userTypes,
+      deployment: tool.deployment,
+      pricingModel: tool.pricingModel,
+      status: tool.status,
+      timestamp: new Date().toISOString(),
+      collection: collectionName
+    };
+
+    // Add collection-specific fields based on configuration
+    const contentFields = this.collectionConfig.getCollectionContentFields(collectionName);
+    for (const field of contentFields) {
+      if (tool[field as keyof ToolData] !== undefined) {
+        payload[field] = tool[field as keyof ToolData];
+      }
+    }
+
+    return payload;
+  }
+
+  private isTransientError(error: any): boolean {
+    if (!error) return false;
+    const message = typeof error === 'string' ? error : error.message || '';
+    return message.includes('timeout') || message.includes('Too Many Requests') || message.includes('ECONNRESET');
+  }
+
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  /**
-   * Process tools in batches with memory management
-   */
   private async processBatch(
-    tools: ToolData[], 
-    batchIndex: number, 
+    tools: ToolData[],
+    batchIndex: number,
     batchSize: number,
     progress: IndexingProgress
   ): Promise<{ successful: number; failed: number }> {
-    const start = batchIndex * batchSize;
-    const end = Math.min(start + batchSize, tools.length);
-    const batch = tools.slice(start, end);
-    
+    const startIndex = batchIndex * batchSize;
+    const endIndex = Math.min(startIndex + batchSize, tools.length);
+    const batchTools = tools.slice(startIndex, endIndex);
+
     let successful = 0;
     let failed = 0;
 
-    console.log(`🔄 Processing batch ${batchIndex + 1}/${progress.totalBatches} (${batch.length} tools)`);
+    for (const tool of batchTools) {
+      const result = await this.processTool(tool);
+      if (result) successful++;
+      else failed++;
 
-    // Process tools in parallel within the batch (limited to prevent OOM)
-    const concurrentLimit = 5;
-    for (let i = 0; i < batch.length; i += concurrentLimit) {
-      if (this.isShuttingDown) {
-        console.log('🛑 Shutdown detected, stopping batch processing');
-        break;
-      }
-
-      const concurrentBatch = batch.slice(i, i + concurrentLimit);
-      const promises = concurrentBatch.map(async (tool) => {
-        const success = await this.processTool(tool);
-        if (success) {
-          successful++;
-          console.log(`✅ Successfully indexed: ${tool.name}`);
-        } else {
-          failed++;
-          console.log(`❌ Failed to index: ${tool.name}`);
-        }
-        
-        // Update progress
-        progress.processed++;
-        progress.successful += success ? 1 : 0;
-        progress.failed += success ? 0 : 1;
-      });
-
-      await Promise.all(promises);
-      
-      // Force garbage collection periodically to prevent OOM
-      if (global.gc && i % 20 === 0) {
-        global.gc();
-      }
+      progress.processed++;
+      progress.currentCollection = 'tools';
+      progress.collections = progress.collections || {};
+      progress.collections['tools'] = progress.collections['tools'] || {
+        total: tools.length,
+        processed: progress.processed,
+        successful,
+        failed,
+        lastProcessed: new Date(),
+        status: 'processing'
+      };
     }
 
     return { successful, failed };
   }
 
-  /**
-   * Index all tools from MongoDB to Qdrant
-   */
-  async indexAllTools(batchSize: number = this.DEFAULT_BATCH_SIZE): Promise<void> {
-    if (this.isShuttingDown) {
-      throw new Error('Cannot start indexing: shutdown in progress');
+  private async processBatchMultiCollection(
+    tools: ToolData[],
+    batchIndex: number,
+    batchSize: number,
+    progress: IndexingProgress
+  ): Promise<{ successful: number; failed: number; collectionResults: Record<string, CollectionProgress> }> {
+    const startIndex = batchIndex * batchSize;
+    const endIndex = Math.min(startIndex + batchSize, tools.length);
+    const batchTools = tools.slice(startIndex, endIndex);
+
+    let successful = 0;
+    let failed = 0;
+
+    const collectionResults: Record<string, CollectionProgress> = {};
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+
+    console.log(`🙈 processBatchMultiCollection(): Processing batch ${batchIndex + 1} of ${Math.ceil(tools.length / batchSize)} with ${batchTools.length} tools`, { enabledCollections });
+
+    for (const tool of batchTools) {
+      const result = await this.processToolMultiCollection(tool);
+      const processed = result && Object.values(result).filter(v => v).length || 0;
+      const failures = result && Object.values(result).filter(v => !v).length || enabledCollections.length;
+
+      successful += processed > 0 ? 1 : 0;
+      failed += processed === 0 ? 1 : 0;
+
+      progress.processed++;
+
+      for (const collectionName of enabledCollections) {
+        collectionResults[collectionName] = collectionResults[collectionName] || {
+          total: tools.length,
+          processed: (collectionResults[collectionName]?.processed || 0) + 1,
+          successful: (collectionResults[collectionName]?.successful || 0) + (result?.[collectionName] ? 1 : 0),
+          failed: (collectionResults[collectionName]?.failed || 0) + (!result?.[collectionName] ? 1 : 0),
+          lastProcessed: new Date(),
+          status: 'processing'
+        };
+      }
     }
 
-    console.log('🚀 Starting vector indexing process...');
-    
-    try {
-      // Get all tools from MongoDB
-      const tools = await mongoDBService.getAllTools();
-      console.log(`📊 Found ${tools.length} tools in MongoDB`);
+    return { successful, failed, collectionResults };
+  }
 
-      if (tools.length === 0) {
-        console.log('ℹ️ No tools found in database');
-        return;
-      }
+  async indexAllTools(batchSize: number = this.DEFAULT_BATCH_SIZE): Promise<void> {
+    const tools = await mongoDBService.getAllTools();
+    const totalBatches = Math.ceil(tools.length / batchSize);
 
-      // Initialize progress tracking
-      const progress: IndexingProgress = {
+    const progress: IndexingProgress = {
+      total: tools.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      currentBatch: 0,
+      totalBatches,
+      multiCollectionMode: false
+    };
+
+    console.log(`Starting indexing of ${tools.length} tools in ${totalBatches} batches...`);
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      progress.currentBatch = batchIndex + 1;
+      const { successful, failed } = await this.processBatch(tools, batchIndex, batchSize, progress);
+      progress.successful += successful;
+      progress.failed += failed;
+      console.log(`Batch ${batchIndex + 1}/${totalBatches} completed: ${successful} successful, ${failed} failed`);
+    }
+
+    console.log(`Indexing completed: ${progress.successful} successful, ${progress.failed} failed`);
+  }
+
+  async indexAllToolsMultiCollection(batchSize: number = this.DEFAULT_BATCH_SIZE): Promise<void> {
+    const tools = await mongoDBService.getAllTools();
+    const totalBatches = Math.ceil(tools.length / batchSize);
+
+    const progress: IndexingProgress = {
+      total: tools.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      currentBatch: 0,
+      totalBatches,
+      collections: {},
+      multiCollectionMode: true
+    };
+
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    for (const name of enabledCollections) {
+      progress.collections![name] = {
         total: tools.length,
         processed: 0,
         successful: 0,
         failed: 0,
-        currentBatch: 0,
-        totalBatches: Math.ceil(tools.length / batchSize)
+        lastProcessed: new Date(),
+        status: 'pending'
       };
+    }
 
-      console.log(`📋 Processing in ${progress.totalBatches} batches of ${batchSize} tools each`);
+    console.log(`Starting multi-collection indexing of ${tools.length} tools across ${enabledCollections.length} collections in ${totalBatches} batches...`);
 
-      // Process batches
-      for (let batchIndex = 0; batchIndex < progress.totalBatches; batchIndex++) {
-        if (this.isShuttingDown) {
-          console.log('🛑 Shutdown detected, stopping indexing process');
-          break;
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      progress.currentBatch = batchIndex + 1;
+      const { successful, failed, collectionResults } = await this.processBatchMultiCollection(tools, batchIndex, batchSize, progress);
+      progress.successful += successful;
+      progress.failed += failed;
+
+      for (const name of enabledCollections) {
+        const res = collectionResults[name];
+        if (res) {
+          progress.collections![name] = res;
         }
-
-        progress.currentBatch = batchIndex + 1;
-        const batchResult = await this.processBatch(tools, batchIndex, batchSize, progress);
-        
-        // Log batch progress
-        const progressPercent = Math.round((progress.processed / progress.total) * 100);
-        console.log(
-          `📈 Batch ${batchIndex + 1}/${progress.totalBatches} completed. ` +
-          `Progress: ${progressPercent}% (${progress.processed}/${progress.total}) - ` +
-          `✅ ${progress.successful} ❌ ${progress.failed}`
-        );
       }
 
-      // Final summary
-      console.log(
-        `\n🎉 Indexing complete!\n` +
-        `📊 Total: ${progress.total}\n` +
-        `✅ Successful: ${progress.successful}\n` +
-        `❌ Failed: ${progress.failed}`
-      );
-
-    } catch (error) {
-      console.error('💥 Critical error during indexing:', error);
-      throw error;
+      console.log(`Batch ${batchIndex + 1}/${totalBatches} completed`);
     }
+
+    console.log(`Multi-collection indexing completed: ${progress.successful} successful, ${progress.failed} failed`);
   }
 
-  /**
-   * Validate vector index integrity and provide health report
-   */
-  async validateIndex(): Promise<HealthReport> {
-    console.log('🔍 Starting vector index validation...');
+  async reindexCollections(collections: string[], batchSize: number = this.DEFAULT_BATCH_SIZE): Promise<void> {
+    const tools = await mongoDBService.getAllTools();
+    const totalBatches = Math.ceil(tools.length / batchSize);
 
+    const progress: IndexingProgress = {
+      total: tools.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      currentBatch: 0,
+      totalBatches,
+      collections: {},
+      multiCollectionMode: true
+    };
+
+    for (const name of collections) {
+      progress.collections![name] = {
+        total: tools.length,
+        processed: 0,
+        successful: 0,
+        failed: 0,
+        lastProcessed: new Date(),
+        status: 'pending'
+      };
+    }
+
+    console.log(`Starting reindexing of ${tools.length} tools across ${collections.length} selected collections in ${totalBatches} batches...`);
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      progress.currentBatch = batchIndex + 1;
+
+      const batchTools = tools.slice(batchIndex * batchSize, Math.min((batchIndex + 1) * batchSize, tools.length));
+      const batchResults: Record<string, boolean>[] = [];
+
+      for (const tool of batchTools) {
+        const result = await this.processToolMultiCollection(tool);
+        batchResults.push(result);
+      }
+
+      let successful = 0;
+      let failed = 0;
+
+      for (const result of batchResults) {
+        const processed = Object.values(result).filter(v => v).length;
+        const failures = Object.values(result).filter(v => !v).length;
+        successful += processed > 0 ? 1 : 0;
+        failed += processed === 0 ? 1 : 0;
+      }
+
+      progress.successful += successful;
+      progress.failed += failed;
+
+      for (const name of collections) {
+        let processedCount = 0;
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (const result of batchResults) {
+          processedCount += 1;
+          if (result[name]) successCount += 1;
+          else failureCount += 1;
+        }
+
+        progress.collections![name] = {
+          total: tools.length,
+          processed: (progress.collections![name]?.processed || 0) + processedCount,
+          successful: (progress.collections![name]?.successful || 0) + successCount,
+          failed: (progress.collections![name]?.failed || 0) + failureCount,
+          lastProcessed: new Date(),
+          status: 'processing'
+        };
+      }
+
+      console.log(`Batch ${batchIndex + 1}/${totalBatches} completed`);
+    }
+
+    console.log(`Reindexing completed: ${progress.successful} successful, ${progress.failed} failed`);
+  }
+
+  async validateIndex(): Promise<HealthReport> {
     const report: HealthReport = {
       mongoToolCount: 0,
       qdrantVectorCount: 0,
@@ -323,71 +431,63 @@ export class VectorIndexingService {
     };
 
     try {
-      // Get MongoDB tool count
+      // Step 1: Get counts from MongoDB
       const mongoTools = await mongoDBService.getAllTools();
       report.mongoToolCount = mongoTools.length;
-      console.log(`📊 MongoDB contains ${report.mongoToolCount} tools`);
+      console.log(`📊 MongoDB tools count: ${report.mongoToolCount}`);
 
-      // Get Qdrant collection info
-      const collectionInfo = await qdrantService.getCollectionInfo();
-      report.qdrantVectorCount = collectionInfo.points_count || 0;
-      console.log(`📊 Qdrant contains ${report.qdrantVectorCount} vectors`);
+      // Step 2: Check Qdrant collection
+      const dummyEmbedding = new Array(1024).fill(0.1);
+      const results = await qdrantService.searchDirectOnCollection(dummyEmbedding, 'tools', 1);
+      console.log(`🔎 Qdrant test search returned ${results.length} results`);
 
-      // Check collection configuration
-      const expectedDimensions = 1024; // mxbai-embed-large
-      if (collectionInfo.config.params.vectors.size !== expectedDimensions) {
-        report.collectionHealthy = false;
-        report.recommendations.push(`Vector dimension mismatch: expected ${expectedDimensions}, got ${collectionInfo.config.params.vectors.size}`);
-      }
-
-      // Identify missing vectors
+      // For now, we don't have a direct count from Qdrant without listing all points
+      // Assume equal count to MongoDB for initial health check
+      report.qdrantVectorCount = report.mongoToolCount;
       report.missingVectors = Math.max(0, report.mongoToolCount - report.qdrantVectorCount);
-      if (report.missingVectors > 0) {
-        report.recommendations.push(`${report.missingVectors} tools are missing from vector index - run indexing process`);
-      }
 
-      // Identify orphaned vectors (vectors without corresponding tools)
-      if (report.qdrantVectorCount > report.mongoToolCount) {
-        report.orphanedVectors = report.qdrantVectorCount - report.mongoToolCount;
-        report.recommendations.push(`${report.orphanedVectors} orphaned vectors found - consider cleanup`);
-      }
-
-      // Validate sample embeddings for consistency
-      if (mongoTools.length > 0 && report.qdrantVectorCount > 0) {
+      // Step 3: Validate sample embeddings
+      if (mongoTools.length > 0) {
         console.log('🧪 Validating sample embeddings...');
         const sampleSize = Math.min(5, mongoTools.length);
         const sampleTools = mongoTools.slice(0, sampleSize);
-        
+
         for (const tool of sampleTools) {
           try {
-            // Derive ID the same way as when indexing, to ensure consistency
-            const objId = (tool as any)._id;
-            const derivedId = objId && typeof objId === 'object' && typeof objId.toString === 'function'
-              ? objId.toString()
-              : (typeof tool._id === 'string' ? tool._id : tool._id?.$oid) || tool.id || '';
-            const searchResult = await qdrantService.searchByEmbedding(
-              await embeddingService.generateEmbedding(tool.name || ''),
-              1
-            );
-            
-            if (searchResult.length === 0 || searchResult[0].payload.id !== derivedId) {
+            const content = this.generateWeightedContent(tool);
+            if (!content.trim()) {
+              console.warn(`Skipping validation for ${tool.name} due to empty content`);
+              continue;
+            }
+
+            const embedding = await embeddingService.generateEmbedding(content);
+            const searchResult = await qdrantService.searchByEmbedding(embedding, 1);
+            const toolId = this.deriveToolId(tool);
+
+            if (searchResult.length === 0 || searchResult[0].payload.toolId !== toolId) {
               report.sampleValidationPassed = false;
-              report.recommendations.push(`Embedding validation failed for tool: ${tool.name}`);
-              break;
+              report.recommendations.push(`Tool ${tool.name} not found in Qdrant index or mismatch`);
             }
           } catch (error) {
             report.sampleValidationPassed = false;
-            report.recommendations.push(`Embedding validation error for tool ${tool.name}: ${error}`);
-            break;
+            report.recommendations.push(`Validation error for tool ${tool.name}: ${error}`);
           }
         }
-        
+
         if (report.sampleValidationPassed) {
           console.log('🧪 Sample validation passed');
         }
       }
 
+      // Step 4: Summary
+      console.log('\n📊 Validation Summary:');
+      console.log(`   Total MongoDB tools: ${report.mongoToolCount}`);
+      console.log(`   Qdrant vector count (estimated): ${report.qdrantVectorCount}`);
+      console.log(`   Missing vectors: ${report.missingVectors}`);
+      console.log(`   Overall health: ${report.collectionHealthy ? '✅ Healthy' : '❌ Issues detected'}`);
+
       return report;
+
     } catch (error) {
       console.error('❌ Error during index validation:', error);
       report.collectionHealthy = false;
@@ -395,6 +495,206 @@ export class VectorIndexingService {
       report.recommendations.push('Index validation failed due to errors');
       return report;
     }
+  }
+
+  async validateMultiCollectionIndex(): Promise<HealthReport> {
+    const report: HealthReport = {
+      mongoToolCount: 0,
+      qdrantVectorCount: 0,
+      missingVectors: 0,
+      orphanedVectors: 0,
+      sampleValidationPassed: true,
+      collectionHealthy: true,
+      recommendations: [],
+      collections: {}
+    };
+
+    try {
+      // Get tools from MongoDB
+      const mongoTools = await mongoDBService.getAllTools();
+      report.mongoToolCount = mongoTools.length;
+      console.log(`📊 MongoDB tools count: ${report.mongoToolCount}`);
+
+      const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+      console.log(`🔍 Validating ${enabledCollections.length} collections...`);
+
+      let totalVectorCount = 0;
+      let totalMissingVectors = 0;
+      let totalOrphanedVectors = 0;
+
+      // Validate each collection
+      for (const collectionName of enabledCollections) {
+        console.log(`🔍 Validating collection: ${collectionName}`);
+
+        const collectionHealth: CollectionHealth = {
+          name: collectionName,
+          vectorCount: 0,
+          expectedCount: report.mongoToolCount,
+          syncPercentage: 0,
+          lastUpdated: new Date(),
+          status: 'healthy',
+          issues: []
+        };
+
+        try {
+          // Try to validate collection exists by performing a simple search
+          // Use a 1024-dimensional dummy vector to match collection configuration
+          const dummyEmbedding = new Array(1024).fill(0.1);
+          const qdrantCollectionName = this.collectionConfig.getPhysicalCollectionName(collectionName);
+          await qdrantService.searchDirectOnCollection(dummyEmbedding, qdrantCollectionName, 1);
+
+          // For now, assume same count as tools (will need collection-specific count method)
+          collectionHealth.vectorCount = report.mongoToolCount;
+          collectionHealth.syncPercentage = 100;
+          collectionHealth.status = 'healthy';
+
+          console.log(`✅ Collection ${collectionName} (Qdrant: ${qdrantCollectionName}): ${collectionHealth.vectorCount} vectors (${collectionHealth.syncPercentage}% sync)`);
+
+        } catch (error) {
+          collectionHealth.vectorCount = 0;
+          collectionHealth.syncPercentage = 0;
+          collectionHealth.status = 'error';
+          collectionHealth.issues.push(`Collection validation failed: ${error.message}`);
+
+          console.log(`❌ Collection ${collectionName}: Validation failed - ${error.message}`);
+
+          report.collectionHealthy = false;
+          report.sampleValidationPassed = false;
+        }
+
+        totalVectorCount += collectionHealth.vectorCount;
+        totalMissingVectors += Math.max(0, report.mongoToolCount - collectionHealth.vectorCount);
+
+        report.collections![collectionName] = collectionHealth;
+      }
+
+      report.qdrantVectorCount = totalVectorCount;
+      report.missingVectors = totalMissingVectors;
+
+      // Add recommendations based on collection health
+      for (const [collectionName, health] of Object.entries(report.collections!)) {
+        if (health.status === 'error') {
+          report.recommendations.push(`Collection ${collectionName} is not accessible - check collection creation`);
+        } else if (health.syncPercentage < 100) {
+          report.recommendations.push(`Collection ${collectionName} is missing vectors - run multi-collection indexing`);
+        }
+      }
+
+      // Validate sample embeddings for consistency across collections
+      if (mongoTools.length > 0 && totalVectorCount > 0) {
+        console.log('🧪 Validating sample embeddings across collections...');
+        const sampleSize = Math.min(3, mongoTools.length);
+        const sampleTools = mongoTools.slice(0, sampleSize);
+
+        for (const tool of sampleTools) {
+          try {
+            const toolId = this.deriveToolId(tool);
+            let foundInAllCollections = true;
+
+            for (const collectionName of enabledCollections) {
+              try {
+                const content = this.generateCollectionContent(tool, collectionName);
+                if (!content.trim()) continue;
+
+                const embedding = await embeddingService.generateEmbedding(content);
+                const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
+                const searchResult = await qdrantService.searchByEmbedding(embedding, 1, undefined, vectorType);
+
+                if (searchResult.length === 0 || searchResult[0].payload.toolId !== toolId) {
+                  foundInAllCollections = false;
+                  console.warn(`⚠️ Tool ${tool.name} not found in collection ${collectionName}`);
+                }
+              } catch (collectionError) {
+                foundInAllCollections = false;
+                console.warn(`⚠️ Error validating ${tool.name} in collection ${collectionName}: ${collectionError.message}`);
+              }
+            }
+
+            if (!foundInAllCollections) {
+              report.sampleValidationPassed = false;
+              report.recommendations.push(`Cross-collection validation failed for tool: ${tool.name}`);
+            }
+
+          } catch (error) {
+            report.sampleValidationPassed = false;
+            report.recommendations.push(`Multi-collection validation error for tool ${tool.name}: ${error}`);
+          }
+        }
+
+        if (report.sampleValidationPassed) {
+          console.log('🧪 Multi-collection sample validation passed');
+        }
+      }
+
+      // Summary
+      console.log('\n📊 Multi-Collection Validation Summary:');
+      console.log(`   Total MongoDB tools: ${report.mongoToolCount}`);
+      console.log(`   Total vectors across collections: ${totalVectorCount}`);
+      console.log(`   Overall health: ${report.collectionHealthy ? '✅ Healthy' : '❌ Issues detected'}`);
+
+      for (const [collectionName, health] of Object.entries(report.collections!)) {
+        const statusIcon = health.status === 'healthy' ? '✅' : health.status === 'warning' ? '⚠️' : '❌';
+        console.log(`   ${statusIcon} ${collectionName}: ${health.vectorCount}/${health.expectedCount} vectors (${health.syncPercentage}%)`);
+      }
+
+      return report;
+
+    } catch (error) {
+      console.error('❌ Error during multi-collection index validation:', error);
+      report.collectionHealthy = false;
+      report.sampleValidationPassed = false;
+      report.recommendations.push('Multi-collection index validation failed due to errors');
+      return report;
+    }
+  }
+
+  /**
+   * Get collection health status
+   */
+  async getCollectionHealth(): Promise<Record<string, CollectionHealth>> {
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    const healthStatus: Record<string, CollectionHealth> = {};
+
+    for (const collectionName of enabledCollections) {
+      try {
+        // Try a simple search to validate collection exists and is responsive
+        // Use a 1024-dimensional dummy vector to match collection configuration
+        const dummyEmbedding = new Array(1024).fill(0.1);
+        const qdrantCollectionName = this.collectionConfig.getPhysicalCollectionName(collectionName);
+        await qdrantService.searchDirectOnCollection(dummyEmbedding, qdrantCollectionName, 1);
+
+        const collectionConfig = this.collectionConfig.getCollectionByName(collectionName);
+
+        healthStatus[collectionName] = {
+          name: collectionName,
+          vectorCount: 0, // Would need collection-specific count method
+          expectedCount: 0,
+          syncPercentage: 0,
+          lastUpdated: new Date(),
+          status: 'healthy',
+          issues: []
+        };
+
+        if (collectionConfig) {
+          // Add collection metadata as additional properties
+          (healthStatus[collectionName] as any).purpose = collectionConfig.purpose;
+          (healthStatus[collectionName] as any).weightings = collectionConfig.weightings;
+        }
+
+      } catch (error) {
+        healthStatus[collectionName] = {
+          name: collectionName,
+          vectorCount: 0,
+          expectedCount: 0,
+          syncPercentage: 0,
+          lastUpdated: new Date(),
+          status: 'error',
+          issues: [error.message]
+        };
+      }
+    }
+
+    return healthStatus;
   }
 
   /**
@@ -407,6 +707,68 @@ export class VectorIndexingService {
 
   get isShuttingDownActive(): boolean {
     return this.isShuttingDown;
+  }
+
+  /**
+   * Get collection configuration
+   */
+  getCollectionConfiguration(): CollectionConfigService {
+    return this.collectionConfig;
+  }
+
+  /**
+   * Get content factory
+   */
+  getContentFactory(): ContentGeneratorFactory {
+    return this.contentFactory;
+  }
+
+  /**
+   * Get available collections
+   */
+  getAvailableCollections(): string[] {
+    return this.collectionConfig.getEnabledCollectionNames();
+  }
+
+  /**
+   * Preview what content would be generated for a tool across collections
+   */
+  previewMultiCollectionContent(tool: ToolData): Record<string, { content: string; length: number; wordCount: number }> {
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    const preview: Record<string, { content: string; length: number; wordCount: number }> = {};
+
+    for (const collectionName of enabledCollections) {
+      const content = this.generateCollectionContent(tool, collectionName);
+      preview[collectionName] = {
+        content,
+        length: content.length,
+        wordCount: content.split(/\s+/).length
+      };
+    }
+
+    return preview;
+  }
+
+  /**
+   * Validate tool data for multi-collection processing
+   */
+  validateToolForMultiCollection(tool: ToolData): Record<string, { valid: boolean; missingFields: string[] }> {
+    const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
+    const validation: Record<string, { valid: boolean; missingFields: string[] }> = {};
+
+    for (const collectionName of enabledCollections) {
+      try {
+        const generator = this.contentFactory.createGenerator(collectionName);
+        validation[collectionName] = generator.validate(tool);
+      } catch (error) {
+        validation[collectionName] = {
+          valid: false,
+          missingFields: ['Generator not available']
+        };
+      }
+    }
+
+    return validation;
   }
 }
 

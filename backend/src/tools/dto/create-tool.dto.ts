@@ -15,73 +15,14 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
-import { PricingModelEnum } from '../../../shared/types/tool.types';
+
+import type {
+  PricingModelEnum,
+  Pricing,
+} from '../../../shared/types/tool.types';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-// Pricing Summary DTO
-class PricingSummaryDto {
-  @ApiProperty({
-    description: 'Lowest monthly price',
-    example: 0,
-  })
-  @IsNumber()
-  @Min(0)
-  lowestMonthlyPrice!: number;
-
-  @ApiProperty({
-    description: 'Highest monthly price',
-    example: 20,
-  })
-  @IsNumber()
-  @Min(0)
-  highestMonthlyPrice!: number;
-
-  @ApiProperty({
-    description: 'Currency code (ISO 4217)',
-    example: 'USD',
-  })
-  @IsString()
-  @Matches(/^[A-Z]{3}$/, {
-    message: 'Currency must be a valid 3-letter ISO code',
-  })
-  currency!: string;
-
-  @ApiProperty({
-    description: 'Has free tier available',
-    example: true,
-  })
-  @IsBoolean()
-  hasFreeTier!: boolean;
-
-  @ApiProperty({
-    description: 'Has custom pricing for enterprise',
-    example: false,
-  })
-  @IsBoolean()
-  hasCustomPricing!: boolean;
-
-  @ApiProperty({
-    description: 'Available billing periods (1-3 entries)',
-    example: ['month', 'year'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(3)
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
-  billingPeriods!: string[];
-
-  @ApiProperty({
-    description: 'Pricing models',
-    example: ['freemium', 'paid'],
-    enum: ['free', 'freemium', 'paid'],
-  })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsEnum(['free', 'freemium', 'paid'], { each: true })
-  pricingModel!: PricingModelEnum[];
-}
+import { PricingDto } from './pricing.dto';
 
 export class CreateToolDto {
   // Identity fields
@@ -183,10 +124,33 @@ export class CreateToolDto {
   userTypes!: string[];
 
   // Pricing (simplified)
-  @ApiProperty({ description: 'Pricing summary information' })
-  @ValidateNested()
-  @Type(() => PricingSummaryDto)
-  pricingSummary!: PricingSummaryDto;
+  @ApiProperty({
+    description: 'Pricing summary information',
+    type: [PricingDto],
+    example: [
+      {
+        tier: 'Free',
+        price: 0,
+        billingPeriod: 'Monthly',
+      },
+    ],
+  })
+  @ValidateNested({ each: true })
+  @Type(() => PricingDto)
+  @IsArray()
+  @ArrayNotEmpty()
+  pricing!: PricingDto[];
+
+  @ApiProperty({
+    description: 'Pricing models',
+    example: 'Free',
+    enum: ['Free', 'Freemium', 'Paid'],
+  })
+  @IsEnum(['Free', 'Freemium', 'Paid'], {
+    message: 'pricingModel must be one of: Free, Freemium, Paid',
+  })
+  @IsNotEmpty()
+  pricingModel!: PricingModelEnum;
 
   @ApiPropertyOptional({
     description: 'URL to pricing page',
@@ -273,15 +237,14 @@ export class CreateToolDto {
       categories: ['AI', 'Chatbot', 'Productivity'],
       industries: ['Technology', 'Education', 'Business'],
       userTypes: ['Developers', 'Students', 'Content Creators'],
-      pricingSummary: {
-        lowestMonthlyPrice: 0,
-        highestMonthlyPrice: 20,
-        currency: 'USD',
-        hasFreeTier: true,
-        hasCustomPricing: false,
-        billingPeriods: ['month'],
-        pricingModel: ['freemium', 'paid'],
-      },
+      pricing: [
+        {
+          tier: 'Free',
+          price: 0,
+          billingPeriod: 'month',
+        },
+      ],
+      pricingModel: 'Freemium',
       pricingUrl: 'https://openai.com/pricing',
       interface: ['Web', 'API'],
       functionality: ['Text Generation', 'Conversation', 'Code Assistance'],

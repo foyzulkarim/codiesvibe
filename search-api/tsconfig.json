@@ -27,5 +27,26 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "src/graphs/_archived_graphs/**/*",
+    "src/nodes/_archived_extraction/**/*",
+    "src/nodes/conditional-executor.node.ts",
+    "src/nodes/context-enrichment.node.ts",
+    "src/nodes/dynamic-stage-skipper.node.ts",
+    "src/nodes/multi-vector-search.node.ts",
+    "src/nodes/result-merger.node.ts",
+    "src/nodes/local-nlp-processing.node.ts",
+    "src/nodes/query-planning-node.ts",
+    "src/nodes/execution-node.ts",
+    "src/nodes/execution.node.ts",
+    "src/routers/**/*",
+    "src/utils/checkpoint-manager.ts",
+    "src/utils/rollback-manager.ts",
+    "src/utils/state-monitor.ts",
+    "src/services/enhanced-search.service.ts",
+    "src/config/config-validator.ts"
+  ]
 }

@@ -1,0 +1,135 @@
+{
+  "version": 1.3,
+  "schema": "tools-v2.0",
+  "lastUpdated": "2025-09-29T08:40:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 5
+    }
+  },
+  "tools": [
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "slug": "ollama",
+      "description": "Local LLM runner for running AI models on your own hardware",
+      "longDescription": "Ollama is an open-source platform that enables users to download, run, and manage large language models locally on their own hardware. It provides complete privacy and offline functionality while supporting a wide variety of open-source models including Llama, Mistral, and Code Llama. Ollama makes it easy to get started with local AI without requiring deep technical knowledge of model deployment.",
+      "tagline": "Run large language models locally with complete privacy",
+      "categories": [
+        "Local LLM",
+        "Privacy",
+        "Desktop App",
+        "Offline",
+        "Chatbot"
+      ],
+      "industries": [
+        "Technology",
+        "Research",
+        "Privacy-Focused",
+        "Edge Computing"
+      ],
+      "userTypes": [
+        "Developers",
+        "Researchers",
+        "Privacy Advocates",
+        "AI Engineers"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 20
+        }
+      ],
+      "pricingModel": "Freemium",
+      "pricingUrl": "https://ollama.ai/",
+      "interface": [
+        "CLI",
+        "API",
+        "Desktop"
+      ],
+      "functionality": [
+        "Local Inference",
+        "API Server",
+        "Model Customization",
+        "Chat Interface"
+      ],
+      "deployment": [
+        "Local",
+        "Self-Hosted",
+        "Cloud"
+      ],
+      "logoUrl": "https://example.com/ollama-logo.png",
+      "website": "https://ollama.ai",
+      "documentation": "https://github.com/ollama/ollama/blob/main/README.md",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    },
+    {
+      "id": "lm-studio",
+      "name": "LM Studio",
+      "slug": "lm-studio",
+      "description": "User-friendly desktop app for running local AI models with GUI",
+      "longDescription": "LM Studio is a desktop application that provides an intuitive graphical interface for downloading, running, and chatting with local large language models. It offers document-based RAG capabilities, local API server functionality, and cross-platform SDKs for developers. LM Studio makes local AI accessible to users who prefer a visual interface over command-line tools.",
+      "tagline": "Local AI made simple with an intuitive desktop interface",
+      "categories": [
+        "Local LLM",
+        "Privacy",
+        "Desktop App",
+        "Offline",
+        "Chatbot"
+      ],
+      "industries": [
+        "Technology",
+        "Education",
+        "Research"
+      ],
+      "userTypes": [
+        "Developers",
+        "Researchers",
+        "AI Engineers",
+        "Privacy Advocates"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        }
+      ],
+      "pricingModel": "Free",
+      "pricingUrl": "https://lmstudio.ai/",
+      "interface": [
+        "Desktop",
+        "API",
+        "CLI"
+      ],
+      "functionality": [
+        "Model Management",
+        "Chat Interface",
+        "Document RAG",
+        "API Server"
+      ],
+      "deployment": [
+        "Local",
+        "Self-Hosted"
+      ],
+      "logoUrl": "https://lmstudio.ai/favicon.ico",
+      "website": "https://lmstudio.ai/",
+      "documentation": "https://lmstudio.ai/docs",
+      "status": "active",
+      "contributor": "LM Studio Team",
+      "dateAdded": "2024-01-15",
+      "lastUpdated": "2024-12-15"
+    }
+  ]
+}

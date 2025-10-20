@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@/config/*": ["config/*"],
+      "@/types/*": ["types/*"],
+      "@/services/*": ["services/*"],
+      "@/utils/*": ["utils/*"]
+    }
+  },
+  "include": [
+    "src/graphs/agentic-search.graph.ts",
+    "src/nodes/intent-extractor.node.ts",
+    "src/nodes/query-planner.node.ts",
+    "src/nodes/query-executor.node.ts",
+    "src/nodes/intent-extraction.node.ts",
+    "src/types/intent-state.ts",
+    "src/types/query-plan.ts",
+    "src/types/candidate.ts",
+    "src/types/state.ts",
+    "src/utils/fusion.ts",
+    "src/debug-scripts/test-refactored-pipeline.ts",
+    "src/services/mongodb.service.ts",
+    "src/services/qdrant.service.ts",
+    "src/services/embedding.service.ts",
+    "src/config/models.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "src/graphs/_archived_graphs/**/*",
+    "src/nodes/_archived_extraction/**/*"
+  ]
+}

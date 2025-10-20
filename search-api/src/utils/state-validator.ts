@@ -2,6 +2,32 @@ import { State } from "@/types/state";
 import { z } from "zod";
 
 /**
+ * Deep clone function that preserves Date objects
+ */
+function deepCloneWithDates(obj: any): any {
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+  
+  if (obj instanceof Date) {
+    return new Date(obj.getTime());
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(deepCloneWithDates);
+  }
+  
+  const cloned: any = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      cloned[key] = deepCloneWithDates(obj[key]);
+    }
+  }
+  
+  return cloned;
+}
+
+/**
  * State validation and consistency checking utilities
  */
 
@@ -78,6 +104,47 @@ export const StateSchemas = {
       overall: z.number().min(0).max(1),
       breakdown: z.record(z.number()),
     }),
+    metadata: z.object({
+      startTime: z.date(),
+      executionPath: z.array(z.string()),
+      nodeExecutionTimes: z.record(z.number()),
+    }),
+  }).partial(),
+
+  contextEnrichment: z.object({
+    query: z.string().min(1),
+    intent: z.object({
+      toolNames: z.array(z.string()),
+      categories: z.array(z.string()),
+      functionality: z.array(z.string()),
+      userTypes: z.array(z.string()),
+      interface: z.array(z.string()),
+      deployment: z.array(z.string()),
+      isComparative: z.boolean(),
+      referenceTool: z.string().optional(),
+      semanticQuery: z.string().optional(),
+      keywords: z.array(z.string()),
+      excludeTools: z.array(z.string()),
+      priceConstraints: z.object({
+        hasFreeTier: z.boolean().optional(),
+        maxPrice: z.number().optional(),
+        minPrice: z.number().optional(),
+        pricingModel: z.string().optional(),
+      }).optional(),
+    }),
+    confidence: z.object({
+      overall: z.number().min(0).max(1),
+      breakdown: z.record(z.number()),
+    }),
+    entityStatistics: z.record(z.any()).optional(),
+    metadataContext: z.object({
+      searchSpaceSize: z.number(),
+      metadataConfidence: z.number(),
+      assumptions: z.array(z.string()),
+      lastUpdated: z.date(),
+      enrichmentStrategy: z.string(),
+      processingTime: z.number(),
+    }).optional(),
     metadata: z.object({
       startTime: z.date(),
       executionPath: z.array(z.string()),
@@ -281,7 +348,7 @@ export class StateValidator {
     transitionId: string
   ): RollbackPoint {
     const snapshot: StateSnapshot = {
-      state: JSON.parse(JSON.stringify(state)), // Deep clone
+      state: deepCloneWithDates(state), // Use date-aware deep clone
       timestamp: new Date(),
       node,
       transitionId
@@ -339,8 +406,8 @@ export class StateValidator {
     }
 
     try {
-      // Create a deep clone of the state
-      const restoredState = JSON.parse(JSON.stringify(rollbackPoint.snapshot.state));
+      // Create a deep clone of the state with date preservation
+      const restoredState = deepCloneWithDates(rollbackPoint.snapshot.state);
       
       // Update rollback reason
       rollbackPoint.rollbackReason = reason;

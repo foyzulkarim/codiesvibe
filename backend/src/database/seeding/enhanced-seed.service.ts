@@ -147,7 +147,8 @@ export class EnhancedSeedService {
       categories: dto.categories,
       industries: dto.industries,
       userTypes: dto.userTypes,
-      pricingSummary: dto.pricingSummary,
+      pricing: dto.pricing,
+      pricingModel: dto.pricingModel,
       pricingUrl: dto.pricingUrl,
       slug: dto.slug,
       tagline: dto.tagline,
@@ -295,18 +296,18 @@ export class EnhancedSeedService {
       `Processing ${seedFile.filename} (v${seedFile.fileVersion})...`,
     );
 
-    const { validTools, errors } = await this.validateTools(
+    const { validTools, errors: validationErrors } = await this.validateTools(
       seedFile.data.tools,
     );
 
     // Log validation errors for debugging
-    if (errors.length > 0) {
+    if (validationErrors.length > 0) {
       this.logger.error(`Validation errors in ${seedFile.filename}:`);
-      errors.forEach((error, index) => {
+      validationErrors.forEach((error, index) => {
         this.logger.error(`  ${index + 1}. ${error}`);
       });
       throw new Error(
-        `Validation failed for ${seedFile.filename}: ${errors.join(' | ')}`,
+        `Validation failed for ${seedFile.filename}: ${validationErrors.join(' | ')}`,
       );
     }
 
@@ -315,24 +316,72 @@ export class EnhancedSeedService {
       this.mapSeedToToolDoc(tool, createdBy),
     );
 
+    this.logger.log(`Prepared ${docs.length} tool documents for insertion`);
+
     if (docs.length === 0) {
       this.logger.warn(`No tools found in ${seedFile.filename}`);
       return;
     }
 
-    try {
-      const insertedCount = await this.toolModel.insertMany(docs, {
-        ordered: false,
+    // Insert tools one by one to get detailed error information
+    let insertedCount = 0;
+    let skippedCount = 0;
+    const insertionErrors: string[] = [];
+
+    for (let i = 0; i < docs.length; i++) {
+      const doc = docs[i];
+      try {
+        this.logger.debug(
+          `Attempting to insert tool ${i + 1}/${docs.length}: ${doc.id}`,
+        );
+
+        const newTool = new this.toolModel(doc);
+        const savedTool = (await newTool.save()) as any;
+
+        this.logger.debug(`Successfully inserted tool: ${doc.id}`, savedTool);
+        insertedCount++;
+      } catch (error: any) {
+        if (error.code === 11000) {
+          // Duplicate key error
+          const duplicateField = error.keyPattern
+            ? Object.keys(error.keyPattern)[0]
+            : 'unknown';
+          const duplicateValue = error.keyValue
+            ? error.keyValue[duplicateField]
+            : 'unknown';
+          this.logger.warn(
+            `Tool ${doc.id} already exists (duplicate ${duplicateField}: ${duplicateValue}). Skipping.`,
+          );
+          skippedCount++;
+        } else if (error.name === 'ValidationError') {
+          // Validation error
+          const validationErrorDetails = Object.keys(error.errors)
+            .map((field) => `${field}: ${error.errors[field].message}`)
+            .join(', ');
+          const errorMsg = `Tool ${doc.id} validation failed: ${validationErrorDetails}`;
+          this.logger.error(errorMsg, doc);
+          insertionErrors.push(errorMsg);
+        } else {
+          // Other errors
+          const errorMsg = `Tool ${doc.id} insert failed: ${error.message}`;
+          this.logger.error(errorMsg, error.stack);
+          insertionErrors.push(errorMsg);
+        }
+      }
+    }
+
+    this.logger.log(
+      `Processing complete for ${seedFile.filename}: ${insertedCount} inserted, ${skippedCount} skipped, ${insertionErrors.length} errors`,
+    );
+
+    if (insertionErrors.length > 0) {
+      this.logger.error(`Errors encountered during insertion:`);
+      insertionErrors.forEach((error, index) => {
+        this.logger.error(`  ${index + 1}. ${error}`);
       });
-      this.logger.log(
-        `Inserted ${insertedCount.length} tool(s) from ${seedFile.filename}`,
+      throw new Error(
+        `Failed to insert ${insertionErrors.length} tool(s) from ${seedFile.filename}. Fix the data and retry.`,
       );
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to insert tools from ${seedFile.filename}: ${error.message}`,
-        error.stack,
-      );
-      throw error;
     }
   }
 

@@ -9,46 +9,7 @@
       "contributions": 5
     }
   },
-  "tools": [
-    {
-      "id": "cursor-ide",
-      "name": "Cursor IDE",
-      "slug": "cursor-ide",
-      "description": "AI-powered code editor with intelligent completions and chat",
-      "longDescription": "Cursor is an AI-first code editor built on VS Code that provides intelligent code completions, AI chat assistance, and advanced code generation capabilities. It offers different pricing tiers with varying levels of AI requests and features, making it suitable for both individual developers and enterprise teams. Cursor combines the familiar VS Code interface with cutting-edge AI capabilities for enhanced productivity.",
-      "tagline": "The AI-first code editor for the modern developer",
-
-      "categories": ["AI", "Code Editor", "IDE", "Development", "Productivity"],
-      "industries": ["Technology", "Software Development", "Startups"],
-      "userTypes": ["Developers", "Software Engineers", "Full-Stack Developers", "AI Engineers"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 20,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free", "paid"]
-      },
-
-      "pricingUrl": "https://cursor.sh/pricing",
-
-      "interface": ["IDE", "CLI"],
-      "functionality": ["Code Generation", "Code Completion", "AI Chat", "Debugging", "Refactoring"],
-      "deployment": ["Local", "Cloud"],
-      "popularity": 88,
-      "rating": 4.6,
-      "reviewCount": 2450,
-
-      "logoUrl": "https://example.com/cursor-logo.png",
-      "website": "https://cursor.sh",
-      "documentation": "https://docs.cursor.sh",
-      "status": "active",
-      "contributor": "system",
-      "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
-    },
+  "tools": [    
     {
       "id": "replit",
       "name": "Replit",
@@ -56,37 +17,58 @@
       "description": "Cloud-based IDE with AI coding assistance and instant deployment",
       "longDescription": "Replit is a comprehensive cloud development platform that combines an online IDE with AI-powered coding assistance, instant deployment capabilities, and collaborative features. It supports multiple programming languages and offers various deployment options from static sites to autoscaling applications. Replit eliminates the need for local development setup and enables seamless collaboration between team members.",
       "tagline": "Code, collaborate, and deploy instantly in the cloud",
-
-      "categories": ["Cloud IDE", "Development", "Deployment", "Collaboration", "AI"],
-      "industries": ["Technology", "Education", "Startups", "Remote Work"],
-      "userTypes": ["Developers", "Students", "Teachers", "Remote Teams"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 25,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": true,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free","freemium", "paid"]
-      },
-
+      "categories": [
+        "Cloud IDE",
+        "Development",
+        "No-Code",
+        "Rapid Prototyping"
+      ],
+      "industries": [
+        "Technology",
+        "Education",
+        "Startups"
+      ],
+      "userTypes": [
+        "Developers",
+        "Students",
+        "Teachers",
+        "UX Designers",
+        "Product Managers"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 25
+        }
+      ],
+      "pricingModel": "Freemium",
       "pricingUrl": "https://replit.com/pricing",
-      
-      "interface": ["Web", "Mobile"],
-      "functionality": ["Code Generation", "Deployment", "Collaboration", "AI Assistant", "Database Setup"],
-      "deployment": ["Cloud"],
-      "popularity": 85,
-      "rating": 4.4,
-      "reviewCount": 3200,
-
+      "interface": [
+        "Web",
+        "Mobile"
+      ],
+      "functionality": [
+        "Code Generation",
+        "Deployment",
+        "Database Setup",
+        "UI Prototyping"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
       "logoUrl": "https://example.com/replit-logo.png",
       "website": "https://replit.com",
       "documentation": "https://docs.replit.com",
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
+      "lastUpdated": "2025-09-29T08:40:00Z"      
     },
     {
       "id": "lovable",
@@ -95,185 +77,60 @@
       "description": "AI-powered full-stack app builder from natural language prompts",
       "longDescription": "Lovable is an AI-powered platform that generates complete full-stack web applications from natural language descriptions. It combines React frontends with Supabase backends, offering rapid prototyping and deployment capabilities for both technical and non-technical users. The platform enables users to describe their app idea in plain English and receive a working application with modern technology stack.",
       "tagline": "Turn your app ideas into reality with AI-powered development",
-
-      "categories": ["AI", "App Builder", "No-Code", "Full-Stack", "Rapid Prototyping"],
-      "industries": ["Startups", "Innovation", "Small Business", "Consulting"],
-      "userTypes": ["Entrepreneurs", "Product Managers", "Non-Technical Founders", "Rapid Prototypers"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 50,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": true,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free","freemium", "paid"]
-      },
-
-      "pricingUrl": "https://lovable.dev/pricing",
-
-      "capabilities": {
-        "core": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
-        "aiFeatures": {
-          "codeGeneration": true,
-          "imageGeneration": false,
-          "dataAnalysis": false,
-          "voiceInteraction": false,
-          "multimodal": false,
-          "thinkingMode": false
-        },
-        "technical": {
-          "apiAccess": true,
-          "webHooks": false,
-          "sdkAvailable": false,
-          "offlineMode": false
-        },
-        "integrations": {
-          "platforms": ["Web", "API"],
-          "thirdParty": ["Supabase", "GitHub", "React", "Tailwind CSS", "Vite"],
-          "protocols": ["REST", "GraphQL", "WebSocket"]
-        }
-      },
-
-      "useCases": [
+      "categories": [
+        "App Builder",
+        "No-Code",
+        "Full-Stack",
+        "Rapid Prototyping",
+        "Cloud IDE"
+      ],
+      "industries": [
+        "Startups",
+        "Innovation",
+        "Small Business",
+        "Technology"
+      ],
+      "userTypes": [
+        "Entrepreneurs",
+        "Product Managers",
+        "Non-Technical Founders",
+        "Rapid Prototypers",
+        "UX Designers"
+      ],
+      "pricing": [
         {
-          "name": "MVP Development",
-          "description": "Rapidly build minimum viable products to test business ideas",
-          "industries": ["Startups", "Entrepreneurship", "Innovation"],
-          "userTypes": ["Entrepreneurs", "Startup Founders", "Product Managers"],
-          "scenarios": ["Business validation", "Investor demos", "Market testing", "Rapid prototyping"],
-          "complexity": "beginner"
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
         },
         {
-          "name": "Rapid Prototyping",
-          "description": "Quickly create functional prototypes from concept descriptions",
-          "industries": ["Design", "Consulting", "Innovation Labs"],
-          "userTypes": ["Designers", "Consultants", "Innovation Managers"],
-          "scenarios": ["Concept validation", "Client presentations", "Design exploration", "Feasibility testing"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Idea Validation",
-          "description": "Transform business ideas into testable applications without coding",
-          "industries": ["Business", "Startups", "Freelancing"],
-          "userTypes": ["Business Analysts", "Entrepreneurs", "Freelancers"],
-          "scenarios": ["Market research", "User feedback collection", "Concept testing", "Business model validation"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Non-Technical App Creation",
-          "description": "Enable non-developers to create sophisticated web applications",
-          "industries": ["Small Business", "Education", "Non-Profit"],
-          "userTypes": ["Business Owners", "Teachers", "Non-Technical Users"],
-          "scenarios": ["Business tools", "Educational apps", "Community platforms", "Internal tools"],
-          "complexity": "beginner"
-        },
-        {
-          "name": "Startup Projects",
-          "description": "Build complete startup applications with modern technology stack",
-          "industries": ["Technology", "Venture Capital", "Incubators"],
-          "userTypes": ["Tech Entrepreneurs", "Startup Teams", "Accelerator Participants"],
-          "scenarios": ["Product launches", "Funding demos", "Beta testing", "User acquisition"],
-          "complexity": "intermediate"
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 50
         }
       ],
-
-      "searchKeywords": ["lovable", "AI app builder", "full-stack", "no-code", "React", "Supabase"],
-      "semanticTags": ["ai app generation", "natural language programming", "full-stack automation", "rapid development", "no-code platform", "startup tools", "mvp builder", "react applications"],
-      "aliases": ["Lovable AI", "AI App Generator", "Full-Stack Builder", "Lovable Platform"],
-      
-      "interface": ["Web"],
-      "functionality": ["App Generation", "Code Generation", "Deployment", "Database Setup", "Authentication"],
-      "deployment": ["Cloud"],
-      "popularity": 82,
-      "rating": 4.7,
-      "reviewCount": 1850,
-
+      "pricingModel": "Freemium",
+      "pricingUrl": "https://lovable.dev/pricing",      
+      "interface": [
+        "Web"
+      ],
+      "functionality": [
+        "App Generation",
+        "Code Generation",
+        "Deployment",
+        "Database Setup",
+        "UI Prototyping"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
       "logoUrl": "https://example.com/lovable-logo.png",
       "website": "https://lovable.dev",
       "documentation": "https://docs.lovable.dev",
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
-    },
-    {
-      "id": "ollama",
-      "name": "Ollama",
-      "slug": "ollama",
-      "description": "Local LLM runner for running AI models on your own hardware",
-      "longDescription": "Ollama is an open-source platform that enables users to download, run, and manage large language models locally on their own hardware. It provides complete privacy and offline functionality while supporting a wide variety of open-source models including Llama, Mistral, and Code Llama. Ollama makes it easy to get started with local AI without requiring deep technical knowledge of model deployment.",
-      "tagline": "Run large language models locally with complete privacy",
-
-      "categories": ["AI", "Local LLM", "Privacy", "Open Source", "Offline"],
-      "industries": ["Technology", "Research", "Privacy-Focused", "Edge Computing"],
-      "userTypes": ["Developers", "Researchers", "Privacy Advocates", "AI Engineers"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 0,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free"]
-      },
-
-      "pricingUrl": "https://ollama.ai/",
-
-      "interface": ["CLI", "API", "Desktop"],
-      "functionality": ["Model Management", "Local Inference", "API Server", "Model Customization"],
-      "deployment": ["Local", "Self-Hosted"],
-      "popularity": 79,
-      "rating": 4.5,
-      "reviewCount": 1650,
-
-      "logoUrl": "https://example.com/ollama-logo.png",
-      "website": "https://ollama.ai",
-      "documentation": "https://github.com/ollama/ollama/blob/main/README.md",
-      "status": "active",
-      "contributor": "system",
-      "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"
-    },
-    {
-      "id": "lm-studio",
-      "name": "LM Studio",
-      "slug": "lm-studio",
-      "description": "User-friendly desktop app for running local AI models with GUI",
-      "longDescription": "LM Studio is a desktop application that provides an intuitive graphical interface for downloading, running, and chatting with local large language models. It offers document-based RAG capabilities, local API server functionality, and cross-platform SDKs for developers. LM Studio makes local AI accessible to users who prefer a visual interface over command-line tools.",
-      "tagline": "Local AI made simple with an intuitive desktop interface",
-
-      "categories": ["AI", "Desktop App", "Local LLM", "GUI", "Privacy"],
-      "industries": ["Technology", "Education", "Research", "Small Business"],
-      "userTypes": ["Developers", "Researchers", "Students", "Non-Technical Users"],
-
-      "pricingSummary": {
-        "lowestMonthlyPrice": 0,
-        "highestMonthlyPrice": 0,
-        "currency": "USD",
-        "hasFreeTier": true,
-        "hasCustomPricing": false,
-        "billingPeriods": ["month"],
-        "pricingModel": ["free"]
-      },
-
-      "pricingUrl": "https://lmstudio.ai/",
-
-      "interface": ["Desktop", "API"],
-      "functionality": ["Model Management", "Chat Interface", "Document RAG", "API Server"],
-      "deployment": ["Local", "Self-Hosted"],
-      "popularity": 8.5,
-      "rating": 4.6,
-      "reviewCount": 2800,
-
-      "logoUrl": "https://lmstudio.ai/favicon.ico",
-      "website": "https://lmstudio.ai/",
-      "documentation": "https://lmstudio.ai/docs",
-      "status": "active",
-      "contributor": "LM Studio Team",
-      "dateAdded": "2024-01-15",
-      "lastUpdated": "2024-12-15"
+      "lastUpdated": "2025-09-29T08:40:00Z"      
     }
   ]
 }
