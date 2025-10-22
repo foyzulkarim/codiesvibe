@@ -22,11 +22,11 @@ dotenv.config();
 const intentTestCases = [
   {
     name: "Simple discovery query",
-    query: "free cli",
+    query: "self hosted cli",
     expectedIntent: {
       primaryGoal: "find",
       pricing: "free",
-      platform: "cli"
+      interface: "cli"
     }
   },
   {
@@ -107,7 +107,7 @@ async function testIntentExtraction(testCase: any) {
     const executionTime = Date.now() - startTime;
 
     // Display detailed results
-    console.log(`⏱️  Intent extraction completed in ${executionTime}ms`);
+    console.log(`⏱️  Intent extraction completed in ${executionTime}ms`, '\n', result);
 
     // Extract the intent state from the result
     const intentState = result?.intentState;
@@ -205,7 +205,7 @@ async function main() {
   // }
 
   // Run single test case
-  const testCase = intentTestCases[0];
+  const testCase = intentTestCases[1];
   const result = await testIntentExtraction(testCase);
   results.push({ ...testCase, ...result });
 
