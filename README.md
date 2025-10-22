@@ -59,14 +59,7 @@ CodiesVibe is built as a **production-grade platform** using modern web technolo
 
 ## 📺 Demo
 
-Check out the demo to see CodiesVibe in action:
-
-https://github.com/user-attachments/assets/codiesvibe-teaser-trailer.webm
-
-<video width="100%" controls>
-  <source src="./video/codiesvibe-teaser-trailer.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
+### Check out the demo to see CodiesVibe in action:
 
 [video_codiesvibe-teaser-trailer.webm](https://github.com/user-attachments/assets/c0658d61-65bf-4c1e-9a8d-68e609698fae)
 
