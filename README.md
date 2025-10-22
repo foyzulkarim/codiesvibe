@@ -68,6 +68,9 @@ https://github.com/user-attachments/assets/codiesvibe-teaser-trailer.webm
   Your browser does not support the video tag.
 </video>
 
+[video_codiesvibe-teaser-trailer.webm](https://github.com/user-attachments/assets/c0658d61-65bf-4c1e-9a8d-68e609698fae)
+
+
 ## 🚀 Quick Start
 
 ### Prerequisites
