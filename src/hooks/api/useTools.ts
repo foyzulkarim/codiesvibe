@@ -1,128 +1,134 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import { useMemo } from 'react';
-import apiClient, { apiClient as axios } from '@/api/client';
-import { 
-  ToolsQueryParams, 
-  FilterState, 
-  UseToolsReturn, 
-  ToolResponseDto 
+import { apiClient as axios } from '@/api/client';
+import {
+  UseToolsReturn,
+  AiSearchReasoning,
 } from '@/api/types';
-import { AITool } from '@/data/tools';
 
-// Transform API response to match AITool interface (v2.0)
-const transformToolResponse = (tool: ToolResponseDto): AITool => ({
-  // Core v2.0 fields
-  id: tool.id,
-  name: tool.name,
-  slug: tool.slug,
-  description: tool.description,
-  longDescription: tool.longDescription,
-  tagline: tool.tagline,
+// Types for AI search API response
+interface AiSearchResponse {
+  query: string;
+  intentState: IntentState;
+  executionPlan: ExecutionPlan;
+  candidates: Candidate[];
+  executionStats: ExecutionStats;
+  executionTime: string;
+  phase: string;
+  strategy: string;
+  explanation: string;
+  results: SearchResult[];
+}
 
-  // v2.0 structured data
-  categories: tool.categories,
-  pricingSummary: tool.pricingSummary,
-  pricingDetails: tool.pricingDetails,
-  capabilities: tool.capabilities,
-  useCases: tool.useCases,
+interface IntentState {
+  primaryGoal: string;
+  referenceTool: string;
+  comparisonMode: string | null;
+  desiredFeatures: string[];
+  filters: string[];
+  pricing: string | null;
+  priceRange: string | null;
+  priceComparison: string | null;
+  category: string;
+  platform: string;
+  semanticVariants: string[];
+  constraints: string[];
+  confidence: number;
+}
 
-  // Enhanced metadata
-  searchKeywords: tool.searchKeywords,
-  semanticTags: tool.semanticTags,
-  aliases: tool.aliases,
+interface ExecutionPlan {
+  strategy: string;
+  vectorSources: VectorSource[];
+  structuredSources: StructuredSource[];
+  reranker: Reranker;
+  fusion: string;
+  maxRefinementCycles: number;
+  explanation: string;
+  confidence: number;
+}
 
-  // Legacy fields for backward compatibility
-  pricing: tool.pricing,
-  interface: tool.interface,
-  functionality: tool.functionality,
-  deployment: tool.deployment,
-  popularity: tool.popularity,
-  rating: tool.rating,
-  reviewCount: tool.reviewCount,
+interface VectorSource {
+  collection: string;
+  embeddingType: string;
+  queryVectorSource: string;
+  topK: number;
+}
 
-  // URLs and metadata
-  logoUrl: tool.logoUrl,
-  website: tool.website,
-  documentation: tool.documentation,
-  pricingUrl: tool.pricingUrl,
-  status: tool.status,
-  contributor: tool.contributor,
-  dateAdded: tool.dateAdded,
-  lastUpdated: tool.lastUpdated,
+interface StructuredSource {
+  source: string;
+  filters: Filter[];
+  limit: number;
+}
 
-  // Legacy compatibility (if still needed)
-  ...(tool.features && { features: tool.features }),
-  ...(tool.tags && { tags: tool.tags })
-});
+interface Filter {
+  field: string;
+  operator: string;
+  value: string;
+}
 
-// Build query parameters from component state
-const buildQueryParams = (
-  searchQuery: string,
-  filters: FilterState,
-  sortBy?: string,
-  sortDirection?: 'asc' | 'desc'
-): ToolsQueryParams => {
-  const params: ToolsQueryParams = {};
+interface Reranker {
+  type: string;
+  model: string;
+  maxCandidates: number;
+}
 
-  // Add search query if present
-  if (searchQuery.trim()) {
-    params.search = searchQuery.trim();
-  }
+interface Candidate {
+  id: string;
+  source: string;
+  score: number;
+  metadata: {
+    name: string;
+    platform: string;
+    features: string[];
+    description: string;
+  };
+  embeddingVector: null;
+  provenance: Provenance;
+}
 
-  // Add filters if any are selected
-  Object.entries(filters).forEach(([key, values]) => {
-    if (values.length > 0) {
-      // Legacy v1.x filters
-      if (key === 'functionality') {
-        params.functionality = values.join(',');
-      } else if (key === 'deployment') {
-        params.deployment = values.join(',');
-      } else if (key === 'pricing') {
-        params.pricing = values.join(',');
-      } else if (key === 'interface') {
-        params.interface = values.join(',');
-      }
-      // v2.0 category filters
-      else if (key === 'primaryCategories') {
-        params.primaryCategory = values.join(',');
-      } else if (key === 'secondaryCategories') {
-        params.secondaryCategory = values.join(',');
-      } else if (key === 'industries') {
-        params.industry = values.join(',');
-      } else if (key === 'userTypes') {
-        params.userType = values.join(',');
-      }
-      // v2.0 metadata filters
-      else if (key === 'status') {
-        params.status = values.join(',');
-      } else if (key === 'complexity') {
-        params.complexity = values.join(',');
-      } else if (key === 'pricingModels') {
-        params.pricingModel = values.join(',');
-      }
-    }
-  });
+interface Provenance {
+  collection: string;
+  queryVectorSource: string;
+  filtersApplied: string[];
+}
 
-  // Add sorting if specified
-  if (sortBy) {
-    params.sortBy = sortBy as ToolsQueryParams['sortBy'];
-  }
+interface ExecutionStats {
+  totalTimeMs: number;
+  nodeTimings: {
+    [key: string]: number;
+  };
+  vectorQueriesExecuted: number;
+  structuredQueriesExecuted: number;
+  fusionMethod: string;
+}
 
-  return params;
-};
+interface SearchResult {
+  id: string;
+  name: string;
+  description: string;
+  score: number;
+  source: string;
+  metadata: {
+    name: string;
+    platform: string;
+    features: string[];
+    description: string;
+  };
+}
 
-// API function to fetch tools
-const fetchTools = async (params: ToolsQueryParams): Promise<AITool[]> => {
+const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => {
   try {
-    const response = await axios.get<ToolResponseDto[]>('/tools', {
-      params,
+    console.log('aiSearchTools searchQuery:', searchQuery);
+    console.log('typeof searchQuery:', typeof searchQuery);
+
+    // Ensure searchQuery is a string and properly encode it
+    const searchQueryStr = typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
+    const response = await axios.get<AiSearchResponse>('/tools/ai-search', {
+      params: { q: searchQueryStr }
     });
-
-    // Transform the response data
-    const transformedData = response.data.map(transformToolResponse);
-
-    return transformedData;
+    console.log('aiSearchTools response.data:', response.data);
+    return response.data;
   } catch (error) {
     console.error('Error fetching tools:', error);
     throw error;
@@ -130,130 +136,53 @@ const fetchTools = async (params: ToolsQueryParams): Promise<AITool[]> => {
 };
 
 // Main hook for fetching tools
-export const useTools = (
-  searchQuery: string,
-  filters: FilterState,
-  sortBy?: string,
-  sortDirection?: 'asc' | 'desc'
-): UseToolsReturn => {
-  // Build query parameters
-  const queryParams = useMemo(
-    () => buildQueryParams(searchQuery, filters, sortBy, sortDirection),
-    [searchQuery, filters, sortBy, sortDirection]
-  );
+export const useTools = (params: string): UseToolsReturn => {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['tools', params],
+    queryFn: async () => {
+      const response = {
+        data: [],
+        reasoning: {}
+      };
+      if (params) {
+        // Trigger API call for debugging only
+        const apiResponse = await aiSearchTools(params);
+        response.data = apiResponse.results;
+        response.reasoning = {
+          query: apiResponse.query,
+          intentState: apiResponse.intentState,
+          executionPlan: apiResponse.executionPlan,
+          candidates: apiResponse.candidates,
+          executionStats: apiResponse.executionStats,
+          executionTime: apiResponse.executionTime,
+          phase: apiResponse.phase,
+          strategy: apiResponse.strategy,
+          explanation: apiResponse.explanation
+        };
+      }
 
-  // Create query key for React Query caching
-  const queryKey = useMemo(
-    () => ['tools', queryParams],
-    [queryParams]
-  );
-
-  // Fetch data using React Query
-  const { data, isLoading, isError, error } = useQuery<AITool[]>({
-    queryKey,
-    queryFn: () => fetchTools(queryParams),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (cacheTime renamed to gcTime in v5)
-    retry: (failureCount, error: unknown) => {
-      // Retry on network errors or 5xx errors, max 3 times
-      if (failureCount >= 3) return false;
-      const apiError = error as { response?: { status?: number } };
-      return !apiError.response || (apiError.response.status && apiError.response.status >= 500);
+      return response;
     },
-  } as UseQueryOptions<AITool[]>);
+  });
 
   return {
-    data: data || [],
+    data: data?.data,
+    reasoning: data?.reasoning,
     isLoading,
     isError,
-    error: error || null,
+    error,
   };
 };
 
 // Debounced search hook for better performance
 export const useDebouncedSearch = (delay: number = 300) => {
   const debouncedSearch = useMemo(
-    () => debounce((callback: (query: string) => void, query: string) => {
-      callback(query);
-    }, delay),
+    () =>
+      debounce((callback: (query: string) => void, query: string) => {
+        callback(query);
+      }, delay),
     [delay]
   );
 
   return debouncedSearch;
-};
-
-// Hook for getting unique filter options from API data (v2.0)
-export const useFilterOptions = () => {
-  const { data: tools } = useTools('', {
-    pricing: [],
-    interface: [],
-    functionality: [],
-    deployment: [],
-    primaryCategories: [],
-    secondaryCategories: [],
-    industries: [],
-    userTypes: [],
-    aiFeatures: [],
-    technicalFeatures: [],
-    status: [],
-    complexity: [],
-    pricingModels: [],
-  });
-
-  const filterOptions = useMemo(() => {
-    if (!tools.length) return {
-      // Legacy filters
-      pricing: [],
-      interface: [],
-      functionality: [],
-      deployment: [],
-      // v2.0 filters
-      primaryCategories: [],
-      secondaryCategories: [],
-      industries: [],
-      userTypes: [],
-      aiFeatures: [],
-      technicalFeatures: [],
-      status: [],
-      complexity: [],
-      pricingModels: [],
-    };
-
-    return {
-      // Legacy filters
-      pricing: Array.from(new Set(tools.flatMap(tool => tool.pricing || []))),
-      interface: Array.from(new Set(tools.flatMap(tool => tool.interface || []))),
-      functionality: Array.from(new Set(tools.flatMap(tool => tool.functionality || []))),
-      deployment: Array.from(new Set(tools.flatMap(tool => tool.deployment || []))),
-
-      // v2.0 category filters
-      primaryCategories: Array.from(new Set(tools.flatMap(tool => tool.categories?.primary || []))),
-      secondaryCategories: Array.from(new Set(tools.flatMap(tool => tool.categories?.secondary || []))),
-      industries: Array.from(new Set(tools.flatMap(tool => tool.categories?.industries || []))),
-      userTypes: Array.from(new Set(tools.flatMap(tool => tool.categories?.userTypes || []))),
-
-      // v2.0 capability filters
-      aiFeatures: Array.from(new Set(tools.flatMap(tool =>
-        Object.entries(tool.capabilities?.aiFeatures || {})
-          .filter(([_, value]) => value === true)
-          .map(([key, _]) => key)
-      ))),
-      technicalFeatures: Array.from(new Set(tools.flatMap(tool =>
-        Object.entries(tool.capabilities?.technical || {})
-          .filter(([_, value]) => value === true)
-          .map(([key, _]) => key)
-      ))),
-
-      // v2.0 metadata filters
-      status: Array.from(new Set(tools.map(tool => tool.status).filter(Boolean))),
-      complexity: Array.from(new Set(tools.flatMap(tool =>
-        tool.useCases?.map(useCase => useCase.complexity) || []
-      ))),
-      pricingModels: Array.from(new Set(tools.flatMap(tool =>
-        tool.pricingSummary?.pricingModel || []
-      ))),
-    };
-  }, [tools]);
-
-  return filterOptions;
 };

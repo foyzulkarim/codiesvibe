@@ -2,7 +2,7 @@ import { AITool } from '@/data/tools';
 import { SortOption as SortOptionType } from '@/lib/config';
 
 // Import v2.0 shared types
-import { BaseTool, Categories, PricingSummary, Capabilities, UseCase, ApiResponse, PaginatedResponse } from '@shared/types';
+import { BaseTool } from '@shared/types';
 
 // Re-export shared types for backward compatibility
 export type { ApiResponse, PaginatedResponse } from '@shared/types';
@@ -20,41 +20,6 @@ export interface ToolResponseDto extends BaseTool {
 // Query Parameters Types - Enhanced for v2.0
 export interface ToolsQueryParams {
   search?: string;
-  functionality?: string;
-  tags?: string;
-  deployment?: string;
-  pricing?: string;
-  interface?: string;
-  minRating?: number;
-  maxRating?: number;
-  sortBy?: 'popularity' | 'rating' | 'reviewCount' | 'createdAt' | 'dateAdded' | 'relevance';
-
-  // v2.0 category filters
-  primaryCategory?: string;
-  secondaryCategory?: string;
-  industry?: string;
-  userType?: string;
-
-  // v2.0 pricing filters
-  hasFreeTier?: boolean;
-  hasCustomPricing?: boolean;
-  minPrice?: number;
-  maxPrice?: number;
-  pricingModel?: string;
-
-  // v2.0 capability filters
-  codeGeneration?: boolean;
-  imageGeneration?: boolean;
-  dataAnalysis?: boolean;
-  voiceInteraction?: boolean;
-  multimodal?: boolean;
-  thinkingMode?: boolean;
-  apiAccess?: boolean;
-  offlineMode?: boolean;
-
-  // v2.0 metadata filters
-  status?: string;
-  complexity?: string;
 }
 
 export interface FilterState {
@@ -79,9 +44,23 @@ export interface FilterState {
   pricingModels: string[];
 }
 
+// AI Search Reasoning Types
+export interface AiSearchReasoning {
+  query: string;
+  intentState: Record<string, unknown>;
+  executionPlan: Record<string, unknown>;
+  candidates: Record<string, unknown>[];
+  executionStats: Record<string, unknown>;
+  executionTime: string;
+  phase: string;
+  strategy: string;
+  explanation: string;
+}
+
 // Hook Return Types
 export interface UseToolsReturn {
   data: AITool[];
+  reasoning?: AiSearchReasoning;
   isLoading: boolean;
   isError: boolean;
   error: Error | null;

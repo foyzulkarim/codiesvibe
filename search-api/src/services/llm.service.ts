@@ -8,36 +8,50 @@ interface LLMTaskConfig {
   topP?: number;
 }
 
+// const MODEL = 'Qwen/Qwen3-1.7B-MLX-bf16';
+const MODEL = 'Qwen/Qwen3-1.7B';
+
 const taskConfigs: Record<string, LLMTaskConfig> = {
   'intent-extraction': {
-    model: 'Qwen/Qwen3-0.6B',
+    model: MODEL,
     temperature: 0.1,
     maxTokens: 1024,
-    topP: 0.9
+    topP: 0.9,
   },
   'query-planning': {
-    model: 'Qwen/Qwen3-0.6B',
+    model: MODEL,
     temperature: 0.2,
     maxTokens: 1536,
-    topP: 0.9
+    topP: 0.9,
   },
-  'refinement': {
-    model: 'Qwen/Qwen3-0.6B',
+  refinement: {
+    model: MODEL,
     temperature: 0.3,
     maxTokens: 1024,
-    topP: 0.9
+    topP: 0.9,
   },
   'ner-extraction': {
-    model: 'Qwen/Qwen3-0.6B',
+    model: MODEL,
     temperature: 0.1,
     maxTokens: 1024,
-    topP: 0.9
+    topP: 0.9,
   },
   'reference-extraction': {
-    model: 'Qwen/Qwen3-0.6B',
+    model: MODEL,
     temperature: 0.1,
     maxTokens: 1024,
-    topP: 0.9
+    topP: 0.9,
+  },
+};
+
+const LOG_CONFIG = {
+  enabled: process.env.NODE_ENV !== 'production',
+  prefix: '🎯 LLM service:',
+};
+
+const log = (message: string, data?: any) => {
+  if (LOG_CONFIG.enabled) {
+    console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
 };
 
@@ -45,7 +59,7 @@ export class LLMService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.VLLM_BASE_URL || 'http://192.168.4.28:8000/v1';
+    this.baseUrl = process.env.VLLM_BASE_URL;
   }
 
   createStructuredClient<T>(taskType: string, schema: z.ZodSchema<T>) {
@@ -54,16 +68,21 @@ export class LLMService {
       throw new Error(`No configuration found for task type: ${taskType}`);
     }
 
+    log(`Creating structured client for task: ${taskType}`, { config, baseUrl: this.baseUrl });
+
     const client = new ChatOpenAI({
       apiKey: 'not-needed',
       configuration: {
         baseURL: this.baseUrl,
       },
+      model: config.model,
       modelName: config.model,
       temperature: config.temperature,
       maxTokens: config.maxTokens,
       topP: config.topP,
     });
+
+    log(`Structured client created for task: ${taskType}`);
 
     return client.withStructuredOutput<T>(schema, {
       name: taskType.replace('-', '_'),
@@ -81,6 +100,7 @@ export class LLMService {
       configuration: {
         baseURL: this.baseUrl,
       },
+      model: config.model,
       modelName: config.model,
       temperature: config.temperature,
       maxTokens: config.maxTokens,
