@@ -13,9 +13,9 @@ export class ToolsController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Get('search')
+  @Get('ai-search')
   @ApiOperation({
-    summary: 'Search AI tools using query parameter',
+    summary: 'AI based searching',
   })
   @ApiResponse({
     status: 200,
@@ -29,6 +29,8 @@ export class ToolsController {
     if (!query) {
       return { error: 'Query parameter "q" is required' };
     }
+
+    console.log(`Received search GET request with query: ${query}`);
 
     try {
       const searchApiUrl = this.configService.get<string>(

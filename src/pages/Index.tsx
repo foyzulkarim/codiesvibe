@@ -6,6 +6,7 @@ import { TagFilter } from "@/components/TagFilter";
 import { ActiveFilterChips } from "@/components/ActiveFilterChips";
 import ResultsCounter from "@/components/ResultsCounter";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
+import { SearchReasoning } from "@/components/SearchReasoning";
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus, Sparkles, Zap, Github } from "lucide-react";
 import { useTools } from "@/hooks/api/useTools";
@@ -14,37 +15,21 @@ import { AITool, aiTools } from "@/data/tools";
 import { SORT_OPTIONS } from "@/lib/config";
 
 export default function Index() {
-  const [inputValue, setInputValue] = useState(""); // For the input field
+  const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // For the actual API search
-  const [filters, setFilters] = useState<FilterState>({
-    pricing: [],
-    interface: [],
-    functionality: [],
-    deployment: [],
-  });
+
   const [sortBy, setSortBy] = useState<string>("name");
   const [comparisonTools, setComparisonTools] = useState<AITool[]>([]);
   const [savedTools, setSavedTools] = useState<Set<string>>(new Set());
 
   // Use the API hook for data fetching
-  const { data: tools, isLoading, isError, error } = useTools(
-    searchQuery,
-    filters,
-    sortBy,
-    'desc'
+  const { data: tools, reasoning, isLoading, isError, error } = useTools(
+    searchQuery
   );
 
   // Handle search (only triggers on Enter/button press)
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (filterType: keyof FilterState, values: string[]) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: values
-    }));
   };
 
   // Handle sort changes
@@ -85,19 +70,9 @@ export default function Index() {
   };
 
   // Clear all filters
-  const clearAllFilters = () => {
-    setFilters({
-      pricing: [],
-      interface: [],
-      functionality: [],
-      deployment: [],
-    });
-    setInputValue("");
+  const clearAllFilters = () => {   
     setSearchQuery("");
-  };
-
-  // Check if any filters are active
-  const hasActiveFilters = Object.values(filters).some(arr => arr.length > 0) || searchQuery.length > 0;
+  };  
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,87 +116,58 @@ export default function Index() {
               onSearch={handleSearch}
               showSearchButton={true}
               tools={aiTools}
+              isLoading={isLoading}
             />
           </div>
+
+          {/* AI Search Reasoning */}
+          {reasoning && searchQuery && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <SearchReasoning reasoning={reasoning} searchQuery={searchQuery} />
+            </div>
+          )}
         </div>
       </section>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="lg:w-64 space-y-6">
-            <TagFilter
-              onFilterChange={handleFilterChange}
-              activeFilters={filters}
-            />
-          </aside>
-
-          {/* Content */}
-          <div className="flex-1">
-            {/* Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <div className="flex flex-col gap-2">
-                <ResultsCounter
-                  isLoading={isLoading}
-                  searchTerm={searchQuery}
-                  totalCount={tools?.length || 0}
-                />
-                {hasActiveFilters && (
-                  <ActiveFilterChips
-                    filters={filters}
-                    searchQuery={searchQuery}
-                    onRemoveFilter={(type, value) => {
-                      if (type === 'search') {
-                        setInputValue("");
-                        setSearchQuery("");
-                      } else {
-                        handleFilterChange(type as keyof FilterState,
-                          filters[type as keyof FilterState].filter(v => v !== value)
-                        );
-                      }
-                    }}
-                    onClearAll={clearAllFilters}
-                  />
-                )}
-              </div>
-
-              <SortSelector
-                value={sortBy}
-                onChange={handleSortChange}
-              />
-            </div>
-
-            {/* Tools Grid */}
-            {isError ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  Error loading tools: {error?.message || 'Unknown error'}
-                </p>
-              </div>
-            ) : (
-              <ToolGrid
-                tools={tools || []}
+        <div className="max-w-6xl mx-auto">
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-col gap-2">
+              <ResultsCounter
                 isLoading={isLoading}
                 searchTerm={searchQuery}
-                onCompare={handleCompare}
-                onSave={handleSave}
-                savedTools={savedTools}
-                comparisonTools={comparisonTools}
-              />
-            )}
-          </div>
-        </div>
-      </main>
+                totalCount={tools?.length || 0}
+              />              
+            </div>
 
-      {/* Comparison Panel */}
-      {comparisonTools.length > 0 && (
-        <ComparisonPanel
-          tools={comparisonTools}
-          onRemove={handleRemoveFromComparison}
-          onClear={() => setComparisonTools([])}
-        />
-      )}
+            <SortSelector
+              value={sortBy}
+              onChange={handleSortChange}
+            />
+          </div>
+
+          {/* Tools Grid */}
+          {isError ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                Error loading tools: {error?.message || 'Unknown error'}
+              </p>
+            </div>
+          ) : (
+            <ToolGrid
+              tools={tools || []}
+              isLoading={isLoading}
+              searchTerm={searchQuery}
+              onCompare={handleCompare}
+              onSave={handleSave}
+              savedTools={savedTools}
+              comparisonTools={comparisonTools}
+            />
+          )}
+        </div>
+      </main>      
     </div>
   );
 }

@@ -32,9 +32,9 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
 
   // Helper to get pricing display from v2.0 structure
   const getPricingDisplay = () => {
-    if (tool.pricingSummary) {
-      return tool.pricingSummary.pricingModel.map(model =>
-        model.charAt(0).toUpperCase() + model.slice(1)
+    if (tool.pricing) {
+      return tool.pricing.map(model =>
+        `${model.tier.charAt(0).toUpperCase() + model.tier.slice(1)} (${model.price})`
       );
     }
     return [];
@@ -93,7 +93,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
         {/* Header Row */}
         <div className="flex items-start gap-4">
           <div className="tool-logo">
-            {!imageError ? (
+            {(tool.logoUrl && !imageError) ? (
               <img
                 src={tool.logoUrl}
                 alt={`${tool.name} logo`}
@@ -139,33 +139,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
             >
               {price}
             </span>
-          ))}
-
-          {/* Interface Tags */}
-          {tool.interface.length > 0 && (
-            <div className="w-px h-5 bg-border self-center" />
-          )}
-          {tool.interface.map((interface_) => (
-            <span
-              key={interface_}
-              className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary"
-            >
-              {interface_}
-            </span>
-          ))}
-
-          {/* deployment Tags */}
-          {tool.deployment.length > 0 && (
-            <div className="w-px h-5 bg-border self-center" />
-          )}
-          {tool.deployment.map((deploy) => (
-            <span
-              key={deploy}
-              className="px-2 py-1 text-xs font-medium rounded-md bg-secondary/10 text-secondary"
-            >
-              {deploy}
-            </span>
-          ))}
+          ))}          
         </div>
 
         {/* Stats Row */}
@@ -200,7 +174,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
             )}
 
             {/* AI Features Matrix (v2.0) */}
-            {tool.capabilities?.aiFeatures && (
+            {/* {tool.capabilities?.aiFeatures && (
               <div>
                 <h4 className="text-sm font-medium mb-2">AI Capabilities</h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -214,10 +188,10 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Legacy Feature Matrix (backward compatibility) */}
-            {tool.features && (
+            {/* {tool.features && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Key Features</h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -231,25 +205,20 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Pricing Details (v2.0) */}
-            {tool.pricingDetails && tool.pricingDetails.length > 0 && (
+            {tool.pricing && tool.pricing.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Pricing Plans</h4>
                 <div className="space-y-2">
-                  {tool.pricingDetails.slice(0, 3).map((plan) => (
-                    <div key={plan.id} className="flex items-center justify-between p-2 rounded border">
+                  {tool.pricing.slice(0, 3).map((plan) => (
+                    <div key={plan.tier} className="flex items-center justify-between p-2 rounded border">
                       <div>
-                        <span className="font-medium text-sm">{plan.name}</span>
-                        {plan.isPopular && (
-                          <span className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
-                            Popular
-                          </span>
-                        )}
+                        <span className="font-medium text-sm">{plan.tier}</span>
                       </div>
                       <span className="text-sm font-medium">
-                        {plan.price === null ? 'Custom' : plan.price === 0 ? 'Free' : `$${plan.price}/${plan.billing}`}
+                        {plan.price === null ? 'Custom' : plan.price === 0 ? 'Free' : `$${plan.price}`}
                       </span>
                     </div>
                   ))}
@@ -258,7 +227,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
             )}
 
             {/* Use Cases (v2.0) */}
-            {tool.useCases && tool.useCases.length > 0 && (
+            {/* {tool.useCases && tool.useCases.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Use Cases</h4>
                 <div className="space-y-2">
@@ -273,7 +242,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* All Categories - Updated for v2.0 */}
             <div>
@@ -282,11 +251,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                 {/* v2.0 Categories */}
                 {tool.categories && (
                   <div className="space-y-1">
-                    {tool.categories.primary && tool.categories.primary.length > 0 && (
+                    {Array.isArray(tool.categories) && tool.categories.length > 0 && (
                       <div>
-                        <span className="text-xs font-medium text-muted-foreground">Primary:</span>
+                        <span className="text-xs font-medium text-muted-foreground">Categories:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {tool.categories.primary.map((cat) => (
+                          {tool.categories.map((cat) => (
                             <span key={cat} className="px-2 py-1 text-xs bg-primary/10 text-primary rounded">
                               {cat}
                             </span>
@@ -294,11 +263,11 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
                         </div>
                       </div>
                     )}
-                    {tool.categories.industries && tool.categories.industries.length > 0 && (
+                    {tool.industries && tool.industries.length > 0 && (
                       <div>
                         <span className="text-xs font-medium text-muted-foreground">Industries:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {tool.categories.industries.map((industry) => (
+                          {tool.industries.map((industry) => (
                             <span key={industry} className="px-2 py-1 text-xs bg-secondary/10 text-secondary rounded">
                               {industry}
                             </span>

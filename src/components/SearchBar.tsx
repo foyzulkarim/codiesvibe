@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import { AITool } from "@/data/tools";
 import { Button } from "./ui/button";
 
@@ -8,18 +8,21 @@ interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
   showSearchButton?: boolean;
+  isLoading?: boolean;
 }
 
-export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton = false }: SearchBarProps) => {
+export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton = false, isLoading = false }: SearchBarProps) => {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isLoading) {
       onSearch(value);
     }
   };
 
   const handleSearchClick = () => {
-    onSearch(value);
+    if (!isLoading) {
+      onSearch(value);
+    }
   };
 
   return (
@@ -49,8 +52,16 @@ export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton =
             onClick={handleSearchClick}
             size="sm"
             className="absolute right-2 top-1/2 transform -translate-y-1/2"
+            disabled={isLoading}
           >
-            Search
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                Loading...
+              </>
+            ) : (
+              "Search"
+            )}
           </Button>
         )}
       </div>
