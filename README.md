@@ -11,7 +11,7 @@
 
 CodiesVibe is a modern, intelligent directory of AI-powered development tools designed to help developers discover, compare, and choose the right tools for their specific needs. In a world where new AI tools emerge daily, CodiesVibe cuts through the noise with smart search capabilities, detailed categorization, and community-driven insights.
 
-### 🎯 Our Mission
+### 🎯 Mission
 
 We believe that the right tools can dramatically accelerate development and unlock new possibilities. But with hundreds of AI tools launching every month, finding the perfect match for your specific use case becomes overwhelming.
 
@@ -56,6 +56,17 @@ CodiesVibe is built as a **production-grade platform** using modern web technolo
 2. **Comprehensive Data**: Detailed categorization including pricing models, integrations, and use cases
 3. **Developer-First**: Built by developers, for developers, with real workflows in mind
 4. **Production Ready**: Enterprise-grade reliability and performance from day one
+
+## 📺 Demo
+
+Check out the demo to see CodiesVibe in action:
+
+https://github.com/user-attachments/assets/codiesvibe-teaser-trailer.webm
+
+<video width="100%" controls>
+  <source src="./video/codiesvibe-teaser-trailer.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
 
 ## 🚀 Quick Start
 
