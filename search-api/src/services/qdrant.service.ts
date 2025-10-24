@@ -141,13 +141,17 @@ export class QdrantService {
     limit: number = 10,
     filter?: Record<string, any>,
     vectorType?: string,
-    collection?: string
+    collection?: string,
+    scoreThreshold?: number
   ): Promise<Array<{ id: string; score: number; payload: any }>> {
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       // Validate search parameters
       validateSearchParams({ embedding, limit, filter, vectorType });
+      
+      // Set default score threshold if not provided
+      const threshold = scoreThreshold !== undefined ? scoreThreshold : 0.6;
 
       // Determine collection name based on vector type and configuration
       const collectionName = collection || getCollectionNameForVectorType(vectorType);
@@ -158,11 +162,13 @@ export class QdrantService {
       console.log("   - vectorType:", vectorType || 'default');
       console.log("   - useEnhanced:", useEnhanced);
       console.log("   - limit:", limit);
+      console.log("   - scoreThreshold:", threshold);
 
       const searchParams: any = {
         limit: limit,
         filter: filter,
         with_payload: true,
+        score_threshold: threshold,
       };
 
       // Add vector parameter based on whether we're using named vectors or separate collections

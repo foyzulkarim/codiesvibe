@@ -1,5 +1,4 @@
 import { ChatOpenAI } from '@langchain/openai';
-import Together from 'together-ai';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { PromptTemplate } from '@langchain/core/prompts';
 
@@ -138,11 +137,10 @@ export class LLMService {
   }
 
   createTogetherAIClient(taskType: string) {
-    const together = new Together({
-      apiKey: process.env.TOGETHER_AI_API_KEY,
-    });
-    log(`Created Together client for task: ${taskType}`, together);
-    return together;
+    // This method can be implemented if needed for direct Together API calls
+    // For now, we focus on the LangChain integration
+    log(`Together AI client creation requested for task: ${taskType}`);
+    throw new Error('Direct Together AI client not implemented. Use createTogetherAIStructuredClient instead.');
   }
 }
 

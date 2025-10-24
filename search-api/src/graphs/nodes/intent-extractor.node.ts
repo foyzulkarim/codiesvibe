@@ -128,10 +128,15 @@ export async function intentExtractorNode(
 
   try {
     // Create structured output model using LLM service
+    log('Creating Together AI client for intent extraction', {
+      taskType: 'intent-extraction',
+      usingTogetherAPI: true
+    });
     const structuredModel = llmService.createTogetherAILangchainClient();
 
-    log('Sending request to LLM with structured output', {
+    log('Sending request to Together AI for intent extraction', {
       taskType: 'intent-extraction',
+      model: 'openai/gpt-oss-20b via Together API'
     });
 
     // Extract intent using structured output
@@ -146,9 +151,10 @@ export async function intentExtractorNode(
 
     const executionTime = Date.now() - startTime;
 
-    log('Intent extraction completed successfully with LangChain', {
+    log('Together AI intent extraction completed successfully', {
       intentState,
       executionTime,
+      confidence: intentState.confidence
     });
 
     return {

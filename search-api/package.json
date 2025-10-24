@@ -35,7 +35,11 @@
     "type-check": "tsc --noEmit",
     "create-collections": "ts-node -r tsconfig-paths/register src/create-collections.ts",
     "seed-vectors": "ts-node -r tsconfig-paths/register src/seed-vectors.ts --force",
-    "seed-vectors:build": "npm run build && node dist/src/seed-vectors.js"
+    "seed-vectors:build": "npm run build && node dist/src/seed-vectors.js",
+    "test:script:intent": "npx tsx src/debug-scripts/test-intent-extractor-only.ts",
+    "test:script:plan": "npx tsx src/debug-scripts/test-query-planner-only.ts",
+    "test:script:executor": "npx tsx src/debug-scripts/test-query-executor-only.ts",
+    "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.57",

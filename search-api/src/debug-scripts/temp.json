@@ -1,0 +1,275 @@
+{
+    "query": "self hosted cli",
+    "intentState": {
+        "primaryGoal": "find",
+        "referenceTool": null,
+        "comparisonMode": null,
+        "filters": [],
+        "pricingModel": null,
+        "billingPeriod": null,
+        "priceRange": null,
+        "priceComparison": null,
+        "category": null,
+        "interface": "CLI",
+        "functionality": [],
+        "deployment": "Self-Hosted",
+        "industry": null,
+        "userType": null,
+        "semanticVariants": [
+            "self hosted",
+            "cli"
+        ],
+        "constraints": [
+            "self-hosted"
+        ],
+        "confidence": 0.9
+    },
+    "executionPlan": {
+        "strategy": "hybrid",
+        "fusion": "weighted_sum",
+        "vectorSources": [
+            {
+                "collection": "tools",
+                "embeddingType": "semantic",
+                "queryVectorSource": "query_text",
+                "topK": 70
+            },
+            {
+                "collection": "functionality",
+                "embeddingType": "entities.functionality",
+                "queryVectorSource": "query_text",
+                "topK": 40
+            }
+        ],
+        "structuredSources": [
+            {
+                "collection": "mongodb",
+                "filters": [
+                    {
+                        "field": "interface",
+                        "operator": "$eq",
+                        "value": "CLI"
+                    },
+                    {
+                        "field": "deployment",
+                        "operator": "$eq",
+                        "value": "Self-Hosted"
+                    }
+                ],
+                "topK": 200,
+                "weight": 0.8
+            }
+        ],
+        "confidence": 0.5,
+        "explanation": "Multi-collection search strategy: hybrid. Searching 2 specialized collections: tools, functionality. Adapted from recommended strategy (identity-focused) based on query analysis. Combining with MongoDB structured filtering for precise constraints. Using weighted score fusion for result combination."
+    },
+    "candidates": [
+        {
+            "id": "68fa0a8f6941d58027b42e16",
+            "source": "fusion",
+            "score": 1,
+            "metadata": {
+                "name": "Ollama",
+                "platform": "CLI",
+                "features": [],
+                "description": "Local LLM runner for running AI models on your own hardware"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality,mongodb_undefined"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8f6941d58027b42e1a",
+            "source": "fusion",
+            "score": 0.9681689003859587,
+            "metadata": {
+                "name": "LM Studio",
+                "platform": "Desktop",
+                "features": [],
+                "description": "User-friendly desktop app for running local AI models with GUI"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality,mongodb_undefined"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42e0b",
+            "source": "fusion",
+            "score": 0.36402888726327665,
+            "metadata": {
+                "name": "Replit",
+                "platform": "Web",
+                "features": [],
+                "description": "Cloud-based IDE with AI coding assistance and instant deployment"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42e10",
+            "source": "fusion",
+            "score": 0.32164191332998565,
+            "metadata": {
+                "name": "Lovable",
+                "platform": "Web",
+                "features": [],
+                "description": "AI-powered full-stack app builder from natural language prompts"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42df1",
+            "source": "fusion",
+            "score": 0.1940366245967129,
+            "metadata": {
+                "name": "GitHub Copilot",
+                "platform": "Web",
+                "features": [],
+                "description": "AI-powered code completion and programming assistant"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42dff",
+            "source": "fusion",
+            "score": 0.191590171947343,
+            "metadata": {
+                "name": "Amazon Q",
+                "platform": "Web",
+                "features": [],
+                "description": "AI-powered assistant by AWS for developers and business users"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42e03",
+            "source": "fusion",
+            "score": 0.16007550225557518,
+            "metadata": {
+                "name": "Cursor IDE",
+                "platform": "IDE",
+                "features": [],
+                "description": "AI-powered code editor with intelligent completions and chat"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8d6941d58027b42deb",
+            "source": "fusion",
+            "score": 0.011262255109141792,
+            "metadata": {
+                "name": "ChatGPT",
+                "platform": "Web",
+                "features": [],
+                "description": "Advanced AI chatbot for natural conversations and assistance"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        },
+        {
+            "id": "68fa0a8e6941d58027b42dfa",
+            "source": "fusion",
+            "score": 0,
+            "metadata": {
+                "name": "Claude AI",
+                "platform": "Web",
+                "features": [],
+                "description": "AI assistant by Anthropic for helpful, harmless, and honest conversations"
+            },
+            "embeddingVector": null,
+            "provenance": {
+                "collection": "tools",
+                "queryVectorSource": "query_text",
+                "filtersApplied": [
+                    "fusion_source_vector_tools_weight_1",
+                    "fused_from_vector_tools,vector_functionality"
+                ]
+            }
+        }
+    ],
+    "executionStats": {
+        "totalTimeMs": 2477,
+        "nodeTimings": {
+            "intent-extractor": 4093,
+            "query-planner": 6183,
+            "query-executor": 2477
+        },
+        "vectorQueriesExecuted": 2,
+        "structuredQueriesExecuted": 1,
+        "fusionMethod": "weighted_sum"
+    },
+    "errors": [],
+    "metadata": {
+        "startTime": "2025-10-24T01:18:47.868Z",
+        "executionPath": [
+            "intent-extractor",
+            "query-planner",
+            "query-executor"
+        ],
+        "nodeExecutionTimes": {
+            "intent-extractor": 4093,
+            "query-planner": 6183,
+            "query-executor": 2477
+        },
+        "totalNodesExecuted": 0,
+        "pipelineVersion": "2.0-llm-first"
+    }
+}

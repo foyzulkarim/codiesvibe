@@ -8,9 +8,18 @@ import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph';
 
 // Test cases from the specification
 const testCases = [
+  // {
+  //   name: "Simple discovery query",
+  //   query: "self hosted cli",
+  //   expectedIntent: {
+  //     primaryGoal: "find",
+  //     pricing: "free",
+  //     platform: "cli"
+  //   }
+  // },
   {
-    name: "Simple discovery query",
-    query: "free cli",
+    name: "Simple discovery query 2",
+    query: "ui generator",
     expectedIntent: {
       primaryGoal: "find",
       pricing: "free",
@@ -171,6 +180,8 @@ async function main() {
   console.log('  - agentic-search.graph.ts (Simple 3-node workflow)');
   console.log('  - Schema-driven validation at each step');
   console.log('  - Hybrid search: Vector (Qdrant) + Structured (MongoDB)');
+
+  process.exit();
 }
 
 // Run the tests

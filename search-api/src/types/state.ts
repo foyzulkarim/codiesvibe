@@ -14,6 +14,9 @@ export const StateAnnotation = Annotation.Root({
   executionPlan: Annotation<QueryPlan | null>,
   candidates: Annotation<Candidate[]>,
 
+  // Full MongoDB documents corresponding to candidates
+  results: Annotation<any[]>,
+
   // Execution statistics and tracking
   executionStats: Annotation<{
     totalTimeMs: number;

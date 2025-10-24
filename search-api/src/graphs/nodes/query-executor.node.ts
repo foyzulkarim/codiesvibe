@@ -55,7 +55,10 @@ export async function queryExecutorNode(
     strategy: executionPlan.strategy,
     vectorSourcesCount: executionPlan.vectorSources?.length || 0,
     structuredSourcesCount: executionPlan.structuredSources?.length || 0,
-    fusionMethod: executionPlan.fusion || 'none'
+    fusionMethod: executionPlan.fusion || 'none',
+    sources: JSON.stringify({
+      structuredSources: executionPlan.structuredSources
+    })
   });
 
   try {
@@ -155,6 +158,11 @@ export async function queryExecutorNode(
       finalCandidates = fuseResults(candidatesBySource, executionPlan.fusion || 'rrf');
     }
 
+    // Enrich candidates with full MongoDB data
+    const enrichmentStartTime = Date.now();
+    const results = await enrichCandidatesWithFullData(finalCandidates, mongoService);
+    const enrichmentTime = Date.now() - enrichmentStartTime;
+
     const executionTime = Date.now() - startTime;
 
     // Create execution stats
@@ -186,11 +194,14 @@ export async function queryExecutorNode(
       vectorQueriesExecuted,
       structuredQueriesExecuted,
       fusionMethod: executionPlan.fusion || 'none',
-      executionTime
+      executionTime,
+      enrichmentTime,
+      resultsEnriched: results.filter(r => r !== null).length
     });
 
     return {
       candidates: finalCandidates,
+      results, // Add the new results field with full MongoDB documents
       executionStats,
       metadata: {
         ...state.metadata,
@@ -291,13 +302,14 @@ async function executeVectorSearch(
       }
     }
 
-    // Execute search
+    // Execute search with score threshold to filter out low-quality results
     const searchResults = await qdrantService.searchByEmbedding(
       queryVector,
       vectorSource.topK,
       filter,
       vectorSource.embeddingType,
       vectorSource.collection,
+      0.7
     );
 
     // Convert to Candidate format
@@ -460,3 +472,72 @@ const logWarning = (message: string, data?: any) => {
     console.warn(`${LOG_CONFIG.prefix} WARNING: ${message}`, data ? data : '');
   }
 };
+
+
+/**
+ * Enrich candidates with full MongoDB data
+ * Fetches complete tool documents from MongoDB while preserving candidate order
+ */
+async function enrichCandidatesWithFullData(
+  candidates: Candidate[],
+  mongoService: MongoDBService
+): Promise<any[]> {
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  try {
+    // Extract unique candidate IDs
+    const candidateIds = candidates.map(candidate => candidate.id);
+    
+    log('Enriching candidates with full MongoDB data', {
+      candidateCount: candidates.length,
+      uniqueIds: candidateIds.length
+    });
+
+    // Batch fetch full documents from MongoDB
+    const fullDocuments = await mongoService.getToolsByIds(candidateIds);
+    
+    log('Retrieved full documents from MongoDB', {
+      documentsFound: fullDocuments.length,
+      requestedIds: candidateIds.length
+    });
+
+    // Create a map for quick lookup by ID (handle both ObjectId and string formats)
+    const documentMap = new Map<string, any>();
+    fullDocuments.forEach(doc => {
+      // Store by both string representation and ObjectId string
+      const idStr = doc._id.toString();
+      documentMap.set(idStr, doc);
+      documentMap.set(doc._id, doc);
+    });
+
+    // Create results array in the same order as candidates
+    const results = candidates.map(candidate => {
+      const fullDoc = documentMap.get(candidate.id);
+      if (fullDoc) {
+        return fullDoc;
+      } else {
+        log(`No full document found for candidate ID: ${candidate.id}`);
+        return null;
+      }
+    });
+
+    const foundCount = results.filter(result => result !== null).length;
+    log('Enrichment completed', {
+      totalCandidates: candidates.length,
+      documentsFound: foundCount,
+      documentsNotFound: candidates.length - foundCount
+    });
+
+    return results;
+  } catch (error) {
+    logError('Failed to enrich candidates with full data', {
+      error: error instanceof Error ? error.message : String(error),
+      candidateCount: candidates.length
+    });
+    
+    // Return array of nulls to maintain order if enrichment fails
+    return new Array(candidates.length).fill(null);
+  }
+}

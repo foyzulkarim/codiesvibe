@@ -82,6 +82,7 @@ async function testIntentExtraction(testCase: any) {
       intentState: null,
       executionPlan: null,
       candidates: [],
+      results: [], // Initialize empty results array
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},
@@ -205,7 +206,7 @@ async function main() {
   // }
 
   // Run single test case
-  const testCase = intentTestCases[1];
+  const testCase = intentTestCases[0];
   const result = await testIntentExtraction(testCase);
   results.push({ ...testCase, ...result });
 

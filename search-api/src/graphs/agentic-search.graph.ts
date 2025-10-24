@@ -79,6 +79,7 @@ export async function searchWithAgenticPipeline(
       intentState: null,
       executionPlan: null,
       candidates: [],
+      results: [], // Initialize empty results array
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},
@@ -258,6 +259,7 @@ export async function* streamSearchWithAgenticPipeline(
       intentState: null,
       executionPlan: null,
       candidates: [],
+      results: [], // Initialize empty results array
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},

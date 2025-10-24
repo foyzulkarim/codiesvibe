@@ -1,3 +1,5 @@
+import { JsonOutputParser } from '@langchain/core/output_parsers';
+
 import { StateAnnotation } from '../../types/state';
 import { QueryPlanSchema } from '../../types/query-plan';
 import { llmService } from '../../services/llm.service';
@@ -17,7 +19,11 @@ const LOG_CONFIG = {
 const collectionConfig = new CollectionConfigService();
 const vectorTypeRegistry = new VectorTypeRegistryService(collectionConfig);
 const contentFactory = new ContentGeneratorFactory(collectionConfig);
-const multiCollectionOrchestrator = new MultiCollectionOrchestrator(collectionConfig, vectorTypeRegistry, contentFactory);
+const multiCollectionOrchestrator = new MultiCollectionOrchestrator(
+  collectionConfig,
+  vectorTypeRegistry,
+  contentFactory
+);
 
 // Helper function for conditional logging
 const log = (message: string, data?: any) => {
@@ -39,16 +45,18 @@ function getMultiCollectionConfig() {
 
   return {
     enabledCollections,
-    vectorTypes: vectorTypes.map(vt => vt.name),
-    collectionConfigs: enabledCollections.map(name => collectionConfig.getCollectionByName(name)),
+    vectorTypes: vectorTypes.map((vt) => vt.name),
+    collectionConfigs: enabledCollections.map((name) =>
+      collectionConfig.getCollectionByName(name)
+    ),
     availableStrategies: [
       'multi-collection-hybrid', // Search across all relevant collections
-      'identity-focused',        // Focus on tools collection for tool identity
-      'capability-focused',      // Focus on functionality collection
-      'usecase-focused',         // Focus on usecases collection
-      'technical-focused',       // Focus on interface collection
-      'adaptive-weighted'        // Dynamically weight collections based on query
-    ]
+      'identity-focused', // Focus on tools collection for tool identity
+      'capability-focused', // Focus on functionality collection
+      'usecase-focused', // Focus on usecases collection
+      'technical-focused', // Focus on interface collection
+      'adaptive-weighted', // Dynamically weight collections based on query
+    ],
   };
 }
 
@@ -156,16 +164,63 @@ QUERY PLANNING GUIDELINES:
    - "concat" when sources are non-overlapping
 
 MongoDB Structured Fields (for filtering):
-- "pricingModel" - Array: [${CONTROLLED_VOCABULARIES.pricingModels.map(p => `"${p}"`).join(', ')}]
-- "categories" - Array from: [${CONTROLLED_VOCABULARIES.categories.map(c => `"${c}"`).join(', ')}]
-- "industries" - Array from: [${CONTROLLED_VOCABULARIES.industries.map(i => `"${i}"`).join(', ')}]
-- "userTypes" - Array from: [${CONTROLLED_VOCABULARIES.userTypes.map(u => `"${u}"`).join(', ')}]
-- "interface" - Array from: [${CONTROLLED_VOCABULARIES.interface.map(i => `"${i}"`).join(', ')}]
-- "functionality" - Array from: [${CONTROLLED_VOCABULARIES.functionality.map(f => `"${f}"`).join(', ')}]
-- "deployment" - Array from: [${CONTROLLED_VOCABULARIES.deployment.map(d => `"${d}"`).join(', ')}]
+CRITICAL: You MUST use ONLY the exact values listed below. DO NOT create variations, synonyms, or modified versions of these values.
+
+- "pricingModel" - EXACT values only: [${CONTROLLED_VOCABULARIES.pricingModels
+      .map((p) => `"${p}"`)
+      .join(', ')}]
+- "categories" - EXACT values only: [${CONTROLLED_VOCABULARIES.categories
+      .map((c) => `"${c}"`)
+      .join(', ')}]
+- "industries" - EXACT values only: [${CONTROLLED_VOCABULARIES.industries
+      .map((i) => `"${i}"`)
+      .join(', ')}]
+- "userTypes" - EXACT values only: [${CONTROLLED_VOCABULARIES.userTypes
+      .map((u) => `"${u}"`)
+      .join(', ')}]
+- "interface" - EXACT values only: [${CONTROLLED_VOCABULARIES.interface
+      .map((i) => `"${i}"`)
+      .join(', ')}]
+- "functionality" - EXACT values only: [${CONTROLLED_VOCABULARIES.functionality
+      .map((f) => `"${f}"`)
+      .join(', ')}]
+- "deployment" - EXACT values only: [${CONTROLLED_VOCABULARIES.deployment
+      .map((d) => `"${d}"`)
+      .join(', ')}]
 - "status" - Tool status: "active" | "beta" | "deprecated" | "discontinued"
 - "popularity" - Number for popularity filtering
 - "rating" - Number for rating filtering
+
+IMPORTANT FILTERING RULES:
+1. Use ONLY the exact string values listed above - no variations, no synonyms, no modifications
+2. If the intent mentions "CLI", use "CLI" for interface field, NOT for functionality field
+3. Do not create compound terms like "CLI mode" - use only the exact controlled vocabulary values
+4. If a concept doesn't match an exact controlled vocabulary value, do not create a filter for that field
+5. Map intent concepts to the correct field: interface concepts go to interface, functionality concepts go to functionality
+
+STRUCTURED FILTER FORMAT:
+CRITICAL: When generating structuredSources, the "filters" field MUST be an array of filter objects, NOT a simple object.
+
+Correct format example:
+- collection: "tools"
+- filters: [{"field": "interface", "operator": "in", "value": ["CLI"]}, {"field": "deployment", "operator": "in", "value": ["Self-Hosted"]}]
+- topK: 70
+- weight: 1
+
+WRONG format (DO NOT USE):
+- filters: {"interface": "CLI", "deployment": "Self-Hosted"}
+
+Filter Object Structure:
+- "field": The MongoDB field name (e.g., "interface", "deployment", "pricingModel")
+- "operator": MongoDB operator (use "in" for array values, "=" for single values)
+- "value": Array of values for in operator, or single value for "=" operator
+
+Examples:
+- Single value: {"field": "status", "operator": "=", "value": "active"}
+- Multiple values: {"field": "interface", "operator": "in", "value": ["CLI", "Web"]}
+- Array field: {"field": "categories", "operator": "in", "value": ["Development", "AI"]}
+
+Always use the array format for filters in structuredSources!
 
 Enhanced Strategy Types:
 - "multi-collection-hybrid" - Use multiple specialized collections with intelligent weighting
@@ -184,6 +239,27 @@ Fusion Methods:
 - "weighted_sum" - Weighted score combination with collection weights
 - "concat" - Simple concatenation (no fusion)
 - "none" - No fusion needed
+
+VECTOR TYPE CONFIGURATION:
+CRITICAL: You MUST use ONLY the exact vector types listed below. DO NOT create variations or custom vector types.
+
+Supported Vector Types:
+- "semantic" - General semantic embeddings (default)
+- "entities.categories" - Category-specific embeddings
+- "entities.functionality" - Functionality-specific embeddings  
+- "entities.interface" - Interface-specific embeddings
+- "entities.industries" - Industry-specific embeddings
+- "entities.userTypes" - User type-specific embeddings
+- "entities.aliases" - Alias-specific embeddings
+- "composites.toolType" - Tool type composite embeddings
+
+VECTOR TYPE ASSIGNMENT RULES:
+1. For "functionality" collection: use "entities.functionality"
+2. For "interface" collection: use "entities.interface" 
+3. For "tools" collection: use "semantic" (default)
+4. For "usecases" collection: use "semantic" (default)
+5. DO NOT use "entities.usecase" - this is NOT supported
+6. When in doubt, use "semantic" as the default vector type
 
 COLLECTION HEALTH CONSIDERATIONS:
 Current enabled collections: [${enabledCollections.join(', ')}]
@@ -207,17 +283,23 @@ async function validateAndEnhanceQueryPlan(
   intentState: any
 ): Promise<any> {
   try {
+
+    log('validating query plan received', {
+      queryPlan: JSON.stringify(queryPlan)
+    });
+
     // Validate collection availability
     const enabledCollections = collectionConfig.getEnabledCollectionNames();
-    const validVectorSources = queryPlan.vectorSources?.filter((vs: any) =>
-      enabledCollections.includes(vs.collection)
-    ) || [];
+    const validVectorSources =
+      queryPlan.vectorSources?.filter((vs: any) =>
+        enabledCollections.includes(vs.collection)
+      ) || [];
 
     // Ensure primary collections are included
     const collectionsToInclude = new Set([
       ...intentAnalysis.primaryCollections,
       ...intentAnalysis.secondaryCollections,
-      ...validVectorSources.map((vs: any) => vs.collection)
+      ...validVectorSources.map((vs: any) => vs.collection),
     ]);
 
     // Build enhanced vector sources with proper weights and topK values
@@ -229,8 +311,10 @@ async function validateAndEnhanceQueryPlan(
         continue;
       }
 
-      const isPrimary = intentAnalysis.primaryCollections.includes(collectionName);
-      const isSecondary = intentAnalysis.secondaryCollections.includes(collectionName);
+      const isPrimary =
+        intentAnalysis.primaryCollections.includes(collectionName);
+      const isSecondary =
+        intentAnalysis.secondaryCollections.includes(collectionName);
 
       // Determine appropriate topK based on collection priority
       let topK = 50; // default
@@ -252,8 +336,10 @@ async function validateAndEnhanceQueryPlan(
       enhancedVectorSources.push({
         collection: collectionName,
         embeddingType,
-        queryVectorSource: intentState.referenceTool ? 'reference_tool_embedding' : 'query_text',
-        topK: Math.min(topK, 200) // enforce max limit
+        queryVectorSource: intentState.referenceTool
+          ? 'reference_tool_embedding'
+          : 'query_text',
+        topK: Math.min(topK, 200), // enforce max limit
       });
     }
 
@@ -269,36 +355,38 @@ async function validateAndEnhanceQueryPlan(
     let enhancedStructuredSources = queryPlan.structuredSources || [];
 
     // Add MongoDB structured source for filtering if constraints exist
-    const hasConstraints = (
+    const hasConstraints =
       intentState.pricing ||
-      intentState.platform ||
-      intentState.category ||
       intentState.desiredFeatures?.length > 0 ||
-      intentState.constraints?.length > 0
-    );
+      intentState.constraints?.length > 0;
 
-    if (hasConstraints && !enhancedStructuredSources.some((ss: any) => ss.source === 'mongodb')) {
+    if (
+      hasConstraints      
+    ) {
       const filters: any[] = [];
 
       // Add pricing filters
       if (intentState.pricing) {
-        const pricingModels = intentState.pricing.toLowerCase().split(',').map((p: string) => p.trim());
+        const pricingModels = intentState.pricing
+          .toLowerCase()
+          .split(',')
+          .map((p: string) => p.trim());
         filters.push({
           field: 'pricingModel',
           operator: 'in',
-          value: pricingModels
+          value: pricingModels,
         });
       }
 
       // Add price range filters
       if (intentState.priceRange) {
         const { min, max, currency, billingPeriod } = intentState.priceRange;
-        
+
         // Create base filter for pricing array
         const priceFilter: any = {
           field: 'pricing',
           operator: 'elemMatch',
-          value: {}
+          value: {},
         };
 
         // Add billing period filter if specified
@@ -320,12 +408,13 @@ async function validateAndEnhanceQueryPlan(
 
       // Add price comparison filters
       if (intentState.priceComparison) {
-        const { operator, value, currency, billingPeriod } = intentState.priceComparison;
-        
+        const { operator, value, currency, billingPeriod } =
+          intentState.priceComparison;
+
         const priceFilter: any = {
           field: 'pricing',
           operator: 'elemMatch',
-          value: {}
+          value: {},
         };
 
         // Add billing period filter if specified
@@ -353,33 +442,13 @@ async function validateAndEnhanceQueryPlan(
         }
 
         filters.push(priceFilter);
-      }
-
-      // Add category filters
-      if (intentState.category) {
-        const categories = intentState.category.toLowerCase().split(',').map((c: string) => c.trim());
-        filters.push({
-          field: 'categories.primary',
-          operator: 'in',
-          value: categories
-        });
-      }
-
-      // Add platform/interface filters
-      if (intentState.platform) {
-        const platforms = intentState.platform.toLowerCase().split(',').map((p: string) => p.trim());
-        filters.push({
-          field: 'interface',
-          operator: 'in',
-          value: platforms
-        });
-      }
+      }         
 
       if (filters.length > 0) {
         enhancedStructuredSources.push({
           source: 'mongodb',
           filters,
-          limit: 100
+          limit: 100,
         });
       }
     }
@@ -388,14 +457,17 @@ async function validateAndEnhanceQueryPlan(
     let strategy = queryPlan.strategy;
     if (enhancedVectorSources.length > 2) {
       strategy = 'multi-collection-hybrid';
-    } else if (enhancedVectorSources.length > 0 && enhancedStructuredSources.length > 0) {
+    } else if (
+      enhancedVectorSources.length > 0 &&
+      enhancedStructuredSources.length > 0
+    ) {
       strategy = 'hybrid';
     } else if (enhancedVectorSources.length > 0) {
       strategy = 'multi-vector';
     }
 
     // Calculate confidence based on multiple factors
-    let confidence = queryPlan.confidence || 0.5;
+    let confidence = queryPlan.confidence || 0.7;
 
     // Boost confidence if strategy matches analysis
     if (strategy === intentAnalysis.recommendedStrategy) {
@@ -403,9 +475,10 @@ async function validateAndEnhanceQueryPlan(
     }
 
     // Adjust confidence based on collection coverage
-    const collectionCoverage = intentAnalysis.primaryCollections.filter(
-      coll => enhancedVectorSources.some(vs => vs.collection === coll)
-    ).length / intentAnalysis.primaryCollections.length;
+    const collectionCoverage =
+      intentAnalysis.primaryCollections.filter((coll) =>
+        enhancedVectorSources.some((vs) => vs.collection === coll)
+      ).length / intentAnalysis.primaryCollections.length;
 
     confidence = confidence * (0.7 + 0.3 * collectionCoverage);
 
@@ -422,7 +495,7 @@ async function validateAndEnhanceQueryPlan(
       enhancedCollections: enhancedVectorSources.length,
       strategy,
       confidence: confidence.toFixed(2),
-      fusionMethod
+      fusionMethod,
     });
 
     return {
@@ -432,9 +505,8 @@ async function validateAndEnhanceQueryPlan(
       structuredSources: enhancedStructuredSources,
       fusion: fusionMethod,
       confidence: Math.round(confidence * 100) / 100,
-      explanation
+      explanation,
     };
-
   } catch (error) {
     logError('Failed to enhance query plan', error);
     return queryPlan; // fallback to original plan
@@ -450,13 +522,14 @@ function generateEnhancedExplanation(
   structuredSources: any[],
   intentAnalysis: any
 ): string {
-  const collections = vectorSources.map(vs => vs.collection);
+  const collections = vectorSources.map((vs) => vs.collection);
   const hasStructured = structuredSources.length > 0;
 
   let explanation = `Multi-collection search strategy: ${strategy}. `;
 
   if (collections.length > 0) {
-    explanation += `Searching ${collections.length} specialized collection${collections.length > 1 ? 's' : ''}: `;
+    explanation += `Searching ${collections.length} specialized collection${collections.length > 1 ? 's' : ''
+      }: `;
     explanation += collections.join(', ');
     explanation += '. ';
   }
@@ -466,11 +539,13 @@ function generateEnhancedExplanation(
   }
 
   if (hasStructured) {
-    explanation += 'Combining with MongoDB structured filtering for precise constraints. ';
+    explanation +=
+      'Combining with MongoDB structured filtering for precise constraints. ';
   }
 
   if (vectorSources.length > 2) {
-    explanation += 'Using Reciprocal Rank Fusion (RRF) for optimal result merging across multiple collections.';
+    explanation +=
+      'Using Reciprocal Rank Fusion (RRF) for optimal result merging across multiple collections.';
   } else if (vectorSources.length === 2) {
     explanation += 'Using weighted score fusion for result combination.';
   }
@@ -494,62 +569,82 @@ function analyzeQueryIntent(intentState: any): {
   const hasReferenceTool = !!intentState.referenceTool;
 
   // Identity-focused queries
-  if (primaryGoal.includes('find') || primaryGoal.includes('discover') ||
-    primaryGoal.includes('search') || hasReferenceTool) {
+  if (
+    primaryGoal.includes('find') ||
+    primaryGoal.includes('discover') ||
+    primaryGoal.includes('search') ||
+    hasReferenceTool
+  ) {
     return {
       recommendedStrategy: 'identity-focused',
       primaryCollections: ['tools'],
       secondaryCollections: ['functionality'],
       confidence: 0.8,
-      reasoning: 'Query focuses on tool identification and discovery'
+      reasoning: 'Query focuses on tool identification and discovery',
     };
   }
 
   // Capability-focused queries
-  if (features.length > 0 || primaryGoal.includes('feature') ||
-    primaryGoal.includes('capability') || primaryGoal.includes('function')) {
+  if (
+    features.length > 0 ||
+    primaryGoal.includes('feature') ||
+    primaryGoal.includes('capability') ||
+    primaryGoal.includes('function')
+  ) {
     return {
       recommendedStrategy: 'capability-focused',
       primaryCollections: ['functionality'],
       secondaryCollections: ['tools', 'usecases'],
       confidence: 0.85,
-      reasoning: 'Query emphasizes specific features and capabilities'
+      reasoning: 'Query emphasizes specific features and capabilities',
     };
   }
 
   // Use case-focused queries
-  if (primaryGoal.includes('use case') || primaryGoal.includes('application') ||
-    primaryGoal.includes('scenario') || primaryGoal.includes('solve')) {
+  if (
+    primaryGoal.includes('use case') ||
+    primaryGoal.includes('application') ||
+    primaryGoal.includes('scenario') ||
+    primaryGoal.includes('solve')
+  ) {
     return {
       recommendedStrategy: 'usecase-focused',
       primaryCollections: ['usecases'],
       secondaryCollections: ['functionality', 'tools'],
       confidence: 0.9,
-      reasoning: 'Query targets specific use cases and applications'
+      reasoning: 'Query targets specific use cases and applications',
     };
   }
 
   // Technical-focused queries
-  if (primaryGoal.includes('deployment') || primaryGoal.includes('install') ||
-    primaryGoal.includes('platform') || primaryGoal.includes('technical')) {
+  if (
+    primaryGoal.includes('deployment') ||
+    primaryGoal.includes('install') ||
+    primaryGoal.includes('platform') ||
+    primaryGoal.includes('technical')
+  ) {
     return {
       recommendedStrategy: 'technical-focused',
       primaryCollections: ['interface'],
       secondaryCollections: ['tools', 'functionality'],
       confidence: 0.85,
-      reasoning: 'Query focuses on technical requirements and deployment'
+      reasoning: 'Query focuses on technical requirements and deployment',
     };
   }
 
   // Complex multi-faceted queries
-  if (features.length > 2 || constraints.length > 2 ||
-    (features.length > 0 && constraints.length > 0)) {
+  if (
+    features.length > 2 ||
+    constraints.length > 2 ||
+    (features.length > 0 && constraints.length > 0)
+  ) {
     return {
       recommendedStrategy: 'multi-collection-hybrid',
       primaryCollections: ['tools', 'functionality'],
       secondaryCollections: ['usecases', 'interface'],
       confidence: 0.75,
-      reasoning: 'Complex query benefits from comprehensive multi-collection search'
+      reasoning:
+        'Complex query benefits from comprehensive multi-collection search',
     };
   }
 
@@ -559,7 +654,7 @@ function analyzeQueryIntent(intentState: any): {
     primaryCollections: ['tools', 'functionality'],
     secondaryCollections: [],
     confidence: 0.6,
-    reasoning: 'Query intent unclear, using adaptive approach'
+    reasoning: 'Query intent unclear, using adaptive approach',
   };
 }
 
@@ -582,12 +677,12 @@ export async function queryPlannerNode(
       errors: [
         ...(state.errors || []),
         {
-          node: "query-planner",
-          error: new Error("No intent state provided for query planning"),
+          node: 'query-planner',
+          error: new Error('No intent state provided for query planning'),
           timestamp: new Date(),
-          recovered: false
-        }
-      ]
+          recovered: false,
+        },
+      ],
     };
   }
 
@@ -602,7 +697,7 @@ export async function queryPlannerNode(
     constraintsCount: intentState.constraints?.length || 0,
     recommendedStrategy: intentAnalysis.recommendedStrategy,
     primaryCollections: intentAnalysis.primaryCollections,
-    secondaryCollections: intentAnalysis.secondaryCollections
+    secondaryCollections: intentAnalysis.secondaryCollections,
   });
 
   try {
@@ -634,7 +729,8 @@ CONTEXT CONSIDERATIONS:
 - Semantic variants available: ${intentState.semanticVariants?.length || 0}
 
 MULTI-COLLECTION GUIDELINES:
-1. Use the recommended strategy (${intentAnalysis.recommendedStrategy}) as primary guidance
+1. Use the recommended strategy (${intentAnalysis.recommendedStrategy
+      }) as primary guidance
 2. Include primary collections with higher topK values (50-80)
 3. Include secondary collections with lower topK values (30-50)
 4. Apply appropriate collection weights based on query intent
@@ -662,21 +758,35 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
     log('Sending request to LLM with multi-collection configuration', {
       promptLength: userPrompt.length,
       systemPromptLength: systemPrompt.length,
-      intentComplexity: (intentState.constraints?.length || 0) + (intentState.desiredFeatures?.length || 0),
-      recommendedStrategy: intentAnalysis.recommendedStrategy
+      intentComplexity:
+        (intentState.constraints?.length || 0) +
+        (intentState.desiredFeatures?.length || 0),
+      recommendedStrategy: intentAnalysis.recommendedStrategy,
     });
 
     // Create LangChain client with structured output using LLM service
-    const llmWithStructuredOutput = llmService.createStructuredClient('query-planning', QueryPlanSchema);
+    const llmWithStructuredOutput =
+      llmService.createTogetherAILangchainClient();
 
+    log('Sending request to Together AI for query planning', {
+      taskType: 'query-planner',
+      model: 'openai/gpt-oss-20b via Together API',
+    });
+
+    const parser = new JsonOutputParser();
     // Call the LLM with dynamic structured output
-    const queryPlan = await llmWithStructuredOutput.invoke([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ]);
+    const queryPlan = await llmWithStructuredOutput.invoke({
+      system_prompt: systemPrompt,
+      format_instructions: parser.getFormatInstructions(),
+      query: userPrompt
+    });
 
     // Validate and enhance query plan with multi-collection insights
-    const enhancedQueryPlan = await validateAndEnhanceQueryPlan(queryPlan, intentAnalysis, intentState);
+    const enhancedQueryPlan = await validateAndEnhanceQueryPlan(
+      queryPlan,
+      intentAnalysis,
+      intentState
+    );
 
     log('Multi-collection query plan generated and validated', {
       strategy: enhancedQueryPlan.strategy,
@@ -684,8 +794,9 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
       structuredSourcesCount: enhancedQueryPlan.structuredSources?.length || 0,
       fusionMethod: enhancedQueryPlan.fusion || 'none',
       confidence: enhancedQueryPlan.confidence,
-      collectionsUsed: enhancedQueryPlan.vectorSources?.map(vs => vs.collection) || [],
-      executionTime: Date.now() - startTime
+      collectionsUsed:
+        enhancedQueryPlan.vectorSources?.map((vs) => vs.collection) || [],
+      executionTime: Date.now() - startTime,
     });
 
     return {
@@ -694,24 +805,26 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
         ...state.executionStats,
         nodeTimings: {
           ...state.executionStats?.nodeTimings,
-          "query-planner": Date.now() - startTime
-        }
+          'query-planner': Date.now() - startTime,
+        },
       },
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "query-planner"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'query-planner',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "query-planner": Date.now() - startTime
-        }
-      }
+          'query-planner': Date.now() - startTime,
+        },
+      },
     };
-
   } catch (error) {
     const executionTime = Date.now() - startTime;
     logError('Query planning failed', {
       error: error instanceof Error ? error.message : String(error),
-      executionTime
+      executionTime,
     });
 
     return {
@@ -719,28 +832,35 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
       errors: [
         ...(state.errors || []),
         {
-          node: "query-planner",
-          error: error instanceof Error ? error : new Error("Unknown error in query planning"),
+          node: 'query-planner',
+          error:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error in query planning'),
           timestamp: new Date(),
           recovered: false,
-          recoveryStrategy: "Failed to create query plan - pipeline cannot continue"
-        }
+          recoveryStrategy:
+            'Failed to create query plan - pipeline cannot continue',
+        },
       ],
       executionStats: {
         ...state.executionStats,
         nodeTimings: {
           ...state.executionStats?.nodeTimings,
-          "query-planner": executionTime
-        }
+          'query-planner': executionTime,
+        },
       },
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "query-planner"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'query-planner',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "query-planner": executionTime
-        }
-      }
+          'query-planner': executionTime,
+        },
+      },
     };
   }
 }

@@ -47,8 +47,10 @@ export async function disconnectFromMongoDB(): Promise<void> {
 
 // Qdrant Configuration
 export const qdrantConfig = {
+  url: process.env.QDRANT_URL || null,
   host: process.env.QDRANT_HOST || "localhost",
   port: parseInt(process.env.QDRANT_PORT || "6333"),
+  apiKey: process.env.QDRANT_API_KEY || null,
   collectionName: process.env.QDRANT_COLLECTION_NAME || "tools",
   // Enhanced multi-vector configuration
   vectorsConfig: {
@@ -114,8 +116,22 @@ export async function connectToQdrant(): Promise<QdrantClient> {
   if (qdrantClient) return qdrantClient;
 
   try {
-    const url = `http://${qdrantConfig.host}:${qdrantConfig.port}`;
-    qdrantClient = new QdrantClient({ url });
+    // Use the full URL if provided (for cloud Qdrant), otherwise construct from host and port
+    let url: string;
+    let apiKey: string | undefined;
+    
+    if (qdrantConfig.url) {
+      url = qdrantConfig.url;
+      apiKey = qdrantConfig.apiKey || undefined;
+    } else {
+      url = `http://${qdrantConfig.host}:${qdrantConfig.port}`;
+      apiKey = undefined; // No API key for local Qdrant
+    }
+    
+    console.log(`Connecting to Qdrant at: ${url}`);
+    console.log(`Using API key: ${apiKey ? 'Yes' : 'No'}`);
+    
+    qdrantClient = new QdrantClient({ url, apiKey });
 
     // Ensure collections exist for all vector types
     const collections = await qdrantClient.getCollections();

@@ -125,7 +125,8 @@ const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => 
     // Ensure searchQuery is a string and properly encode it
     const searchQueryStr = typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
     const response = await axios.get<AiSearchResponse>('/tools/ai-search', {
-      params: { q: searchQueryStr }
+      params: { q: searchQueryStr },
+      timeout: 60000 // 60 seconds for LLM operations
     });
     console.log('aiSearchTools response.data:', response.data);
     return response.data;
@@ -142,7 +143,17 @@ export const useTools = (params: string): UseToolsReturn => {
     queryFn: async () => {
       const response = {
         data: [],
-        reasoning: {}
+        reasoning: {
+          query: '',
+          intentState: {},
+          executionPlan: {},
+          candidates: [],
+          executionStats: {},
+          executionTime: '',
+          phase: '',
+          strategy: '',
+          explanation: ''
+        }
       };
       if (params) {
         // Trigger API call for debugging only
