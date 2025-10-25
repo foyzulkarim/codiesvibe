@@ -113,7 +113,7 @@ export class SessionService {
       'https://codiesvibe.com',
       'https://www.codiesvibe.com',
       'https://api.codiesvibe.com',
-      ...this.allowedDomains
+      ...this.allowedDomains,
     ];
 
     return allowedOrigins.some((allowed) => {

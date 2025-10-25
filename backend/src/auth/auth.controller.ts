@@ -130,9 +130,11 @@ export class AuthController {
     );
 
     // Set new cookie
-    const cookieValue = this.sessionService.getSessionCookie(newSession.sessionId);
+    const cookieValue = this.sessionService.getSessionCookie(
+      newSession.sessionId,
+    );
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     res.cookie('session', cookieValue, {
       httpOnly: true,
       secure: isProduction,
