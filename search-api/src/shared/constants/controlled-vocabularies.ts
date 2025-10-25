@@ -19,7 +19,6 @@ export const CONTROLLED_VOCABULARIES = {
     'Privacy',
     'Open Source',
     'Collaboration',
-    'Deployment',
     // Specializations
     'Full-Stack',
     'Rapid Prototyping',
@@ -135,3 +134,15 @@ export const VOCABULARY_MAPPINGS = {
     Remote: 'Cloud',
   },
 };
+
+
+export const OPERATORS = {
+  LESS_THAN: 'less_than',
+  LESS_THAN_OR_EQUAL: 'less_than_or_equal',
+  GREATER_THAN: 'greater_than',
+  GREATER_THAN_OR_EQUAL: 'greater_than_or_equal',
+  EQUAL: 'equal',
+  NOT_EQUAL: 'not_equal',
+  AROUND: 'around',
+  BETWEEN: 'between',
+}

@@ -119,10 +119,10 @@ async function testIntentExtraction(testCase: any) {
       console.log(`  Reference Tool: ${intentState.referenceTool || 'None'}`);
       console.log(`  Comparison Mode: ${intentState.comparisonMode || 'None'}`);
       console.log(`  Pricing: ${intentState.pricing || 'Not specified'}`);
-      console.log(`  Platform: ${intentState.platform || 'Not specified'}`);
+      console.log(`  Platform: ${intentState.interface || 'Not specified'}`);
       console.log(`  Category: ${intentState.category || 'Not specified'}`);
-      console.log(`  Desired Features: ${intentState.desiredFeatures?.join(', ') || 'None'}`);
-      console.log(`  Constraints: ${intentState.constraints?.join(', ') || 'None'}`);
+      console.log(`  Functionality: ${Array.isArray(intentState.functionality) ? intentState.functionality.join(', ') : intentState.functionality || 'None'}`);
+      console.log(`  Constraints: ${intentState.filters?.map(f => `${f.field} ${f.operator} ${f.value}`).join(', ') || 'None'}`);
       console.log(`  Confidence: ${intentState.confidence || 'No confidence score'}`);
       console.log(`  Execution Time: ${result?.executionStats?.nodeTimings?.['intent-extractor'] || 'Not specified'}`);
     } else {

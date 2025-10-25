@@ -119,6 +119,8 @@ export function weightedSumFusion(
     weightedSources: Array.from(sourceWeights.entries())
   });
 
+  console.log('weightedSumFusion(): candidatesBySource', candidatesBySource);
+
   const scoreMap = new Map<string, { score: number; candidate: Candidate; sources: string[] }>();
 
   // Calculate weighted scores for each candidate

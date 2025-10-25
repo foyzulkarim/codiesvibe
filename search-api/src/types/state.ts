@@ -1,5 +1,5 @@
 import { Annotation, StateGraph } from "@langchain/langgraph";
-import { z } from "zod";
+import { any, z } from "zod";
 import { IntentState, IntentStateSchema } from "./intent-state";
 import { QueryPlan, QueryPlanSchema } from "./query-plan";
 import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate";
@@ -37,6 +37,9 @@ export const StateAnnotation = Annotation.Root({
 
   // Simplified metadata for observability
   metadata: Annotation<{
+    vectorFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
+    structuredFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
+    fullResults?: any[];
     startTime: Date;
     endTime?: Date;
     executionPath: string[];

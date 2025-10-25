@@ -10,6 +10,10 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppController } from './app.controller';
 import configuration from './config/configuration';
 import { SeedingModule } from './database/seeding/seeding.module';
+import { IpGuard } from './common/guards/ip-guard.guard';
+import { AuthModule } from './auth/auth.module';
+import { SessionService } from './auth/session.service';
+import { SessionGuard } from './common/guards/session.guard';
 
 @Module({
   imports: [
@@ -26,19 +30,24 @@ import { SeedingModule } from './database/seeding/seeding.module';
     ThrottlerModule.forRootAsync({
       useFactory: () => [
         {
-          name: 'short',
+          name: 'strict',
           ttl: 1000, // 1 second
-          limit: 10, // 10 requests per second
+          limit: 5, // 5 requests per second (reduced from 10)
+        },
+        {
+          name: 'short',
+          ttl: 10000, // 10 seconds
+          limit: 20, // 20 requests per 10 seconds
         },
         {
           name: 'medium',
           ttl: 60000, // 1 minute
-          limit: 100, // 100 requests per minute per user
+          limit: 50, // 50 requests per minute (reduced from 100)
         },
         {
           name: 'long',
           ttl: 3600000, // 1 hour
-          limit: 1000, // 1000 requests per hour per IP
+          limit: 500, // 500 requests per hour (reduced from 1000)
         },
       ],
     }),
@@ -46,12 +55,22 @@ import { SeedingModule } from './database/seeding/seeding.module';
     ToolsModule,
     HealthModule,
     SeedingModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: IpGuard,
+    },
+    SessionService, // Provide SessionService for SessionGuard
+    {
+      provide: APP_GUARD,
+      useClass: SessionGuard,
     },
     {
       provide: APP_FILTER,

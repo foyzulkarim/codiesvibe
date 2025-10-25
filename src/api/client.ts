@@ -2,17 +2,49 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://api.codiesvibe.com/api',
   timeout: 10000,
+  withCredentials: true, // Important for cross-subdomain cookies
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Response interceptor for error handling
+// Request interceptor to add CSRF token
+apiClient.interceptors.request.use(async (config) => {
+  // Add CSRF token for POST, PUT, PATCH, DELETE requests
+  if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+    try {
+      // Try to get CSRF token from session hook or make a request
+      const csrfResponse = await axios.get(`${import.meta.env.VITE_API_URL || '/api'}/auth/csrf`, {
+        withCredentials: true,
+      });
+      config.headers['X-CSRF-Token'] = csrfResponse.data.csrfToken;
+    } catch (error) {
+      console.warn('Failed to get CSRF token:', error);
+    }
+  }
+  return config;
+});
+
+// Response interceptor for error handling and session management
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Handle session-related errors
+    if (error.response?.status === 401) {
+      // Session expired or invalid, try to refresh
+      try {
+        await apiClient.post('/auth/refresh');
+        // Retry the original request
+        return apiClient.request(error.config);
+      } catch (refreshError) {
+        // Refresh failed, need to reinitialize session
+        console.error('Session refresh failed:', refreshError);
+        // The useSession hook will handle reinitialization
+      }
+    }
+
     // Handle different error scenarios
     if (error.code === 'ECONNABORTED') {
       error.message = 'Request timeout. Please try again.';

@@ -3,7 +3,7 @@ import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { StateAnnotation } from '../../types/state';
 import { QueryPlanSchema } from '../../types/query-plan';
 import { llmService } from '../../services/llm.service';
-import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
+import { CONTROLLED_VOCABULARIES, OPERATORS } from '../../shared/constants/controlled-vocabularies';
 import { CollectionConfigService } from '../../services/collection-config.service';
 import { VectorTypeRegistryService } from '../../services/vector-type-registry.service';
 import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service';
@@ -283,9 +283,8 @@ async function validateAndEnhanceQueryPlan(
   intentState: any
 ): Promise<any> {
   try {
-
     log('validating query plan received', {
-      queryPlan: JSON.stringify(queryPlan)
+      queryPlan: JSON.stringify(queryPlan),
     });
 
     // Validate collection availability
@@ -355,32 +354,14 @@ async function validateAndEnhanceQueryPlan(
     let enhancedStructuredSources = queryPlan.structuredSources || [];
 
     // Add MongoDB structured source for filtering if constraints exist
-    const hasConstraints =
-      intentState.pricing ||
-      intentState.desiredFeatures?.length > 0 ||
-      intentState.constraints?.length > 0;
+    const hasConstraints = intentState.priceRange || intentState.priceComparison;
 
-    if (
-      hasConstraints      
-    ) {
+    if (hasConstraints) {
       const filters: any[] = [];
-
-      // Add pricing filters
-      if (intentState.pricing) {
-        const pricingModels = intentState.pricing
-          .toLowerCase()
-          .split(',')
-          .map((p: string) => p.trim());
-        filters.push({
-          field: 'pricingModel',
-          operator: 'in',
-          value: pricingModels,
-        });
-      }
 
       // Add price range filters
       if (intentState.priceRange) {
-        const { min, max, currency, billingPeriod } = intentState.priceRange;
+        const { min, max, billingPeriod } = intentState.priceRange;
 
         // Create base filter for pricing array
         const priceFilter: any = {
@@ -408,7 +389,7 @@ async function validateAndEnhanceQueryPlan(
 
       // Add price comparison filters
       if (intentState.priceComparison) {
-        const { operator, value, currency, billingPeriod } =
+        const { operator, value, billingPeriod } =
           intentState.priceComparison;
 
         const priceFilter: any = {
@@ -424,25 +405,28 @@ async function validateAndEnhanceQueryPlan(
 
         // Add price comparison based on operator
         switch (operator) {
-          case 'less_than':
+          case OPERATORS.LESS_THAN:
             priceFilter.value.price = { $lt: value };
             break;
-          case 'less_than_or_equal':
+          case OPERATORS.LESS_THAN_OR_EQUAL:
             priceFilter.value.price = { $lte: value };
             break;
-          case 'greater_than':
+          case OPERATORS.GREATER_THAN:
             priceFilter.value.price = { $gt: value };
             break;
-          case 'greater_than_or_equal':
+          case OPERATORS.GREATER_THAN_OR_EQUAL:
             priceFilter.value.price = { $gte: value };
             break;
-          case 'equal':
+          case OPERATORS.EQUAL:
             priceFilter.value.price = value;
+            break;
+          case OPERATORS.NOT_EQUAL:
+            priceFilter.value.price = { $ne: value };
             break;
         }
 
         filters.push(priceFilter);
-      }         
+      }
 
       if (filters.length > 0) {
         enhancedStructuredSources.push({
@@ -578,7 +562,7 @@ function analyzeQueryIntent(intentState: any): {
     return {
       recommendedStrategy: 'identity-focused',
       primaryCollections: ['tools'],
-      secondaryCollections: ['functionality'],
+      secondaryCollections: ['functionality'], // TODO: remove it?
       confidence: 0.8,
       reasoning: 'Query focuses on tool identification and discovery',
     };
@@ -692,12 +676,8 @@ export async function queryPlannerNode(
   const intentAnalysis = analyzeQueryIntent(intentState);
 
   log('Starting multi-collection query planning', {
-    primaryGoal: intentState.primaryGoal,
-    hasReferenceTool: !!intentState.referenceTool,
-    constraintsCount: intentState.constraints?.length || 0,
-    recommendedStrategy: intentAnalysis.recommendedStrategy,
-    primaryCollections: intentAnalysis.primaryCollections,
-    secondaryCollections: intentAnalysis.secondaryCollections,
+    intentState,
+    intentAnalysis,
   });
 
   try {
@@ -715,42 +695,41 @@ QUERY INTENT ANALYSIS:
 - Reasoning: ${intentAnalysis.reasoning}
 - Confidence: ${intentAnalysis.confidence}
 - Primary Collections: ${intentAnalysis.primaryCollections.join(', ')}
-- Secondary Collections: ${intentAnalysis.secondaryCollections.join(', ')}
 
 CONTEXT CONSIDERATIONS:
 - Primary goal: ${intentState.primaryGoal}
 - Reference tool: ${intentState.referenceTool || 'None'}
 - Comparison mode: ${intentState.comparisonMode || 'None'}
-- Pricing constraint: ${intentState.pricing || 'None'}
-- Platform preference: ${intentState.platform || 'None'}
 - Category preference: ${intentState.category || 'None'}
-- Features requested: ${intentState.desiredFeatures?.join(', ') || 'None'}
-- Constraints: ${intentState.constraints?.join(', ') || 'None'}
-- Semantic variants available: ${intentState.semanticVariants?.length || 0}
+- Interface preference: ${intentState.interface || 'None'}
+- Functionality preference: ${intentState.functionality || 'None'}
+- Deployment preference: ${intentState.deployment || 'None'}
+- Industry preference: ${intentState.industry || 'None'}
+- User type preference: ${intentState.userType || 'None'}
+- Pricing constraint: ${intentState.pricing || 'None'}
+
 
 MULTI-COLLECTION GUIDELINES:
 1. Use the recommended strategy (${intentAnalysis.recommendedStrategy
       }) as primary guidance
-2. Include primary collections with higher topK values (50-80)
-3. Include secondary collections with lower topK values (30-50)
-4. Apply appropriate collection weights based on query intent
-5. Use "rrf" fusion for multi-collection results
-6. Include MongoDB structured sources for filtering constraints
+2. Include primary collections with higher topK values (10-20)
+3. Apply appropriate collection weights based on query intent
+4. Use "rrf" fusion for multi-collection results
+5. Include MongoDB structured sources for filtering constraints
 
 MongoDB Structured Sources Usage:
 - Use "mongodb" as structuredSource when intentState has ANY of these:
-  * pricing constraint (free/freemium/paid)
-  * platform preference (web/desktop/cli/api)
-  * category preference (IDE/API/CLI/Framework/Agent/Plugin)
-  * specific features that map to MongoDB fields
-  * deployment or interface requirements
-- For hybrid strategy, ALWAYS include both vectorSources AND structuredSources
-- Set appropriate MongoDB filters based on intentState constraints
+  * category preference 
+  * interface preference 
+  * functionality preference
+  * deployment preference
+  * industry preference
+  * user type preference
+  * pricing constraint 
+  * And any other specific features that map to MongoDB fields
 
-COLLECTION WEIGHTING:
-- Primary collections: weight 1.0
-- Secondary collections: weight 0.5-0.7
-- Include collection weights in fusion configuration
+- For hybrid strategy, ALWAYS include both vectorSources AND structuredSources
+- Set appropriate MongoDB filters for structuredSources based on intentState constraints
 
 Respond with a JSON object only, following the QueryPlan schema exactly.
 `;
@@ -758,14 +737,11 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
     log('Sending request to LLM with multi-collection configuration', {
       promptLength: userPrompt.length,
       systemPromptLength: systemPrompt.length,
-      intentComplexity:
-        (intentState.constraints?.length || 0) +
-        (intentState.desiredFeatures?.length || 0),
       recommendedStrategy: intentAnalysis.recommendedStrategy,
     });
 
     // Create LangChain client with structured output using LLM service
-    const llmWithStructuredOutput =
+    const llmClient =
       llmService.createTogetherAILangchainClient();
 
     log('Sending request to Together AI for query planning', {
@@ -775,10 +751,10 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
 
     const parser = new JsonOutputParser();
     // Call the LLM with dynamic structured output
-    const queryPlan = await llmWithStructuredOutput.invoke({
+    const queryPlan = await llmClient.invoke({
       system_prompt: systemPrompt,
       format_instructions: parser.getFormatInstructions(),
-      query: userPrompt
+      query: userPrompt,
     });
 
     // Validate and enhance query plan with multi-collection insights
@@ -789,13 +765,7 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
     );
 
     log('Multi-collection query plan generated and validated', {
-      strategy: enhancedQueryPlan.strategy,
-      vectorSourcesCount: enhancedQueryPlan.vectorSources?.length || 0,
-      structuredSourcesCount: enhancedQueryPlan.structuredSources?.length || 0,
-      fusionMethod: enhancedQueryPlan.fusion || 'none',
-      confidence: enhancedQueryPlan.confidence,
-      collectionsUsed:
-        enhancedQueryPlan.vectorSources?.map((vs) => vs.collection) || [],
+      ...enhancedQueryPlan,
       executionTime: Date.now() - startTime,
     });
 

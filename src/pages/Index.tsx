@@ -141,11 +141,11 @@ export default function Index() {
                 totalCount={tools?.length || 0}
               />              
             </div>
-
+{/* 
             <SortSelector
               value={sortBy}
               onChange={handleSortChange}
-            />
+            /> */}
           </div>
 
           {/* Tools Grid */}

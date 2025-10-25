@@ -115,7 +115,8 @@ export async function searchWithAgenticPipeline(
     const totalTime = Date.now() - startTime;
 
     // Log the final candidates
-    console.log(`✅ Final candidates:`, { query, result: JSON.stringify(result) });
+    console.log(`✅ Final candidates:`, { query, resultLength: result.candidates.length });
+    console.log(`✅ Final full results:`, { query, result });
 
     return {
       ...result,

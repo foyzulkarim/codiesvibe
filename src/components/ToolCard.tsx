@@ -11,8 +11,10 @@ interface ToolCardProps {
   searchTerm?: string;
 }
 
-export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded, searchTerm }: ToolCardProps) => {
+export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded, searchTerm = '' }: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
+
+  console.log('ToolCard(): tool', tool);
 
   // Memoized highlight function for performance
   const highlightText = useMemo(() => {
@@ -121,7 +123,7 @@ export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded
               className="text-sm text-muted-foreground leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: highlightText(
-                  tool.description.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description,
+                  tool.description?.length > 120 ? `${tool.description.substring(0, 120)}...` : tool.description || '',
                   searchTerm
                 )
               }}

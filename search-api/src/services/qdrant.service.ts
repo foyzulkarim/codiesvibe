@@ -151,7 +151,7 @@ export class QdrantService {
       validateSearchParams({ embedding, limit, filter, vectorType });
       
       // Set default score threshold if not provided
-      const threshold = scoreThreshold !== undefined ? scoreThreshold : 0.6;
+      const threshold = scoreThreshold !== undefined ? scoreThreshold : parseFloat(process.env.SEARCH_SCORE_THRESHOLD || '0.5');
 
       // Determine collection name based on vector type and configuration
       const collectionName = collection || getCollectionNameForVectorType(vectorType);

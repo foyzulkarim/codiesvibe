@@ -132,7 +132,7 @@ export async function intentExtractorNode(
       taskType: 'intent-extraction',
       usingTogetherAPI: true
     });
-    const structuredModel = llmService.createTogetherAILangchainClient();
+    const llmClient = llmService.createTogetherAILangchainClient();
 
     log('Sending request to Together AI for intent extraction', {
       taskType: 'intent-extraction',
@@ -143,7 +143,7 @@ export async function intentExtractorNode(
     const userPrompt = `Extract the intent from this query: "${query}"`;
 
     const parser = new JsonOutputParser();
-    const intentState = await structuredModel.invoke({
+    const intentState = await llmClient.invoke({
       system_prompt: INTENT_EXTRACTION_SYSTEM_PROMPT,
       format_instructions: parser.getFormatInstructions(),
       query: userPrompt,
