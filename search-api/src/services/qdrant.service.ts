@@ -109,7 +109,7 @@ export class QdrantService {
 
     try {
       // Validate only the embedding, not the vector type
-      validateEmbedding(embedding, 1024);
+      validateEmbedding(embedding, 768);
 
       const searchParams: any = {
         vector: embedding,
@@ -141,13 +141,17 @@ export class QdrantService {
     limit: number = 10,
     filter?: Record<string, any>,
     vectorType?: string,
-    collection?: string
+    collection?: string,
+    scoreThreshold?: number
   ): Promise<Array<{ id: string; score: number; payload: any }>> {
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       // Validate search parameters
       validateSearchParams({ embedding, limit, filter, vectorType });
+      
+      // Set default score threshold if not provided
+      const threshold = scoreThreshold !== undefined ? scoreThreshold : parseFloat(process.env.SEARCH_SCORE_THRESHOLD || '0.5');
 
       // Determine collection name based on vector type and configuration
       const collectionName = collection || getCollectionNameForVectorType(vectorType);
@@ -158,11 +162,13 @@ export class QdrantService {
       console.log("   - vectorType:", vectorType || 'default');
       console.log("   - useEnhanced:", useEnhanced);
       console.log("   - limit:", limit);
+      console.log("   - scoreThreshold:", threshold);
 
       const searchParams: any = {
         limit: limit,
         filter: filter,
         with_payload: true,
+        score_threshold: threshold,
       };
 
       // Add vector parameter based on whether we're using named vectors or separate collections
@@ -1246,7 +1252,7 @@ export class QdrantService {
       // Create collection with standard vector configuration
       await this.client.createCollection(collectionName, {
         vectors: {
-          size: 1024, // mxbai-embed-large dimensions
+          size: 768, // togethercomputer/m2-bert-80M-32k-retrieval dimensions
           distance: 'Cosine'
         },
         // optimizers_config: { // Commented out as it's not supported by current Qdrant API version
@@ -1605,8 +1611,8 @@ export class QdrantService {
           issues.push(`Collection ${collectionName} has status ${info.status}`);
         }
 
-        if (info.vectorSize !== 1024) {
-          collectionIssues.push(`Invalid vector size: ${info.vectorSize} (expected 1024)`);
+        if (info.vectorSize !== 768) {
+          collectionIssues.push(`Invalid vector size: ${info.vectorSize} (expected 768)`);
           issues.push(`Collection ${collectionName} has incorrect vector size`);
           recommendations.push(`Recreate collection ${collectionName} with correct vector size`);
         }

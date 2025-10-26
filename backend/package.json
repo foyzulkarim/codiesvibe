@@ -49,12 +49,17 @@
     "cache-manager": "^7.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "helmet": "^8.1.0",
     "mongoose": "^8.18.1",
+    "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "uuid": "^13.0.0",
+    "winston": "^3.18.3",
+    "winston-loggly-bulk": "^3.3.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -68,6 +73,7 @@
     "@types/passport-github2": "^1.2.9",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "@types/winston-loggly-bulk": "^3.0.6",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "cross-env": "^7.0.3",

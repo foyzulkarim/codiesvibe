@@ -1,4 +1,4 @@
-import { ollamaClient, embeddingConfig } from "@/config/models";
+import { Together } from 'together-ai';
 import { embeddingConfig as embeddingConstants } from "@/config/constants";
 import { connectToQdrant } from "@/config/database";
 import { QdrantClient } from "@qdrant/js-client-rest";
@@ -8,8 +8,14 @@ const embeddingCache = new Map<string, number[]>();
 
 export class EmbeddingService {
   private qdrantClient: QdrantClient | null = null;
+  private togetherClient: Together;
 
   constructor() {
+    // Initialize Together AI client
+    this.togetherClient = new Together({
+      apiKey: process.env.TOGETHER_API_KEY,
+    });
+
     this.initQdrant();
   }
 
@@ -27,12 +33,12 @@ export class EmbeddingService {
     }
 
     try {
-      const response = await ollamaClient.embeddings({
-        model: embeddingConfig.model,
-        prompt: text,
+      const response = await this.togetherClient.embeddings.create({
+        model: "togethercomputer/m2-bert-80M-32k-retrieval",
+        input: text,
       });
 
-      const embedding = response.embedding;
+      const embedding = response.data[0].embedding;
 
       // Cache the result
       if (embeddingConstants.cacheEnabled) {
@@ -49,8 +55,8 @@ export class EmbeddingService {
 
       return embedding;
     } catch (error) {
-      console.error("Error generating embedding:", error);
-      throw error;
+      console.error("Error generating embedding with Together AI:", error);
+      throw new Error(`Embedding generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

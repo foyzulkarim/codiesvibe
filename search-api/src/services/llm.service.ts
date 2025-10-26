@@ -1,4 +1,7 @@
 import { ChatOpenAI } from '@langchain/openai';
+import { JsonOutputParser } from '@langchain/core/output_parsers';
+import { PromptTemplate } from '@langchain/core/prompts';
+
 import { z } from 'zod';
 
 interface LLMTaskConfig {
@@ -68,7 +71,10 @@ export class LLMService {
       throw new Error(`No configuration found for task type: ${taskType}`);
     }
 
-    log(`Creating structured client for task: ${taskType}`, { config, baseUrl: this.baseUrl });
+    log(`Creating structured client for task: ${taskType}`, {
+      config,
+      baseUrl: this.baseUrl,
+    });
 
     const client = new ChatOpenAI({
       apiKey: 'not-needed',
@@ -106,6 +112,35 @@ export class LLMService {
       maxTokens: config.maxTokens,
       topP: config.topP,
     });
+  }
+
+  createTogetherAILangchainClient() {
+    // Define your parser
+    const parser = new JsonOutputParser();
+
+    // Create a prompt template with format instructions
+    const prompt = PromptTemplate.fromTemplate(
+      `{system_prompt}\n\n{format_instructions}\n\nUser query: {query}`
+    );
+
+    // Use with LangChain
+    const model = new ChatOpenAI({
+      configuration: {
+        baseURL: 'https://api.together.xyz/v1',
+        apiKey: process.env.TOGETHER_API_KEY,
+      },
+      modelName: 'openai/gpt-oss-20b',
+    });
+
+    const chain = prompt.pipe(model).pipe(parser);
+    return chain;
+  }
+
+  createTogetherAIClient(taskType: string) {
+    // This method can be implemented if needed for direct Together API calls
+    // For now, we focus on the LangChain integration
+    log(`Together AI client creation requested for task: ${taskType}`);
+    throw new Error('Direct Together AI client not implemented. Use createTogetherAIStructuredClient instead.');
   }
 }
 

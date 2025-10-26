@@ -1,0 +1,130 @@
+# CodiesVibe Search-API Dockerfile
+# Multi-stage build for Node.js search service with development and production targets
+
+# Build arguments for image metadata with defaults
+ARG BUILD_DATE=unknown
+ARG GIT_COMMIT=unknown
+ARG VERSION=latest
+
+# Dependencies stage - Install all dependencies for caching
+FROM node:24-alpine AS dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency caching
+COPY search-api/package*.json ./
+
+# Install dependencies using npm install for reproducible builds
+RUN npm install --no-audit --no-fund
+
+# Builder stage - Build the TypeScript application
+FROM dependencies AS search-api-builder
+
+# Copy search-api source code
+COPY search-api/ ./
+
+# Build the TypeScript application
+RUN npm run build
+
+# Development stage - Hot reload development environment with debugging
+FROM dependencies AS development
+
+# Install development tools globally for better performance
+RUN npm install -g nodemon ts-node-dev
+
+# Copy search-api source code for development
+COPY search-api/ ./
+
+# Create non-root user for security (even in development)
+RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose development server port and debug port
+EXPOSE 4003 9229
+
+# Add image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Search-API (Development)"
+LABEL org.opencontainers.image.description="Node.js search service development environment with hot reload"
+LABEL org.opencontainers.image.version="${VERSION:-dev}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV PORT=4003
+
+# Health check for development environment
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:4003/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# Start development server with watch mode
+CMD ["npm", "run", "dev"]
+
+# Production stage - Optimized production image with health checks and security
+FROM node:24-alpine AS production
+
+# Install security updates, ca-certificates, and dumb-init
+RUN apk update && apk upgrade && \
+    apk add --no-cache ca-certificates curl dumb-init && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user with secure home directory
+RUN addgroup -g 1001 nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs -h /home/nodejs -s /bin/ash && \
+    mkdir -p /home/nodejs && \
+    chown -R nodejs:nodejs /home/nodejs
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better layer caching
+COPY search-api/package*.json ./
+
+# Install only production dependencies with security optimizations
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund && \
+    npm cache clean --force && \
+    rm -rf /root/.npm
+
+# Copy built application from builder stage with proper ownership
+COPY --from=search-api-builder --chown=nodejs:nodejs /app/dist ./dist
+
+# Create necessary directories with secure permissions
+RUN mkdir -p /app/logs /app/temp && \
+    chown -R nodejs:nodejs /app && \
+    chmod -R 755 /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose production port only
+EXPOSE 4003
+
+# Add comprehensive image metadata
+LABEL org.opencontainers.image.title="CodiesVibe Search-API (Production)"
+LABEL org.opencontainers.image.description="Node.js search service with AI-powered search capabilities"
+LABEL org.opencontainers.image.version="${VERSION:-latest}"
+LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT:-unknown}"
+LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
+LABEL org.opencontainers.image.vendor="CodiesVibe"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# Set optimized environment variables for production
+ENV NODE_ENV=production
+ENV PORT=4003
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV UV_THREADPOOL_SIZE=8
+
+# Health check for production environment
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:4003/health || exit 1
+
+# Use dumb-init for proper signal handling and zombie reaping
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start production server with optimized node flags
+CMD ["node", "dist/server.js"]

@@ -22,11 +22,11 @@ dotenv.config();
 const intentTestCases = [
   {
     name: "Simple discovery query",
-    query: "free cli",
+    query: "self hosted cli",
     expectedIntent: {
       primaryGoal: "find",
       pricing: "free",
-      platform: "cli"
+      interface: "cli"
     }
   },
   {
@@ -82,6 +82,7 @@ async function testIntentExtraction(testCase: any) {
       intentState: null,
       executionPlan: null,
       candidates: [],
+      results: [],
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},
@@ -107,7 +108,7 @@ async function testIntentExtraction(testCase: any) {
     const executionTime = Date.now() - startTime;
 
     // Display detailed results
-    console.log(`⏱️  Intent extraction completed in ${executionTime}ms`);
+    console.log(`⏱️  Intent extraction completed in ${executionTime}ms`, '\n', result);
 
     // Extract the intent state from the result
     const intentState = result?.intentState;
@@ -118,10 +119,10 @@ async function testIntentExtraction(testCase: any) {
       console.log(`  Reference Tool: ${intentState.referenceTool || 'None'}`);
       console.log(`  Comparison Mode: ${intentState.comparisonMode || 'None'}`);
       console.log(`  Pricing: ${intentState.pricing || 'Not specified'}`);
-      console.log(`  Platform: ${intentState.platform || 'Not specified'}`);
+      console.log(`  Platform: ${intentState.interface || 'Not specified'}`);
       console.log(`  Category: ${intentState.category || 'Not specified'}`);
-      console.log(`  Desired Features: ${intentState.desiredFeatures?.join(', ') || 'None'}`);
-      console.log(`  Constraints: ${intentState.constraints?.join(', ') || 'None'}`);
+      console.log(`  Functionality: ${Array.isArray(intentState.functionality) ? intentState.functionality.join(', ') : intentState.functionality || 'None'}`);
+      console.log(`  Constraints: ${intentState.filters?.map(f => `${f.field} ${f.operator} ${f.value}`).join(', ') || 'None'}`);
       console.log(`  Confidence: ${intentState.confidence || 'No confidence score'}`);
       console.log(`  Execution Time: ${result?.executionStats?.nodeTimings?.['intent-extractor'] || 'Not specified'}`);
     } else {

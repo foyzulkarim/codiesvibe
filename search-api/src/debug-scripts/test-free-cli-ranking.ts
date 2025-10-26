@@ -87,7 +87,7 @@ async function testFreeCLIRanking() {
     console.log(`Primary Goal: ${result.intentState?.primaryGoal || 'N/A'}`);
     console.log(`Reference Tool: ${result.intentState?.referenceTool || 'N/A'}`);
     console.log(`Pricing Filter: ${result.intentState?.pricing || 'N/A'}`);
-    console.log(`Platform Filter: ${result.intentState?.platform || 'N/A'}`);
+    console.log(`Platform Filter: ${result.intentState?.interface || 'N/A'}`);
     console.log(`Confidence: ${result.intentState?.confidence || 'N/A'}`);
     
     console.log('\n⚡ Execution Details:');

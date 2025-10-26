@@ -1,15 +1,16 @@
 #!/usr/bin/env ts-node
 
+import 'dotenv/config';
 import 'module-alias/register';
-import { QdrantClient } from "@qdrant/js-client-rest";
+import { connectToQdrant } from '@/config/database';
 import { CollectionConfigService } from '@/services/collection-config.service';
 
 async function createCollections() {
   console.log('🚀 Starting simple collection creation process...');
 
   try {
-    // Connect to Qdrant directly
-    const client = new QdrantClient({ url: 'http://localhost:6333' });
+    // Connect to Qdrant using environment configuration
+    const client = await connectToQdrant();
     const collectionConfig = new CollectionConfigService();
 
     console.log('🔧 Testing Qdrant connection...');
@@ -37,7 +38,7 @@ async function createCollections() {
         // Create collection with standard vector configuration
         await client.createCollection(collectionName, {
           vectors: {
-            size: 1024, // mxbai-embed-large dimensions
+            size: 768, // togethercomputer/m2-bert-80M-32k-retrieval dimensions
             distance: 'Cosine'
           }
         });

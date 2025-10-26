@@ -52,11 +52,11 @@ services:
       dockerfile: Dockerfile.frontend
       target: production
       args:
-        - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
-        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
-        - VERSION=${VERSION:-latest}
-        # Vite build-time environment variables
-        - VITE_API_URL=${VITE_API_URL:-https://api.codiesvibe.com/api}
+        - BUILD_DATE=${BUILD_DATE}
+        - GIT_COMMIT=${GIT_COMMIT}
+        - VERSION=${VERSION}
+        # Vite build-time environment variables (from .env file)
+        - VITE_API_URL=${VITE_API_URL}
         - NODE_ENV=production
     container_name: codiesvibe-frontend-init
     volumes:
@@ -74,32 +74,89 @@ services:
     restart: "no"  # One-time init container
     user: root  # Need root to write to volume
 
-  # Backend Seed Init Container - Seeds database and then exits
-  backend-seed:
-    # Use the seeding stage which includes source files
+  # Note: Database seeding should be done manually
+  # Run: npm run seed:production (with proper environment variables)
+
+  # Search-API Production Service
+  search-api:
+    # Use pre-built GHCR image for production deployments
+    image: ghcr.io/foyzulkarim/codiesvibe-search-api:${VERSION:-latest}
+    # Fallback: Build locally if GHCR image unavailable
     build:
       context: .
-      dockerfile: Dockerfile.backend
-      target: seeding
+      dockerfile: Dockerfile.search-api
+      target: production
       args:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
         - VERSION=${VERSION:-latest}
-    container_name: codiesvibe-backend-seed
+    container_name: codiesvibe-search-api-prod
+    # Expose port 4003 for troubleshooting (accessed through Nginx reverse proxy normally)
+    ports:
+      - "4003:4003"  # Direct search-api access for troubleshooting
+    expose:
+      - "4003"
     environment:
       - NODE_ENV=production
-      - PORT=4000
-      # Infrastructure service connections (from docker-compose.infra.yml)
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
-      - REDIS_URL=redis://:redis123@redis:6379
-      # Minimal environment for seeding
-      - JWT_SECRET=${JWT_SECRET:-production-jwt-secret-change-immediately}
-      - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
-      - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
+      - PORT=4003
+      # Cloud infrastructure connections (from .env file)
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME}
+      # Qdrant Cloud configuration (from .env file)
+      - QDRANT_URL=${QDRANT_URL}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_HOST=${QDRANT_HOST}
+      - QDRANT_PORT=${QDRANT_PORT}
+      - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME}
+      # AI service endpoints (from .env file)
+      - TOGETHER_API_KEY=${TOGETHER_API_KEY}
+      # Production security and CORS (from .env file)
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - ENABLE_SECURITY_HEADERS=${ENABLE_SECURITY_HEADERS}
+      - ENABLE_RATE_LIMITING=${ENABLE_RATE_LIMITING}
+      - ENABLE_VECTOR_VALIDATION=${ENABLE_VECTOR_VALIDATION}
+      # Search configuration (from .env file)
+      - SEARCH_USE_MULTIVECTOR=${SEARCH_USE_MULTIVECTOR}
+      - SEARCH_RRF_K=${SEARCH_RRF_K}
+      - SEARCH_SOURCE_WEIGHTS=${SEARCH_SOURCE_WEIGHTS}
+      - SEARCH_SCORE_THRESHOLD=${SEARCH_SCORE_THRESHOLD}
+      # Performance and logging (from .env file)
+      - LOG_LEVEL=${LOG_LEVEL}
+      - ENABLE_CACHE=${ENABLE_CACHE}
+      - CACHE_TTL=${CACHE_TTL}
     networks:
       - codiesvibe-network
-    command: sh -c "echo 'Starting database seeding...' && npm run seed:production && echo 'Database seeding completed successfully'"
-    restart: "no"  # One-time init container
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Security: read-only filesystem with specific writable paths
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100M,mode=1777
+      - /app/logs:rw,size=50M,mode=0755
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    # Security: Drop all capabilities except required ones
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    # Security: Prevent privilege escalation
+    security_opt:
+      - no-new-privileges:true
 
   # Backend Production Service
   backend:
@@ -123,36 +180,29 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      # Infrastructure service connections (from docker-compose.infra.yml)
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
-      - REDIS_URL=redis://:redis123@redis:6379
-      # Production secrets (use Docker secrets or external secret management in real production)
-      - JWT_SECRET=${JWT_SECRET:-production-jwt-secret-change-immediately}
-      - COOKIE_SECRET=${COOKIE_SECRET:-production-cookie-secret-min-32-chars}
-      - CSRF_SECRET=${CSRF_SECRET:-production-csrf-secret-min-32-chars}
-      # CORS configuration for subdomain architecture
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost,https://codiesvibe.com,https://api.codiesvibe.com}
-      # Production rate limiting
-      - RATE_LIMIT_WINDOW=900000  # 15 minutes
-      - RATE_LIMIT_MAX=100        # Stricter than development
-      # Production settings
-      - TRUST_PROXY=true
-      - SHUTDOWN_TIMEOUT=30000
-      # GitHub OAuth (configure with production values)
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL:-https://your-domain.com/api/auth/github/callback}
-      # Monitoring endpoints (available from infrastructure)
-      - PROMETHEUS_URL=http://prometheus:9090
-      - GRAFANA_URL=http://grafana:3000
-      - LOKI_URL=http://loki:3100
-      # Logging configuration
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Cloud infrastructure connections (from .env file)
+      - MONGODB_URI=${MONGODB_URI}
+      # Production secrets (from .env file)
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - CSRF_SECRET=${CSRF_SECRET}
+      # CORS configuration for subdomain architecture (from .env file)
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      # Production rate limiting (from .env file)
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
+      # Production settings (from .env file)
+      - TRUST_PROXY=${TRUST_PROXY}
+      - SHUTDOWN_TIMEOUT=${SHUTDOWN_TIMEOUT}
+      # Search API connection (internal Docker network)
+      - SEARCH_API_URL=${SEARCH_API_URL}
+      # Logging configuration (from .env file)
+      - LOG_LEVEL=${LOG_LEVEL}
     networks:
       - codiesvibe-network
     depends_on:
-      backend-seed:
-        condition: service_completed_successfully
+      search-api:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]

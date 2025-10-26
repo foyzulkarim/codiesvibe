@@ -6,6 +6,7 @@ import {
   Min,
   Max,
   IsIn,
+  MaxLength,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -17,6 +18,8 @@ export class GetToolsQueryDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  @Transform(({ value }) => value?.trim().replace(/[<>]/g, ''))
   search?: string;
 
   @ApiPropertyOptional({

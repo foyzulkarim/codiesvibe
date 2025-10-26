@@ -17,7 +17,7 @@ export class VectorValidationError extends Error {
 /**
  * Validates embedding dimensions
  */
-export function validateEmbedding(embedding: number[], expectedDimensions: number = 1024): void {
+export function validateEmbedding(embedding: number[], expectedDimensions: number = 768): void {
   if (!Array.isArray(embedding)) {
     throw new VectorValidationError('Embedding must be an array', 'INVALID_EMBEDDING_TYPE');
   }
@@ -419,9 +419,9 @@ export function validateEnhancedCollectionConfig(config: {
       );
     }
 
-    if (typeof vectorConfig.size !== 'number' || vectorConfig.size !== 1024) {
+    if (typeof vectorConfig.size !== 'number' || vectorConfig.size !== 768) {
       throw new VectorValidationError(
-        `Invalid vector size for ${vectorType}: expected 1024, got ${vectorConfig.size}`,
+        `Invalid vector size for ${vectorType}: expected 768, got ${vectorConfig.size}`,
         'INVALID_VECTOR_SIZE'
       );
     }

@@ -1,7 +1,7 @@
 import { StateAnnotation } from '../../types/state';
-import { IntentStateSchema } from '../../types/intent-state';
 import { llmService } from '../../services/llm.service';
 import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
+import { JsonOutputParser } from '@langchain/core/output_parsers';
 
 // Configuration for logging
 const LOG_CONFIG = {
@@ -58,14 +58,14 @@ Return ONLY a JSON object with this structure:
 }
 
 IMPORTANT GUIDELINES:
-- "category" can be one of: ${CONTROLLED_VOCABULARIES.categories.map(c => `"${c}"`).join(', ')}
-- "interface" can be one of: ${CONTROLLED_VOCABULARIES.interface.map(i => `"${i}"`).join(', ')}
-- "functionality" can include: ${CONTROLLED_VOCABULARIES.functionality.map(f => `"${f}"`).join(', ')}
-- "deployment" can be one of: ${CONTROLLED_VOCABULARIES.deployment.map(d => `"${d}"`).join(', ')}
-- "industry" can be one of: ${CONTROLLED_VOCABULARIES.industries.map(i => `"${i}"`).join(', ')}
-- "userType" can be one of: ${CONTROLLED_VOCABULARIES.userTypes.map(u => `"${u}"`).join(', ')}
-- "pricingModel" can be one of: ${CONTROLLED_VOCABULARIES.pricingModels.map(p => `"${p}"`).join(', ')}
-- "billingPeriod" can be one of: ${CONTROLLED_VOCABULARIES.billingPeriods.map(b => `"${b}"`).join(', ')}
+- "category" can be one of: ${CONTROLLED_VOCABULARIES.categories.map((c) => `"${c}"`).join(', ')}
+- "interface" can be one of: ${CONTROLLED_VOCABULARIES.interface.map((i) => `"${i}"`).join(', ')}
+- "functionality" can include: ${CONTROLLED_VOCABULARIES.functionality.map((f) => `"${f}"`).join(', ')}
+- "deployment" can be one of: ${CONTROLLED_VOCABULARIES.deployment.map((d) => `"${d}"`).join(', ')}
+- "industry" can be one of: ${CONTROLLED_VOCABULARIES.industries.map((i) => `"${i}"`).join(', ')}
+- "userType" can be one of: ${CONTROLLED_VOCABULARIES.userTypes.map((u) => `"${u}"`).join(', ')}
+- "pricingModel" can be one of: ${CONTROLLED_VOCABULARIES.pricingModels.map((p) => `"${p}"`).join(', ')}
+- "billingPeriod" can be one of: ${CONTROLLED_VOCABULARIES.billingPeriods.map((b) => `"${b}"`).join(', ')}
 - Use exact values from the controlled vocabularies - do not make up new values
 
 PRICE EXTRACTION RULES:
@@ -112,40 +112,49 @@ export async function intentExtractorNode(
       errors: [
         ...(state.errors || []),
         {
-          node: "intent-extractor",
-          error: new Error("No query provided for intent extraction"),
+          node: 'intent-extractor',
+          error: new Error('No query provided for intent extraction'),
           timestamp: new Date(),
-          recovered: false
-        }
-      ]
+          recovered: false,
+        },
+      ],
     };
   }
 
   const startTime = Date.now();
-  log('Starting intent extraction with LangChain structured output', { query: query.substring(0, 100) });
+  log('Starting intent extraction with LangChain structured output', {
+    query: query.substring(0, 100),
+  });
 
   try {
     // Create structured output model using LLM service
-    const structuredModel = llmService.createStructuredClient('intent-extraction', IntentStateSchema);
+    log('Creating Together AI client for intent extraction', {
+      taskType: 'intent-extraction',
+      usingTogetherAPI: true
+    });
+    const llmClient = llmService.createTogetherAILangchainClient();
 
-    log('Sending request to LLM with structured output', {
-      taskType: 'intent-extraction'
+    log('Sending request to Together AI for intent extraction', {
+      taskType: 'intent-extraction',
+      model: 'openai/gpt-oss-20b via Together API'
     });
 
     // Extract intent using structured output
     const userPrompt = `Extract the intent from this query: "${query}"`;
-    const intentState = await structuredModel.invoke([
-      { role: 'system', content: INTENT_EXTRACTION_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt }
-    ]);
+
+    const parser = new JsonOutputParser();
+    const intentState = await llmClient.invoke({
+      system_prompt: INTENT_EXTRACTION_SYSTEM_PROMPT,
+      format_instructions: parser.getFormatInstructions(),
+      query: userPrompt,
+    });
 
     const executionTime = Date.now() - startTime;
 
-    log('Intent extraction completed successfully with LangChain', {
-      primaryGoal: intentState.primaryGoal,
-      hasReferenceTool: !!intentState.referenceTool,
-      confidence: intentState.confidence,
-      executionTime
+    log('Together AI intent extraction completed successfully', {
+      intentState,
+      executionTime,
+      confidence: intentState.confidence
     });
 
     return {
@@ -154,24 +163,26 @@ export async function intentExtractorNode(
         ...state.executionStats,
         nodeTimings: {
           ...state.executionStats?.nodeTimings,
-          "intent-extractor": executionTime
-        }
+          'intent-extractor': executionTime,
+        },
       },
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "intent-extractor"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'intent-extractor',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "intent-extractor": executionTime
-        }
-      }
+          'intent-extractor': executionTime,
+        },
+      },
     };
-
   } catch (error) {
     const executionTime = Date.now() - startTime;
     logError('Intent extraction failed', {
       error: error instanceof Error ? error.message : String(error),
-      executionTime
+      executionTime,
     });
 
     return {
@@ -179,28 +190,35 @@ export async function intentExtractorNode(
       errors: [
         ...(state.errors || []),
         {
-          node: "intent-extractor",
-          error: error instanceof Error ? error : new Error("Unknown error in intent extraction"),
+          node: 'intent-extractor',
+          error:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error in intent extraction'),
           timestamp: new Date(),
           recovered: false,
-          recoveryStrategy: "Failed to extract intent - pipeline cannot continue"
-        }
+          recoveryStrategy:
+            'Failed to extract intent - pipeline cannot continue',
+        },
       ],
       executionStats: {
         ...state.executionStats,
         nodeTimings: {
           ...state.executionStats?.nodeTimings,
-          "intent-extractor": executionTime
-        }
+          'intent-extractor': executionTime,
+        },
       },
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "intent-extractor"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'intent-extractor',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "intent-extractor": executionTime
-        }
-      }
+          'intent-extractor': executionTime,
+        },
+      },
     };
   }
 }

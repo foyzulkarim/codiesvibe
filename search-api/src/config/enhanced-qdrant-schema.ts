@@ -26,10 +26,10 @@ export function isEnhancedVectorTypeSupported(vectorType: string): boolean {
 export function getVectorConfig(vectorType: string): NamedVectorConfig | null {
   // Hardcoded configurations for supported vector types
   const configs: { [key: string]: NamedVectorConfig } = {
-    'semantic': { size: 1536, distance: 'Cosine' },
-    'entities.categories': { size: 384, distance: 'Cosine' },
-    'entities.functionality': { size: 384, distance: 'Cosine' },
-    'entities.aliases': { size: 384, distance: 'Cosine' },
+    'semantic': { size: 768, distance: 'Cosine' },
+    'entities.categories': { size: 768, distance: 'Cosine' },
+    'entities.functionality': { size: 768, distance: 'Cosine' },
+    'entities.aliases': { size: 768, distance: 'Cosine' },
     'composites.toolType': { size: 768, distance: 'Cosine' }
   };
   

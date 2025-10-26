@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONTROLLED_VOCABULARIES, OPERATORS } from "@/shared/constants/controlled-vocabularies";
 
 /**
  * Structured representation of a user's search or discovery intent for AI tools and technologies
@@ -27,81 +28,65 @@ export const IntentStateSchema = z.object({
     "Specifies comparative relationship between tools"
   ),
 
-  desiredFeatures: z.array(z.enum([
-    "AI code assist",
-    "local inference",
-    "RAG support",
-    "multi-agent orchestration",
-    "LLM integration",
-    "context awareness",
-    "CLI mode",
-    "open-source"
-  ])).default([]).describe(
-    "List of specific feature tags the user cares about"
-  ),
-
   filters: z.array(z.object({
     field: z.string(),
-    operator: z.enum(["=", "<", ">", "<=", ">=", "contains"]),
+    operator: z.enum(["=", "<", ">", "<=", ">=", "contains", "in"]),
     value: z.any()
   })).default([]).describe(
     "Structured filters derived from constraints or attributes"
   ),
 
-  pricing: z.enum([
-    "free",
-    "freemium",
-    "paid",
-    "enterprise"
-  ]).nullable().optional().describe(
-    "Primary pricing filter if explicitly mentioned"
-  ),
-
   priceRange: z.object({
     min: z.number().nullable().optional().describe("Minimum price threshold"),
     max: z.number().nullable().optional().describe("Maximum price threshold"),
-    currency: z.string().default("USD").describe("Currency for price values"),
     billingPeriod: z.enum(["Monthly", "Yearly", "One-time", "Per-use"]).nullable().optional().describe("Billing period for price comparison")
   }).nullable().optional().describe(
     "Specific price range or threshold mentioned in query"
   ),
 
   priceComparison: z.object({
-    operator: z.enum(["less_than", "greater_than", "equal_to", "around", "between"]).describe("Price comparison operator"),
+    operator: z.enum([
+      OPERATORS.LESS_THAN,
+      OPERATORS.GREATER_THAN,
+      OPERATORS.EQUAL,
+      OPERATORS.NOT_EQUAL,
+      OPERATORS.AROUND,
+      OPERATORS.BETWEEN
+    ]).describe("Price comparison operator"),
     value: z.number().describe("Reference price value"),
-    currency: z.string().default("USD").describe("Currency for comparison"),
-    billingPeriod: z.enum(["Monthly", "Yearly", "One-time", "Per-use"]).nullable().optional().describe("Billing period context")
+    billingPeriod: z.enum([CONTROLLED_VOCABULARIES.billingPeriods[0], CONTROLLED_VOCABULARIES.billingPeriods[1]]).nullable().optional().describe("Billing period context")
   }).nullable().optional().describe(
     "Price comparison constraint (e.g., 'under $50', 'around $20/month')"
   ),
 
-  category: z.enum([
-    "IDE",
-    "API",
-    "CLI",
-    "Framework",
-    "Agent",
-    "Plugin"
-  ]).nullable().optional().describe(
+  category: z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]).nullable().optional().describe(
     "Tool type category mentioned or implied"
   ),
 
-  platform: z.enum([
-    "web",
-    "desktop",
-    "cli",
-    "api"
-  ]).nullable().optional().describe(
+  interface: z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]).nullable().optional().describe(
     "Platform or interface preference"
   ),
 
-  semanticVariants: z.array(z.string()).default([]).describe(
-    "List of paraphrased queries or search variants"
+  functionality: z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]).describe(
+    "Specific features or capabilities required or desired"
   ),
 
-  constraints: z.array(z.string()).default([]).describe(
-    "List of qualitative constraints ('cheaper', 'newer', 'simpler')"
+  deployment: z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]).describe(
+    "Deployment preferences or requirements"
   ),
+
+  industry: z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]).describe(
+    "Industry sectors or domains of interest"
+  ),
+
+  userType: z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]).describe(
+    "Target user groups or roles"
+  ),
+
+  pricing: z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]).nullable().optional().describe(
+    "Primary pricing filter if explicitly mentioned"
+  ),
+
 
   confidence: z.number().min(0).max(1).describe(
     "Model-estimated confidence in this structured intent"

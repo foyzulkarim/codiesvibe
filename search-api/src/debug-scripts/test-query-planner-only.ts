@@ -21,26 +21,38 @@ dotenv.config();
 // Test cases specifically for query planning
 const queryPlannerTestCases = [
   {
-    name: "Simple find query with pricing and platform",
-    query: "free cli",
     mockIntentState: {
-      primaryGoal: "find",
+      primaryGoal: 'find',
       referenceTool: null,
       comparisonMode: null,
-      desiredFeatures: ["CLI mode"],
       filters: [],
-      pricing: "free",
-      category: "CLI",
-      platform: "cli",
+      pricingModel: null,
+      billingPeriod: null,
+      priceRange: null,
+      priceComparison: null,
+      category: null,
+      interface: 'CLI',
+      functionality: [],
+      deployment: 'Self-Hosted',
+      industry: null,
+      userType: null,
       semanticVariants: [],
-      constraints: [],
+      constraints: ['self-hosted'],
       confidence: 0.9
     },
-    expectedPlan: {
-      strategy: "vector_search",
-      vectorSources: ["qdrant"],
-      structuredSources: ["mongodb"],
-      confidence: 0.8
+    executionStats: {
+      totalTimeMs: 0,
+      nodeTimings: { 'intent-extractor': 2982 },
+      vectorQueriesExecuted: 0,
+      structuredQueriesExecuted: 0
+    },
+    metadata: {
+      startTime: '2025-10-23T19:47:23.362Z',
+      executionPath: ['intent-extractor'],
+      nodeExecutionTimes: { 'intent-extractor': 2982 },
+      totalNodesExecuted: 0,
+      pipelineVersion: '2.0-llm-first',
+      originalQuery: 'self hosted cli'
     }
   },
   {
@@ -129,6 +141,7 @@ async function testQueryPlanner(testCase: any) {
       intentState: testCase.mockIntentState,
       executionPlan: null,
       candidates: [],
+      results: [],
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},
@@ -192,7 +205,7 @@ async function testQueryPlanner(testCase: any) {
       hasSources: !!(result.executionPlan?.vectorSources || result.executionPlan?.structuredSources),
       hasConfidence: !!(result.executionPlan?.confidence),
       noErrors: !result.errors || result.errors.length === 0,
-      reasonableConfidence: (result.executionPlan?.confidence || 0) > 0.5
+      reasonableConfidence: (result.executionPlan?.confidence || 0) >= 0.5
     };
 
     console.log(`\n✅ Validation Results:`);

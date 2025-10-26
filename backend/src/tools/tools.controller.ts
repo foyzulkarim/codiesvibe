@@ -1,9 +1,20 @@
-import { Controller, Get, Param, Req, Query, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Req,
+  Query,
+  Post,
+  Body,
+  Headers,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ToolsService, SearchFilters, SearchOptions } from './tools.service';
 import { ToolResponseDto } from './dto/tool-response.dto';
 import { GetToolsQueryDto } from './dto/get-tools-query.dto';
+import { AiSearchDto } from './dto/ai-search.dto';
+import { RequireSession } from '../common/decorators/require-session.decorator';
 
 @ApiTags('Tools')
 @Controller('tools') // Will be /api/tools with global prefix
@@ -13,24 +24,29 @@ export class ToolsController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Get('ai-search')
+  @Post('ai-search')
+  @RequireSession()
   @ApiOperation({
-    summary: 'AI based searching',
+    summary: 'AI based searching (POST with session validation)',
   })
   @ApiResponse({
     status: 200,
     description: 'Search results retrieved successfully',
   })
-  async searchGet(
-    @Query('q') query: string,
-    @Query('limit') limit?: number,
-    @Query('debug') debug?: boolean,
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid session',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - origin not allowed',
+  })
+  async searchPost(
+    @Body() searchDto: AiSearchDto,
+    @Req() req: any,
+    @Headers('x-csrf-token') csrfToken: string,
   ) {
-    if (!query) {
-      return { error: 'Query parameter "q" is required' };
-    }
-
-    console.log(`Received search GET request with query: ${query}`);
+    console.log(`Received search POST request with query: ${searchDto.query}`);
 
     try {
       const searchApiUrl = this.configService.get<string>(
@@ -43,9 +59,9 @@ export class ToolsController {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: query,
-          limit: limit || 10,
-          debug: debug || false,
+          query: searchDto.query,
+          limit: searchDto.limit || 10,
+          debug: searchDto.debug || false,
         }),
       });
 
@@ -54,6 +70,7 @@ export class ToolsController {
       }
 
       const data = await response.json();
+      console.log('data received from search-api', data);
       return data;
     } catch (error) {
       return {
