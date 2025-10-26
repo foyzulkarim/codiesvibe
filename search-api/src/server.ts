@@ -429,13 +429,15 @@ async function validateVectorIndexOnStartup(): Promise<void> {
 
   } catch (error) {
     // Don't fail startup, but provide clear feedback
-    searchLogger.error('🔄 Vector index validation could not be completed', {
-      service: 'search-api',
-      validationStatus: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      troubleshootingTips: [
-        'Ensure MongoDB and Qdrant services are running',
-        'Check environment variables for service connections',
+    searchLogger.error('🔄 Vector index validation could not be completed', 
+      error instanceof Error ? error : new Error('Unknown error'),
+      {
+        service: 'search-api',
+        validationStatus: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        troubleshootingTips: [
+          'Ensure MongoDB and Qdrant services are running',
+          'Check environment variables for service connections',
         'Run validation manually after startup if needed'
       ]
     });
