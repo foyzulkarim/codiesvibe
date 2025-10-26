@@ -89,11 +89,16 @@ export class LoggerService {
             winston.format.colorize(),
             winston.format.simple(),
             winston.format.printf((info) => {
-              const correlationId = typeof info.correlationId === 'string' && info.correlationId
-                ? `[${info.correlationId}] `
-                : '';
-              const level = typeof info.level === 'string' ? info.level : 'info';
-              const message = typeof info.message === 'string' ? info.message : String(info.message);
+              const correlationId =
+                typeof info.correlationId === 'string' && info.correlationId
+                  ? `[${info.correlationId}] `
+                  : '';
+              const level =
+                typeof info.level === 'string' ? info.level : 'info';
+              const message =
+                typeof info.message === 'string'
+                  ? info.message
+                  : String(info.message);
               return `${correlationId}${level}: ${message}`;
             }),
           ),
