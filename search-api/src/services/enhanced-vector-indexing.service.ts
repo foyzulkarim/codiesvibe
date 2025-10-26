@@ -982,7 +982,7 @@ export class EnhancedVectorIndexingService {
             supportedTypes.forEach(vectorType => {
               const vectorConfig = vectorsConfig[vectorType];
               if (vectorConfig) {
-                const expectedDimensions = 1024; // mxbai-embed-large
+                const expectedDimensions = 768; // togethercomputer/m2-bert-80M-32k-retrieval
                 if (vectorConfig.size !== expectedDimensions) {
                   report.vectorTypeHealth[vectorType].healthy = false;
                   report.vectorTypeHealth[vectorType].error =
@@ -1016,7 +1016,7 @@ export class EnhancedVectorIndexingService {
             totalVectorCount += count;
             
             // Check collection configuration
-            const expectedDimensions = 1024; // mxbai-embed-large
+            const expectedDimensions = 768; // togethercomputer/m2-bert-80M-32k-retrieval
             if (collectionInfo.config.params.vectors.size !== expectedDimensions) {
               report.vectorTypeHealth[vectorType].healthy = false;
               report.vectorTypeHealth[vectorType].error =

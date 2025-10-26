@@ -40,7 +40,9 @@
     "test:script:intent": "npx tsx src/debug-scripts/test-intent-extractor-only.ts",
     "test:script:plan": "npx tsx src/debug-scripts/test-query-planner-only.ts",
     "test:script:executor": "npx tsx src/debug-scripts/test-query-executor-only.ts",
-    "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts"
+    "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts",
+    "setup:cache-indexes": "npx tsx src/debug-scripts/setup-cache-indexes.ts",
+    "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts"
   },
   "dependencies": {
     "@langchain/community": "^0.3.57",

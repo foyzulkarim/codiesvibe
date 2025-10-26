@@ -1,9 +1,10 @@
 // Embedding configuration
 export const embeddingConfig = {
-  dimensions: 1024, // Size of mxbai-embed-large embeddings
+  dimensions: 768, // Together AI m2-bert-80M-32k-retrieval dimensions
   batchSize: 10,
   cacheEnabled: process.env.ENABLE_CACHE === "true",
   cacheTTL: parseInt(process.env.CACHE_TTL || "3600"), // seconds
+  model: "togethercomputer/m2-bert-80M-32k-retrieval",
 };
 
 // Enum values for various tool attributes

@@ -38,7 +38,7 @@ async function createCollections() {
         // Create collection with standard vector configuration
         await client.createCollection(collectionName, {
           vectors: {
-            size: 1024, // mxbai-embed-large dimensions
+            size: 768, // togethercomputer/m2-bert-80M-32k-retrieval dimensions
             distance: 'Cosine'
           }
         });

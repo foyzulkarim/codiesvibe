@@ -484,6 +484,8 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
       metadata: { debug: validatedData.debug, client: clientId }
     });
 
+    console.log('server.ts search result', JSON.stringify(searchResult));
+
     const executionTime = Date.now() - startTime;
 
     const response = {
@@ -496,14 +498,14 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
       ...searchResult
     };
 
-    console.log(`🎉 Search completed in ${executionTime}ms with ${response.results.length} results (client: ${clientId})\n`);
+    console.log(`🎉 Search completed in ${executionTime}ms with ${response.candidates.length} candidates (client: ${clientId})\n`);
 
     // Log successful request for monitoring
     securityLogger.info('Search request completed successfully', {
       ip: clientId,
       userAgent,
       queryLength: sanitizedQuery.length,
-      resultCount: response.results.length,
+      resultCount: response.candidates.length,
       executionTimeMs: executionTime,
       timestamp: new Date().toISOString()
     });
@@ -547,7 +549,7 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
 // Start server with vector index validation
 async function startServer() {
   // Perform vector index validation before starting the server
-  await validateVectorIndexOnStartup();
+  // await validateVectorIndexOnStartup();
 
   app.listen(PORT, () => {
     console.log(`🚀 Search API server running on http://localhost:${PORT}`);

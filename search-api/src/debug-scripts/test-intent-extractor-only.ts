@@ -82,7 +82,7 @@ async function testIntentExtraction(testCase: any) {
       intentState: null,
       executionPlan: null,
       candidates: [],
-      results: [], // Initialize empty results array
+      results: [],
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},

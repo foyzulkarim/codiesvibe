@@ -153,7 +153,7 @@ async function testQueryExecutor(testCase: any) {
       },
       executionPlan: testCase.executionPlan,
       candidates: [],
-      results: [], // Initialize empty results array
+      results: [],
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},

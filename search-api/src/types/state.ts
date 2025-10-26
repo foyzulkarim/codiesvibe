@@ -3,6 +3,7 @@ import { any, z } from "zod";
 import { IntentState, IntentStateSchema } from "./intent-state";
 import { QueryPlan, QueryPlanSchema } from "./query-plan";
 import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate";
+import { ToolData } from "./tool.types";
 
 // New Simplified State Schema using LangGraph's Annotation
 export const StateAnnotation = Annotation.Root({
@@ -13,9 +14,7 @@ export const StateAnnotation = Annotation.Root({
   intentState: Annotation<IntentState | null>,
   executionPlan: Annotation<QueryPlan | null>,
   candidates: Annotation<Candidate[]>,
-
-  // Full MongoDB documents corresponding to candidates
-  results: Annotation<any[]>,
+  results: Annotation<ToolData[]>,
 
   // Execution statistics and tracking
   executionStats: Annotation<{
@@ -24,6 +23,10 @@ export const StateAnnotation = Annotation.Root({
     vectorQueriesExecuted: number;
     structuredQueriesExecuted: number;
     fusionMethod?: string;
+    cacheHit?: boolean;
+    cacheSimilarity?: number;
+    originalExecutionTime?: number;
+    timeSaved?: number;
   }>,
 
   // Error handling and recovery
@@ -39,7 +42,6 @@ export const StateAnnotation = Annotation.Root({
   metadata: Annotation<{
     vectorFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
     structuredFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
-    fullResults?: any[];
     startTime: Date;
     endTime?: Date;
     executionPath: string[];
@@ -48,6 +50,23 @@ export const StateAnnotation = Annotation.Root({
     originalQuery?: string;
     totalNodesExecuted: number;
     pipelineVersion: string;
+    // Cache-related metadata
+    cacheHit?: boolean;
+    cacheType?: 'exact' | 'similar' | 'miss' | 'error';
+    cacheSimilarity?: number;
+    cachedAt?: Date;
+    planId?: string;
+    usageCount?: number;
+    cacheStored?: boolean;
+    cacheStorageTime?: number;
+    cacheStorageError?: string;
+    cacheError?: string;
+    skipToExecutor?: boolean;
+    costSavings?: {
+      llmCallsAvoided: number;
+      estimatedCostSaved: number;
+      timeSavedPercent: string;
+    };
   }>
 });
 

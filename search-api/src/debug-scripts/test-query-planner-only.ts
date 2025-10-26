@@ -141,7 +141,7 @@ async function testQueryPlanner(testCase: any) {
       intentState: testCase.mockIntentState,
       executionPlan: null,
       candidates: [],
-      results: [], // Initialize empty results array
+      results: [],
       executionStats: {
         totalTimeMs: 0,
         nodeTimings: {},

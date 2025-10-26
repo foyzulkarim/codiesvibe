@@ -190,8 +190,8 @@ export class MultiCollectionOrchestrator {
     for (const collectionName of allCollections) {
       try {
         // Try a simple search to validate collection exists
-        // Use a 1024-dimensional dummy vector to match collection configuration
-        const dummyEmbedding = new Array(1024).fill(0.1);
+        // Use a 768-dimensional dummy vector to match collection configuration
+        const dummyEmbedding = new Array(768).fill(0.1);
         const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
         await qdrantService.searchByEmbedding(dummyEmbedding, 1, undefined, vectorType);
         const collectionConfig = this.collectionConfig.getCollectionByName(collectionName);
@@ -527,7 +527,7 @@ export class MultiCollectionOrchestrator {
     try {
       // Use the new searchDirectOnCollection method to avoid vector type validation
       await qdrantService.searchDirectOnCollection(
-        new Array(1024).fill(0.1),
+        new Array(768).fill(0.1),
         collectionName,
         1
       );

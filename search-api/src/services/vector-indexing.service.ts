@@ -437,7 +437,7 @@ export class VectorIndexingService {
       console.log(`📊 MongoDB tools count: ${report.mongoToolCount}`);
 
       // Step 2: Check Qdrant collection
-      const dummyEmbedding = new Array(1024).fill(0.1);
+      const dummyEmbedding = new Array(768).fill(0.1);
       const results = await qdrantService.searchDirectOnCollection(dummyEmbedding, 'tools', 1);
       console.log(`🔎 Qdrant test search returned ${results.length} results`);
 
@@ -538,8 +538,8 @@ export class VectorIndexingService {
 
         try {
           // Try to validate collection exists by performing a simple search
-          // Use a 1024-dimensional dummy vector to match collection configuration
-          const dummyEmbedding = new Array(1024).fill(0.1);
+          // Use a 768-dimensional dummy vector to match collection configuration
+          const dummyEmbedding = new Array(768).fill(0.1);
           const qdrantCollectionName = this.collectionConfig.getPhysicalCollectionName(collectionName);
           await qdrantService.searchDirectOnCollection(dummyEmbedding, qdrantCollectionName, 1);
 
@@ -658,8 +658,8 @@ export class VectorIndexingService {
     for (const collectionName of enabledCollections) {
       try {
         // Try a simple search to validate collection exists and is responsive
-        // Use a 1024-dimensional dummy vector to match collection configuration
-        const dummyEmbedding = new Array(1024).fill(0.1);
+        // Use a 768-dimensional dummy vector to match collection configuration
+          const dummyEmbedding = new Array(768).fill(0.1);
         const qdrantCollectionName = this.collectionConfig.getPhysicalCollectionName(collectionName);
         await qdrantService.searchDirectOnCollection(dummyEmbedding, qdrantCollectionName, 1);
 

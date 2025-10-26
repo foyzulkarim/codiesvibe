@@ -54,41 +54,41 @@ export const qdrantConfig = {
   collectionName: process.env.QDRANT_COLLECTION_NAME || "tools",
   // Enhanced multi-vector configuration
   vectorsConfig: {
-    size: 1024, // Size of the embedding model (mxbai-embed-large)
+    size: 768, // Size of the embedding model (togethercomputer/m2-bert-80M-32k-retrieval)
     distance: "Cosine" as const,
   },
   // Multi-vector configuration with named vectors (legacy - for backward compatibility)
   multiVectorsConfig: {
     semantic: {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.categories": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.functionality": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.interface": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.industries": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.userTypes": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "entities.aliases": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
     "composites.toolType": {
-      size: 1024,
+      size: 768,
       distance: "Cosine" as const,
     },
   },

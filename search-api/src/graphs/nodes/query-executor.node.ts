@@ -41,12 +41,12 @@ export async function queryExecutorNode(
       errors: [
         ...(state.errors || []),
         {
-          node: "query-executor",
-          error: new Error("No execution plan provided for query execution"),
+          node: 'query-executor',
+          error: new Error('No execution plan provided for query execution'),
           timestamp: new Date(),
-          recovered: false
-        }
-      ]
+          recovered: false,
+        },
+      ],
     };
   }
 
@@ -57,8 +57,8 @@ export async function queryExecutorNode(
     structuredSourcesCount: executionPlan.structuredSources?.length || 0,
     fusionMethod: executionPlan.fusion || 'none',
     sources: JSON.stringify({
-      structuredSources: executionPlan.structuredSources
-    })
+      structuredSources: executionPlan.structuredSources,
+    }),
   });
 
   try {
@@ -74,22 +74,35 @@ export async function queryExecutorNode(
 
     // Execute structured searches FIRST
     const structuredFiltersAndQueries = [];
-    if (executionPlan.structuredSources && executionPlan.structuredSources.length > 0) {
+    if (
+      executionPlan.structuredSources &&
+      executionPlan.structuredSources.length > 0
+    ) {
       log('Executing structured searches', {
         sourcesCount: executionPlan.structuredSources.length,
-        sources: executionPlan.structuredSources.map(source => JSON.stringify(source))
+        sources: executionPlan.structuredSources.map((source) =>
+          JSON.stringify(source)
+        ),
       });
 
       for (const structuredSource of executionPlan.structuredSources) {
         try {
-          const { candidates: structuredCandidates, filters, query: structuredQuery } = await executeStructuredSearch(
-            structuredSource,
-            mongoService
-          );
-          structuredFiltersAndQueries.push({ filters, query: structuredQuery, candidatesLength: structuredCandidates.length });
+          const {
+            candidates: structuredCandidates,
+            filters,
+            query: structuredQuery,
+          } = await executeStructuredSearch(structuredSource, mongoService);
+          structuredFiltersAndQueries.push({
+            filters,
+            query: structuredQuery,
+            candidatesLength: structuredCandidates.length,
+          });
 
           if (structuredCandidates.length > 0) {
-            candidatesBySource.set(`mongodb_${structuredSource.source}`, structuredCandidates);
+            candidatesBySource.set(
+              `mongodb_${structuredSource.source}`,
+              structuredCandidates
+            );
             structuredResultsCount += structuredCandidates.length;
           }
 
@@ -97,12 +110,12 @@ export async function queryExecutorNode(
           log('Structured search completed', {
             source: structuredSource.source,
             candidatesFound: structuredCandidates.length,
-            limit: structuredSource.limit || 'default'
+            limit: structuredSource.limit || 'default',
           });
         } catch (error) {
           logError('Structured search failed', {
             source: structuredSource.source,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
           // Continue with other sources instead of failing completely
         }
@@ -118,7 +131,7 @@ export async function queryExecutorNode(
     log('Adaptive threshold determined', {
       hasStructuredResults,
       structuredResultsCount,
-      adaptiveThreshold
+      adaptiveThreshold,
     });
 
     // Execute vector searches SECOND with adaptive threshold
@@ -126,12 +139,16 @@ export async function queryExecutorNode(
     if (executionPlan.vectorSources && executionPlan.vectorSources.length > 0) {
       log('Executing vector searches', {
         sourcesCount: executionPlan.vectorSources.length,
-        adaptiveThreshold
+        adaptiveThreshold,
       });
 
       for (const vectorSource of executionPlan.vectorSources) {
         try {
-          const { candidates: vectorCandidates, filters, query: vectorQuery } = await executeVectorSearch(
+          const {
+            candidates: vectorCandidates,
+            filters,
+            query: vectorQuery,
+          } = await executeVectorSearch(
             vectorSource,
             query,
             intentState,
@@ -141,21 +158,28 @@ export async function queryExecutorNode(
           );
 
           if (vectorCandidates.length > 0) {
-            candidatesBySource.set(`vector_${vectorSource.collection}`, vectorCandidates);
+            candidatesBySource.set(
+              `vector_${vectorSource.collection}`,
+              vectorCandidates
+            );
           }
 
           vectorQueriesExecuted++;
-          vectorFiltersAndQueries.push({ filters, query: vectorQuery, candidatesLength: vectorCandidates.length });
+          vectorFiltersAndQueries.push({
+            filters,
+            query: vectorQuery,
+            candidatesLength: vectorCandidates.length,
+          });
           log('Vector search completed', {
             collection: vectorSource.collection,
             candidatesFound: vectorCandidates.length,
             topK: vectorSource.topK,
-            thresholdUsed: adaptiveThreshold
+            thresholdUsed: adaptiveThreshold,
           });
         } catch (error) {
           logError('Vector search failed', {
             collection: vectorSource.collection,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
           // Continue with other sources instead of failing completely
         }
@@ -172,16 +196,22 @@ export async function queryExecutorNode(
       const singleSource = Array.from(candidatesBySource.values())[0];
       finalCandidates = singleSource.map((candidate, index) => ({
         ...candidate,
-        score: 1 - (index / singleSource.length) // Simple ranking normalization
+        score: 1 - index / singleSource.length, // Simple ranking normalization
       }));
     } else {
       // Multiple sources - apply fusion
-      finalCandidates = fuseResults(candidatesBySource, executionPlan.fusion || 'rrf');
+      finalCandidates = fuseResults(
+        candidatesBySource,
+        executionPlan.fusion || 'rrf'
+      );
     }
 
     // Enrich candidates with full MongoDB data
     const enrichmentStartTime = Date.now();
-    const results = await enrichCandidatesWithFullData(finalCandidates, mongoService);
+    const results = await enrichCandidatesWithFullData(
+      finalCandidates,
+      mongoService
+    );
     const enrichmentTime = Date.now() - enrichmentStartTime;
 
     const executionTime = Date.now() - startTime;
@@ -189,14 +219,13 @@ export async function queryExecutorNode(
     // Create execution stats
     const executionStats = {
       totalTimeMs: executionTime,
-      nodeTimings: {
-        ...state.executionStats?.nodeTimings,
-        "query-executor": executionTime
-      },
+      nodeTimings: Object.assign({}, state.executionStats?.nodeTimings || {}, {
+        'query-executor': executionTime,
+      }),
       vectorQueriesExecuted,
       structuredQueriesExecuted,
       fusionMethod: executionPlan.fusion || 'none',
-      confidence: executionPlan.confidence
+      confidence: executionPlan.confidence,
     };
 
     log('Query execution completed successfully', {
@@ -206,32 +235,32 @@ export async function queryExecutorNode(
       fusionMethod: executionPlan.fusion || 'none',
       executionTime,
       enrichmentTime,
-      resultsEnriched: results.filter(r => r !== null).length,
-      resultsy: results
+      resultsEnriched: results.filter((r) => r !== null).length,
     });
 
     return {
       candidates: finalCandidates,
-      results, // Add the new results field with full MongoDB documents
+      results: results.map((x) => x),
       executionStats,
       metadata: {
         ...state.metadata,
         vectorFiltersAndQueries,
         structuredFiltersAndQueries,
-        fullResults: results,
-        executionPath: [...(state.metadata?.executionPath || []), "query-executor"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'query-executor',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "query-executor": executionTime
-        }
-      }
+          'query-executor': executionTime,
+        },
+      },
     };
-
   } catch (error) {
     const executionTime = Date.now() - startTime;
     logError('Query execution failed', {
       error: error instanceof Error ? error.message : String(error),
-      executionTime
+      executionTime,
     });
 
     return {
@@ -239,31 +268,40 @@ export async function queryExecutorNode(
       errors: [
         ...(state.errors || []),
         {
-          node: "query-executor",
-          error: error instanceof Error ? error : new Error("Unknown error in query execution"),
+          node: 'query-executor',
+          error:
+            error instanceof Error
+              ? error
+              : new Error('Unknown error in query execution'),
           timestamp: new Date(),
           recovered: false,
-          recoveryStrategy: "Query execution failed - returning empty results"
-        }
+          recoveryStrategy: 'Query execution failed - returning empty results',
+        },
       ],
       executionStats: {
         totalTimeMs: executionTime,
-        nodeTimings: {
-          ...state.executionStats?.nodeTimings,
-          "query-executor": executionTime
-        },
+        nodeTimings: Object.assign(
+          {},
+          state.executionStats?.nodeTimings || {},
+          {
+            'query-executor': executionTime,
+          }
+        ),
         vectorQueriesExecuted: 0,
         structuredQueriesExecuted: 0,
-        fusionMethod: executionPlan.fusion || 'none'
+        fusionMethod: executionPlan.fusion || 'none',
       },
       metadata: {
         ...state.metadata,
-        executionPath: [...(state.metadata?.executionPath || []), "query-executor"],
+        executionPath: [
+          ...(state.metadata?.executionPath || []),
+          'query-executor',
+        ],
         nodeExecutionTimes: {
           ...state.metadata?.nodeExecutionTimes,
-          "query-executor": executionTime
-        }
-      }
+          'query-executor': executionTime,
+        },
+      },
     };
   }
 }
@@ -278,7 +316,7 @@ async function executeVectorSearch(
   qdrantService: QdrantService,
   embeddingService: EmbeddingService,
   scoreThreshold?: number
-): Promise<{ candidates: Candidate[], filters: any[], query: any }> {
+): Promise<{ candidates: Candidate[]; filters: any[]; query: any }> {
   try {
     // Generate query vector based on source
     let queryVector: number[];
@@ -291,12 +329,16 @@ async function executeVectorSearch(
         if (!intentState?.referenceTool) {
           throw new Error('Reference tool specified but none found in intent');
         }
-        queryVector = await embeddingService.generateEmbedding(intentState.referenceTool);
+        queryVector = await embeddingService.generateEmbedding(
+          intentState.referenceTool
+        );
         break;
       case 'semantic_variant':
         const variants = intentState?.semanticVariants || [];
         if (variants.length === 0) {
-          throw new Error('Semantic variant specified but none found in intent');
+          throw new Error(
+            'Semantic variant specified but none found in intent'
+          );
         }
         queryVector = await embeddingService.generateEmbedding(variants[0]);
         break;
@@ -312,13 +354,15 @@ async function executeVectorSearch(
       for (const [field, condition] of Object.entries(vectorSource.filter)) {
         filter.must.push({
           key: field,
-          match: { value: condition }
+          match: { value: condition },
         });
       }
     }
 
     // Execute search with score threshold to filter out low-quality results
-    const threshold = scoreThreshold || parseFloat(process.env.QUERY_EXECUTOR_SCORE_THRESHOLD || '0.5');
+    const threshold =
+      scoreThreshold ||
+      parseFloat(process.env.QUERY_EXECUTOR_SCORE_THRESHOLD || '0.5');
     const searchResults = await qdrantService.searchByEmbedding(
       queryVector,
       vectorSource.topK,
@@ -329,32 +373,33 @@ async function executeVectorSearch(
     );
 
     // Convert to Candidate format
-    const candidates: Candidate[] = searchResults.map((result: any, index: number) => ({
-      id: result.id || result.payload?.id || `unknown_${index}`,
-      source: 'qdrant',
-      score: result.score || 0,
-      metadata: {
-        name: result.payload?.name || 'Unknown Tool',
-        category: result.payload?.category,
-        pricing: result.payload?.pricingSummary?.pricingModel?.[0],
-        platform: result.payload?.interface?.[0],
-        features: result.payload?.features || [],
-        description: result.payload?.description
-      },
-      embeddingVector: result.vector || null,
-      provenance: {
-        collection: vectorSource.collection,
-        queryVectorSource: vectorSource.queryVectorSource,
-        filtersApplied: filter ? ['vector_filter_applied'] : []
-      }
-    }));
+    const candidates: Candidate[] = searchResults.map(
+      (result: any, index: number) => ({
+        id: result.id || result.payload?.id || `unknown_${index}`,
+        source: 'qdrant',
+        score: result.score || 0,
+        metadata: {
+          name: result.payload?.name || 'Unknown Tool',
+          category: result.payload?.category,
+          pricing: result.payload?.pricingSummary?.pricingModel?.[0],
+          platform: result.payload?.interface?.[0],
+          features: result.payload?.features || [],
+          description: result.payload?.description,
+        },
+        embeddingVector: result.vector || null,
+        provenance: {
+          collection: vectorSource.collection,
+          queryVectorSource: vectorSource.queryVectorSource,
+          filtersApplied: filter ? ['vector_filter_applied'] : [],
+        },
+      })
+    );
 
     return { candidates, filters: [filter], query: {} };
-
   } catch (error) {
     logError('Vector search execution failed', {
       collection: vectorSource.collection,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -366,7 +411,7 @@ async function executeVectorSearch(
 async function executeStructuredSearch(
   structuredSource: any,
   mongoService: MongoDBService
-): Promise<{ filters: any[], query: any, candidates: Candidate[] }> {
+): Promise<{ filters: any[]; query: any; candidates: Candidate[] }> {
   try {
     // Build MongoDB query from filters
     let query: any = {};
@@ -380,37 +425,37 @@ async function executeStructuredSearch(
           case '=':
             query = {
               ...query,
-              [filter.field]: filter.value
+              [filter.field]: filter.value,
             };
             break;
           case 'contains':
             query = {
               ...query,
-              [filter.field]: { $regex: filter.value, $options: 'i' }
+              [filter.field]: { $regex: filter.value, $options: 'i' },
             };
             break;
           case '>':
             query = {
               ...query,
-              [filter.field]: { $gt: filter.value }
+              [filter.field]: { $gt: filter.value },
             };
             break;
           case '<':
             query = {
               ...query,
-              [filter.field]: { $lt: filter.value }
+              [filter.field]: { $lt: filter.value },
             };
             break;
           case '>=':
             query = {
               ...query,
-              [filter.field]: { $gte: filter.value }
+              [filter.field]: { $gte: filter.value },
             };
             break;
           case '<=':
             query = {
               ...query,
-              [filter.field]: { $lte: filter.value }
+              [filter.field]: { $lte: filter.value },
             };
             break;
           case 'in':
@@ -418,22 +463,24 @@ async function executeStructuredSearch(
             if (Array.isArray(filter.value)) {
               query = {
                 ...query,
-                [filter.field]: { $in: filter.value }
+                [filter.field]: { $in: filter.value },
               };
             } else {
               // Single value - treat as equals
               query = {
                 ...query,
-                [filter.field]: filter.value
+                [filter.field]: filter.value,
               };
             }
             break;
           default:
             // Handle unknown operators by treating them as equals
-            logWarning(`Unknown operator '${filter.operator}' for field '${filter.field}', treating as equals`);
+            logWarning(
+              `Unknown operator '${filter.operator}' for field '${filter.field}', treating as equals`
+            );
             query = {
               ...query,
-              [filter.field]: filter.value
+              [filter.field]: filter.value,
             };
             break;
         }
@@ -443,7 +490,10 @@ async function executeStructuredSearch(
     log('Structured search query:', query);
 
     // Execute query
-    const results = await mongoService.searchTools(query, structuredSource.limit || 50);
+    const results = await mongoService.searchTools(
+      query,
+      structuredSource.limit || 50
+    );
 
     // Convert to Candidate format
     const candidates: Candidate[] = results.map((tool: any, index: number) => ({
@@ -456,21 +506,23 @@ async function executeStructuredSearch(
         pricing: tool.pricingSummary?.pricingModel?.[0],
         platform: tool.interface?.[0],
         features: tool.capabilities?.core || [],
-        description: tool.description || tool.tagline
+        description: tool.description || tool.tagline,
       },
       provenance: {
         collection: 'tools',
         queryVectorSource: 'structured_search',
-        filtersApplied: structuredSource.filters?.map((f: any) => `${f.field}_${f.operator}_${f.value}`) || []
-      }
+        filtersApplied:
+          structuredSource.filters?.map(
+            (f: any) => `${f.field}_${f.operator}_${f.value}`
+          ) || [],
+      },
     }));
 
     return { filters: structuredSource.filters || [], query, candidates };
-
   } catch (error) {
     logError('Structured search execution failed', {
       source: structuredSource.source,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -484,7 +536,6 @@ const logWarning = (message: string, data?: any) => {
     console.warn(`${LOG_CONFIG.prefix} WARNING: ${message}`, data ? data : '');
   }
 };
-
 
 /**
  * Enrich candidates with full MongoDB data
@@ -500,11 +551,11 @@ async function enrichCandidatesWithFullData(
 
   try {
     // Extract unique candidate IDs
-    const candidateIds = candidates.map(candidate => candidate.id);
+    const candidateIds = candidates.map((candidate) => candidate.id);
 
     log('Enriching candidates with full MongoDB data', {
       candidateCount: candidates.length,
-      uniqueIds: candidateIds.length
+      uniqueIds: candidateIds.length,
     });
 
     // Batch fetch full documents from MongoDB
@@ -513,22 +564,25 @@ async function enrichCandidatesWithFullData(
     log('Retrieved full documents from MongoDB', {
       documentsFound: fullDocuments.length,
       requestedIds: candidateIds.length,
-      fullDocuments
+      fullDocuments,
     });
 
     // Create a map for quick lookup by ID (handle both ObjectId and string formats)
     const documentMap = new Map<string, any>();
-    fullDocuments.forEach(doc => {
+    fullDocuments.forEach((doc) => {
       // Store by both string representation and ObjectId string
       const idStr = doc._id.toString();
       documentMap.set(idStr, doc);
       documentMap.set(doc._id, doc);
     });
 
-    console.log('enrichCandidatesWithFullData(): documentMap', { documentMap, fullDocuments });
+    console.log('enrichCandidatesWithFullData(): documentMap', {
+      documentMap,
+      fullDocuments,
+    });
 
     // Create results array in the same order as candidates
-    const results = candidates.map(candidate => {
+    const results = candidates.map((candidate) => {
       const fullDoc = documentMap.get(candidate.id);
       if (fullDoc) {
         return fullDoc;
@@ -538,19 +592,19 @@ async function enrichCandidatesWithFullData(
       }
     });
 
-    const foundCount = results.filter(result => result !== null).length;
+    const foundCount = results.filter((result) => result !== null).length;
     log('Enrichment completed', {
       totalCandidates: candidates.length,
       documentsFound: foundCount,
       documentsNotFound: candidates.length - foundCount,
-      results
+      results,
     });
 
     return results;
   } catch (error) {
     logError('Failed to enrich candidates with full data', {
       error: error instanceof Error ? error.message : String(error),
-      candidateCount: candidates.length
+      candidateCount: candidates.length,
     });
 
     // Return array of nulls to maintain order if enrichment fails
