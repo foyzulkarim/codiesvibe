@@ -79,9 +79,7 @@ services:
 
   # Search-API Production Service
   search-api:
-    # Use pre-built GHCR image for production deployments
-    image: ghcr.io/foyzulkarim/codiesvibe-search-api:${VERSION:-latest}
-    # Fallback: Build locally if GHCR image unavailable
+    # Build locally for production deployments
     build:
       context: .
       dockerfile: Dockerfile.search-api
@@ -89,7 +87,6 @@ services:
       args:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
-        - VERSION=${VERSION:-latest}
     container_name: codiesvibe-search-api-prod
     # Expose port 4003 for troubleshooting (accessed through Nginx reverse proxy normally)
     ports:
@@ -160,9 +157,7 @@ services:
 
   # Backend Production Service
   backend:
-    # Use pre-built GHCR image for production deployments
-    image: ghcr.io/foyzulkarim/codiesvibe-backend:${VERSION:-latest}
-    # Fallback: Build locally if GHCR image unavailable
+    # Build locally for production deployments
     build:
       context: .
       dockerfile: Dockerfile.backend
@@ -170,7 +165,6 @@ services:
       args:
         - BUILD_DATE=${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
         - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse --short HEAD)}
-        - VERSION=${VERSION:-latest}
     container_name: codiesvibe-backend-prod
     # Expose port 4000 for troubleshooting (accessed through Nginx reverse proxy normally)
     ports:
