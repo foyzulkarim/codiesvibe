@@ -24,10 +24,11 @@ CodiesVibe is built as a **production-grade platform** using modern web technolo
 
 ### Core Architecture
 - **Frontend**: React 18 + TypeScript + Vite for a fast, responsive user experience
-- **Backend**: NestJS + TypeScript with comprehensive API design
-- **Database**: MongoDB with advanced indexing for flexible tool categorization
-- **Search**: LangGraph-based intelligent search with multi-vector similarity matching
-- **Infrastructure**: Docker-based deployment with comprehensive monitoring
+- **Backend**: NestJS + TypeScript with comprehensive API design and authentication
+- **Search API**: Dedicated Node.js service with LangGraph-based intelligent search
+- **Database**: MongoDB Atlas with advanced indexing for flexible tool categorization
+- **Vector Database**: Qdrant Cloud for semantic search and similarity matching
+- **Infrastructure**: Docker-based deployment with Nginx reverse proxy and comprehensive monitoring
 
 ### Technical Differentiators
 
@@ -51,28 +52,102 @@ CodiesVibe is built as a **production-grade platform** using modern web technolo
 - Docker & Docker Compose
 - Git
 
-# Recommended for full features
-- External MongoDB (MongoDB Atlas recommended)
-- vLLM or Ollama for AI search (optional, falls back to API-based search)
+# Cloud Services Required for Production
+- MongoDB Atlas (for production database)
+- Qdrant Cloud (for vector database)
+- AI Service API Key (Together AI, OpenAI, or similar)
+
+# Optional for Development
+- Local MongoDB and Qdrant (using docker-compose.infra.yml)
+- vLLM or Ollama for local AI models
 ```
 
-### Get Running in 2 Minutes
+### 🚀 Production Deployment (Recommended)
 
 ```bash
 # 1. Clone and setup
 git clone https://github.com/foyzulkarim/codiesvibe.git
 cd codiesvibe
 
-# 2. Start infrastructure (MongoDB, Qdrant, monitoring)
+# 2. Configure production environment variables
+# The .env.production file is already created with cloud service credentials
+# Review and update any values as needed for your specific deployment:
+# - MONGODB_URI (MongoDB Atlas)
+# - QDRANT_URL & QDRANT_API_KEY (Qdrant Cloud)
+# - TOGETHER_AI_API_KEY (AI service)
+# - Security secrets (JWT_SECRET, etc.)
+#
+# IMPORTANT: Never commit .env.production to git! It contains sensitive data.
+
+# 3. Create external network (one-time setup)
+docker network create codiesvibe-network
+
+# 4. (Optional) Seed database manually
+# Set up environment variables and run:
+# MONGODB_URI="your-mongodb-connection-string" npm run seed:production
+
+# 5. Start production services
+docker-compose -f docker-compose.production.yml up --build -d
+
+# 6. Access CodiesVibe
+open http://localhost    # Web application (Nginx)
+open http://localhost:4000/health   # Backend API health
+open http://localhost:4003/health   # Search API health
+```
+
+### 🔧 Development Setup
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/foyzulkarim/codiesvibe.git
+cd codiesvibe
+
+# 2. Start local infrastructure (MongoDB, Qdrant, monitoring)
 docker-compose -f docker-compose.infra.yml up -d
 
-# 3. Start the application
-docker-compose -f docker-compose.production.yml up --build
+# 3. Configure development environment
+cp backend/.env.example backend/.env
+cp .env.example .env.local
+# Edit with local development settings
 
-# 4. Access CodiesVibe
-open http://localhost    # Web application
-open http://localhost:4003/health  # Search API health
+# 4. Install dependencies
+npm install
+cd backend && npm install && cd ..
+
+# 5. Start development servers
+# Terminal 1: Frontend
+npm run dev
+
+# Terminal 2: Backend
+cd backend && npm run dev
+
+# Terminal 3: Search API (optional, for search development)
+cd search-api && npm run dev
+
+# 6. Access services
+open http://localhost:3000     # Frontend development server
+open http://localhost:4000/health   # Backend API health
+open http://localhost:4003/health   # Search API health
 ```
+
+## 🐳 Docker Services Architecture
+
+### Production Services (docker-compose.production.yml)
+- **nginx**: Reverse proxy and static file server (ports 80, 443)
+- **frontend-init**: One-time container that builds and copies frontend assets
+- **backend**: Main NestJS application (port 4000)
+- **search-api**: Dedicated AI search service (port 4003)
+
+### Infrastructure Services (docker-compose.infra.yml) - Development Only
+- **mongodb**: MongoDB database (port 27017)
+- **qdrant**: Vector database for semantic search (port 6333)
+- **monitoring stack**: Prometheus, Grafana, Loki for observability
+
+### Service Communication
+- **Frontend → Backend**: Via Nginx reverse proxy (/api/* routes)
+- **Backend → Search API**: Internal Docker network (http://search-api:4003)
+- **Search API → Cloud Services**: Direct connections to MongoDB Atlas, Qdrant Cloud
+- **Health Checks**: All services expose `/health` endpoints for monitoring
 
 ### What You Get
 - **🌐 Modern Web App**: Clean, responsive interface for browsing and discovering tools
@@ -124,15 +199,18 @@ Comprehensive technical documentation covering implementation details:
 
 ### ✅ **Core Platform**
 - [x] Full-stack web application with React + NestJS
-- [x] MongoDB integration with advanced indexing
-- [x] Docker-based deployment infrastructure
+- [x] Dedicated Search API service with LangGraph implementation
+- [x] MongoDB Atlas integration with advanced indexing
+- [x] Cloud-based deployment infrastructure with Nginx
 - [x] Production monitoring and observability
 
 ### ✅ **AI Search Engine**
-- [x] LangGraph-based semantic search implementation
-- [x] Qdrant vector database integration
+- [x] Dedicated search-api service with LangGraph orchestration
+- [x] Qdrant Cloud vector database integration
 - [x] Multi-vector similarity matching algorithms
-- [x] Search reasoning and result explanations
+- [x] Intent extraction and query planning
+- [x] Semantic search with result ranking
+- [x] Docker containerization for production deployment
 
 ### 🔄 **Advanced Features** (In Development)
 - [ ] User authentication and personalization

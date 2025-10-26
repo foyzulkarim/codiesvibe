@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { ToolsModule } from './tools/tools.module';
@@ -14,6 +14,8 @@ import { IpGuard } from './common/guards/ip-guard.guard';
 import { AuthModule } from './auth/auth.module';
 import { SessionService } from './auth/session.service';
 import { SessionGuard } from './common/guards/session.guard';
+import { LoggerModule } from './common/logger/logger.module';
+import { CorrelationInterceptor } from './common/logger/correlation.interceptor';
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { SessionGuard } from './common/guards/session.guard';
         },
       ],
     }),
+    LoggerModule, // Global logger module
     DatabaseModule,
     ToolsModule,
     HealthModule,
@@ -75,6 +78,10 @@ import { SessionGuard } from './common/guards/session.guard';
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CorrelationInterceptor,
     },
   ],
 })

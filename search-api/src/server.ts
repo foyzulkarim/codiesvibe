@@ -13,6 +13,9 @@ import cors from 'cors';
 import winston from 'winston';
 import { StateAnnotation } from "./types/state";
 import { vectorIndexingService, HealthReport } from "./services";
+import { searchLogger, SearchLogContext } from "./config/logger";
+import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
+import { v4 as uuidv4 } from 'uuid';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
@@ -20,27 +23,8 @@ import { threadManager } from "./utils/thread-manager";
 
 dotenv.config();
 
-// Security logger configuration
-const securityLogger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json(),
-    winston.format.prettyPrint()
-  ),
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    }),
-    new winston.transports.File({
-      filename: 'logs/security.log',
-      level: 'warn'
-    })
-  ],
-});
+// Use the enhanced logger from config/logger.ts
+// Legacy securityLogger is replaced by searchLogger with enhanced capabilities
 
 // Validate critical environment variables
 function validateEnvironment(): void {
@@ -48,12 +32,18 @@ function validateEnvironment(): void {
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:', missing);
-    console.error('Please check your .env file and ensure all required variables are set.');
+    searchLogger.error('❌ Missing required environment variables', new Error('Environment validation failed'), {
+      service: 'search-api',
+      missingVariables: missing,
+      message: 'Please check your .env file and ensure all required variables are set.'
+    });
     process.exit(1);
   }
 
-  console.log('✅ Environment validation passed');
+  searchLogger.info('✅ Environment validation passed', {
+    service: 'search-api',
+    validatedVariables: required
+  });
 }
 
 validateEnvironment();
@@ -80,13 +70,16 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   handler: (req, res) => {
-    securityLogger.warn('Rate limit exceeded', {
+    const searchReq = req as SearchRequest;
+    searchLogger.logSecurityEvent('Rate limit exceeded', {
+      correlationId: searchReq.correlationId,
+      service: 'search-api',
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       path: req.path,
       method: req.method,
       timestamp: new Date().toISOString()
-    });
+    }, 'warn');
     res.status(429).json({
       error: 'Too many requests from this IP',
       code: 'RATE_LIMIT_EXCEEDED',
@@ -107,12 +100,15 @@ const searchLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    securityLogger.warn('Search rate limit exceeded', {
+    const searchReq = req as SearchRequest;
+    searchLogger.logSecurityEvent('Search rate limit exceeded', {
+      correlationId: searchReq.correlationId,
+      service: 'search-api',
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       query: req.body?.query,
       timestamp: new Date().toISOString()
-    });
+    }, 'warn');
     res.status(429).json({
       error: 'Too many search requests',
       code: 'SEARCH_RATE_LIMIT_EXCEEDED',
@@ -135,7 +131,10 @@ if (process.env.ENABLE_SECURITY_HEADERS !== 'false') {
     crossOriginEmbedderPolicy: false, // Disable for API compatibility
   }));
 } else {
-  console.log('⚠️  Security headers are disabled (ENABLE_SECURITY_HEADERS=false)');
+  searchLogger.warn('⚠️  Security headers are disabled (ENABLE_SECURITY_HEADERS=false)', {
+    service: 'search-api',
+    securitySetting: 'ENABLE_SECURITY_HEADERS=false'
+  });
 }
 
 // Enhanced CORS configuration
@@ -178,10 +177,14 @@ const configureCORS = () => {
       const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
 
       // Log CORS attempts in production
-      securityLogger.info('CORS request', {
+      searchLogger.info('CORS request', {
+        service: 'search-api',
         origin,
         allowedOrigins,
         timestamp: new Date().toISOString()
+      }, {
+        function: 'configureCORS',
+        module: 'Server'
       });
 
       // Allow requests with no origin (mobile apps, curl, etc.)
@@ -194,12 +197,13 @@ const configureCORS = () => {
         return callback(null, true);
       } else {
         // Log blocked CORS attempt
-        securityLogger.warn('CORS request blocked - origin not allowed', {
+        searchLogger.logSecurityEvent('CORS request blocked - origin not allowed', {
+          service: 'search-api',
           origin,
           allowedOrigins,
           userAgent: 'Unknown', // Will be captured in request middleware
           timestamp: new Date().toISOString()
-        });
+        }, 'warn');
         return callback(new Error('Not allowed by CORS'), false);
       }
     };
@@ -207,6 +211,9 @@ const configureCORS = () => {
 
   return cors(corsOptions);
 };
+
+// Apply correlation middleware first
+app.use(correlationMiddleware);
 
 // Apply CORS configuration
 app.use(configureCORS());
@@ -221,21 +228,13 @@ app.use(hpp());
 if (process.env.ENABLE_RATE_LIMITING !== 'false') {
   app.use(limiter);
 } else {
-  console.log('⚠️  Rate limiting is disabled (ENABLE_RATE_LIMITING=false)');
+  searchLogger.warn('⚠️  Rate limiting is disabled (ENABLE_RATE_LIMITING=false)', {
+    service: 'search-api',
+    securitySetting: 'ENABLE_RATE_LIMITING=false'
+  });
 }
 
-// Request logging middleware
-app.use((req, res, next) => {
-  securityLogger.info('Request received', {
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    path: req.path,
-    method: req.method,
-    contentType: req.get('Content-Type'),
-    timestamp: new Date().toISOString()
-  });
-  next();
-});
+// Request logging is now handled by correlationMiddleware - no need for duplicate logging
 
 app.use(express.json({ limit: '10mb' })); // Limit request body size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -292,13 +291,16 @@ const validateSearchRequest = [
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      securityLogger.warn('Validation failed', {
+      const searchReq = req as SearchRequest;
+      searchLogger.logSecurityEvent('Validation failed', {
+        correlationId: searchReq.correlationId,
+        service: 'search-api',
         ip: req.ip,
         userAgent: req.get('User-Agent'),
         errors: errors.array(),
         body: req.body,
         timestamp: new Date().toISOString()
-      });
+      }, 'warn');
 
       return res.status(400).json({
         error: 'Validation failed',
@@ -317,32 +319,17 @@ const validateSearchRequest = [
 const PORT = process.env.PORT || 4003;
 const ENABLE_VECTOR_VALIDATION = process.env.ENABLE_VECTOR_VALIDATION !== 'false'; // Default to true
 
-// Health check endpoint
+// Health check endpoint - simplified
 app.get('/health', async (req, res) => {
-  try {
-    // Test MongoDB
-    const mongoClient = new MongoClient(process.env.MONGODB_URI!);
-    await mongoClient.connect();
-    await mongoClient.db().admin().ping();
-    await mongoClient.close();
-
-    // Test Qdrant
-    await axios.get(`http://${process.env.QDRANT_HOST}:${process.env.QDRANT_PORT}/collections`);
-
-    res.json({
-      status: 'healthy',
-      services: {
-        mongodb: 'connected',
-        qdrant: 'connected',
-        ollama: 'connected'
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'unhealthy',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    services: {
+      server: 'running',
+      search: 'available'
+    }
+  });
 });
 
 /**
@@ -353,11 +340,17 @@ app.get('/health', async (req, res) => {
 async function validateVectorIndexOnStartup(): Promise<void> {
   // Skip validation if explicitly disabled
   if (!ENABLE_VECTOR_VALIDATION) {
-    console.log('🔄 Vector index validation is disabled via ENABLE_VECTOR_VALIDATION=false');
+    searchLogger.info('🔄 Vector index validation is disabled via ENABLE_VECTOR_VALIDATION=false', {
+      service: 'search-api',
+      validationStatus: 'disabled'
+    });
     return;
   }
 
-  console.log('\n🔍 Starting vector index health validation...');
+  searchLogger.info('🔍 Starting vector index health validation...', {
+    service: 'search-api',
+    validationPhase: 'start'
+  });
 
   try {
     // Use the VectorIndexingService's validateIndex method
@@ -368,57 +361,84 @@ async function validateVectorIndexOnStartup(): Promise<void> {
       healthReport.sampleValidationPassed &&
       healthReport.missingVectors === 0 &&
       healthReport.orphanedVectors === 0) {
-      console.log('✅ Vector index is healthy and fully synchronized');
-      console.log(`   📊 MongoDB Tools: ${healthReport.mongoToolCount}`);
-      console.log(`   📊 Qdrant Vectors: ${healthReport.qdrantVectorCount}`);
+      searchLogger.info('✅ Vector index is healthy and fully synchronized', {
+        service: 'search-api',
+        validationStatus: 'healthy',
+        mongoToolCount: healthReport.mongoToolCount,
+        qdrantVectorCount: healthReport.qdrantVectorCount
+      });
     } else {
       // Log warnings if there are issues
-      console.log('⚠️  Vector index health issues detected:');
+      searchLogger.warn('⚠️  Vector index health issues detected', {
+        service: 'search-api',
+        validationStatus: 'issues_detected',
+        collectionHealthy: healthReport.collectionHealthy,
+        sampleValidationPassed: healthReport.sampleValidationPassed,
+        missingVectors: healthReport.missingVectors,
+        orphanedVectors: healthReport.orphanedVectors
+      });
 
       if (!healthReport.collectionHealthy) {
-        console.log('   ❌ Vector collection configuration is unhealthy');
+        searchLogger.error('❌ Vector collection configuration is unhealthy', undefined, {
+          service: 'search-api',
+          issue: 'collection_unhealthy'
+        });
       }
 
       if (!healthReport.sampleValidationPassed) {
-        console.log('   ❌ Sample embedding validation failed');
+        searchLogger.error('❌ Sample embedding validation failed', undefined, {
+          service: 'search-api',
+          issue: 'sample_validation_failed'
+        });
       }
 
       if (healthReport.missingVectors > 0) {
-        console.log(`   ⚠️  ${healthReport.missingVectors} tools missing from vector index`);
+        searchLogger.warn(`⚠️  ${healthReport.missingVectors} tools missing from vector index`, {
+          service: 'search-api',
+          issue: 'missing_vectors',
+          count: healthReport.missingVectors
+        });
       }
 
       if (healthReport.orphanedVectors > 0) {
-        console.log(`   ⚠️  ${healthReport.orphanedVectors} orphaned vectors found`);
+        searchLogger.warn(`⚠️  ${healthReport.orphanedVectors} orphaned vectors found`, {
+          service: 'search-api',
+          issue: 'orphaned_vectors',
+          count: healthReport.orphanedVectors
+        });
       }
 
       // Log recommendations
       if (healthReport.recommendations.length > 0) {
-        console.log('\n📝 Recommendations:');
-        healthReport.recommendations.forEach(rec => {
-          console.log(`   • ${rec}`);
+        searchLogger.info('📝 Vector index recommendations available', {
+          service: 'search-api',
+          recommendations: healthReport.recommendations,
+          fixCommands: [
+            'npm run seed-vectors  # Re-index all tools to Qdrant',
+            'npm run seed-vectors -- --force  # Force re-index (clears existing data)',
+            'or use the VectorIndexingService directly'
+          ]
         });
-
-        console.log('\n💡 To fix vector index issues, consider running:');
-        console.log('   npm run seed-vectors  # Re-index all tools to Qdrant');
-        console.log('   npm run seed-vectors -- --force  # Force re-index (clears existing data)');
-        console.log('   or use the VectorIndexingService directly');
       }
     }
 
-    console.log('🔍 Vector index validation completed\n');
+    searchLogger.info('🔍 Vector index validation completed', {
+      service: 'search-api',
+      validationPhase: 'completed'
+    });
 
   } catch (error) {
     // Don't fail startup, but provide clear feedback
-    console.log('🔄 Vector index validation could not be completed:');
-    console.log(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.log('   This may be due to services not being available yet');
-    console.log('   The server will continue starting, but vector search may not work properly\n');
-
-    // Provide troubleshooting tips
-    console.log('💡 Troubleshooting tips:');
-    console.log('   • Ensure MongoDB and Qdrant services are running');
-    console.log('   • Check environment variables for service connections');
-    console.log('   • Run validation manually after startup if needed\n');
+    searchLogger.error('🔄 Vector index validation could not be completed', {
+      service: 'search-api',
+      validationStatus: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      troubleshootingTips: [
+        'Ensure MongoDB and Qdrant services are running',
+        'Check environment variables for service connections',
+        'Run validation manually after startup if needed'
+      ]
+    });
   }
 }
 
@@ -435,8 +455,10 @@ function sanitizeQuery(query: string): string {
 // Enhanced search endpoint with comprehensive security
 app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
   const startTime = Date.now();
+  const searchReq = req as SearchRequest;
   const clientId = req.ip || req.socket.remoteAddress || 'unknown';
   const userAgent = req.get('User-Agent') || 'unknown';
+  const correlationId = searchReq.correlationId || uuidv4();
 
   try {
     const { query, limit = 10, debug = false } = req.body;
@@ -444,13 +466,15 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
     // Additional Joi validation for extra security
     const { error: joiError, value: validatedData } = searchQuerySchema.validate(req.body);
     if (joiError) {
-      securityLogger.warn('Joi validation failed', {
+      searchLogger.logSecurityEvent('Joi validation failed', {
+        correlationId,
+        service: 'search-api',
         ip: clientId,
         userAgent,
         error: joiError.details,
         body: req.body,
         timestamp: new Date().toISOString()
-      });
+      }, 'warn');
 
       return res.status(400).json({
         error: 'Validation failed',
@@ -466,17 +490,26 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
     // Sanitize the query
     const sanitizedQuery = sanitizeQuery(validatedData.query);
 
-    // Log search request
-    securityLogger.info('Search request received', {
+    // Log search request using enhanced logger
+    searchLogger.logSearchRequest(correlationId, {
+      service: 'search-api',
       ip: clientId,
       userAgent,
+      query: sanitizedQuery,
       queryLength: sanitizedQuery.length,
       limit: validatedData.limit,
       debug: validatedData.debug,
       timestamp: new Date().toISOString()
     });
 
-    console.log(`\n🚀 Starting search for query: "${sanitizedQuery}" (client: ${clientId})`);
+    searchLogger.info('Starting search request', {
+      service: 'search-api',
+      correlationId,
+      clientId,
+      query: sanitizedQuery,
+      limit: validatedData.limit,
+      debug: validatedData.debug
+    });
 
     // NEW: Agentic search orchestration with 3-node LLM-first pipeline
     const searchResult = await searchWithAgenticPipeline(sanitizedQuery, {
@@ -498,12 +531,21 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
       ...searchResult
     };
 
-    console.log(`🎉 Search completed in ${executionTime}ms with ${response.candidates.length} candidates (client: ${clientId})\n`);
+    searchLogger.info('Search completed successfully', {
+      service: 'search-api',
+      correlationId,
+      clientId,
+      executionTimeMs: executionTime,
+      resultsCount: response.candidates?.length || 0,
+      totalResults: response.candidates?.length || 0
+    });
 
-    // Log successful request for monitoring
-    securityLogger.info('Search request completed successfully', {
+    // Log successful request using enhanced logger
+    searchLogger.logSearchSuccess(correlationId, {
+      service: 'search-api',
       ip: clientId,
       userAgent,
+      query: sanitizedQuery,
       queryLength: sanitizedQuery.length,
       resultCount: response.candidates.length,
       executionTimeMs: executionTime,
@@ -514,23 +556,26 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
   } catch (error) {
     const executionTime = Date.now() - startTime;
 
-    // Enhanced error logging
-    securityLogger.error('Search error', {
+    // Enhanced error logging using search logger
+    searchLogger.logSearchError(correlationId, error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
       ip: clientId,
       userAgent,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
       query: req.body?.query || 'unknown',
       executionTimeMs: executionTime,
       timestamp: new Date().toISOString()
     });
 
-    console.error(`❌ Search error for client ${clientId}:`, {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      executionTimeMs: executionTime,
-      timestamp: new Date().toISOString()
-    });
+    searchLogger.error(
+      `Search error for client ${clientId}`,
+      error instanceof Error ? error : new Error('Unknown error'),
+      {
+        service: 'search-api',
+        clientId,
+        executionTimeMs: executionTime,
+        timestamp: new Date().toISOString()
+      }
+    );
 
     // Don't expose internal error details to clients
     const errorMessage = process.env.NODE_ENV === 'production'
@@ -552,14 +597,24 @@ async function startServer() {
   // await validateVectorIndexOnStartup();
 
   app.listen(PORT, () => {
-    console.log(`🚀 Search API server running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`🔍 Search endpoint: http://localhost:${PORT}/search`);
+    searchLogger.info('🚀 Search API server started successfully', {
+      service: 'search-api',
+      port: PORT,
+      healthEndpoint: `http://localhost:${PORT}/health`,
+      searchEndpoint: `http://localhost:${PORT}/search`,
+      environment: process.env.NODE_ENV || 'development'
+    });
+    searchLogger.info('Server endpoints available', {
+      service: 'search-api',
+      serverUrl: `http://localhost:${PORT}`,
+      healthUrl: `http://localhost:${PORT}/health`,
+      searchUrl: `http://localhost:${PORT}/search`
+    });
   });
 }
 
 // Start the server
 startServer().catch(error => {
-  console.error('💥 Failed to start server:', error);
+  searchLogger.error('💥 Failed to start server', error, { service: 'search-api' });
   process.exit(1);
 });

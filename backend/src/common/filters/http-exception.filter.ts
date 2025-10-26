@@ -3,24 +3,49 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
-  Logger,
+  Injectable,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { LoggerService } from '../logger/logger.service';
+import { CustomRequest } from '../logger/correlation.interceptor';
 
+@Injectable()
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(HttpExceptionFilter.name);
+  constructor(private readonly logger: LoggerService) {}
 
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<CustomRequest>();
     const status = exception.getStatus();
+    const startTime = request.startTime || Date.now();
+    const responseTime = Date.now() - startTime;
 
-    // Log the error for monitoring
+    // Extract detailed error context
+    const errorContext = {
+      correlationId: request.correlationId,
+      method: request.method,
+      url: request.url,
+      statusCode: status,
+      responseTime,
+      ip: request.ip || request.connection.remoteAddress,
+      userAgent: request.get('User-Agent'),
+      userId: (request as any).user?.userId,
+      requestHeaders: this.sanitizeHeaders(request.headers),
+    };
+
+    // Log the error with structured context
     this.logger.error(
-      `${request.method} ${request.url} - ${status} - ${exception.message}`,
-      exception.stack,
+      `HTTP Exception: ${request.method} ${request.url} - ${status}`,
+      exception,
+      errorContext,
+      {
+        function: 'HttpExceptionFilter.catch',
+        module: 'Common',
+        exceptionType: exception.constructor.name,
+        isOperational: status < 500,
+      },
     );
 
     // Sanitize error messages to prevent information disclosure
@@ -43,5 +68,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     response.status(status).json(errorResponse);
+  }
+
+  /**
+   * Sanitize headers to remove sensitive information
+   */
+  private sanitizeHeaders(headers: any): any {
+    const sanitized = { ...headers };
+
+    // Remove sensitive headers
+    const sensitiveHeaders = [
+      'authorization',
+      'cookie',
+      'x-api-key',
+      'x-auth-token',
+    ];
+    sensitiveHeaders.forEach((header) => {
+      if (sanitized[header]) {
+        sanitized[header] = '[REDACTED]';
+      }
+    });
+
+    return sanitized;
   }
 }

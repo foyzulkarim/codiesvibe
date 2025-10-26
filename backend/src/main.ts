@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { LoggerService } from './common/logger/logger.service';
 import helmet from 'helmet';
 import * as express from 'express';
 
@@ -11,6 +12,7 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
   const configService = app.get(ConfigService);
+  const logger = app.get(LoggerService);
 
   // Security headers middleware
   app.use(
@@ -108,13 +110,24 @@ async function bootstrap() {
   const port = configService.get<number>('port') || 4000;
   await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/docs`);
-  console.log(`🏥 Health check: http://localhost:${port}/health`);
-  console.log(`🔧 API endpoints: http://localhost:${port}/api`);
+  logger.info(
+    '🚀 Application started successfully',
+    {
+      port,
+      environment: process.env.NODE_ENV || 'development',
+      swaggerUrl: `http://localhost:${port}/docs`,
+      healthUrl: `http://localhost:${port}/health`,
+      apiUrl: `http://localhost:${port}/api`,
+    },
+    {
+      function: 'bootstrap',
+      module: 'Main',
+    },
+  );
 }
 
 bootstrap().catch((error) => {
+  // Fallback to console error for bootstrap failures
   console.error('❌ Application failed to start:', error);
   process.exit(1);
 });
