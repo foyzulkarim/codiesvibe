@@ -32,10 +32,7 @@ export class ToolsController {
     status: 200,
     description: 'Search results retrieved successfully',
   })
-  async searchPost(
-    @Body() searchDto: AiSearchDto,
-    @Req() req: any,
-  ) {
+  async searchPost(@Body() searchDto: AiSearchDto, @Req() req: any) {
     console.log(`Received search POST request with query: ${searchDto.query}`);
 
     try {
