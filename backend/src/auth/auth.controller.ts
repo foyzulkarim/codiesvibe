@@ -56,7 +56,7 @@ export class AuthController {
       sameSite: isProduction ? 'none' : 'strict', // 'none' for cross-subdomain in production
       maxAge: 15 * 60 * 1000, // 15 minutes
       path: '/',
-      ...(isProduction && { domain: '.codiesvibe.com' }), // Work across all subdomains
+      // Removed explicit domain to let browser handle it automatically (fixes Cloudflare tunnel issues)
     });
 
     return session;
@@ -141,7 +141,7 @@ export class AuthController {
       sameSite: isProduction ? 'none' : 'strict', // 'none' for cross-subdomain in production
       maxAge: 15 * 60 * 1000, // 15 minutes
       path: '/',
-      ...(isProduction && { domain: '.codiesvibe.com' }), // Work across all subdomains
+      // Removed explicit domain to let browser handle it automatically (fixes Cloudflare tunnel issues)
     });
 
     return newSession;
