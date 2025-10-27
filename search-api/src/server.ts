@@ -137,77 +137,22 @@ if (process.env.ENABLE_SECURITY_HEADERS !== 'false') {
   });
 }
 
-// Enhanced CORS configuration
+// Enhanced CORS configuration for specific domains
 const configureCORS = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const enableSecurityHeaders = process.env.ENABLE_SECURITY_HEADERS !== 'false';
-
-  // Parse allowed origins from environment variables
-  const getAllowedOrigins = (): string[] | boolean => {
-    if (isProduction) {
-      // Production: Use specific allowed origins
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-        'https://yourdomain.com',
-        'https://www.yourdomain.com'
-      ];
-      return allowedOrigins.map(origin => origin.trim());
-    } else {
-      // Development: Allow all origins or specific development origins
-      const devOrigins = process.env.CORS_ORIGINS?.split(',');
-      if (devOrigins && devOrigins.length > 0 && devOrigins[0] !== 'true') {
-        return devOrigins.map(origin => origin.trim());
-      }
-      return true; // Allow all origins in development
-    }
-  };
-
   const corsOptions: any = {
-    origin: getAllowedOrigins(),
-    credentials: false, // No credentials for this API
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    maxAge: 86400, // 24 hours
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    origin: [
+      'https://codiesvibe.com',
+      'https://www.codiesvibe.com',
+      'https://api.codiesvibe.com',
+      'http://localhost:3000', // For local development
+      'http://localhost:5173', // For Vite dev server
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    optionsSuccessStatus: 200,
+    maxAge: 86400, // Cache preflight for 24 hours
   };
-
-  // Add custom origin validation for production
-  if (isProduction) {
-    corsOptions.origin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
-
-      // Log CORS attempts in production
-      searchLogger.info('CORS request', {
-        service: 'search-api',
-        origin,
-        allowedOrigins,
-        timestamp: new Date().toISOString()
-      }, {
-        function: 'configureCORS',
-        module: 'Server'
-      });
-
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        // Log blocked CORS attempt
-        searchLogger.logSecurityEvent('CORS request blocked - origin not allowed', {
-          service: 'search-api',
-          origin,
-          allowedOrigins,
-          userAgent: 'Unknown', // Will be captured in request middleware
-          timestamp: new Date().toISOString()
-        }, 'warn');
-        return callback(new Error('Not allowed by CORS'), false);
-      }
-    };
-  }
 
   return cors(corsOptions);
 };

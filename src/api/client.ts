@@ -10,9 +10,14 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add CSRF token
+// Request interceptor - CSRF handling commented out for ai-search endpoint
 apiClient.interceptors.request.use(async (config) => {
-  // Add CSRF token for POST, PUT, PATCH, DELETE requests
+  // Skip CSRF token for ai-search endpoint
+  if (config.url?.includes('/tools/ai-search')) {
+    return config;
+  }
+  
+  // Add CSRF token for other POST, PUT, PATCH, DELETE requests
   if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
     try {
       // Try to get CSRF token from session hook or make a request

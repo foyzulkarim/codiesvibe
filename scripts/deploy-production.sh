@@ -71,11 +71,11 @@ fi
 
 # Stop existing production services
 print_status "Stopping existing production services..."
-docker-compose -f docker-compose.production.yml down --volumes
+docker-compose -f docker-compose.production.yml --env-file .env.production down --volumes
 
 # Build and start production services
 print_status "Building and starting production services..."
-docker-compose -f docker-compose.production.yml up -d --build
+docker-compose -f docker-compose.production.yml --env-file .env.production up -d --build
 
 # Wait for services to be ready
 print_status "Waiting for services to start..."

@@ -25,26 +25,16 @@ export class ToolsController {
   ) {}
 
   @Post('ai-search')
-  @RequireSession()
   @ApiOperation({
-    summary: 'AI based searching (POST with session validation)',
+    summary: 'AI based searching (POST without authentication)',
   })
   @ApiResponse({
     status: 200,
     description: 'Search results retrieved successfully',
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - invalid session',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - origin not allowed',
-  })
   async searchPost(
     @Body() searchDto: AiSearchDto,
     @Req() req: any,
-    @Headers('x-csrf-token') csrfToken: string,
   ) {
     console.log(`Received search POST request with query: ${searchDto.query}`);
 
