@@ -64,6 +64,7 @@ export const CONTROLLED_VOCABULARIES = {
     // Code-related
     'Code Generation',
     'Code Completion',
+    'Code Execution',
     'Debugging',
     'Refactoring',
     'Documentation',
