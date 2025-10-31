@@ -1,0 +1,75 @@
+{
+  "version": 1.4,
+  "schema": "tools-v2.0",
+  "lastUpdated": "2025-09-29T08:40:00Z",
+  "contributors": {
+    "system": {
+      "name": "System Admin",
+      "email": "admin@example.com",
+      "contributions": 5
+    }
+  },
+  "tools": [
+    {
+      "id": "trae",
+      "name": "Trae",
+      "slug": "trae",
+      "description": "Understand. Execute. Deliver. TRAE is your 10x AI Engineer who can independently build software solutions for you.",
+      "longDescription": "TRAE understands your vision, plans the development workflow, utilizes the right tools, executes with precision and deploys production-ready code, turning your ideas into software.",
+      "tagline": "Understand. Execute. Deliver.",
+      "categories": [
+        "Desktop App",
+        "IDE",
+        "Development"
+      ],
+      "industries": [
+        "Technology",
+        "Research",
+        "Software Development"
+      ],
+      "userTypes": [
+        "Developers",
+        "Researchers",
+        "AI Engineers"
+      ],
+      "pricing": [
+        {
+          "tier": "Free",
+          "billingPeriod": "Monthly",
+          "price": 0
+        },
+        {
+          "tier": "Pro",
+          "billingPeriod": "Monthly",
+          "price": 10
+        }
+      ],
+      "pricingModel": "Freemium",
+      "pricingUrl": "https://www.trae.ai/pricing",
+      "interface": [
+        "CLI",
+        "API",
+        "Desktop"
+      ],
+      "functionality": [
+        "Code Generation",
+        "Code Completion",
+        "Debugging",
+        "Refactoring",
+        "Documentation",
+        "AI Chat",
+        "Code Execution"
+      ],
+      "deployment": [
+        "Cloud"
+      ],
+      "logoUrl": "https://lf-cdn.trae.ai/obj/trae-ai-us/og.jpeg",
+      "website": "https://www.trae.ai",
+      "documentation": "https://www.trae.ai/docs",
+      "status": "active",
+      "contributor": "system",
+      "dateAdded": "2025-01-15T12:00:00Z",
+      "lastUpdated": "2025-09-29T08:40:00Z"
+    }
+  ]
+}
