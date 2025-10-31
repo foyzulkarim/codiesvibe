@@ -18,6 +18,8 @@
       "longDescription": "Ollama is an open-source platform that enables users to download, run, and manage large language models locally on their own hardware. It provides complete privacy and offline functionality while supporting a wide variety of open-source models including Llama, Mistral, and Code Llama. Ollama makes it easy to get started with local AI without requiring deep technical knowledge of model deployment.",
       "tagline": "Run large language models locally with complete privacy",
       "categories": [
+        "AI",
+        "Machine Learning",
         "Local LLM",
         "Privacy",
         "Desktop App",
@@ -59,7 +61,11 @@
         "Local Inference",
         "API Server",
         "Model Customization",
-        "Chat Interface"
+        "Chat Interface",
+        "AI Assistant",
+        "Text Generation",
+        "Code Generation",
+        "Local Inference"
       ],
       "deployment": [
         "Local",
@@ -82,6 +88,8 @@
       "longDescription": "LM Studio is a desktop application that provides an intuitive graphical interface for downloading, running, and chatting with local large language models. It offers document-based RAG capabilities, local API server functionality, and cross-platform SDKs for developers. LM Studio makes local AI accessible to users who prefer a visual interface over command-line tools.",
       "tagline": "Local AI made simple with an intuitive desktop interface",
       "categories": [
+        "AI",
+        "Machine Learning",
         "Local LLM",
         "Privacy",
         "Desktop App",
@@ -117,7 +125,11 @@
         "Model Management",
         "Chat Interface",
         "Document RAG",
-        "API Server"
+        "API Server",
+        "AI Assistant",
+        "Text Generation",
+        "Code Generation",
+        "Local Inference"
       ],
       "deployment": [
         "Local",

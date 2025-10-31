@@ -1,27 +1,7 @@
-import {
-  IsString,
-  IsOptional,
-  IsArray,
-  IsNotEmpty,
-  Length,
-  IsUrl,
-  ArrayNotEmpty,
-  ValidateNested,
-  IsBoolean,
-  IsNumber,
-  Min,
-  IsEnum,
-  Matches,
-  ArrayMinSize,
-  ArrayMaxSize,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
-import type {
-  PricingModelEnum,
-  Pricing,
-} from '../../../shared/types/tool.types';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { Pricing } from '../../../shared/types/tool.types';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class PricingDto implements Pricing {
   @ApiProperty({

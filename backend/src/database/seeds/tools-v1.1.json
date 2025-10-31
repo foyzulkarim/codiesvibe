@@ -19,7 +19,10 @@
       "tagline": "Your thoughtful AI assistant for safe and helpful interactions",
       "categories": [
         "AI",
+        "Machine Learning",
         "Chatbot",
+        "Text Generation",
+        "Code Generation",
         "Productivity"
       ],
       "industries": [
@@ -53,11 +56,14 @@
       ],
       "functionality": [
         "Text Generation",
-        "Code Generation"
+        "Code Generation",
+        "AI Assistant",
+        "Translation",
+        "Documentation"
       ],
       "deployment": [
         "Cloud"
-      ],   
+      ],
       "logoUrl": "https://example.com/claude-logo.png",
       "website": "https://claude.ai",
       "documentation": "https://docs.anthropic.com",
@@ -75,7 +81,10 @@
       "tagline": "Your AWS-native AI assistant for cloud development and operations",
       "categories": [
         "AI",
+        "Machine Learning",
         "Development",
+        "Code Generation",
+        "Code Completion",
         "Productivity"
       ],
       "industries": [
@@ -109,7 +118,9 @@
       "functionality": [
         "Code Generation",
         "Debugging",
-        "AWS Support"
+        "AWS Support",
+        "AI Assistant",
+        "Code Completion"
       ],
       "deployment": [
         "Cloud"
@@ -130,7 +141,13 @@
       "longDescription": "Cursor is an AI-first code editor built on VS Code that provides intelligent code completions, AI chat assistance, and advanced code generation capabilities. It offers different pricing tiers with varying levels of AI requests and features, making it suitable for both individual developers and enterprise teams. Cursor combines the familiar VS Code interface with cutting-edge AI capabilities for enhanced productivity.",
       "tagline": "The AI-first code editor for the modern developer",
       "categories": [
+        "AI",
+        "Machine Learning",
+        "Development",
         "IDE",
+        "Code Editor",
+        "Code Generation",
+        "Code Completion",
         "Productivity",
         "Desktop App"
       ],
@@ -170,7 +187,7 @@
       ],
       "deployment": [
         "Cloud"
-      ],    
+      ],
       "logoUrl": "https://example.com/cursor-logo.png",
       "website": "https://cursor.sh",
       "documentation": "https://docs.cursor.sh",

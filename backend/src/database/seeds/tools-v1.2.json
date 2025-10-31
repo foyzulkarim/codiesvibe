@@ -9,7 +9,7 @@
       "contributions": 5
     }
   },
-  "tools": [    
+  "tools": [
     {
       "id": "replit",
       "name": "Replit",
@@ -18,8 +18,11 @@
       "longDescription": "Replit is a comprehensive cloud development platform that combines an online IDE with AI-powered coding assistance, instant deployment capabilities, and collaborative features. It supports multiple programming languages and offers various deployment options from static sites to autoscaling applications. Replit eliminates the need for local development setup and enables seamless collaboration between team members.",
       "tagline": "Code, collaborate, and deploy instantly in the cloud",
       "categories": [
-        "Cloud IDE",
+        "AI",
+        "Machine Learning",
         "Development",
+        "Cloud IDE",
+        "Code Generation",
         "No-Code",
         "Rapid Prototyping"
       ],
@@ -57,7 +60,10 @@
         "Code Generation",
         "Deployment",
         "Database Setup",
-        "UI Prototyping"
+        "UI Prototyping",
+        "AI Assistant",
+        "Collaboration",
+        "Code Completion"
       ],
       "deployment": [
         "Cloud"
@@ -68,7 +74,7 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"      
+      "lastUpdated": "2025-09-29T08:40:00Z"
     },
     {
       "id": "lovable",
@@ -78,11 +84,14 @@
       "longDescription": "Lovable is an AI-powered platform that generates complete full-stack web applications from natural language descriptions. It combines React frontends with Supabase backends, offering rapid prototyping and deployment capabilities for both technical and non-technical users. The platform enables users to describe their app idea in plain English and receive a working application with modern technology stack.",
       "tagline": "Turn your app ideas into reality with AI-powered development",
       "categories": [
+        "AI",
+        "Machine Learning",
         "App Builder",
         "No-Code",
         "Full-Stack",
         "Rapid Prototyping",
-        "Cloud IDE"
+        "Cloud IDE",
+        "Code Generation"
       ],
       "industries": [
         "Startups",
@@ -110,7 +119,7 @@
         }
       ],
       "pricingModel": "Freemium",
-      "pricingUrl": "https://lovable.dev/pricing",      
+      "pricingUrl": "https://lovable.dev/pricing",
       "interface": [
         "Web"
       ],
@@ -119,7 +128,9 @@
         "Code Generation",
         "Deployment",
         "Database Setup",
-        "UI Prototyping"
+        "UI Prototyping",
+        "AI Assistant",
+        "Authentication"
       ],
       "deployment": [
         "Cloud"
@@ -130,7 +141,7 @@
       "status": "active",
       "contributor": "system",
       "dateAdded": "2025-01-15T12:00:00Z",
-      "lastUpdated": "2025-09-29T08:40:00Z"      
+      "lastUpdated": "2025-09-29T08:40:00Z"
     }
   ]
 }

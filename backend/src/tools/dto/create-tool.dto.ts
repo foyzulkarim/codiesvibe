@@ -96,7 +96,6 @@ export class CreateToolDto {
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(5)
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   categories!: string[];
@@ -107,7 +106,6 @@ export class CreateToolDto {
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(10)
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   industries!: string[];
@@ -118,7 +116,6 @@ export class CreateToolDto {
   })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(10)
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   userTypes!: string[];
