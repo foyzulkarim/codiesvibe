@@ -18,7 +18,10 @@
       "longDescription": "ChatGPT is an advanced language model developed by OpenAI that can engage in natural conversations, help with writing, answer questions, and assist with various tasks. It represents one of the most sophisticated conversational AI systems available, capable of understanding context and providing helpful responses across a wide range of topics.",
       "tagline": "Your AI conversation partner for every task",
       "categories": [
+        "AI",
+        "Machine Learning",
         "Chatbot",
+        "Text Generation",
         "Productivity"
       ],
       "industries": [
@@ -79,7 +82,11 @@
       "longDescription": "GitHub Copilot is an AI programming assistant that helps developers write code faster by providing intelligent code suggestions and completions directly in their IDE. Powered by OpenAI Codex, it understands dozens of programming languages and can suggest whole lines or entire functions, making it an invaluable tool for both experienced developers and those learning to code.",
       "tagline": "Your AI pair programmer for faster development",
       "categories": [
+        "AI",
+        "Machine Learning",
         "Development",
+        "Code Generation",
+        "Code Completion",
         "Productivity"
       ],
       "industries": [
@@ -114,7 +121,9 @@
       "functionality": [
         "Code Generation",
         "Code Completion",
-        "Documentation"
+        "Documentation",
+        "AI Assistant",
+        "Refactoring"
       ],
       "deployment": [
         "Cloud"
