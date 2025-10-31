@@ -1,7 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import type { PricingModelEnum } from '../../../shared/types/tool.types';
+import type {
+  Pricing,
+  PricingModelEnum,
+} from '../../../shared/types/tool.types';
 import { CONTROLLED_VOCABULARIES } from '../../shared/constants/controlled-vocabularies';
+import { ToolPricing } from './pricing.schema';
 
 export type ToolDocument = Tool & Document;
 
@@ -71,17 +75,9 @@ export class Tool {
     enum: CONTROLLED_VOCABULARIES.categories,
     required: true,
     validate: {
-      validator: (v: string[]) => {
-        return (
-          Array.isArray(v) &&
-          v.length >= 1 &&
-          v.length <= 5 &&
-          v.every((category) =>
-            CONTROLLED_VOCABULARIES.categories.includes(category),
-          )
-        );
-      },
-      message: 'categories must have 1-5 entries',
+      validator: (v: string[]) =>
+        CONTROLLED_VOCABULARIES.categories.validate(v),
+      message: 'categories must have 1 entry and in the list of categories',
     },
   })
   categories!: string[];
@@ -92,8 +88,8 @@ export class Tool {
     required: true,
     validate: {
       validator: (v: string[]) =>
-        Array.isArray(v) && v.length >= 1 && v.length <= 10,
-      message: 'industries must have 1-10 entries',
+        CONTROLLED_VOCABULARIES.industries.validate(v),
+      message: 'industries must have 1 entry and in the list of industries',
     },
   })
   industries!: string[];
@@ -103,51 +99,23 @@ export class Tool {
     enum: CONTROLLED_VOCABULARIES.userTypes,
     required: true,
     validate: {
-      validator: (v: string[]) =>
-        Array.isArray(v) && v.length >= 1 && v.length <= 10,
+      validator: (v: string[]) => CONTROLLED_VOCABULARIES.userTypes.validate(v),
       message: 'userTypes must have 1-10 entries',
     },
   })
   userTypes!: string[];
 
   // Pricing
-  @Prop({
-    type: [
-      {
-        tier: {
-          type: String,
-          required: true,
-        },
-        billingPeriod: {
-          type: String,
-          enum: CONTROLLED_VOCABULARIES.billingPeriods,
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-      },
-    ],
-  })
-  pricing!: {
-    tier: string;
-    billingPeriod: string;
-    price: number;
-  }[];
+  @Prop({ type: [ToolPricing] })
+  pricing!: Pricing[];
 
   @Prop({
     type: String,
     required: true,
     enum: CONTROLLED_VOCABULARIES.pricingModels,
     validate: {
-      validator: (v: string) => {
-        if (!v) return false;
-        const validModels: PricingModelEnum[] =
-          CONTROLLED_VOCABULARIES.pricingModels as PricingModelEnum[];
-        return validModels.includes(v as PricingModelEnum);
-      },
+      validator: (v: string) =>
+        CONTROLLED_VOCABULARIES.pricingModels.validate([v]),
       message: `pricingModel must be one of: ${CONTROLLED_VOCABULARIES.pricingModels.join(', ')}`,
     },
   })
@@ -166,10 +134,7 @@ export class Tool {
     enum: CONTROLLED_VOCABULARIES.interface,
     required: true,
     validate: {
-      validator: (v: string[]) =>
-        Array.isArray(v) &&
-        v.length > 0 &&
-        v.every((item) => CONTROLLED_VOCABULARIES.interface.includes(item)),
+      validator: (v: string[]) => CONTROLLED_VOCABULARIES.interface.validate(v),
       message: 'interface must be a non-empty array',
     },
   })
@@ -181,9 +146,7 @@ export class Tool {
     required: true,
     validate: {
       validator: (v: string[]) =>
-        Array.isArray(v) &&
-        v.length > 0 &&
-        v.every((item) => CONTROLLED_VOCABULARIES.functionality.includes(item)),
+        CONTROLLED_VOCABULARIES.functionality.validate(v),
       message: 'functionality must be a non-empty array',
     },
   })
@@ -195,9 +158,7 @@ export class Tool {
     required: true,
     validate: {
       validator: (v: string[]) =>
-        Array.isArray(v) &&
-        v.length > 0 &&
-        v.every((item) => CONTROLLED_VOCABULARIES.deployment.includes(item)),
+        CONTROLLED_VOCABULARIES.deployment.validate(v),
       message: 'deployment must be a non-empty array',
     },
   })
