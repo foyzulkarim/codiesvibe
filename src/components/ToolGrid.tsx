@@ -34,7 +34,7 @@ export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, save
         <div className="mt-6">
           <h4 className="text-sm font-medium text-foreground mb-3">Popular searches:</h4>
           <div className="flex flex-wrap justify-center gap-2">
-            {["GitHub Copilot alternatives", "Free AI coding tools", "Self-hosted solutions", "VS Code extensions"].map((suggestion) => (
+            {["Cheap Cursor alternatives", "Free AI coding tools", "Self-hosted solutions"].map((suggestion) => (
               <button
                 key={suggestion}
                 className="px-3 py-1.5 text-sm bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-colors"

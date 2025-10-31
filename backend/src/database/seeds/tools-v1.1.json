@@ -162,19 +162,15 @@
       ],
       "pricing": [
         {
-          "tier": "Free",
-          "billingPeriod": "Monthly",
-          "price": 0
-        },
-        {
           "tier": "Pro",
           "billingPeriod": "Monthly",
           "price": 20
         }
       ],
-      "pricingModel": "Freemium",
+      "pricingModel": "Paid",
       "pricingUrl": "https://cursor.sh/pricing",
       "interface": [
+        "Desktop",
         "IDE",
         "CLI"
       ],

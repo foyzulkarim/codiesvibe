@@ -9,7 +9,7 @@ interface SearchReasoningProps {
 }
 
 export const SearchReasoning: React.FC<SearchReasoningProps> = ({ reasoning, searchQuery }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Don't render if no reasoning data or no search query
   if (!reasoning || !searchQuery) {

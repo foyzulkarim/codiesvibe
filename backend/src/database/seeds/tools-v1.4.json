@@ -18,9 +18,15 @@
       "longDescription": "TRAE understands your vision, plans the development workflow, utilizes the right tools, executes with precision and deploys production-ready code, turning your ideas into software.",
       "tagline": "Understand. Execute. Deliver.",
       "categories": [
-        "Desktop App",
+        "AI",
+        "Machine Learning",
+        "Development",
         "IDE",
-        "Development"
+        "Code Editor",
+        "Code Generation",
+        "Code Completion",
+        "Productivity",
+        "Desktop App"
       ],
       "industries": [
         "Technology",
@@ -47,9 +53,8 @@
       "pricingModel": "Freemium",
       "pricingUrl": "https://www.trae.ai/pricing",
       "interface": [
-        "CLI",
-        "API",
-        "Desktop"
+        "Desktop",
+        "IDE"
       ],
       "functionality": [
         "Code Generation",
