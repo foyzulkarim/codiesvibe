@@ -1,25 +1,5 @@
-export type ValidableArray = readonly string[] & {
-  validate(input: string[]): boolean;
-};
-
-const createValidableArray = (items: readonly string[]): ValidableArray => {
-  const handler: ProxyHandler<readonly string[]> = {
-    get(target, prop) {
-      if (prop === 'validate') {
-        return (values: string[]): boolean => {
-          return values.every((v: string) => target.includes(v));
-        };
-      }
-      return Reflect.get(target, prop);
-    },
-  };
-
-  const proxy = new Proxy(items, handler);
-  return proxy as ValidableArray;
-};
-
 export const CONTROLLED_VOCABULARIES = {
-  categories: createValidableArray([
+  categories: [
     // Core Technology
     'AI',
     'Machine Learning',
@@ -48,19 +28,11 @@ export const CONTROLLED_VOCABULARIES = {
     'Text Generation',
     'Code Generation',
     'Code Completion',
-  ]),
+  ],
 
-  interface: createValidableArray([
-    'Web',
-    'Desktop',
-    'Mobile',
-    'CLI',
-    'API',
-    'IDE',
-    'IDE Extension',
-  ]),
+  interface: ['Web', 'Desktop', 'Mobile', 'CLI', 'API', 'IDE', 'IDE Extension'],
 
-  functionality: createValidableArray([
+  functionality: [
     // Code-related
     'Code Generation',
     'Code Completion',
@@ -92,11 +64,11 @@ export const CONTROLLED_VOCABULARIES = {
 
     // niche
     'AWS Support',
-  ]),
+  ],
 
-  deployment: createValidableArray(['Cloud', 'Local', 'Self-Hosted']),
+  deployment: ['Cloud', 'Local', 'Self-Hosted'],
 
-  industries: createValidableArray([
+  industries: [
     'Technology',
     'Software Development',
     'Startups',
@@ -114,9 +86,9 @@ export const CONTROLLED_VOCABULARIES = {
     'Venture Capital',
     'Incubators',
     'Content Creation',
-  ]),
+  ],
 
-  userTypes: createValidableArray([
+  userTypes: [
     // Technical
     'Developers',
     'Software Engineers',
@@ -141,10 +113,11 @@ export const CONTROLLED_VOCABULARIES = {
     'Consultants',
     'General Users',
     'Professionals',
-  ]),
+  ],
 
-  pricingModels: createValidableArray(['Free', 'Freemium', 'Paid']),
-  billingPeriods: createValidableArray(['Monthly', 'Yearly']),
+  pricingModels: ['Free', 'Freemium', 'Paid'],
+
+  billingPeriods: ['Monthly', 'Yearly'],
 };
 
 export const VOCABULARY_MAPPINGS = {
