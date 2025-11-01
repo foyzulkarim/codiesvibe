@@ -44,6 +44,20 @@ CodiesVibe is built as a **production-grade platform** using modern web technolo
 [video_codiesvibe-teaser-trailer.webm](https://github.com/user-attachments/assets/c0658d61-65bf-4c1e-9a8d-68e609698fae)
 
 
+## 💼 Hire the Author: Consultation & Customization
+
+Need help setting up, customizing, or integrating CodiesVibe? I'm available for professional consultation and custom development services.
+
+I can help you and your team:
+
+  * **Get Started Fast:** With a private 1-on-1 consultation and code walkthrough.
+  * **Integrate Your Data:** Connect the agentic search pipeline to your specific database (SQL, NoSQL, APIs).
+  * **Build Custom Solutions:** Design and build fully custom agentic workflows, new features, or integrate with your existing applications.
+
+If you want to save development time and get an expert solution, you can hire me directly on Upwork.
+
+Click here 👉 [Upwork project: You will get an Agentic AI search engine that understands natural language queries](https://www.upwork.com/services/product/development-it-an-agentic-ai-search-engine-that-understands-natural-language-queries-1984486172450236617?ref=project_share)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -233,3 +247,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with modern web technologies and AI-powered search capabilities**
 
 *A technical showcase of full-stack development with intelligent search implementation.*
+
+This is a fantastic idea. Adding this to your `README.md` is the best way to convert your open-source traffic into paying clients.
+
+Here is the full markdown section you can copy and paste directly into your `README.md`. It's designed to be professional, clear, and drive clicks to your Upwork project.
