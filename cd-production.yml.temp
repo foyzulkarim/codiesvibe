@@ -1,0 +1,38 @@
+name: Continuous Deployment to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production # Use a dedicated environment for production secrets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH and Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USERNAME }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            PROJECT_DIR="/path/to/codiesvibe" # Must match the placeholder in deploy.sh
+            
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Project directory not found. Cloning repository..."
+              # Assuming the user's SSH key has access to clone the repo
+              git clone git@github.com:${{ github.repository }}.git "$PROJECT_DIR"
+            fi
+            
+            # Navigate to the project directory
+            cd "$PROJECT_DIR"
+            
+            # Execute the deployment script
+            bash scripts/deploy.sh
+            
+            echo "Remote script execution finished."
