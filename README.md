@@ -251,3 +251,46 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 This is a fantastic idea. Adding this to your `README.md` is the best way to convert your open-source traffic into paying clients.
 
 Here is the full markdown section you can copy and paste directly into your `README.md`. It's designed to be professional, clear, and drive clicks to your Upwork project.
+## 🔄 Continuous Deployment (CD) Setup
+
+This repository is configured for automated Continuous Deployment to a VPS using GitHub Actions. Any push to the `main` branch will automatically trigger a full build and redeployment of the Docker containers on your server.
+
+### Prerequisites
+
+1.  **VPS Access:** A server running Docker and Docker Compose.
+2.  **SSH Key Pair:** An SSH key pair where the public key is authorized on your VPS for the deployment user.
+3.  **Repository Cloned:** The `codiesvibe` repository must be cloned on your VPS at the specified project path.
+
+### 1. Configure GitHub Secrets
+
+The deployment workflow requires secure access to your VPS, which is managed via GitHub Secrets. You must add the following three secrets to your repository settings under **Settings** > **Secrets and variables** > **Actions**:
+
+| Secret Name | Description |
+| :--- | :--- |
+| `VPS_SSH_HOST` | The IP address or hostname of your VPS. |
+| `VPS_SSH_USERNAME` | The SSH username (e.g., `ubuntu` or `deploy`). |
+| `VPS_SSH_PRIVATE_KEY` | The private SSH key corresponding to the user on the VPS. |
+
+### 2. Prepare Your VPS
+
+The deployment script, located at `scripts/deploy.sh`, contains a placeholder for the project directory. **This is the most critical step for a successful deployment.**
+
+1.  **Clone the Repository:** Ensure the repository is cloned on your VPS.
+    ```bash
+    git clone git@github.com:foyzulkarim/codiesvibe.git /path/to/codiesvibe
+    ```
+2.  **Update Project Path:** Edit the `scripts/deploy.sh` file on your VPS to replace the placeholder with the actual absolute path where your project is located.
+    ```bash
+    # Before (Placeholder)
+    PROJECT_DIR="/path/to/codiesvibe" 
+
+    # After (Example)
+    PROJECT_DIR="/home/ubuntu/codiesvibe" 
+    ```
+3.  **Authorize SSH Key:** Ensure the public key corresponding to the `VPS_SSH_PRIVATE_KEY` is added to the `~/.ssh/authorized_keys` file for the `VPS_SSH_USERNAME`.
+
+### 3. Finalize GitHub Actions Workflow
+
+The workflow file is included in this PR at `.github/workflows/cd-production.yml`.
+
+The workflow uses the `scripts/deploy.sh` file to execute the deployment on your VPS.
