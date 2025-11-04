@@ -246,43 +246,44 @@ This repository is configured for automated Continuous Deployment to a VPS using
 
 ### 1. Configure GitHub Secrets
 
-The deployment workflow requires secure access to your VPS, which is managed via GitHub Secrets. You must add the following three secrets to your repository settings under **Settings** > **Secrets and variables** > **Actions**:
+The deployment workflow requires secure access to your VPS, which is managed via GitHub Secrets. You must add the following four secrets to your repository settings under **Settings** > **Secrets and variables** > **Actions**:
 
 | Secret Name | Description |
 | :--- | :--- |
 | `VPS_SSH_HOST` | The IP address or hostname of your VPS. |
 | `VPS_SSH_USERNAME` | The SSH username (e.g., `ubuntu` or `deploy`). |
 | `VPS_SSH_PRIVATE_KEY` | The private SSH key corresponding to the user on the VPS. |
+| `VPS_PROJECT_DIR` | The absolute path to the codiesvibe directory on your VPS (e.g., `/home/ubuntu/codiesvibe`). |
 
 ### 2. Prepare Your VPS
 
-The deployment script, located at `scripts/deploy.sh`, contains a placeholder for the project directory. **This is the most critical step for a successful deployment.**
-
-1.  **Clone the Repository:** Ensure the repository is cloned on your VPS.
+1.  **Clone the Repository:** Ensure the repository is cloned on your VPS at the path specified in the `VPS_PROJECT_DIR` secret.
     ```bash
-    git clone git@github.com:foyzulkarim/codiesvibe.git /path/to/codiesvibe
+    # Replace /home/ubuntu/codiesvibe with your actual project path
+    git clone https://github.com/foyzulkarim/codiesvibe.git /home/ubuntu/codiesvibe
     ```
-2.  **Update Project Path:** Edit the `scripts/deploy.sh` file on your VPS to replace the placeholder with the actual absolute path where your project is located.
+2.  **Set Repository Permissions:** Ensure the `VPS_SSH_USERNAME` has proper ownership and permissions for the project directory.
     ```bash
-    # Before (Placeholder)
-    PROJECT_DIR="/path/to/codiesvibe" 
-
-    # After (Example)
-    PROJECT_DIR="/home/ubuntu/codiesvibe" 
+    # Example: Set ownership for ubuntu user
+    sudo chown -R ubuntu:ubuntu /home/ubuntu/codiesvibe
     ```
 3.  **Authorize SSH Key:** Ensure the public key corresponding to the `VPS_SSH_PRIVATE_KEY` is added to the `~/.ssh/authorized_keys` file for the `VPS_SSH_USERNAME`.
 
 ### 3. Finalize GitHub Actions Workflow
 
-Due to GitHub's security restrictions on creating workflow files via automation, the workflow file has been created in the root directory as `cd-production.yml.temp`.
+The workflow file is included in this PR at `.github/workflows/cd-production.yml`. No additional file movement is required.
 
-**Action Required:** After merging this Pull Request, you must perform the following one-time step:
+The workflow performs the following steps on your VPS:
 
-1.  **Move the file** to the correct location:
-    ```bash
-    mkdir -p .github/workflows
-    mv cd-production.yml.temp .github/workflows/cd-production.yml
-    ```
-2.  **Commit and Push** the moved file to the `main` branch. This will activate the CD pipeline.
+1.  Validates the `VPS_PROJECT_DIR` path is set
+2.  Navigates to the project directory (clones if it doesn't exist)
+3.  Executes `git pull origin main` to fetch the latest code (no authentication required for public repository)
+4.  Runs the enhanced `scripts/deploy.sh` which:
+    - Stashes any local changes to prevent conflicts
+    - Pulls the latest code with error handling
+    - Stops containers and removes all volumes and orphaned containers (`docker-compose down --volumes --remove-orphans`)
+    - Rebuilds and starts all containers with fresh state (`docker-compose up -d --build --force-recreate`)
+    - Verifies deployment success with health checks
+    - Provides detailed container status and logs if deployment fails
 
-The workflow uses the `scripts/deploy.sh` file to execute the deployment on your VPS.
+This ensures a robust deployment process with proper error handling, complete cleanup of Docker volumes, and verification of successful deployment.

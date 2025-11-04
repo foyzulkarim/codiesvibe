@@ -15,24 +15,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up SSH and Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.2 # Latest stable version
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
           username: ${{ secrets.VPS_SSH_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            PROJECT_DIR="/path/to/codiesvibe" # Must match the placeholder in deploy.sh
-            
+            PROJECT_DIR="${{ secrets.VPS_PROJECT_DIR }}" # Use a secret for the project directory path
+
             if [ ! -d "$PROJECT_DIR" ]; then
               echo "Project directory not found. Cloning repository..."
-              # Assuming the user's SSH key has access to clone the repo
-              git clone git@github.com:${{ github.repository }}.git "$PROJECT_DIR"
+              # Clone public repository (no authentication needed)
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
             fi
-            
+
             # Navigate to the project directory
             cd "$PROJECT_DIR"
-            
+
             # Execute the deployment script
             bash scripts/deploy.sh
-            
+
             echo "Remote script execution finished."
