@@ -423,6 +423,25 @@ async function validateAndEnhanceQueryPlan(
           case OPERATORS.NOT_EQUAL:
             priceFilter.value.price = { $ne: value };
             break;
+          case OPERATORS.AROUND:
+            // ±10% range for "around" operator
+            const rangePercent = 0.1; // 10%
+            const lowerBound = value * (1 - rangePercent);
+            const upperBound = value * (1 + rangePercent);
+            priceFilter.value.price = {
+              $gte: Math.round(lowerBound),
+              $lte: Math.round(upperBound),
+            };
+            break;
+          case OPERATORS.BETWEEN:
+            // BETWEEN should use priceRange instead, but handle gracefully
+            priceFilter.value.price = { $gte: 0, $lte: value };
+            break;
+          default:
+            // Unknown operator - log warning and use equality
+            logError(`Unknown price comparison operator: ${operator}, using equality`);
+            priceFilter.value.price = value;
+            break;
         }
 
         filters.push(priceFilter);
