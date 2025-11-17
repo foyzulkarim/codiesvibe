@@ -25,8 +25,13 @@ import { threadManager } from "./utils/thread-manager";
 import { healthCheckService } from "./services/health-check.service";
 import { gracefulShutdown } from "./services/graceful-shutdown.service";
 import { getMongoClient, getQdrantClient } from "./config/database";
+import { metricsService } from "./services/metrics.service";
+import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
 
 dotenv.config();
+
+// Setup Axios correlation interceptor early
+setupAxiosCorrelationInterceptor();
 
 // Use the enhanced logger from config/logger.ts
 // Legacy securityLogger is replaced by searchLogger with enhanced capabilities
@@ -220,6 +225,9 @@ const configureCORS = () => {
 // Apply correlation middleware first
 app.use(correlationMiddleware);
 
+// Apply Prometheus metrics middleware (track all HTTP requests)
+app.use(metricsService.trackHttpMetrics());
+
 // Apply CORS configuration
 app.use(configureCORS());
 
@@ -380,6 +388,24 @@ app.get('/health/ready', async (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Prometheus metrics endpoint
+// Exposes application metrics in Prometheus format
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', metricsService.getContentType());
+    const metrics = await metricsService.getMetrics();
+    res.send(metrics);
+  } catch (error) {
+    searchLogger.error('Failed to generate metrics', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+    res.status(500).json({
+      error: 'Failed to generate metrics',
+      code: 'METRICS_ERROR',
     });
   }
 });
@@ -585,6 +611,9 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
       ...searchResult
     };
 
+    // Track search query metrics
+    metricsService.trackSearchQuery(executionTime / 1000, 'success');
+
     searchLogger.info('Search completed successfully', {
       service: 'search-api',
       correlationId,
@@ -609,6 +638,10 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
     res.json(response);
   } catch (error) {
     const executionTime = Date.now() - startTime;
+
+    // Track search query error metrics
+    metricsService.trackSearchQuery(executionTime / 1000, 'error');
+    metricsService.trackError('search_error', 'high');
 
     // Enhanced error logging using search logger
     searchLogger.logSearchError(correlationId, error instanceof Error ? error : new Error('Unknown error'), {
@@ -658,6 +691,7 @@ async function startServer() {
       healthEndpoint: `http://localhost:${PORT}/health`,
       healthLiveEndpoint: `http://localhost:${PORT}/health/live`,
       healthReadyEndpoint: `http://localhost:${PORT}/health/ready`,
+      metricsEndpoint: `http://localhost:${PORT}/metrics`,
       searchEndpoint: `http://localhost:${PORT}/search`,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -667,6 +701,7 @@ async function startServer() {
       healthUrl: `http://localhost:${PORT}/health`,
       healthLiveUrl: `http://localhost:${PORT}/health/live`,
       healthReadyUrl: `http://localhost:${PORT}/health/ready`,
+      metricsUrl: `http://localhost:${PORT}/metrics`,
       searchUrl: `http://localhost:${PORT}/search`
     });
   });
