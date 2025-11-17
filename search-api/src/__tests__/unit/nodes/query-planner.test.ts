@@ -43,6 +43,11 @@ jest.mock('../../../services/llm.service', () => ({
 }));
 
 describe('Query Planner Node - Unit Tests', () => {
+  // Reset mocks before each test to prevent state pollution
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('1. Intent Analysis Tests', () => {
     test('1.1 Identity-focused query analysis - should return identity-focused strategy', async () => {
       const mockState: typeof StateAnnotation.State = {
@@ -657,7 +662,8 @@ describe('Query Planner Node - Unit Tests', () => {
         result.executionPlan.structuredSources.forEach((source) => {
           // CRITICAL: filters must be an array
           expect(Array.isArray(source.filters)).toBe(true);
-          expect(typeof source.filters).not.toBe('object'); // Not a plain object
+          // Arrays are objects in JavaScript, so just check it's not a plain object (no Array.isArray)
+          expect(source.filters).toBeInstanceOf(Array);
         });
       }
     });
@@ -860,9 +866,9 @@ describe('Query Planner Node - Unit Tests', () => {
         intentState: {
           ...intentStateFixtures.aiToolsUnder50,
           priceComparison: {
-            operator: 'less_than',
+            operator: 'less_than' as const,
             value: 50,
-            billingPeriod: null, // No billing period specified
+            // Completely omit billingPeriod instead of setting to null
           },
         },
         executionPlan: null,
@@ -1015,7 +1021,8 @@ describe('Query Planner Node - Unit Tests', () => {
       expect(result.executionStats).toBeDefined();
       expect(result.executionStats?.nodeTimings).toBeDefined();
       expect(result.executionStats?.nodeTimings?.['query-planner']).toBeDefined();
-      expect(result.executionStats?.nodeTimings?.['query-planner']).toBeGreaterThan(0);
+      // Mock execution can be very fast (0ms is acceptable)
+      expect(result.executionStats?.nodeTimings?.['query-planner']).toBeGreaterThanOrEqual(0);
     });
 
     test('6.2 Execution path tracking - should add query-planner to execution path', async () => {

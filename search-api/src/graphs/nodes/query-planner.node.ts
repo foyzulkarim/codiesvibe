@@ -354,7 +354,14 @@ async function validateAndEnhanceQueryPlan(
     let enhancedStructuredSources = queryPlan.structuredSources || [];
 
     // Add MongoDB structured source for filtering if constraints exist
-    const hasConstraints = intentState.priceRange || intentState.priceComparison;
+    const hasConstraints =
+      intentState.priceRange ||
+      intentState.priceComparison ||
+      intentState.category ||
+      intentState.interface ||
+      intentState.deployment ||
+      intentState.functionality ||
+      intentState.pricing;
 
     if (hasConstraints) {
       const filters: any[] = [];
@@ -445,6 +452,51 @@ async function validateAndEnhanceQueryPlan(
         }
 
         filters.push(priceFilter);
+      }
+
+      // Add category filter
+      if (intentState.category) {
+        filters.push({
+          field: 'categories.primary',
+          operator: 'in',
+          value: [intentState.category],
+        });
+      }
+
+      // Add interface filter
+      if (intentState.interface) {
+        filters.push({
+          field: 'interface',
+          operator: 'in',
+          value: [intentState.interface],
+        });
+      }
+
+      // Add deployment filter
+      if (intentState.deployment) {
+        filters.push({
+          field: 'deployment',
+          operator: 'in',
+          value: [intentState.deployment],
+        });
+      }
+
+      // Add functionality filter
+      if (intentState.functionality) {
+        filters.push({
+          field: 'capabilities.core',
+          operator: 'in',
+          value: [intentState.functionality],
+        });
+      }
+
+      // Add pricing model filter
+      if (intentState.pricing) {
+        filters.push({
+          field: 'pricingSummary.pricingModel',
+          operator: 'in',
+          value: [intentState.pricing],
+        });
       }
 
       if (filters.length > 0) {
