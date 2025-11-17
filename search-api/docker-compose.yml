@@ -1,0 +1,138 @@
+version: '3.8'
+
+# ================================
+# Development Environment
+# Includes MongoDB and Qdrant for local testing
+# ================================
+
+services:
+  # ================================
+  # MongoDB Database
+  # ================================
+  mongodb:
+    image: mongo:7
+    container_name: search-api-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: toolsearch
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - search-api-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ================================
+  # Qdrant Vector Database
+  # ================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: search-api-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - search-api-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ================================
+  # Search API Application
+  # ================================
+  search-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: search-api
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      # Application
+      NODE_ENV: development
+      PORT: 4003
+      LOG_LEVEL: info
+
+      # MongoDB (using container service)
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/toolsearch?authSource=admin
+      MONGODB_DB_NAME: toolsearch
+
+      # Qdrant (using container service)
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      QDRANT_COLLECTION_NAME: tools
+
+      # Search Configuration
+      ENABLE_CACHE: "true"
+      CACHE_TTL: 3600
+      ENABLE_VECTOR_VALIDATION: "true"
+      ENABLE_RATE_LIMITING: "true"
+      ENABLE_SECURITY_HEADERS: "true"
+
+      # CORS (development)
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+
+      # LLM API Keys (override with .env)
+      TOGETHER_AI_API_KEY: ${TOGETHER_AI_API_KEY:-}
+      TOGETHER_API_KEY: ${TOGETHER_API_KEY:-}
+
+      # Search Features
+      SEARCH_USE_MULTIVECTOR: "true"
+      MULTIVECTOR_MAX_RESULTS: 20
+      SEARCH_RRF_K: 60
+      SEARCH_SCORE_THRESHOLD: 0.5
+
+      # Logging
+      LOGGLY_ENABLED: "false"
+    volumes:
+      # Mount logs for easy access
+      - ./logs:/app/logs
+    networks:
+      - search-api-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4003/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+# ================================
+# Networks
+# ================================
+networks:
+  search-api-network:
+    driver: bridge
+    name: search-api-network
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  mongodb_data:
+    name: search-api-mongodb-data
+  mongodb_config:
+    name: search-api-mongodb-config
+  qdrant_storage:
+    name: search-api-qdrant-storage
