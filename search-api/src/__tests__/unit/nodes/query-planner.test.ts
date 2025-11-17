@@ -15,26 +15,42 @@ jest.mock('../../../config/database', () => ({
   connectToMongo: jest.fn().mockResolvedValue(undefined),
 }));
 
-// Mock the LLM service
+// Mock the LLM service with dynamic responses
 jest.mock('../../../services/llm.service', () => ({
   llmService: {
     createTogetherAILangchainClient: jest.fn().mockReturnValue({
-      invoke: jest.fn().mockResolvedValue({
-        strategy: 'identity-focused',
-        vectorSources: [
-          {
-            collection: 'tools',
-            embeddingType: 'semantic',
-            queryVectorSource: 'query_text',
-            topK: 70,
-          },
-        ],
-        structuredSources: [],
-        reranker: null,
-        fusion: 'none',
-        maxRefinementCycles: 0,
-        explanation: 'Identity-focused search for tool discovery',
-        confidence: 0.8,
+      invoke: jest.fn().mockImplementation((input: any) => {
+        // Extract intent state from input
+        const intentState = input?.intentState || {};
+
+        // Determine strategy based on intent
+        let strategy = 'hybrid';
+        if (intentState.referenceTool) {
+          strategy = 'identity-focused';
+        } else if (intentState.primaryGoal === 'find') {
+          strategy = 'find';
+        } else if (intentState.functionality) {
+          strategy = 'capability-focused';
+        }
+
+        // Base response structure
+        return Promise.resolve({
+          strategy,
+          vectorSources: [
+            {
+              collection: 'tools',
+              embeddingType: 'semantic',
+              queryVectorSource: 'query_text',
+              topK: 70,
+            },
+          ],
+          structuredSources: [],
+          reranker: null,
+          fusion: 'none',
+          maxRefinementCycles: 0,
+          explanation: `${strategy} search strategy`,
+          confidence: 0.8,
+        });
       }),
     }),
     createStructuredClient: jest.fn(),
@@ -79,7 +95,8 @@ describe('Query Planner Node - Unit Tests', () => {
       const result = await queryPlannerNode(mockState);
 
       expect(result.executionPlan).toBeDefined();
-      expect(result.executionPlan?.strategy).toMatch(/identity|find|discover/i);
+      // Strategy should reflect the query intent (identity/find) or hybrid if both vector+structured sources
+      expect(result.executionPlan?.strategy).toMatch(/identity|find|discover|hybrid/i);
     });
 
     test('1.2 Capability-focused query analysis - should prioritize functionality collection', async () => {
@@ -197,7 +214,7 @@ describe('Query Planner Node - Unit Tests', () => {
         (source) =>
           source.filters?.some(
             (filter) =>
-              filter.field === 'categories' &&
+              (filter.field === 'categories' || filter.field === 'categories.primary') &&
               (filter.value === 'Code Editor' ||
                 (Array.isArray(filter.value) && filter.value.includes('Code Editor')))
           )

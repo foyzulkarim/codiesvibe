@@ -382,13 +382,16 @@ async function validateAndEnhanceQueryPlan(
           priceFilter.value.billingPeriod = billingPeriod;
         }
 
-        // Add price range conditions
-        if (min !== null && max !== null) {
-          priceFilter.value.price = { $gte: min, $lte: max };
-        } else if (min !== null) {
-          priceFilter.value.price = { $gte: min };
-        } else if (max !== null) {
-          priceFilter.value.price = { $lte: max };
+        // Add price range conditions (sanitize negative values to 0)
+        const sanitizedMin = min !== null && min !== undefined ? Math.max(0, min) : null;
+        const sanitizedMax = max !== null && max !== undefined ? Math.max(0, max) : null;
+
+        if (sanitizedMin !== null && sanitizedMax !== null) {
+          priceFilter.value.price = { $gte: sanitizedMin, $lte: sanitizedMax };
+        } else if (sanitizedMin !== null) {
+          priceFilter.value.price = { $gte: sanitizedMin };
+        } else if (sanitizedMax !== null) {
+          priceFilter.value.price = { $lte: sanitizedMax };
         }
 
         filters.push(priceFilter);
@@ -398,6 +401,9 @@ async function validateAndEnhanceQueryPlan(
       if (intentState.priceComparison) {
         const { operator, value, billingPeriod } =
           intentState.priceComparison;
+
+        // Sanitize negative price values to 0
+        const sanitizedValue = Math.max(0, value);
 
         const priceFilter: any = {
           field: 'pricing',
@@ -413,28 +419,28 @@ async function validateAndEnhanceQueryPlan(
         // Add price comparison based on operator
         switch (operator) {
           case OPERATORS.LESS_THAN:
-            priceFilter.value.price = { $lt: value };
+            priceFilter.value.price = { $lt: sanitizedValue };
             break;
           case OPERATORS.LESS_THAN_OR_EQUAL:
-            priceFilter.value.price = { $lte: value };
+            priceFilter.value.price = { $lte: sanitizedValue };
             break;
           case OPERATORS.GREATER_THAN:
-            priceFilter.value.price = { $gt: value };
+            priceFilter.value.price = { $gt: sanitizedValue };
             break;
           case OPERATORS.GREATER_THAN_OR_EQUAL:
-            priceFilter.value.price = { $gte: value };
+            priceFilter.value.price = { $gte: sanitizedValue };
             break;
           case OPERATORS.EQUAL:
-            priceFilter.value.price = value;
+            priceFilter.value.price = sanitizedValue;
             break;
           case OPERATORS.NOT_EQUAL:
-            priceFilter.value.price = { $ne: value };
+            priceFilter.value.price = { $ne: sanitizedValue };
             break;
           case OPERATORS.AROUND:
             // ±10% range for "around" operator
             const rangePercent = 0.1; // 10%
-            const lowerBound = value * (1 - rangePercent);
-            const upperBound = value * (1 + rangePercent);
+            const lowerBound = sanitizedValue * (1 - rangePercent);
+            const upperBound = sanitizedValue * (1 + rangePercent);
             priceFilter.value.price = {
               $gte: Math.round(lowerBound),
               $lte: Math.round(upperBound),
@@ -442,12 +448,12 @@ async function validateAndEnhanceQueryPlan(
             break;
           case OPERATORS.BETWEEN:
             // BETWEEN should use priceRange instead, but handle gracefully
-            priceFilter.value.price = { $gte: 0, $lte: value };
+            priceFilter.value.price = { $gte: 0, $lte: sanitizedValue };
             break;
           default:
             // Unknown operator - log warning and use equality
             logError(`Unknown price comparison operator: ${operator}, using equality`);
-            priceFilter.value.price = value;
+            priceFilter.value.price = sanitizedValue;
             break;
         }
 
