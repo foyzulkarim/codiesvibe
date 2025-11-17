@@ -15,6 +15,7 @@ import { StateAnnotation } from "./types/state";
 import { vectorIndexingService, HealthReport } from "./services";
 import { searchLogger, SearchLogContext } from "./config/logger";
 import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
+import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
 import { v4 as uuidv4 } from 'uuid';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
@@ -27,11 +28,17 @@ import { gracefulShutdown } from "./services/graceful-shutdown.service";
 import { getMongoClient, getQdrantClient } from "./config/database";
 import { metricsService } from "./services/metrics.service";
 import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
+import { circuitBreakerManager } from "./services/circuit-breaker.service";
+import { configureHttpClient, destroyHttpAgents } from "./config/http-client";
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
+import compression from 'compression';
 
 dotenv.config();
+
+// Configure HTTP client with connection pooling
+configureHttpClient();
 
 // Setup Axios correlation interceptor early
 setupAxiosCorrelationInterceptor();
@@ -246,6 +253,30 @@ app.use(correlationMiddleware);
 // Apply Prometheus metrics middleware (track all HTTP requests)
 app.use(metricsService.trackHttpMetrics());
 
+// Apply compression middleware for response compression
+// This significantly reduces response size (typically 70-90% reduction)
+app.use(compression({
+  // Only compress responses above 1KB
+  threshold: 1024,
+  // Compression level (0-9, where 6 is default and balances speed/compression)
+  level: 6,
+  // Filter function to determine if response should be compressed
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression filter to decide based on content-type
+    return compression.filter(req, res);
+  }
+}));
+
+searchLogger.info('✅ Response compression enabled', {
+  service: 'search-api',
+  threshold: '1KB',
+  level: 6,
+});
+
 // Apply CORS configuration
 app.use(configureCORS());
 
@@ -254,6 +285,16 @@ app.use(mongoSanitize());
 
 // HTTP Parameter Pollution protection
 app.use(hpp());
+
+// Apply global timeout middleware (30 seconds)
+// This prevents requests from hanging indefinitely
+app.use(globalTimeout);
+
+searchLogger.info('✅ Request timeout protection enabled', {
+  service: 'search-api',
+  globalTimeout: '30s',
+  searchTimeout: '60s',
+});
 
 // Apply conditional rate limiting
 if (process.env.ENABLE_RATE_LIMITING !== 'false') {
@@ -428,6 +469,29 @@ app.get('/metrics', async (req, res) => {
   }
 });
 
+// Circuit breaker status endpoint
+// Shows the state of all circuit breakers
+app.get('/health/circuit-breakers', (req, res) => {
+  try {
+    const stats = circuitBreakerManager.getAllStats();
+    const allClosed = stats.every(s => s.state === 'closed');
+
+    res.status(allClosed ? 200 : 503).json({
+      status: allClosed ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      circuitBreakers: stats,
+    });
+  } catch (error) {
+    searchLogger.error('Failed to get circuit breaker status', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+    res.status(500).json({
+      error: 'Failed to get circuit breaker status',
+      code: 'CIRCUIT_BREAKER_ERROR',
+    });
+  }
+});
+
 // API Documentation endpoints
 if (swaggerDocument) {
   // Swagger UI configuration
@@ -589,7 +653,7 @@ function sanitizeQuery(query: string): string {
 }
 
 // Enhanced search endpoint with comprehensive security
-app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
+app.post('/search', searchLimiter, searchTimeout, validateSearchRequest, async (req, res) => {
   const startTime = Date.now();
   const searchReq = req as SearchRequest;
   const clientId = req.ip || req.socket.remoteAddress || 'unknown';
@@ -805,13 +869,15 @@ async function startServer() {
       searchLogger.info('🔄 Executing beforeShutdown tasks', {
         service: 'search-api',
       });
-      // Add any cleanup tasks here (flush caches, etc.)
+      // Shutdown circuit breakers
+      await circuitBreakerManager.shutdown();
     },
     afterShutdown: async () => {
       searchLogger.info('🔄 Executing afterShutdown tasks', {
         service: 'search-api',
       });
-      // Final cleanup tasks
+      // Destroy HTTP connection pool agents
+      destroyHttpAgents();
     },
   });
 

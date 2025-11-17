@@ -9,9 +9,18 @@ export const mongoConfig = {
   uri: process.env.MONGODB_URI || "mongodb://localhost:27017",
   dbName: process.env.MONGODB_DB_NAME || "toolsearch",
   options: {
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
+    // Connection pool settings
+    maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || '10'), // Max connections in pool
+    minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '2'),  // Min connections in pool
+    maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
+
+    // Timeouts
+    serverSelectionTimeoutMS: 5000, // Timeout for server selection
+    socketTimeoutMS: 45000, // Socket timeout
+    connectTimeoutMS: 10000, // Connection timeout
+
+    // Monitoring
+    monitorCommands: true, // Enable command monitoring for metrics
   }
 };
 
@@ -27,11 +36,81 @@ export async function connectToMongoDB(): Promise<Db> {
     await mongoClient.connect();
     db = mongoClient.db(mongoConfig.dbName);
     console.log("Connected to MongoDB", mongoConfig.dbName);
+    console.log("MongoDB connection pool configured:", {
+      maxPoolSize: mongoConfig.options.maxPoolSize,
+      minPoolSize: mongoConfig.options.minPoolSize,
+      maxIdleTimeMS: mongoConfig.options.maxIdleTimeMS,
+    });
+
+    // Set up connection pool monitoring
+    setupConnectionPoolMonitoring();
+
     return db;
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
     throw error;
   }
+}
+
+/**
+ * Setup MongoDB connection pool monitoring
+ * Tracks pool statistics and updates metrics
+ */
+function setupConnectionPoolMonitoring(): void {
+  if (!mongoClient) return;
+
+  // Monitor connection pool events
+  mongoClient.on('connectionPoolCreated', (event) => {
+    console.log('MongoDB connection pool created:', {
+      maxPoolSize: event.options?.maxPoolSize,
+      minPoolSize: event.options?.minPoolSize,
+    });
+  });
+
+  mongoClient.on('connectionPoolClosed', () => {
+    console.log('MongoDB connection pool closed');
+  });
+
+  mongoClient.on('connectionCreated', () => {
+    updateConnectionPoolMetrics();
+  });
+
+  mongoClient.on('connectionReady', () => {
+    updateConnectionPoolMetrics();
+  });
+
+  mongoClient.on('connectionClosed', () => {
+    updateConnectionPoolMetrics();
+  });
+
+  mongoClient.on('connectionCheckOutStarted', () => {
+    updateConnectionPoolMetrics();
+  });
+
+  mongoClient.on('connectionCheckOutFailed', (event) => {
+    console.warn('MongoDB connection check out failed:', event.reason);
+  });
+
+  mongoClient.on('connectionCheckedIn', () => {
+    updateConnectionPoolMetrics();
+  });
+
+  // Periodic metrics update (every 30 seconds)
+  setInterval(() => {
+    updateConnectionPoolMetrics();
+  }, 30000);
+}
+
+/**
+ * Update connection pool metrics
+ */
+function updateConnectionPoolMetrics(): void {
+  // Note: MongoDB Node.js driver doesn't expose pool stats directly
+  // We can only track events and infer pool state
+  // For more accurate metrics, consider using MongoDB APM or external monitoring
+
+  // This is a placeholder - in production, you would use MongoDB's monitoring tools
+  // or APM solutions like MongoDB Atlas monitoring, Datadog, etc.
 }
 
 export async function disconnectFromMongoDB(): Promise<void> {
