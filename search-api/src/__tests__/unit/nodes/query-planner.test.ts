@@ -8,10 +8,39 @@
 import { queryPlannerNode } from '../../../graphs/nodes/query-planner.node';
 import { StateAnnotation } from '../../../types/state';
 import { intentStateFixtures } from '../../fixtures/intent-states.fixture';
-import { MockLLMService } from '../../mocks';
+
+// Mock database connections
+jest.mock('../../../config/database', () => ({
+  connectToQdrant: jest.fn().mockResolvedValue(undefined),
+  connectToMongo: jest.fn().mockResolvedValue(undefined),
+}));
 
 // Mock the LLM service
-jest.mock('../../../services/llm.service', () => MockLLMService.mockLLMServiceModule());
+jest.mock('../../../services/llm.service', () => ({
+  llmService: {
+    createTogetherAILangchainClient: jest.fn().mockReturnValue({
+      invoke: jest.fn().mockResolvedValue({
+        strategy: 'identity-focused',
+        vectorSources: [
+          {
+            collection: 'tools',
+            embeddingType: 'semantic',
+            queryVectorSource: 'query_text',
+            topK: 70,
+          },
+        ],
+        structuredSources: [],
+        reranker: null,
+        fusion: 'none',
+        maxRefinementCycles: 0,
+        explanation: 'Identity-focused search for tool discovery',
+        confidence: 0.8,
+      }),
+    }),
+    createStructuredClient: jest.fn(),
+    createClient: jest.fn(),
+  },
+}));
 
 describe('Query Planner Node - Unit Tests', () => {
   describe('1. Intent Analysis Tests', () => {
@@ -90,11 +119,10 @@ describe('Query Planner Node - Unit Tests', () => {
     test('1.3 Multi-faceted query analysis - should use multi-collection hybrid strategy', async () => {
       const complexIntentState = {
         ...intentStateFixtures.freeOfflineAiCodeGen,
-        primaryGoal: 'find',
-        functionality: 'Code Generation',
-        interface: 'CLI',
-        deployment: 'Self-Hosted',
-        constraints: ['offline', 'free'],
+        primaryGoal: 'find' as const,
+        functionality: 'Code Generation' as const,
+        interface: 'CLI' as const,
+        deployment: 'Self-Hosted' as const,
       };
 
       const mockState: typeof StateAnnotation.State = {
@@ -221,7 +249,7 @@ describe('Query Planner Node - Unit Tests', () => {
       }
     });
 
-    test('2.3 Exact pricing model match - should use exact "Free" value', async () => {
+    test('2.3 Exact pricing match - should use exact "Free" value', async () => {
       const mockState: typeof StateAnnotation.State = {
         query: 'free tools',
         intentState: intentStateFixtures.freeCliTools,
@@ -248,12 +276,12 @@ describe('Query Planner Node - Unit Tests', () => {
 
       expect(result.executionPlan).toBeDefined();
 
-      // Check if structured sources contain the exact pricingModel value
-      const hasExactPricingModel = result.executionPlan?.structuredSources?.some(
+      // Check if structured sources contain the exact pricing value
+      const hasExactPricing = result.executionPlan?.structuredSources?.some(
         (source) =>
           source.filters?.some(
             (filter) =>
-              (filter.field === 'pricingModel' || filter.field === 'pricingSummary.pricingModel') &&
+              (filter.field === 'pricing' || filter.field === 'pricingSummary.pricingModel') &&
               (filter.value === 'Free' ||
                 (Array.isArray(filter.value) && filter.value.includes('Free')))
           )
@@ -262,10 +290,10 @@ describe('Query Planner Node - Unit Tests', () => {
       // If structured sources exist with pricing filters, they should use exact vocabulary
       if (result.executionPlan?.structuredSources && result.executionPlan.structuredSources.length > 0) {
         const hasPricingFilter = result.executionPlan.structuredSources.some(s =>
-          s.filters?.some(f => f.field?.includes('pricing') || f.field?.includes('pricingModel'))
+          s.filters?.some(f => f.field?.includes('pricing'))
         );
         if (hasPricingFilter) {
-          expect(hasExactPricingModel).toBeTruthy();
+          expect(hasExactPricing).toBeTruthy();
         }
       }
     });
@@ -415,7 +443,6 @@ describe('Query Planner Node - Unit Tests', () => {
           priceRange: {
             min: 50,
             max: null,
-            currency: 'USD',
             billingPeriod: 'Monthly',
           },
         },
@@ -466,7 +493,6 @@ describe('Query Planner Node - Unit Tests', () => {
           priceRange: {
             min: null,
             max: 200,
-            currency: 'USD',
             billingPeriod: 'Monthly',
           },
         },
@@ -562,7 +588,7 @@ describe('Query Planner Node - Unit Tests', () => {
           ...intentStateFixtures.freeCliTools,
           priceRange: null,
           priceComparison: null,
-          pricingModel: null,
+          pricing: null,
         },
         executionPlan: null,
         candidates: [],
@@ -836,7 +862,6 @@ describe('Query Planner Node - Unit Tests', () => {
           priceComparison: {
             operator: 'less_than',
             value: 50,
-            currency: 'USD',
             billingPeriod: null, // No billing period specified
           },
         },
@@ -885,7 +910,6 @@ describe('Query Planner Node - Unit Tests', () => {
           priceRange: {
             min: -10, // Invalid negative price
             max: 100,
-            currency: 'USD',
             billingPeriod: 'Monthly',
           },
         },
