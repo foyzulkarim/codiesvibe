@@ -21,6 +21,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
 import { threadManager } from "./utils/thread-manager";
 
+// Import health check and graceful shutdown services
+import { healthCheckService } from "./services/health-check.service";
+import { gracefulShutdown } from "./services/graceful-shutdown.service";
+import { getMongoClient, getQdrantClient } from "./config/database";
+
 dotenv.config();
 
 // Use the enhanced logger from config/logger.ts
@@ -319,7 +324,8 @@ const validateSearchRequest = [
 const PORT = process.env.PORT || 4003;
 const ENABLE_VECTOR_VALIDATION = process.env.ENABLE_VECTOR_VALIDATION !== 'false'; // Default to true
 
-// Health check endpoint - simplified
+// Health check endpoints
+// Basic health check - backwards compatible
 app.get('/health', async (req, res) => {
   res.json({
     status: 'healthy',
@@ -330,6 +336,52 @@ app.get('/health', async (req, res) => {
       search: 'available'
     }
   });
+});
+
+// Liveness probe - for container orchestrators
+// Fast check (<100ms) - doesn't check external dependencies
+app.get('/health/live', async (req, res) => {
+  try {
+    const health = await healthCheckService.checkLiveness();
+
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json(health);
+  } catch (error) {
+    searchLogger.error('Liveness check failed', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Readiness probe - for container orchestrators
+// Comprehensive check - includes MongoDB, Qdrant, and system metrics
+app.get('/health/ready', async (req, res) => {
+  try {
+    const health = await healthCheckService.checkReadiness();
+
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json(health);
+  } catch (error) {
+    searchLogger.error('Readiness check failed', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 /**
@@ -598,11 +650,14 @@ async function startServer() {
   // Perform vector index validation before starting the server
   // await validateVectorIndexOnStartup();
 
-  app.listen(PORT, () => {
+  // Start the HTTP server and store reference
+  const server = app.listen(PORT, () => {
     searchLogger.info('🚀 Search API server started successfully', {
       service: 'search-api',
       port: PORT,
       healthEndpoint: `http://localhost:${PORT}/health`,
+      healthLiveEndpoint: `http://localhost:${PORT}/health/live`,
+      healthReadyEndpoint: `http://localhost:${PORT}/health/ready`,
       searchEndpoint: `http://localhost:${PORT}/search`,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -610,8 +665,65 @@ async function startServer() {
       service: 'search-api',
       serverUrl: `http://localhost:${PORT}`,
       healthUrl: `http://localhost:${PORT}/health`,
+      healthLiveUrl: `http://localhost:${PORT}/health/live`,
+      healthReadyUrl: `http://localhost:${PORT}/health/ready`,
       searchUrl: `http://localhost:${PORT}/search`
     });
+  });
+
+  // Initialize health check service with database clients
+  const mongoClient = getMongoClient();
+  const qdrantClient = getQdrantClient();
+
+  if (mongoClient) {
+    healthCheckService.setMongoClient(mongoClient);
+    searchLogger.info('✅ MongoDB client registered with health check service', {
+      service: 'search-api',
+    });
+  } else {
+    searchLogger.warn('⚠️  MongoDB client not available for health checks', {
+      service: 'search-api',
+    });
+  }
+
+  if (qdrantClient) {
+    healthCheckService.setQdrantClient(qdrantClient);
+    searchLogger.info('✅ Qdrant client registered with health check service', {
+      service: 'search-api',
+    });
+  } else {
+    searchLogger.warn('⚠️  Qdrant client not available for health checks', {
+      service: 'search-api',
+    });
+  }
+
+  // Register server with graceful shutdown service
+  gracefulShutdown.registerServer(server);
+  if (mongoClient) {
+    gracefulShutdown.registerMongoClient(mongoClient);
+  }
+
+  // Setup graceful shutdown handlers
+  gracefulShutdown.setupHandlers({
+    timeout: 30000, // 30 seconds timeout
+    beforeShutdown: async () => {
+      searchLogger.info('🔄 Executing beforeShutdown tasks', {
+        service: 'search-api',
+      });
+      // Add any cleanup tasks here (flush caches, etc.)
+    },
+    afterShutdown: async () => {
+      searchLogger.info('🔄 Executing afterShutdown tasks', {
+        service: 'search-api',
+      });
+      // Final cleanup tasks
+    },
+  });
+
+  searchLogger.info('✅ Graceful shutdown handlers configured', {
+    service: 'search-api',
+    timeout: '30s',
+    signals: ['SIGTERM', 'SIGINT'],
   });
 }
 

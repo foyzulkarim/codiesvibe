@@ -218,3 +218,19 @@ export function getCollectionNameForVectorType(vectorType?: string): string {
   
   return 'tools'; // Default collection
 }
+
+/**
+ * Get the MongoDB client instance
+ * Returns null if not connected
+ */
+export function getMongoClient(): MongoClient | null {
+  return mongoClient;
+}
+
+/**
+ * Get the Qdrant client instance
+ * Returns null if not connected
+ */
+export function getQdrantClient(): QdrantClient | null {
+  return qdrantClient;
+}
