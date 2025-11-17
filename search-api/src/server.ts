@@ -27,11 +27,29 @@ import { gracefulShutdown } from "./services/graceful-shutdown.service";
 import { getMongoClient, getQdrantClient } from "./config/database";
 import { metricsService } from "./services/metrics.service";
 import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 
 dotenv.config();
 
 // Setup Axios correlation interceptor early
 setupAxiosCorrelationInterceptor();
+
+// Load OpenAPI specification
+let swaggerDocument: any;
+try {
+  const openapiPath = path.join(__dirname, '../openapi.yaml');
+  swaggerDocument = YAML.load(openapiPath);
+  searchLogger.info('✅ OpenAPI specification loaded', {
+    service: 'search-api',
+    specPath: openapiPath,
+  });
+} catch (error) {
+  searchLogger.error('⚠️  Failed to load OpenAPI specification', error instanceof Error ? error : new Error('Unknown error'), {
+    service: 'search-api',
+  });
+}
 
 // Use the enhanced logger from config/logger.ts
 // Legacy securityLogger is replaced by searchLogger with enhanced capabilities
@@ -410,6 +428,44 @@ app.get('/metrics', async (req, res) => {
   }
 });
 
+// API Documentation endpoints
+if (swaggerDocument) {
+  // Swagger UI configuration
+  const swaggerOptions = {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Search API Documentation',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      tryItOutEnabled: true,
+    },
+  };
+
+  // Serve Swagger UI at /api-docs
+  app.use('/api-docs', swaggerUi.serve);
+  app.get('/api-docs', swaggerUi.setup(swaggerDocument, swaggerOptions));
+
+  // Serve raw OpenAPI spec at /api-docs/openapi.json
+  app.get('/api-docs/openapi.json', (req, res) => {
+    res.json(swaggerDocument);
+  });
+
+  // Serve raw OpenAPI spec at /api-docs/openapi.yaml
+  app.get('/api-docs/openapi.yaml', (req, res) => {
+    res.type('text/yaml');
+    res.send(YAML.stringify(swaggerDocument, 10, 2));
+  });
+
+  searchLogger.info('✅ API documentation endpoints configured', {
+    service: 'search-api',
+    swaggerUI: '/api-docs',
+    openAPIJson: '/api-docs/openapi.json',
+    openAPIYaml: '/api-docs/openapi.yaml',
+  });
+}
+
 /**
  * Validate vector index health on startup
  * This function checks if vectors exist in Qdrant and validates index integrity
@@ -692,6 +748,7 @@ async function startServer() {
       healthLiveEndpoint: `http://localhost:${PORT}/health/live`,
       healthReadyEndpoint: `http://localhost:${PORT}/health/ready`,
       metricsEndpoint: `http://localhost:${PORT}/metrics`,
+      apiDocsEndpoint: `http://localhost:${PORT}/api-docs`,
       searchEndpoint: `http://localhost:${PORT}/search`,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -702,6 +759,9 @@ async function startServer() {
       healthLiveUrl: `http://localhost:${PORT}/health/live`,
       healthReadyUrl: `http://localhost:${PORT}/health/ready`,
       metricsUrl: `http://localhost:${PORT}/metrics`,
+      apiDocsUrl: `http://localhost:${PORT}/api-docs`,
+      openAPIJsonUrl: `http://localhost:${PORT}/api-docs/openapi.json`,
+      openAPIYamlUrl: `http://localhost:${PORT}/api-docs/openapi.yaml`,
       searchUrl: `http://localhost:${PORT}/search`
     });
   });

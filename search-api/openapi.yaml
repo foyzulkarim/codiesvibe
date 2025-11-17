@@ -1,0 +1,787 @@
+openapi: 3.0.3
+info:
+  title: Search API
+  description: |
+    Production-ready AI-powered search API for tools discovery using LangGraph agentic pipeline.
+
+    ## Features
+    - **Agentic Search**: 3-node LLM-first pipeline with intent extraction and query planning
+    - **Vector Search**: MongoDB + Qdrant integration for semantic search
+    - **LLM Caching**: Built-in response caching to reduce costs
+    - **Security**: Rate limiting, input validation, NoSQL injection protection
+    - **Observability**: Prometheus metrics, structured logging, correlation IDs
+    - **Production-Ready**: Health checks, graceful shutdown, Docker containerization
+
+    ## Rate Limiting
+    - **Global**: 100 requests per 15 minutes per IP
+    - **Search**: 30 search requests per minute per IP
+
+    ## Correlation ID
+    All requests support optional `X-Correlation-ID` or `X-Request-ID` headers for request tracing.
+    If not provided, a correlation ID will be automatically generated and returned in response headers.
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/your-org/search-api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4003
+    description: Local development server
+  - url: https://api.yourdomain.com
+    description: Production server
+
+tags:
+  - name: Search
+    description: AI-powered semantic search operations
+  - name: Health
+    description: Health check and monitoring endpoints
+  - name: Metrics
+    description: Prometheus metrics for monitoring
+
+paths:
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Search for tools
+      description: |
+        Perform an AI-powered semantic search for tools using natural language queries.
+
+        The search uses a 3-node LLM-first agentic pipeline:
+        1. **Intent Extraction**: Extracts user intent and search parameters
+        2. **Query Planning**: Plans the search strategy
+        3. **Query Execution**: Executes the search and returns ranked results
+
+        Results are cached using LLM response caching to reduce costs and improve performance.
+
+      operationId: searchTools
+      parameters:
+        - in: header
+          name: X-Correlation-ID
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          description: Optional correlation ID for request tracing
+        - in: header
+          name: X-Request-ID
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          description: Optional request ID for request tracing (alias for X-Correlation-ID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            examples:
+              simpleSearch:
+                summary: Simple search query
+                value:
+                  query: "AI tools for coding"
+                  limit: 10
+              complexSearch:
+                summary: Complex search with debug
+                value:
+                  query: "machine learning platforms with API access and GPU support"
+                  limit: 20
+                  debug: false
+              shortQuery:
+                summary: Short query
+                value:
+                  query: "chatgpt alternatives"
+      responses:
+        '200':
+          description: Search completed successfully
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+                format: uuid
+              description: Correlation ID for request tracing
+            X-Request-ID:
+              schema:
+                type: string
+                format: uuid
+              description: Request ID for request tracing (same as X-Correlation-ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              examples:
+                successfulSearch:
+                  summary: Successful search with results
+                  value:
+                    query: "AI tools for coding"
+                    originalQuery: "AI tools for coding"
+                    executionTime: "1234ms"
+                    phase: "3-Node LLM-First Pipeline"
+                    intent:
+                      primaryIntent: "find coding tools"
+                      entities:
+                        - "AI"
+                        - "coding"
+                    candidates:
+                      - id: "github-copilot"
+                        name: "GitHub Copilot"
+                        description: "AI pair programmer"
+                        score: 0.95
+                      - id: "cursor"
+                        name: "Cursor"
+                        description: "AI-first code editor"
+                        score: 0.89
+        '400':
+          description: Validation error - invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                emptyQuery:
+                  summary: Empty query
+                  value:
+                    error: "Validation failed"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "query"
+                        message: "Query cannot be empty"
+                        value: ""
+                tooLongQuery:
+                  summary: Query too long
+                  value:
+                    error: "Validation failed"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "query"
+                        message: "Query too long (max 1000 characters)"
+                        value: "very long query..."
+                invalidCharacters:
+                  summary: Invalid characters in query
+                  value:
+                    error: "Validation failed"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "query"
+                        message: "Query contains invalid characters"
+                        value: "query with <script>"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitError'
+              examples:
+                rateLimitExceeded:
+                  summary: Search rate limit exceeded
+                  value:
+                    error: "Too many search requests"
+                    code: "SEARCH_RATE_LIMIT_EXCEEDED"
+                    retryAfter: "1 minute"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchError'
+              examples:
+                serverError:
+                  summary: Search processing error
+                  value:
+                    error: "An error occurred during search processing"
+                    code: "SEARCH_ERROR"
+                    phase: "Error during search execution"
+                    executionTime: "523ms"
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      description: |
+        Quick health check endpoint that returns basic server status.
+        This is a lightweight check that doesn't verify external dependencies.
+
+        **Use cases:**
+        - Basic server monitoring
+        - Load balancer health checks (when deep checks not needed)
+        - Quick status verification
+
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicHealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2025-11-17T10:30:00.000Z"
+                uptime: 3600.5
+                services:
+                  server: "running"
+                  search: "available"
+
+  /health/live:
+    get:
+      tags:
+        - Health
+      summary: Liveness probe
+      description: |
+        Liveness probe for container orchestrators (Kubernetes, Docker Swarm, etc.).
+
+        **Characteristics:**
+        - **Fast**: Completes in <100ms
+        - **Lightweight**: No external dependency checks
+        - **Purpose**: Determines if the application process is alive and responsive
+
+        **Use cases:**
+        - Kubernetes liveness probe
+        - Container restart decisions
+        - Process monitoring
+
+        **When to use:**
+        - Container orchestration platforms
+        - Automated health monitoring systems
+
+      operationId: getLivenessProbe
+      responses:
+        '200':
+          description: Application is alive and responsive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LivenessResponse'
+              example:
+                status: "healthy"
+                timestamp: "2025-11-17T10:30:00.000Z"
+                uptime: 3600.5
+        '503':
+          description: Application is not responsive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnhealthyResponse'
+              example:
+                status: "unhealthy"
+                timestamp: "2025-11-17T10:30:00.000Z"
+                uptime: 3600.5
+                error: "Application is not responding"
+
+  /health/ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness probe
+      description: |
+        Readiness probe for container orchestrators (Kubernetes, Docker Swarm, etc.).
+
+        **Characteristics:**
+        - **Comprehensive**: Checks all external dependencies
+        - **Slower**: May take 1-3 seconds
+        - **Purpose**: Determines if the application is ready to serve traffic
+
+        **Checks performed:**
+        - MongoDB connectivity and latency
+        - Qdrant connectivity and latency
+        - Memory usage
+        - Disk usage (Linux/Unix only)
+        - CPU load
+
+        **Status levels:**
+        - `healthy`: All checks passed
+        - `degraded`: Some non-critical issues detected
+        - `unhealthy`: Critical issues detected, not ready for traffic
+
+        **Use cases:**
+        - Kubernetes readiness probe
+        - Load balancer backend health checks
+        - Deployment readiness verification
+
+      operationId: getReadinessProbe
+      responses:
+        '200':
+          description: Application is ready to serve traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              examples:
+                healthy:
+                  summary: All systems healthy
+                  value:
+                    status: "healthy"
+                    timestamp: "2025-11-17T10:30:00.000Z"
+                    uptime: 3600.5
+                    checks:
+                      mongodb:
+                        status: "pass"
+                        latency: "12ms"
+                      qdrant:
+                        status: "pass"
+                        latency: "8ms"
+                    system:
+                      memory:
+                        used: "256.5 MB"
+                        total: "2.0 GB"
+                        percentage: 12.5
+                      disk:
+                        used: "45.2 GB"
+                        total: "100.0 GB"
+                        percentage: 45.2
+                      cpu:
+                        loadAverage: [1.2, 1.5, 1.3]
+                        cores: 4
+                degraded:
+                  summary: System degraded but operational
+                  value:
+                    status: "degraded"
+                    timestamp: "2025-11-17T10:30:00.000Z"
+                    uptime: 3600.5
+                    checks:
+                      mongodb:
+                        status: "pass"
+                        latency: "150ms"
+                        message: "High latency detected"
+                      qdrant:
+                        status: "pass"
+                        latency: "8ms"
+                    system:
+                      memory:
+                        used: "1.8 GB"
+                        total: "2.0 GB"
+                        percentage: 90.0
+        '503':
+          description: Application is not ready to serve traffic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+              example:
+                status: "unhealthy"
+                timestamp: "2025-11-17T10:30:00.000Z"
+                uptime: 3600.5
+                checks:
+                  mongodb:
+                    status: "fail"
+                    message: "Connection refused"
+                  qdrant:
+                    status: "fail"
+                    message: "Timeout"
+
+  /metrics:
+    get:
+      tags:
+        - Metrics
+      summary: Prometheus metrics
+      description: |
+        Prometheus-formatted metrics endpoint for monitoring and alerting.
+
+        **Metrics exposed:**
+
+        **HTTP Metrics:**
+        - `http_request_duration_seconds` - Request duration histogram
+        - `http_requests_total` - Total request counter
+        - `http_requests_in_flight` - Current active requests
+        - `http_response_size_bytes` - Response size histogram
+
+        **Search Metrics:**
+        - `search_queries_total` - Total search queries
+        - `search_query_duration_seconds` - Search duration histogram
+
+        **Cache Metrics:**
+        - `llm_cache_hits_total` - LLM cache hit counter
+        - `llm_cache_misses_total` - LLM cache miss counter
+        - `llm_cache_savings_total` - Cost savings from cache (cents)
+
+        **Database Metrics:**
+        - `db_operation_duration_seconds` - Database operation duration
+        - `db_operations_total` - Total database operations
+        - `db_connection_pool_size` - Connection pool size
+        - `vector_search_duration_seconds` - Vector search duration
+        - `vector_searches_total` - Total vector searches
+
+        **System Metrics:**
+        - `memory_usage_bytes` - Memory usage by type
+        - `cpu_usage_percent` - CPU usage percentage
+        - `active_connections` - Active connection count
+        - `errors_total` - Total errors by type and severity
+
+        **Default Node.js Metrics:**
+        - Process CPU usage, memory, heap statistics
+        - Event loop lag
+        - Garbage collection metrics
+
+        **Prometheus scrape configuration:**
+        ```yaml
+        scrape_configs:
+          - job_name: 'search-api'
+            scrape_interval: 15s
+            static_configs:
+              - targets: ['search-api:4003']
+            metrics_path: '/metrics'
+        ```
+
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus-formatted metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP http_requests_total Total number of HTTP requests
+                # TYPE http_requests_total counter
+                http_requests_total{method="POST",route="/search",status_code="200"} 1234
+
+                # HELP http_request_duration_seconds Duration of HTTP requests in seconds
+                # TYPE http_request_duration_seconds histogram
+                http_request_duration_seconds_bucket{method="POST",route="/search",status_code="200",le="0.005"} 100
+                http_request_duration_seconds_bucket{method="POST",route="/search",status_code="200",le="0.01"} 250
+                http_request_duration_seconds_sum{method="POST",route="/search",status_code="200"} 45.67
+                http_request_duration_seconds_count{method="POST",route="/search",status_code="200"} 1234
+
+                # HELP search_queries_total Total number of search queries
+                # TYPE search_queries_total counter
+                search_queries_total{status="success"} 1180
+                search_queries_total{status="error"} 54
+
+                # HELP llm_cache_hits_total Total number of LLM cache hits
+                # TYPE llm_cache_hits_total counter
+                llm_cache_hits_total 456
+        '500':
+          description: Error generating metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to generate metrics"
+                  code:
+                    type: string
+                    example: "METRICS_ERROR"
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          pattern: '^[^<>{}[\]\\]*$'
+          description: Natural language search query (no HTML tags or injection characters allowed)
+          example: "AI tools for coding with autocomplete"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Maximum number of results to return
+          example: 10
+        debug:
+          type: boolean
+          default: false
+          description: Enable debug mode for detailed execution information
+          example: false
+
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Sanitized search query
+          example: "AI tools for coding"
+        originalQuery:
+          type: string
+          description: Original query as submitted
+          example: "AI tools for coding"
+        executionTime:
+          type: string
+          description: Total execution time
+          example: "1234ms"
+        phase:
+          type: string
+          description: Pipeline identifier
+          example: "3-Node LLM-First Pipeline"
+        intent:
+          type: object
+          description: Extracted user intent
+          properties:
+            primaryIntent:
+              type: string
+              example: "find coding tools"
+            entities:
+              type: array
+              items:
+                type: string
+              example: ["AI", "coding", "autocomplete"]
+        candidates:
+          type: array
+          description: Search results ranked by relevance
+          items:
+            $ref: '#/components/schemas/ToolCandidate'
+
+    ToolCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique tool identifier
+          example: "github-copilot"
+        name:
+          type: string
+          description: Tool name
+          example: "GitHub Copilot"
+        description:
+          type: string
+          description: Tool description
+          example: "AI pair programmer that helps you write code faster"
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Relevance score (0-1)
+          example: 0.95
+        categories:
+          type: array
+          items:
+            type: string
+          description: Tool categories
+          example: ["AI", "Code Generation", "IDE Plugin"]
+        pricing:
+          type: object
+          description: Pricing information
+          properties:
+            model:
+              type: string
+              example: "freemium"
+            lowestPrice:
+              type: number
+              example: 0
+            highestPrice:
+              type: number
+              example: 10
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Validation failed"
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "query"
+              message:
+                type: string
+                example: "Query cannot be empty"
+              value:
+                type: string
+                example: ""
+
+    RateLimitError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Too many search requests"
+        code:
+          type: string
+          example: "SEARCH_RATE_LIMIT_EXCEEDED"
+        retryAfter:
+          type: string
+          example: "1 minute"
+
+    SearchError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "An error occurred during search processing"
+        code:
+          type: string
+          example: "SEARCH_ERROR"
+        phase:
+          type: string
+          example: "Error during search execution"
+        executionTime:
+          type: string
+          example: "523ms"
+
+    BasicHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:30:00.000Z"
+        uptime:
+          type: number
+          description: Server uptime in seconds
+          example: 3600.5
+        services:
+          type: object
+          properties:
+            server:
+              type: string
+              example: "running"
+            search:
+              type: string
+              example: "available"
+
+    LivenessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:30:00.000Z"
+        uptime:
+          type: number
+          description: Server uptime in seconds
+          example: 3600.5
+
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:30:00.000Z"
+        uptime:
+          type: number
+          description: Server uptime in seconds
+          example: 3600.5
+        checks:
+          type: object
+          properties:
+            mongodb:
+              $ref: '#/components/schemas/DependencyCheck'
+            qdrant:
+              $ref: '#/components/schemas/DependencyCheck'
+        system:
+          type: object
+          properties:
+            memory:
+              $ref: '#/components/schemas/MemoryInfo'
+            disk:
+              $ref: '#/components/schemas/DiskInfo'
+            cpu:
+              $ref: '#/components/schemas/CpuInfo'
+
+    DependencyCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pass, fail]
+          example: "pass"
+        latency:
+          type: string
+          example: "12ms"
+        message:
+          type: string
+          example: "Connection successful"
+
+    MemoryInfo:
+      type: object
+      properties:
+        used:
+          type: string
+          example: "256.5 MB"
+        total:
+          type: string
+          example: "2.0 GB"
+        percentage:
+          type: number
+          format: float
+          example: 12.5
+
+    DiskInfo:
+      type: object
+      properties:
+        used:
+          type: string
+          example: "45.2 GB"
+        total:
+          type: string
+          example: "100.0 GB"
+        percentage:
+          type: number
+          format: float
+          example: 45.2
+
+    CpuInfo:
+      type: object
+      properties:
+        loadAverage:
+          type: array
+          items:
+            type: number
+          description: Load average for 1, 5, and 15 minutes
+          example: [1.2, 1.5, 1.3]
+        cores:
+          type: integer
+          description: Number of CPU cores
+          example: 4
+
+    UnhealthyResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [unhealthy]
+          example: "unhealthy"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:30:00.000Z"
+        uptime:
+          type: number
+          description: Server uptime in seconds
+          example: 3600.5
+        error:
+          type: string
+          example: "Application is not responding"
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication (not currently required, reserved for future use)
+
+security: []
