@@ -1,6 +1,8 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { generateCorrelationId, getOrCreateSessionId } from '@/lib/correlation';
 import { apiConfig } from '@/config/api';
+import { offlineQueue } from '@/lib/offline-queue';
+import { getVersionHeaders } from '@/api/version';
 
 /**
  * Extended Axios request config with metadata for tracking
@@ -55,6 +57,10 @@ apiClient.interceptors.request.use(
     // Add application metadata
     extendedConfig.headers['X-Client-Version'] = apiConfig.app.version;
     extendedConfig.headers['X-Client-Name'] = apiConfig.app.name;
+
+    // Add API version headers
+    const versionHeaders = getVersionHeaders(extendedConfig.url || '');
+    Object.assign(extendedConfig.headers, versionHeaders);
 
     // Store metadata for response logging and timing
     extendedConfig.metadata = {
@@ -184,6 +190,28 @@ apiClient.interceptors.response.use(
 
     // Replace error message with user-friendly version
     error.message = userMessage;
+
+    // Queue failed mutations for retry when online (only for mutations, not GET requests)
+    if (
+      !navigator.onLine &&
+      config &&
+      config.method &&
+      ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())
+    ) {
+      // Add to offline queue
+      offlineQueue.enqueue({
+        config: config as AxiosRequestConfig,
+        priority: config.method.toLowerCase() === 'delete' ? 2 : 1, // Higher priority for deletes
+        maxRetries: 3,
+        metadata: {
+          correlationId: config.metadata?.correlationId,
+          userMessage,
+        },
+      });
+
+      // Return a more specific offline error
+      error.message = 'You are offline. Request queued for retry when connection is restored.';
+    }
 
     return Promise.reject(error);
   }

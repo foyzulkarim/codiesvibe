@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient as axios } from '@/api/client';
 import { apiConfig } from '@/config/api';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   UseToolsReturn,
   AiSearchReasoning,
@@ -147,8 +148,11 @@ const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => 
 
 // Main hook for fetching tools
 export const useTools = (params: string): UseToolsReturn => {
+  // Debounce search query to reduce API calls
+  const debouncedParams = useDebounce(params, apiConfig.search.debounceDelay);
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['tools', params],
+    queryKey: ['tools', debouncedParams],
     queryFn: async () => {
       const response = {
         data: [],
@@ -164,9 +168,9 @@ export const useTools = (params: string): UseToolsReturn => {
           explanation: ''
         }
       };
-      if (params) {
+      if (debouncedParams) {
         // Trigger API call for debugging only
-        const apiResponse = await aiSearchTools(params);
+        const apiResponse = await aiSearchTools(debouncedParams);
         response.data = apiResponse.results;
         response.reasoning = {
           query: apiResponse.query,
@@ -183,6 +187,8 @@ export const useTools = (params: string): UseToolsReturn => {
 
       return response;
     },
+    // Only run query when debounced params meets minimum length
+    enabled: !debouncedParams || debouncedParams.length >= apiConfig.search.minLength,
   });
 
   return {

@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { queryClient, reactQueryDevtoolsConfig } from "@/config/query-client";
 import { apiConfig, validateApiConfig } from "@/config/api";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -13,24 +14,26 @@ import NotFound from "./pages/NotFound";
 validateApiConfig();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
 
-    {/* React Query DevTools - Only in development */}
-    {apiConfig.features.enableDevtools && (
-      <ReactQueryDevtools {...reactQueryDevtoolsConfig} />
-    )}
-  </QueryClientProvider>
+      {/* React Query DevTools - Only in development */}
+      {apiConfig.features.enableDevtools && (
+        <ReactQueryDevtools {...reactQueryDevtoolsConfig} />
+      )}
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
