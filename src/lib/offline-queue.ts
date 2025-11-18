@@ -11,7 +11,7 @@ export interface QueuedRequest {
   retryCount: number;
   maxRetries: number;
   priority: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -67,7 +67,7 @@ export interface OfflineQueueConfig {
   /**
    * Callback when request fails
    */
-  onRequestFail?: (request: QueuedRequest, error: any) => void;
+  onRequestFail?: (request: QueuedRequest, error: Error) => void;
 }
 
 /**

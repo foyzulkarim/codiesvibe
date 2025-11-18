@@ -7,8 +7,8 @@ import { UpdateToolParams, MutationResponse, MutationHookOptions, OptimisticUpda
 /**
  * Transform API response to AITool format
  */
-const transformResponse = (response: any): AITool => {
-  if (response.id && response.name) {
+const transformResponse = (response: MutationResponse<AITool>): AITool => {
+  if ('id' in response && 'name' in response) {
     return response as AITool;
   }
   return response.data as AITool;

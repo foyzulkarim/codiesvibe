@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig, AxiosRequestHeaders } from 'axios';
 import { generateCorrelationId, getOrCreateSessionId } from '@/lib/correlation';
 import { apiConfig } from '@/config/api';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -12,6 +12,14 @@ interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
     correlationId: string;
     startTime: number;
   };
+}
+
+/**
+ * API error response data structure
+ */
+interface ApiErrorData {
+  message?: string;
+  error?: string;
 }
 
 /**
@@ -47,7 +55,7 @@ apiClient.interceptors.request.use(
 
     // Add tracking headers
     if (!extendedConfig.headers) {
-      extendedConfig.headers = {} as any;
+      extendedConfig.headers = {} as AxiosRequestHeaders;
     }
 
     extendedConfig.headers['X-Correlation-ID'] = correlationId;
@@ -184,7 +192,7 @@ apiClient.interceptors.response.use(
       userMessage = 'Network error. Please check your internet connection.';
     } else if (error.response?.data && typeof error.response.data === 'object') {
       // Try to extract message from response data
-      const data = error.response.data as any;
+      const data = error.response.data as ApiErrorData;
       userMessage = data.message || data.error || userMessage;
     }
 

@@ -121,6 +121,6 @@ export const reactQueryDevtoolsConfig = {
   position: 'bottom-right' as const,
   buttonPosition: 'bottom-right' as const,
   errorTypes: [
-    { name: 'Error', initializer: (query: any) => new Error(query) },
+    { name: 'Error', initializer: (query: string) => new Error(query) },
   ],
 };

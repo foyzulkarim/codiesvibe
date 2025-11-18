@@ -232,7 +232,7 @@ export const versionMigration = {
    * Migrate V1 response to V2 format
    * Implement actual migration logic as needed
    */
-  migrateV1ToV2: <T>(data: any): T => {
+  migrateV1ToV2: <T>(data: unknown): T => {
     // TODO: Implement migration logic based on actual API changes
     return data as T;
   },
@@ -241,7 +241,7 @@ export const versionMigration = {
    * Migrate V2 response to V1 format (for backward compatibility)
    * Implement actual migration logic as needed
    */
-  migrateV2ToV1: <T>(data: any): T => {
+  migrateV2ToV1: <T>(data: unknown): T => {
     // TODO: Implement migration logic based on actual API changes
     return data as T;
   },
