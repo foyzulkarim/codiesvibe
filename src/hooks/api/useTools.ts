@@ -1,7 +1,6 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { debounce } from 'lodash';
-import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient as axios } from '@/api/client';
+import { apiConfig } from '@/config/api';
 import {
   UseToolsReturn,
   AiSearchReasoning,
@@ -119,20 +118,26 @@ interface SearchResult {
 
 const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => {
   try {
-    console.log('aiSearchTools searchQuery:', searchQuery);
-    console.log('typeof searchQuery:', typeof searchQuery);
+    if (apiConfig.features.debug) {
+      console.log('aiSearchTools searchQuery:', searchQuery);
+      console.log('typeof searchQuery:', typeof searchQuery);
+    }
 
     // Ensure searchQuery is a string
     const searchQueryStr = typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
-    
+
     const response = await axios.post<AiSearchResponse>('/tools/ai-search', {
       query: searchQueryStr,
-      limit: 10,
-      debug: false,
+      limit: apiConfig.search.defaultLimit,
+      debug: apiConfig.features.debug,
     }, {
-      timeout: 60000 // 60 seconds for LLM operations
+      timeout: apiConfig.search.timeout
     });
-    console.log('aiSearchTools response.data:', response.data);
+
+    if (apiConfig.features.debug) {
+      console.log('aiSearchTools response.data:', response.data);
+    }
+
     return response.data;
   } catch (error) {
     console.error('Error fetching tools:', error);
@@ -187,17 +192,4 @@ export const useTools = (params: string): UseToolsReturn => {
     isError,
     error,
   };
-};
-
-// Debounced search hook for better performance
-export const useDebouncedSearch = (delay: number = 300) => {
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((callback: (query: string) => void, query: string) => {
-        callback(query);
-      }, delay),
-    [delay]
-  );
-
-  return debouncedSearch;
 };
