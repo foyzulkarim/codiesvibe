@@ -1,12 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import apiClient, { apiClient as axios } from '@/api/client';
+import { apiClient } from '@/api/client';
 import { UseToolReturn, ToolResponseDto } from '@/api/types';
 import { AITool } from '@/data/tools';
-import { ToolResponseDto as ToolResponseType } from '@/api/types';
 
 // Transform API response to match AITool interface (v2.0)
-const transformToolResponse = (tool: ToolResponseType): AITool => ({
+const transformToolResponse = (tool: ToolResponseDto): AITool => ({
   // Core v2.0 fields
   id: tool.id,
   name: tool.name,
@@ -54,7 +53,7 @@ const transformToolResponse = (tool: ToolResponseType): AITool => ({
 // API function to fetch single tool
 const fetchTool = async (id: string): Promise<AITool> => {
   try {
-    const response = await axios.get<ToolResponseDto>(`/tools/${id}`);
+    const response = await apiClient.get<ToolResponseDto>(`/tools/${id}`);
     return transformToolResponse(response.data);
   } catch (error) {
     console.error(`Error fetching tool with id ${id}:`, error);

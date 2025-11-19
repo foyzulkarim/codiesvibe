@@ -1,0 +1,59 @@
+# Artillery Stress Test Configuration
+# Stress Test: Gradually increase load until system fails
+#
+# To run this test:
+# artillery run test/load/stress-test.yml
+
+config:
+  target: "http://localhost:4003"
+  phases:
+    # Phase 1: Start with moderate load
+    - duration: 60
+      arrivalRate: 50
+      name: "Phase 1: 50 req/s"
+
+    # Phase 2: Increase to high load
+    - duration: 60
+      arrivalRate: 100
+      name: "Phase 2: 100 req/s"
+
+    # Phase 3: Very high load
+    - duration: 60
+      arrivalRate: 200
+      name: "Phase 3: 200 req/s"
+
+    # Phase 4: Extreme load
+    - duration: 60
+      arrivalRate: 300
+      name: "Phase 4: 300 req/s"
+
+    # Phase 5: Maximum load
+    - duration: 60
+      arrivalRate: 500
+      name: "Phase 5: 500 req/s"
+
+  timeout: 65
+  processor: "./test/load/functions.js"
+
+scenarios:
+  # Primarily search requests (stress the main functionality)
+  - weight: 90
+    flow:
+      - post:
+          url: "/search"
+          json:
+            query: "{{ randomSearchQuery }}"
+            limit: "{{ randomLimit }}"
+          headers:
+            Content-Type: "application/json"
+            X-Correlation-ID: "stress-test-{{ $randomString() }}"
+          expect:
+            - statusCode: [200, 408, 429, 500, 503]  # Allow errors under stress
+
+  # Health checks (to monitor system health)
+  - weight: 10
+    flow:
+      - get:
+          url: "/health/ready"
+          expect:
+            - statusCode: [200, 503]  # System may degrade

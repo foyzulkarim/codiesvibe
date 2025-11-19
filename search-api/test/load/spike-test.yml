@@ -1,0 +1,47 @@
+# Artillery Spike Test Configuration
+# Spike Test: Sudden increase in load to test system resilience
+#
+# To run this test:
+# artillery run test/load/spike-test.yml
+
+config:
+  target: "http://localhost:4003"
+  phases:
+    # Baseline: Normal load
+    - duration: 60
+      arrivalRate: 50
+      name: "Baseline"
+
+    # Spike: Sudden 10x increase
+    - duration: 120
+      arrivalRate: 500
+      name: "Spike (10x load)"
+
+    # Recovery: Return to normal load
+    - duration: 120
+      arrivalRate: 50
+      name: "Recovery"
+
+  timeout: 65
+  processor: "./test/load/functions.js"
+
+scenarios:
+  - weight: 80
+    flow:
+      - post:
+          url: "/search"
+          json:
+            query: "{{ randomSearchQuery }}"
+            limit: "{{ randomLimit }}"
+          headers:
+            Content-Type: "application/json"
+            X-Correlation-ID: "spike-test-{{ $randomString() }}"
+          expect:
+            - statusCode: [200, 408, 429, 500, 503]
+
+  - weight: 20
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: [200, 503]

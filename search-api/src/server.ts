@@ -15,13 +15,48 @@ import { StateAnnotation } from "./types/state";
 import { vectorIndexingService, HealthReport } from "./services";
 import { searchLogger, SearchLogContext } from "./config/logger";
 import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
+import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
 import { v4 as uuidv4 } from 'uuid';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
 import { threadManager } from "./utils/thread-manager";
 
+// Import health check and graceful shutdown services
+import { healthCheckService } from "./services/health-check.service";
+import { gracefulShutdown } from "./services/graceful-shutdown.service";
+import { getMongoClient, getQdrantClient } from "./config/database";
+import { metricsService } from "./services/metrics.service";
+import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
+import { circuitBreakerManager } from "./services/circuit-breaker.service";
+import { configureHttpClient, destroyHttpAgents } from "./config/http-client";
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import compression from 'compression';
+
 dotenv.config();
+
+// Configure HTTP client with connection pooling
+configureHttpClient();
+
+// Setup Axios correlation interceptor early
+setupAxiosCorrelationInterceptor();
+
+// Load OpenAPI specification
+let swaggerDocument: any;
+try {
+  const openapiPath = path.join(__dirname, '../openapi.yaml');
+  swaggerDocument = YAML.load(openapiPath);
+  searchLogger.info('✅ OpenAPI specification loaded', {
+    service: 'search-api',
+    specPath: openapiPath,
+  });
+} catch (error) {
+  searchLogger.error('⚠️  Failed to load OpenAPI specification', error instanceof Error ? error : new Error('Unknown error'), {
+    service: 'search-api',
+  });
+}
 
 // Use the enhanced logger from config/logger.ts
 // Legacy securityLogger is replaced by searchLogger with enhanced capabilities
@@ -215,6 +250,33 @@ const configureCORS = () => {
 // Apply correlation middleware first
 app.use(correlationMiddleware);
 
+// Apply Prometheus metrics middleware (track all HTTP requests)
+app.use(metricsService.trackHttpMetrics());
+
+// Apply compression middleware for response compression
+// This significantly reduces response size (typically 70-90% reduction)
+app.use(compression({
+  // Only compress responses above 1KB
+  threshold: 1024,
+  // Compression level (0-9, where 6 is default and balances speed/compression)
+  level: 6,
+  // Filter function to determine if response should be compressed
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression filter to decide based on content-type
+    return compression.filter(req, res);
+  }
+}));
+
+searchLogger.info('✅ Response compression enabled', {
+  service: 'search-api',
+  threshold: '1KB',
+  level: 6,
+});
+
 // Apply CORS configuration
 app.use(configureCORS());
 
@@ -223,6 +285,16 @@ app.use(mongoSanitize());
 
 // HTTP Parameter Pollution protection
 app.use(hpp());
+
+// Apply global timeout middleware (30 seconds)
+// This prevents requests from hanging indefinitely
+app.use(globalTimeout);
+
+searchLogger.info('✅ Request timeout protection enabled', {
+  service: 'search-api',
+  globalTimeout: '30s',
+  searchTimeout: '60s',
+});
 
 // Apply conditional rate limiting
 if (process.env.ENABLE_RATE_LIMITING !== 'false') {
@@ -319,7 +391,8 @@ const validateSearchRequest = [
 const PORT = process.env.PORT || 4003;
 const ENABLE_VECTOR_VALIDATION = process.env.ENABLE_VECTOR_VALIDATION !== 'false'; // Default to true
 
-// Health check endpoint - simplified
+// Health check endpoints
+// Basic health check - backwards compatible
 app.get('/health', async (req, res) => {
   res.json({
     status: 'healthy',
@@ -331,6 +404,131 @@ app.get('/health', async (req, res) => {
     }
   });
 });
+
+// Liveness probe - for container orchestrators
+// Fast check (<100ms) - doesn't check external dependencies
+app.get('/health/live', async (req, res) => {
+  try {
+    const health = await healthCheckService.checkLiveness();
+
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json(health);
+  } catch (error) {
+    searchLogger.error('Liveness check failed', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Readiness probe - for container orchestrators
+// Comprehensive check - includes MongoDB, Qdrant, and system metrics
+app.get('/health/ready', async (req, res) => {
+  try {
+    const health = await healthCheckService.checkReadiness();
+
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+
+    res.status(statusCode).json(health);
+  } catch (error) {
+    searchLogger.error('Readiness check failed', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Prometheus metrics endpoint
+// Exposes application metrics in Prometheus format
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', metricsService.getContentType());
+    const metrics = await metricsService.getMetrics();
+    res.send(metrics);
+  } catch (error) {
+    searchLogger.error('Failed to generate metrics', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+    res.status(500).json({
+      error: 'Failed to generate metrics',
+      code: 'METRICS_ERROR',
+    });
+  }
+});
+
+// Circuit breaker status endpoint
+// Shows the state of all circuit breakers
+app.get('/health/circuit-breakers', (req, res) => {
+  try {
+    const stats = circuitBreakerManager.getAllStats();
+    const allClosed = stats.every(s => s.state === 'closed');
+
+    res.status(allClosed ? 200 : 503).json({
+      status: allClosed ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      circuitBreakers: stats,
+    });
+  } catch (error) {
+    searchLogger.error('Failed to get circuit breaker status', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+    });
+    res.status(500).json({
+      error: 'Failed to get circuit breaker status',
+      code: 'CIRCUIT_BREAKER_ERROR',
+    });
+  }
+});
+
+// API Documentation endpoints
+if (swaggerDocument) {
+  // Swagger UI configuration
+  const swaggerOptions = {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Search API Documentation',
+    customfavIcon: '/favicon.ico',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      tryItOutEnabled: true,
+    },
+  };
+
+  // Serve Swagger UI at /api-docs
+  app.use('/api-docs', swaggerUi.serve);
+  app.get('/api-docs', swaggerUi.setup(swaggerDocument, swaggerOptions));
+
+  // Serve raw OpenAPI spec at /api-docs/openapi.json
+  app.get('/api-docs/openapi.json', (req, res) => {
+    res.json(swaggerDocument);
+  });
+
+  // Serve raw OpenAPI spec at /api-docs/openapi.yaml
+  app.get('/api-docs/openapi.yaml', (req, res) => {
+    res.type('text/yaml');
+    res.send(YAML.stringify(swaggerDocument, 10, 2));
+  });
+
+  searchLogger.info('✅ API documentation endpoints configured', {
+    service: 'search-api',
+    swaggerUI: '/api-docs',
+    openAPIJson: '/api-docs/openapi.json',
+    openAPIYaml: '/api-docs/openapi.yaml',
+  });
+}
 
 /**
  * Validate vector index health on startup
@@ -455,7 +653,7 @@ function sanitizeQuery(query: string): string {
 }
 
 // Enhanced search endpoint with comprehensive security
-app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
+app.post('/search', searchLimiter, searchTimeout, validateSearchRequest, async (req, res) => {
   const startTime = Date.now();
   const searchReq = req as SearchRequest;
   const clientId = req.ip || req.socket.remoteAddress || 'unknown';
@@ -533,6 +731,9 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
       ...searchResult
     };
 
+    // Track search query metrics
+    metricsService.trackSearchQuery(executionTime / 1000, 'success');
+
     searchLogger.info('Search completed successfully', {
       service: 'search-api',
       correlationId,
@@ -557,6 +758,10 @@ app.post('/search', searchLimiter, validateSearchRequest, async (req, res) => {
     res.json(response);
   } catch (error) {
     const executionTime = Date.now() - startTime;
+
+    // Track search query error metrics
+    metricsService.trackSearchQuery(executionTime / 1000, 'error');
+    metricsService.trackError('search_error', 'high');
 
     // Enhanced error logging using search logger
     searchLogger.logSearchError(correlationId, error instanceof Error ? error : new Error('Unknown error'), {
@@ -598,11 +803,16 @@ async function startServer() {
   // Perform vector index validation before starting the server
   // await validateVectorIndexOnStartup();
 
-  app.listen(PORT, () => {
+  // Start the HTTP server and store reference
+  const server = app.listen(PORT, () => {
     searchLogger.info('🚀 Search API server started successfully', {
       service: 'search-api',
       port: PORT,
       healthEndpoint: `http://localhost:${PORT}/health`,
+      healthLiveEndpoint: `http://localhost:${PORT}/health/live`,
+      healthReadyEndpoint: `http://localhost:${PORT}/health/ready`,
+      metricsEndpoint: `http://localhost:${PORT}/metrics`,
+      apiDocsEndpoint: `http://localhost:${PORT}/api-docs`,
       searchEndpoint: `http://localhost:${PORT}/search`,
       environment: process.env.NODE_ENV || 'development'
     });
@@ -610,8 +820,71 @@ async function startServer() {
       service: 'search-api',
       serverUrl: `http://localhost:${PORT}`,
       healthUrl: `http://localhost:${PORT}/health`,
+      healthLiveUrl: `http://localhost:${PORT}/health/live`,
+      healthReadyUrl: `http://localhost:${PORT}/health/ready`,
+      metricsUrl: `http://localhost:${PORT}/metrics`,
+      apiDocsUrl: `http://localhost:${PORT}/api-docs`,
+      openAPIJsonUrl: `http://localhost:${PORT}/api-docs/openapi.json`,
+      openAPIYamlUrl: `http://localhost:${PORT}/api-docs/openapi.yaml`,
       searchUrl: `http://localhost:${PORT}/search`
     });
+  });
+
+  // Initialize health check service with database clients
+  const mongoClient = getMongoClient();
+  const qdrantClient = getQdrantClient();
+
+  if (mongoClient) {
+    healthCheckService.setMongoClient(mongoClient);
+    searchLogger.info('✅ MongoDB client registered with health check service', {
+      service: 'search-api',
+    });
+  } else {
+    searchLogger.warn('⚠️  MongoDB client not available for health checks', {
+      service: 'search-api',
+    });
+  }
+
+  if (qdrantClient) {
+    healthCheckService.setQdrantClient(qdrantClient);
+    searchLogger.info('✅ Qdrant client registered with health check service', {
+      service: 'search-api',
+    });
+  } else {
+    searchLogger.warn('⚠️  Qdrant client not available for health checks', {
+      service: 'search-api',
+    });
+  }
+
+  // Register server with graceful shutdown service
+  gracefulShutdown.registerServer(server);
+  if (mongoClient) {
+    gracefulShutdown.registerMongoClient(mongoClient);
+  }
+
+  // Setup graceful shutdown handlers
+  gracefulShutdown.setupHandlers({
+    timeout: 30000, // 30 seconds timeout
+    beforeShutdown: async () => {
+      searchLogger.info('🔄 Executing beforeShutdown tasks', {
+        service: 'search-api',
+      });
+      // Shutdown circuit breakers
+      await circuitBreakerManager.shutdown();
+    },
+    afterShutdown: async () => {
+      searchLogger.info('🔄 Executing afterShutdown tasks', {
+        service: 'search-api',
+      });
+      // Destroy HTTP connection pool agents
+      destroyHttpAgents();
+    },
+  });
+
+  searchLogger.info('✅ Graceful shutdown handlers configured', {
+    service: 'search-api',
+    timeout: '30s',
+    signals: ['SIGTERM', 'SIGINT'],
   });
 }
 

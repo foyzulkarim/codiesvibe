@@ -1,7 +1,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/test'],
+  roots: ['<rootDir>/src'],
   testMatch: [
     '**/__tests__/**/*.ts',
     '**/?(*.)+(spec|test).ts'
@@ -23,7 +23,7 @@ module.exports = {
     'html',
     'json'
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 65,
       functions: 75,
@@ -31,8 +31,8 @@ module.exports = {
       statements: 70
     }
   },
-  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
-  moduleNameMapping: {
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   moduleFileExtensions: ['ts', 'js', 'json'],

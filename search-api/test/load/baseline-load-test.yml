@@ -1,0 +1,93 @@
+# Artillery Load Test Configuration
+# Baseline Load Test: 100 requests per second for 5 minutes
+#
+# To run this test:
+# 1. Install Artillery: npm install -g artillery@latest
+# 2. Run test: artillery run test/load/baseline-load-test.yml
+# 3. Generate HTML report: artillery run --output report.json test/load/baseline-load-test.yml && artillery report report.json
+
+config:
+  target: "http://localhost:4003"
+  phases:
+    # Warm-up phase: gradually increase load
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm-up"
+
+    # Baseline load phase: sustained 100 req/s
+    - duration: 300
+      arrivalRate: 100
+      name: "Baseline Load"
+
+    # Cool-down phase: gradually decrease load
+    - duration: 60
+      arrivalRate: 10
+      name: "Cool-down"
+
+  # Test settings
+  timeout: 65
+  processor: "./test/load/functions.js"
+
+  # Metrics
+  ensure:
+    # Response time requirements
+    p95: 2000  # 95% of requests should complete within 2 seconds
+    p99: 5000  # 99% of requests should complete within 5 seconds
+
+    # Error rate requirement
+    maxErrorRate: 1  # Less than 1% error rate
+
+scenarios:
+  # Health check scenario (10% of requests)
+  - weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: status
+
+  # Liveness probe scenario (5% of requests)
+  - weight: 5
+    flow:
+      - get:
+          url: "/health/live"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+  # Readiness probe scenario (5% of requests)
+  - weight: 5
+    flow:
+      - get:
+          url: "/health/ready"
+          expect:
+            - statusCode: [200, 503]  # Allow degraded status
+            - contentType: json
+
+  # Metrics endpoint scenario (2% of requests)
+  - weight: 2
+    flow:
+      - get:
+          url: "/metrics"
+          expect:
+            - statusCode: 200
+
+  # Search scenario (78% of requests) - Main workload
+  - weight: 78
+    flow:
+      - post:
+          url: "/search"
+          json:
+            query: "{{ randomSearchQuery }}"
+            limit: "{{ randomLimit }}"
+          headers:
+            Content-Type: "application/json"
+            X-Correlation-ID: "load-test-{{ $randomString() }}"
+          expect:
+            - statusCode: [200, 408, 429]  # Allow timeouts and rate limits
+            - contentType: json
+          capture:
+            - json: "$.executionTime"
+              as: "executionTime"
