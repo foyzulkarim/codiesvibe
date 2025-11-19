@@ -1,0 +1,24 @@
+# Trivy Ignore File
+# This file contains security vulnerabilities that are intentionally ignored with justification
+
+# expr-eval vulnerabilities (2 HIGH severity issues)
+# CVE-2025-12735: expr-eval does not restrict functions passed to the evaluate function
+# CVE-2025-13204: expr-eval vulnerable to Prototype Pollution
+#
+# JUSTIFICATION FOR IGNORING:
+# - NO FIX AVAILABLE: Latest expr-eval version is 2.0.2 (the vulnerable version)
+# - TRANSITIVE DEPENDENCY: Comes from @langchain/community@^0.3.57
+# - CANNOT UPGRADE: Upgrading to @langchain/community@1.x requires @langchain/core@^1.0.0
+#   but we use @langchain/core@^0.3.78, causing breaking peer dependency conflicts
+# - NOT DIRECTLY USED: We don't use expr-eval directly in our code
+# - MITIGATION: The search-api doesn't expose user-controlled evaluation of expressions
+#
+# RESOLUTION PLAN:
+# - Monitor @langchain/community releases for expr-eval removal or safe alternative
+# - Upgrade entire LangChain ecosystem to 1.x when compatible
+# - Re-evaluate when expr-eval releases a patched version
+#
+# DATE ADDED: 2025-11-19
+# REVIEW DATE: 2026-01-01 (or when @langchain/core@1.x is stable)
+CVE-2025-12735
+CVE-2025-13204
