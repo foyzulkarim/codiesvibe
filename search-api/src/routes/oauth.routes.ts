@@ -50,6 +50,15 @@ function validateStateToken(token: string): boolean {
 router.get('/github', (req: Request, res: Response) => {
   const searchReq = req as SearchRequest;
 
+  // Check if GitHub OAuth is configured
+  if (!oauthService.isGitHubConfigured()) {
+    searchLogger.warn('GitHub OAuth attempted but not configured', {
+      service: 'oauth-routes',
+      correlationId: searchReq.correlationId,
+    });
+    return res.redirect(oauthService.getFrontendErrorUrl('GitHub login is not configured'));
+  }
+
   try {
     const state = generateStateToken();
     const authUrl = oauthService.getGitHubAuthUrl(state);
@@ -60,7 +69,7 @@ router.get('/github', (req: Request, res: Response) => {
     });
 
     res.redirect(authUrl);
-  } catch (error: any) {
+  } catch (error: unknown) {
     searchLogger.error('GitHub OAuth initiation failed', error, {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
@@ -118,7 +127,7 @@ router.get('/github/callback', async (req: Request, res: Response) => {
 
     // Redirect to frontend with tokens
     res.redirect(oauthService.getFrontendRedirectUrl(result.tokens, result.user));
-  } catch (error: any) {
+  } catch (error: unknown) {
     searchLogger.error('GitHub OAuth callback failed', error, {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
@@ -134,6 +143,15 @@ router.get('/github/callback', async (req: Request, res: Response) => {
 router.get('/google', (req: Request, res: Response) => {
   const searchReq = req as SearchRequest;
 
+  // Check if Google OAuth is configured
+  if (!oauthService.isGoogleConfigured()) {
+    searchLogger.warn('Google OAuth attempted but not configured', {
+      service: 'oauth-routes',
+      correlationId: searchReq.correlationId,
+    });
+    return res.redirect(oauthService.getFrontendErrorUrl('Google login is not configured'));
+  }
+
   try {
     const state = generateStateToken();
     const authUrl = oauthService.getGoogleAuthUrl(state);
@@ -144,7 +162,7 @@ router.get('/google', (req: Request, res: Response) => {
     });
 
     res.redirect(authUrl);
-  } catch (error: any) {
+  } catch (error: unknown) {
     searchLogger.error('Google OAuth initiation failed', error, {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
@@ -202,7 +220,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     // Redirect to frontend with tokens
     res.redirect(oauthService.getFrontendRedirectUrl(result.tokens, result.user));
-  } catch (error: any) {
+  } catch (error: unknown) {
     searchLogger.error('Google OAuth callback failed', error, {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
@@ -211,5 +229,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     res.redirect(oauthService.getFrontendErrorUrl('Authentication failed'));
   }
 });
+
+// Validate OAuth configuration on load
+oauthService.validateConfiguration();
 
 export default router;

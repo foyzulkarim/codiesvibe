@@ -70,6 +70,64 @@ function toUserResponse(user: IUser): UserResponse {
 }
 
 class OAuthService {
+  private configWarningsLogged = false;
+
+  /**
+   * Check if GitHub OAuth is properly configured
+   */
+  isGitHubConfigured(): boolean {
+    const config = getOAuthConfig().github;
+    return !!(config.clientId && config.clientSecret);
+  }
+
+  /**
+   * Check if Google OAuth is properly configured
+   */
+  isGoogleConfigured(): boolean {
+    const config = getOAuthConfig().google;
+    return !!(config.clientId && config.clientSecret);
+  }
+
+  /**
+   * Validate OAuth configuration and log warnings
+   */
+  validateConfiguration(): void {
+    if (this.configWarningsLogged) return;
+    this.configWarningsLogged = true;
+
+    const config = getOAuthConfig();
+
+    // Check GitHub configuration
+    if (config.github.clientId && !config.github.clientSecret) {
+      searchLogger.warn('GitHub OAuth partially configured - missing GITHUB_CLIENT_SECRET', {
+        service: 'oauth-service',
+      });
+    } else if (!config.github.clientId && config.github.clientSecret) {
+      searchLogger.warn('GitHub OAuth partially configured - missing GITHUB_CLIENT_ID', {
+        service: 'oauth-service',
+      });
+    } else if (!config.github.clientId && !config.github.clientSecret) {
+      searchLogger.info('GitHub OAuth not configured - OAuth login disabled for GitHub', {
+        service: 'oauth-service',
+      });
+    }
+
+    // Check Google configuration
+    if (config.google.clientId && !config.google.clientSecret) {
+      searchLogger.warn('Google OAuth partially configured - missing GOOGLE_CLIENT_SECRET', {
+        service: 'oauth-service',
+      });
+    } else if (!config.google.clientId && config.google.clientSecret) {
+      searchLogger.warn('Google OAuth partially configured - missing GOOGLE_CLIENT_ID', {
+        service: 'oauth-service',
+      });
+    } else if (!config.google.clientId && !config.google.clientSecret) {
+      searchLogger.info('Google OAuth not configured - OAuth login disabled for Google', {
+        service: 'oauth-service',
+      });
+    }
+  }
+
   /**
    * Get GitHub authorization URL
    */
