@@ -51,9 +51,10 @@ const OAuthCallback: React.FC = () => {
         setTimeout(() => {
           navigate('/admin/tools', { replace: true });
         }, 1500);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setStatus('error');
-        setErrorMessage(err.message || 'Failed to complete authentication');
+        const error = err as { message?: string };
+        setErrorMessage(error.message || 'Failed to complete authentication');
       }
     };
 

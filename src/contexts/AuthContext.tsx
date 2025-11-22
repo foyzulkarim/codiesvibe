@@ -145,8 +145,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userData);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -168,8 +169,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userData);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -196,8 +198,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userData);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      const errorMessage = err.message || 'OAuth login failed';
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      const errorMessage = error.message || 'OAuth login failed';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -238,7 +241,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       tokenStorage.setTokens(response.data);
       setAuthHeader(response.data.accessToken);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Refresh failed, logout user
       tokenStorage.clear();
       setAuthHeader(null);

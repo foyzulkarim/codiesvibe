@@ -72,8 +72,9 @@ const Register: React.FC = () => {
     try {
       await register({ name: name.trim(), email: email.trim(), password });
       navigate('/admin/tools', { replace: true });
-    } catch (err: any) {
-      setLocalError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setLocalError(error.message || 'Registration failed');
     }
   };
 

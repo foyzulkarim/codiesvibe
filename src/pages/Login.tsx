@@ -59,9 +59,10 @@ const Login: React.FC = () => {
       await login({ email: email.trim(), password });
       // Redirect to the page they tried to visit or default
       navigate(from, { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Error is already set in context
-      setLocalError(err.message || 'Login failed');
+      const error = err as { message?: string };
+      setLocalError(error.message || 'Login failed');
     }
   };
 
