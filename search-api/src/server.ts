@@ -22,6 +22,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
 import { threadManager } from "./utils/thread-manager";
 
+// Import tools routes for CRUD operations
+import toolsRoutes from "./routes/tools.routes";
+
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service";
 import { gracefulShutdown } from "./services/graceful-shutdown.service";
@@ -199,7 +202,7 @@ const configureCORS = () => {
   const corsOptions: any = {
     origin: getAllowedOrigins(),
     credentials: false, // No credentials for this API
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400, // 24 hours
     preflightContinue: false,
@@ -642,6 +645,13 @@ async function validateVectorIndexOnStartup(): Promise<void> {
   }
 }
 
+
+// Mount tools CRUD routes
+app.use('/api/tools', toolsRoutes);
+searchLogger.info('Tools CRUD routes mounted at /api/tools', {
+  service: 'search-api',
+  endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools', 'PATCH /api/tools/:id', 'DELETE /api/tools/:id', 'GET /api/tools/vocabularies'],
+});
 
 // Enhanced query sanitization function
 function sanitizeQuery(query: string): string {
