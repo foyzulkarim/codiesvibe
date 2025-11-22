@@ -4,6 +4,7 @@ import { CreateToolSchema, UpdateToolSchema, GetToolsQuerySchema } from '../sche
 import { searchLogger } from '../config/logger';
 import { SearchRequest } from '../middleware/correlation.middleware';
 import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+import { authenticateJWT, AuthenticatedRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -145,10 +146,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/tools - Create a new tool
+ * POST /api/tools - Create a new tool (protected)
  */
-router.post('/', validateBody(CreateToolSchema), async (req: Request, res: Response) => {
-  const searchReq = req as SearchRequest;
+router.post('/', authenticateJWT, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
   const startTime = Date.now();
 
   try {
@@ -166,9 +167,10 @@ router.post('/', validateBody(CreateToolSchema), async (req: Request, res: Respo
 
     searchLogger.info('Tool created', {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       toolId: tool.id,
       toolName: tool.name,
+      userId: authReq.user?.userId,
       executionTimeMs: Date.now() - startTime,
     });
 
@@ -176,7 +178,7 @@ router.post('/', validateBody(CreateToolSchema), async (req: Request, res: Respo
   } catch (error: any) {
     searchLogger.error('Failed to create tool', error instanceof Error ? error : new Error('Unknown error'), {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       body: req.body,
     });
 
@@ -212,10 +214,10 @@ router.post('/', validateBody(CreateToolSchema), async (req: Request, res: Respo
 });
 
 /**
- * PATCH /api/tools/:id - Update a tool
+ * PATCH /api/tools/:id - Update a tool (protected)
  */
-router.patch('/:id', validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
-  const searchReq = req as SearchRequest;
+router.patch('/:id', authenticateJWT, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
   const { id } = req.params;
 
   try {
@@ -230,15 +232,16 @@ router.patch('/:id', validateBody(UpdateToolSchema), async (req: Request, res: R
 
     searchLogger.info('Tool updated', {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       toolId: id,
+      userId: authReq.user?.userId,
     });
 
     res.json(tool);
   } catch (error: any) {
     searchLogger.error('Failed to update tool', error instanceof Error ? error : new Error('Unknown error'), {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       toolId: id,
     });
 
@@ -264,10 +267,10 @@ router.patch('/:id', validateBody(UpdateToolSchema), async (req: Request, res: R
 });
 
 /**
- * DELETE /api/tools/:id - Delete a tool
+ * DELETE /api/tools/:id - Delete a tool (protected)
  */
-router.delete('/:id', async (req: Request, res: Response) => {
-  const searchReq = req as SearchRequest;
+router.delete('/:id', authenticateJWT, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
   const { id } = req.params;
 
   try {
@@ -282,15 +285,16 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     searchLogger.info('Tool deleted', {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       toolId: id,
+      userId: authReq.user?.userId,
     });
 
     res.status(204).send();
   } catch (error) {
     searchLogger.error('Failed to delete tool', error instanceof Error ? error : new Error('Unknown error'), {
       service: 'tools-api',
-      correlationId: searchReq.correlationId,
+      correlationId: authReq.correlationId,
       toolId: id,
     });
 
