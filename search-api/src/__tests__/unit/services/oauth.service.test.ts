@@ -138,7 +138,7 @@ describe('OAuthService', () => {
 
       const url = oauthService.getFrontendRedirectUrl(tokens, user);
 
-      expect(url).toContain('http://localhost:3000/oauth/callback');
+      expect(url).toContain('http://localhost:3000/auth/callback');
       expect(url).toContain('accessToken=test-access-token');
       expect(url).toContain('refreshToken=test-refresh-token');
       expect(url).toContain('userId=test-user-id');
@@ -153,7 +153,7 @@ describe('OAuthService', () => {
 
       const url = oauthService.getFrontendErrorUrl('Authentication failed');
 
-      expect(url).toContain('http://localhost:3000/oauth/callback');
+      expect(url).toContain('http://localhost:3000/auth/callback');
       expect(url).toContain('error=Authentication+failed');
     });
 

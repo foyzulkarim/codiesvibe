@@ -417,7 +417,7 @@ class OAuthService {
       userEmail: user.email,
       userRole: user.role,
     });
-    return `${config.frontendUrl}/oauth/callback?${params.toString()}`;
+    return `${config.frontendUrl}/auth/callback?${params.toString()}`;
   }
 
   /**
@@ -428,7 +428,7 @@ class OAuthService {
     const params = new URLSearchParams({
       error,
     });
-    return `${config.frontendUrl}/oauth/callback?${params.toString()}`;
+    return `${config.frontendUrl}/auth/callback?${params.toString()}`;
   }
 }
 
