@@ -75,6 +75,7 @@
     "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
     "mongodb": "^6.17.0",
+    "mongoose": "^8.8.0",
     "ollama": "^0.5.9",
     "onnxruntime-node": "^1.23.0",
     "opossum": "^9.0.0",

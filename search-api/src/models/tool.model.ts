@@ -1,0 +1,273 @@
+import mongoose, { Schema, Document } from 'mongoose';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+
+// Pricing subdocument interface
+export interface IPricing {
+  tier: string;
+  billingPeriod: string;
+  price: number;
+}
+
+// Tool document interface
+export interface ITool extends Document {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  longDescription?: string;
+  tagline?: string;
+  categories: string[];
+  industries: string[];
+  userTypes: string[];
+  pricing: IPricing[];
+  pricingModel: 'Free' | 'Freemium' | 'Paid';
+  pricingUrl?: string;
+  interface: string[];
+  functionality: string[];
+  deployment: string[];
+  logoUrl?: string;
+  website?: string;
+  documentation?: string;
+  status: 'active' | 'beta' | 'deprecated' | 'discontinued';
+  contributor: string;
+  dateAdded: Date;
+  lastUpdated?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Pricing subdocument schema
+const PricingSchema = new Schema<IPricing>(
+  {
+    tier: {
+      type: String,
+      required: true,
+    },
+    billingPeriod: {
+      type: String,
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.billingPeriods,
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+// Tool schema
+const ToolSchema = new Schema<ITool>(
+  {
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      minlength: 1,
+      maxlength: 100,
+      trim: true,
+      match: /^[a-z0-9-]+$/,
+    },
+    name: {
+      type: String,
+      required: true,
+      minlength: 1,
+      maxlength: 100,
+      trim: true,
+    },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      minlength: 1,
+      maxlength: 100,
+      trim: true,
+      match: /^[a-z0-9-]+$/,
+    },
+    description: {
+      type: String,
+      required: true,
+      minlength: 10,
+      maxlength: 200,
+      trim: true,
+    },
+    longDescription: {
+      type: String,
+      minlength: 50,
+      maxlength: 2000,
+      trim: true,
+    },
+    tagline: {
+      type: String,
+      maxlength: 100,
+      trim: true,
+    },
+    categories: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.categories,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.categories.includes(item)),
+        message: 'categories must have at least 1 entry from the valid categories list',
+      },
+    },
+    industries: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.industries,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.industries.includes(item)),
+        message: 'industries must have at least 1 entry from the valid industries list',
+      },
+    },
+    userTypes: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.userTypes,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.userTypes.includes(item)),
+        message: 'userTypes must have at least 1 entry from the valid userTypes list',
+      },
+    },
+    pricing: {
+      type: [PricingSchema],
+      required: true,
+      validate: {
+        validator: (v: IPricing[]) => v.length >= 1,
+        message: 'pricing must have at least 1 tier',
+      },
+    },
+    pricingModel: {
+      type: String,
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.pricingModels,
+    },
+    pricingUrl: {
+      type: String,
+      validate: {
+        validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
+        message: 'pricingUrl must be a valid URL',
+      },
+    },
+    interface: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.interface,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.interface.includes(item)),
+        message: 'interface must have at least 1 entry from the valid interface list',
+      },
+    },
+    functionality: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.functionality,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.functionality.includes(item)),
+        message: 'functionality must have at least 1 entry from the valid functionality list',
+      },
+    },
+    deployment: {
+      type: [String],
+      required: true,
+      enum: CONTROLLED_VOCABULARIES.deployment,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.deployment.includes(item)),
+        message: 'deployment must have at least 1 entry from the valid deployment list',
+      },
+    },
+    logoUrl: {
+      type: String,
+      validate: {
+        validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
+        message: 'logoUrl must be a valid URL',
+      },
+    },
+    website: {
+      type: String,
+      validate: {
+        validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
+        message: 'website must be a valid URL',
+      },
+    },
+    documentation: {
+      type: String,
+      validate: {
+        validator: (v: string) => !v || /^https?:\/\/.+/.test(v),
+        message: 'documentation must be a valid URL',
+      },
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ['active', 'beta', 'deprecated', 'discontinued'],
+      default: 'active',
+    },
+    contributor: {
+      type: String,
+      required: true,
+      default: 'system',
+    },
+    dateAdded: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+    collection: 'tools',
+  }
+);
+
+// Pre-save middleware
+ToolSchema.pre('save', function (next) {
+  // Auto-generate slug from id if not provided
+  if (!this.slug && this.id) {
+    this.slug = this.id;
+  }
+  // Update lastUpdated timestamp
+  this.lastUpdated = new Date();
+  next();
+});
+
+// Indexes
+ToolSchema.index({ id: 1 }, { unique: true, name: 'tool_id_index' });
+ToolSchema.index({ slug: 1 }, { unique: true, name: 'tool_slug_index' });
+ToolSchema.index({ status: 1 }, { name: 'tool_status_index' });
+ToolSchema.index({ categories: 1 }, { name: 'tool_categories_index' });
+ToolSchema.index({ industries: 1 }, { name: 'tool_industries_index' });
+ToolSchema.index({ userTypes: 1 }, { name: 'tool_user_types_index' });
+ToolSchema.index(
+  {
+    name: 'text',
+    description: 'text',
+    longDescription: 'text',
+    tagline: 'text',
+  },
+  {
+    name: 'tool_v2_search_index',
+    weights: {
+      name: 15,
+      tagline: 12,
+      description: 8,
+    },
+  }
+);
+ToolSchema.index({ dateAdded: -1 }, { name: 'tool_date_added_index' });
+ToolSchema.index({ functionality: 1 }, { name: 'tool_functionality_index' });
+ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' });
+
+// Export the model
+export const Tool = mongoose.model<ITool>('Tool', ToolSchema);

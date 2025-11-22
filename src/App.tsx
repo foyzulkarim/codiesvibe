@@ -9,6 +9,8 @@ import { apiConfig, validateApiConfig } from "@/config/api";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ToolsList from "./pages/admin/ToolsList";
+import ToolCreate from "./pages/admin/ToolCreate";
 
 // Validate API configuration on app startup
 validateApiConfig();
@@ -22,6 +24,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            {/* Admin routes */}
+            <Route path="/admin/tools" element={<ToolsList />} />
+            <Route path="/admin/tools/new" element={<ToolCreate />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
