@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { SearchBar } from "@/components/SearchBar";
 import { ToolGrid } from "@/components/ToolGrid";
 import { SortSelector } from "@/components/SortSelector";
@@ -8,11 +9,12 @@ import ResultsCounter from "@/components/ResultsCounter";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { SearchReasoning } from "@/components/SearchReasoning";
 import { Button } from "@/components/ui/button";
-import { LogIn, UserPlus, Sparkles, Zap, Github } from "lucide-react";
+import { LogIn, UserPlus, Sparkles, Zap, Github, LogOut, Settings } from "lucide-react";
 import { useTools } from "@/hooks/api/useTools";
 import { FilterState } from "@/api/types";
 import { AITool, aiTools } from "@/data/tools";
 import { SORT_OPTIONS } from "@/lib/config";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Index() {
   const [inputValue, setInputValue] = useState("");
@@ -21,6 +23,8 @@ export default function Index() {
   const [sortBy, setSortBy] = useState<string>("name");
   const [comparisonTools, setComparisonTools] = useState<AITool[]>([]);
   const [savedTools, setSavedTools] = useState<Set<string>>(new Set());
+
+  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuth();
 
   // Use the API hook for data fetching
   const { data: tools, reasoning, isLoading, isError, error } = useTools(
@@ -84,15 +88,55 @@ export default function Index() {
               <Sparkles className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold">CodiesVibe</h1>
             </div>
-            <a
-              href="https://github.com/foyzulkarim/codiesvibe"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-              title="View on GitHub - This project is open source"
-            >
-              <Github className="h-6 w-6" />
-            </a>
+            <div className="flex items-center space-x-4">
+              <a
+                href="https://github.com/foyzulkarim/codiesvibe"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
+                title="View on GitHub - This project is open source"
+              >
+                <Github className="h-6 w-6" />
+              </a>
+
+              {/* Auth Controls */}
+              {!authLoading && (
+                <>
+                  {isAuthenticated ? (
+                    <div className="flex items-center space-x-3">
+                      <Link to="/admin/tools">
+                        <Button variant="ghost" size="sm">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Admin
+                        </Button>
+                      </Link>
+                      <span className="text-sm text-muted-foreground hidden sm:inline">
+                        {user?.name}
+                      </span>
+                      <Button variant="outline" size="sm" onClick={() => logout()}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Link to="/login">
+                        <Button variant="ghost" size="sm">
+                          <LogIn className="h-4 w-4 mr-2" />
+                          Login
+                        </Button>
+                      </Link>
+                      <Link to="/register">
+                        <Button size="sm">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Sign Up
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

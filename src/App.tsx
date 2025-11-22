@@ -7,8 +7,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { queryClient, reactQueryDevtoolsConfig } from "@/config/query-client";
 import { apiConfig, validateApiConfig } from "@/config/api";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ToolsList from "./pages/admin/ToolsList";
 import ToolCreate from "./pages/admin/ToolCreate";
 
@@ -18,20 +22,41 @@ validateApiConfig();
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            {/* Admin routes */}
-            <Route path="/admin/tools" element={<ToolsList />} />
-            <Route path="/admin/tools/new" element={<ToolCreate />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              {/* Protected admin routes */}
+              <Route
+                path="/admin/tools"
+                element={
+                  <ProtectedRoute>
+                    <ToolsList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/tools/new"
+                element={
+                  <ProtectedRoute>
+                    <ToolCreate />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
 
       {/* React Query DevTools - Only in development */}
       {apiConfig.features.enableDevtools && (

@@ -25,6 +25,9 @@ import { threadManager } from "./utils/thread-manager";
 // Import tools routes for CRUD operations
 import toolsRoutes from "./routes/tools.routes";
 
+// Import auth routes for authentication
+import authRoutes from "./routes/auth.routes";
+
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service";
 import { gracefulShutdown } from "./services/graceful-shutdown.service";
@@ -646,11 +649,18 @@ async function validateVectorIndexOnStartup(): Promise<void> {
 }
 
 
+// Mount auth routes
+app.use('/api/auth', authRoutes);
+searchLogger.info('Auth routes mounted at /api/auth', {
+  service: 'search-api',
+  endpoints: ['POST /api/auth/register', 'POST /api/auth/login', 'POST /api/auth/logout', 'GET /api/auth/me', 'POST /api/auth/refresh', 'PATCH /api/auth/profile', 'POST /api/auth/change-password'],
+});
+
 // Mount tools CRUD routes
 app.use('/api/tools', toolsRoutes);
 searchLogger.info('Tools CRUD routes mounted at /api/tools', {
   service: 'search-api',
-  endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools', 'PATCH /api/tools/:id', 'DELETE /api/tools/:id', 'GET /api/tools/vocabularies'],
+  endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools (protected)', 'PATCH /api/tools/:id (protected)', 'DELETE /api/tools/:id (protected)', 'GET /api/tools/vocabularies'],
 });
 
 // Enhanced query sanitization function

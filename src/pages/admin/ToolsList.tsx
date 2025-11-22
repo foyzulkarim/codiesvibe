@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToolsAdmin, useDeleteTool, Tool, ToolsQueryParams } from '@/hooks/api/useToolsAdmin';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,10 +40,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, User } from 'lucide-react';
 
 export default function ToolsList() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [params, setParams] = useState<ToolsQueryParams>({
     page: 1,
     limit: 20,
@@ -134,11 +136,22 @@ export default function ToolsList() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Home
         </Link>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>{user?.name}</span>
+            <Badge variant="secondary" className="text-xs">{user?.role}</Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => logout()}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Card>
