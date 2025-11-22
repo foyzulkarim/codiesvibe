@@ -6,6 +6,7 @@ import {
   TokenResponse,
   LoginCredentials,
   RegisterCredentials,
+  OAuthLoginData,
   AuthContextType,
 } from '@/types/auth';
 
@@ -176,6 +177,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // OAuth login function (for handling OAuth callback)
+  const loginWithOAuth = useCallback(async (data: OAuthLoginData): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { accessToken, refreshToken, user: userData } = data;
+
+      // Store tokens
+      tokenStorage.setTokens({
+        accessToken,
+        refreshToken,
+        expiresIn: 86400, // 24 hours
+        tokenType: 'Bearer',
+      });
+      tokenStorage.setUser(userData);
+      setAuthHeader(accessToken);
+
+      setUser(userData);
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      const errorMessage = err.message || 'OAuth login failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Logout function
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -231,6 +260,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     login,
     register,
+    loginWithOAuth,
     logout,
     refreshToken,
     clearError,

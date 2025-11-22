@@ -1,5 +1,7 @@
 // Auth-related TypeScript types for the frontend
 
+export type OAuthProvider = 'github' | 'google' | 'local';
+
 export interface User {
   id: string;
   email: string;
@@ -9,6 +11,8 @@ export interface User {
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
+  oauthProvider?: OAuthProvider;
+  avatarUrl?: string;
 }
 
 export interface TokenResponse {
@@ -34,6 +38,12 @@ export interface RegisterCredentials {
   name: string;
 }
 
+export interface OAuthLoginData {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -44,6 +54,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
+  loginWithOAuth: (data: OAuthLoginData) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
   clearError: () => void;

@@ -28,6 +28,9 @@ import toolsRoutes from "./routes/tools.routes";
 // Import auth routes for authentication
 import authRoutes from "./routes/auth.routes";
 
+// Import OAuth routes for social login
+import oauthRoutes from "./routes/oauth.routes";
+
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service";
 import { gracefulShutdown } from "./services/graceful-shutdown.service";
@@ -654,6 +657,13 @@ app.use('/api/auth', authRoutes);
 searchLogger.info('Auth routes mounted at /api/auth', {
   service: 'search-api',
   endpoints: ['POST /api/auth/register', 'POST /api/auth/login', 'POST /api/auth/logout', 'GET /api/auth/me', 'POST /api/auth/refresh', 'PATCH /api/auth/profile', 'POST /api/auth/change-password'],
+});
+
+// Mount OAuth routes
+app.use('/api/auth/oauth', oauthRoutes);
+searchLogger.info('OAuth routes mounted at /api/auth/oauth', {
+  service: 'search-api',
+  endpoints: ['GET /api/auth/oauth/github', 'GET /api/auth/oauth/github/callback', 'GET /api/auth/oauth/google', 'GET /api/auth/oauth/google/callback'],
 });
 
 // Mount tools CRUD routes
