@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, Link } from 'react-router-dom';
 import { ToolFormSchema, ToolFormValues, defaultToolFormValues, CONTROLLED_VOCABULARIES } from '@/schemas/tool-form.schema';
@@ -11,6 +11,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
+
+// Type for array fields that can be toggled
+type ArrayFieldKeys = 'categories' | 'industries' | 'userTypes' | 'interface' | 'functionality' | 'deployment';
 
 export default function ToolCreate() {
   const navigate = useNavigate();
@@ -58,13 +61,13 @@ export default function ToolCreate() {
     }
   };
 
-  // Multi-select handler
-  const toggleArrayValue = (field: keyof ToolFormValues, value: string) => {
-    const currentValues = form.getValues(field) as string[];
+  // Multi-select handler for array fields
+  const toggleArrayValue = (field: ArrayFieldKeys, value: string) => {
+    const currentValues = form.getValues(field);
     const newValues = currentValues.includes(value)
       ? currentValues.filter((v) => v !== value)
       : [...currentValues, value];
-    form.setValue(field, newValues as any, { shouldValidate: true });
+    form.setValue(field, newValues, { shouldValidate: true });
   };
 
   return (
