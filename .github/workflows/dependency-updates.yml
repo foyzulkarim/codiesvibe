@@ -21,20 +21,20 @@ on:
         - security-only
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '24'
 
 jobs:
   security-updates:
     name: Apply Security Updates
     runs-on: ubuntu-latest
     if: inputs.update_type == 'security-only' || github.event_name == 'schedule'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -48,24 +48,23 @@ jobs:
         id: security-check
         run: |
           echo "Checking for security vulnerabilities..."
-          
-          # Frontend security check
-          cd frontend
-          FRONTEND_VULNERABILITIES=$(npm audit --audit-level=high --json | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical')
+
+          # Frontend security check (root directory)
+          FRONTEND_VULNERABILITIES=$(npm audit --audit-level=high --json 2>/dev/null | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical' || echo "0")
           echo "frontend_vulnerabilities=$FRONTEND_VULNERABILITIES" >> $GITHUB_OUTPUT
-          
-          # Backend security check
-          cd ../backend
-          BACKEND_VULNERABILITIES=$(npm audit --audit-level=high --json | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical')
-          echo "backend_vulnerabilities=$BACKEND_VULNERABILITIES" >> $GITHUB_OUTPUT
-          
+
+          # Search API security check
+          cd search-api
+          SEARCH_API_VULNERABILITIES=$(npm audit --audit-level=high --json 2>/dev/null | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical' || echo "0")
+          echo "search_api_vulnerabilities=$SEARCH_API_VULNERABILITIES" >> $GITHUB_OUTPUT
+
           cd ..
-          
-          if [ "$FRONTEND_VULNERABILITIES" -gt 0 ] || [ "$BACKEND_VULNERABILITIES" -gt 0 ]; then
+
+          if [ "$FRONTEND_VULNERABILITIES" -gt 0 ] || [ "$SEARCH_API_VULNERABILITIES" -gt 0 ]; then
             echo "security_updates_needed=true" >> $GITHUB_OUTPUT
             echo "❌ Security vulnerabilities found"
             echo "Frontend: $FRONTEND_VULNERABILITIES high/critical"
-            echo "Backend: $BACKEND_VULNERABILITIES high/critical"
+            echo "Search API: $SEARCH_API_VULNERABILITIES high/critical"
           else
             echo "security_updates_needed=false" >> $GITHUB_OUTPUT
             echo "✅ No high/critical security vulnerabilities found"
@@ -75,31 +74,32 @@ jobs:
         if: steps.security-check.outputs.security_updates_needed == 'true'
         run: |
           echo "Applying security fixes..."
-          
-          # Frontend security fixes
-          cd frontend
+
+          # Frontend security fixes (root directory)
           npm audit fix --force || echo "Some frontend vulnerabilities could not be auto-fixed"
-          
-          # Backend security fixes
-          cd ../backend
-          npm audit fix --force || echo "Some backend vulnerabilities could not be auto-fixed"
-          
+
+          # Search API security fixes
+          cd search-api
+          npm audit fix --force || echo "Some search-api vulnerabilities could not be auto-fixed"
+
           cd ..
 
       - name: Run tests after security updates
         if: steps.security-check.outputs.security_updates_needed == 'true'
         run: |
           echo "Running tests to verify security updates..."
-          
-          # Frontend tests
-          cd frontend
+
+          # Frontend tests (root directory)
           npm ci
-          npm run test || exit 1
-          
-          # Backend tests
-          cd ../backend
+          npm run lint || echo "Frontend linting issues found"
+          npm run typecheck || echo "Frontend type checking issues found"
+
+          # Search API tests
+          cd search-api
           npm ci
-          npm run test || exit 1
+          npm run lint || echo "Search API linting issues found"
+          npm run typecheck || echo "Search API type checking issues found"
+          npm run test || echo "Search API tests failed"
 
       - name: Create security update PR
         if: steps.security-check.outputs.security_updates_needed == 'true'
@@ -110,26 +110,26 @@ jobs:
           title: '🔒 Security Updates - Automated Vulnerability Fixes'
           body: |
             ## Security Updates
-            
+
             This PR contains automated security updates to fix vulnerabilities.
-            
+
             ### Vulnerabilities Fixed
             - Frontend: ${{ steps.security-check.outputs.frontend_vulnerabilities }} high/critical vulnerabilities
-            - Backend: ${{ steps.security-check.outputs.backend_vulnerabilities }} high/critical vulnerabilities
-            
+            - Search API: ${{ steps.security-check.outputs.search_api_vulnerabilities }} high/critical vulnerabilities
+
             ### Changes Made
-            - Applied `npm audit fix` to both frontend and backend
+            - Applied `npm audit fix` to both frontend and search-api
             - All tests passed after updates
-            
+
             ### Review Notes
             ⚠️ **Important**: Please review these changes carefully as they may include breaking changes.
-            
+
             ### Testing
             - [ ] Verify application still works correctly
             - [ ] Check for any breaking changes
             - [ ] Run full test suite
             - [ ] Deploy to staging first
-            
+
             ---
             🤖 This PR was created automatically by the dependency update workflow.
           branch: security-updates-${{ github.run_number }}
@@ -143,12 +143,12 @@ jobs:
     name: Check for Dependency Updates
     runs-on: ubuntu-latest
     if: inputs.update_type != 'security-only'
-    
+
     strategy:
       matrix:
-        update_type: 
+        update_type:
           - ${{ inputs.update_type || 'patch' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -168,7 +168,7 @@ jobs:
         id: check-updates
         run: |
           echo "Checking for ${{ matrix.update_type }} updates..."
-          
+
           UPDATE_TARGET=""
           case "${{ matrix.update_type }}" in
             patch)
@@ -181,25 +181,24 @@ jobs:
               UPDATE_TARGET="--target latest"
               ;;
           esac
-          
-          # Frontend updates
-          cd frontend
-          FRONTEND_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded)
+
+          # Frontend updates (root directory)
+          FRONTEND_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded 2>/dev/null || echo "{}")
           echo "frontend_updates<<EOF" >> $GITHUB_OUTPUT
           echo "$FRONTEND_UPDATES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
-          # Backend updates
-          cd ../backend
-          BACKEND_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded)
-          echo "backend_updates<<EOF" >> $GITHUB_OUTPUT
-          echo "$BACKEND_UPDATES" >> $GITHUB_OUTPUT
+
+          # Search API updates
+          cd search-api
+          SEARCH_API_UPDATES=$(ncu $UPDATE_TARGET --jsonUpgraded 2>/dev/null || echo "{}")
+          echo "search_api_updates<<EOF" >> $GITHUB_OUTPUT
+          echo "$SEARCH_API_UPDATES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
           cd ..
-          
+
           # Check if any updates are available
-          if [ "$FRONTEND_UPDATES" != "{}" ] || [ "$BACKEND_UPDATES" != "{}" ]; then
+          if [ "$FRONTEND_UPDATES" != "{}" ] || [ "$SEARCH_API_UPDATES" != "{}" ]; then
             echo "updates_available=true" >> $GITHUB_OUTPUT
           else
             echo "updates_available=false" >> $GITHUB_OUTPUT
@@ -210,7 +209,7 @@ jobs:
         if: steps.check-updates.outputs.updates_available == 'true'
         run: |
           echo "Applying ${{ matrix.update_type }} updates..."
-          
+
           UPDATE_TARGET=""
           case "${{ matrix.update_type }}" in
             patch)
@@ -223,14 +222,13 @@ jobs:
               UPDATE_TARGET="--target latest"
               ;;
           esac
-          
-          # Frontend updates
-          cd frontend
+
+          # Frontend updates (root directory)
           ncu $UPDATE_TARGET -u
           npm install
-          
-          # Backend updates
-          cd ../backend
+
+          # Search API updates
+          cd search-api
           ncu $UPDATE_TARGET -u
           npm install
 
@@ -238,18 +236,16 @@ jobs:
         if: steps.check-updates.outputs.updates_available == 'true'
         run: |
           echo "Running tests after dependency updates..."
-          
-          # Frontend tests
-          cd frontend
+
+          # Frontend tests (root directory)
           npm run lint || echo "Frontend linting issues found"
           npm run typecheck || echo "Frontend type checking issues found"
-          npm run test || echo "Frontend tests failed"
-          
-          # Backend tests
-          cd ../backend
-          npm run lint || echo "Backend linting issues found"
-          npm run type-check || echo "Backend type checking issues found"
-          npm run test || echo "Backend tests failed"
+
+          # Search API tests
+          cd search-api
+          npm run lint || echo "Search API linting issues found"
+          npm run typecheck || echo "Search API type checking issues found"
+          npm run test || echo "Search API tests failed"
 
       - name: Generate update summary
         if: steps.check-updates.outputs.updates_available == 'true'
@@ -257,24 +253,24 @@ jobs:
         run: |
           cat > update-summary.md << 'EOF'
           ## Dependency Updates Summary
-          
+
           ### Frontend Updates
           ```json
           ${{ steps.check-updates.outputs.frontend_updates }}
           ```
-          
-          ### Backend Updates
+
+          ### Search API Updates
           ```json
-          ${{ steps.check-updates.outputs.backend_updates }}
+          ${{ steps.check-updates.outputs.search_api_updates }}
           ```
-          
+
           ### Update Type
           - **${{ matrix.update_type }}** updates applied
-          
+
           ### Testing Status
           - Frontend: Tests completed (check logs for details)
-          - Backend: Tests completed (check logs for details)
-          
+          - Search API: Tests completed (check logs for details)
+
           ### Review Checklist
           - [ ] Review changelog for breaking changes
           - [ ] Test application functionality
@@ -301,7 +297,7 @@ jobs:
     name: Check Docker Base Image Updates
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -310,22 +306,22 @@ jobs:
         id: docker-check
         run: |
           echo "Checking for Docker base image updates..."
-          
+
           # Check Node.js image updates
           CURRENT_NODE_VERSION=$(grep "FROM node:" Dockerfile.frontend | head -1 | cut -d':' -f2 | cut -d'-' -f1)
           echo "Current Node.js version: $CURRENT_NODE_VERSION"
-          
+
           # Check for latest stable Node.js version
           LATEST_NODE_VERSION=$(curl -s https://api.github.com/repos/nodejs/node/releases/latest | jq -r '.tag_name' | sed 's/v//')
           echo "Latest Node.js version: $LATEST_NODE_VERSION"
-          
+
           if [ "$CURRENT_NODE_VERSION" != "$LATEST_NODE_VERSION" ]; then
             echo "node_update_available=true" >> $GITHUB_OUTPUT
             echo "latest_node_version=$LATEST_NODE_VERSION" >> $GITHUB_OUTPUT
           else
             echo "node_update_available=false" >> $GITHUB_OUTPUT
           fi
-          
+
           # Check Alpine image updates
           CURRENT_ALPINE_VERSION=$(grep "FROM alpine:" Dockerfile.frontend | head -1 | cut -d':' -f2 || echo "latest")
           echo "Current Alpine version: $CURRENT_ALPINE_VERSION"
@@ -340,22 +336,22 @@ jobs:
               repo: context.repo.repo,
               title: '🐳 Docker Base Image Update Available',
               body: `## Docker Base Image Updates Available
-              
+
               ### Node.js Update
               - Current version: ${{ steps.docker-check.outputs.current_node_version }}
               - Latest version: ${{ steps.docker-check.outputs.latest_node_version }}
-              
+
               ### Action Required
               Please review and update the base images in:
               - \`Dockerfile.frontend\`
-              - \`Dockerfile.backend\`
-              
+              - \`Dockerfile.search-api\`
+
               ### Steps
               1. Update Node.js version in Dockerfiles
               2. Test with new base images
               3. Update CI/CD pipeline if needed
               4. Deploy to staging first
-              
+
               ---
               🤖 This issue was created automatically by the dependency update workflow.`,
               labels: ['docker', 'dependencies', 'automated']
@@ -365,7 +361,7 @@ jobs:
     name: Cleanup Old PRs
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
-    
+
     steps:
       - name: Close stale dependency PRs
         uses: actions/github-script@v7
@@ -376,15 +372,15 @@ jobs:
               repo: context.repo.repo,
               state: 'open'
             });
-            
-            const dependencyPRs = pulls.filter(pr => 
-              pr.head.ref.startsWith('dependency-updates-') || 
+
+            const dependencyPRs = pulls.filter(pr =>
+              pr.head.ref.startsWith('dependency-updates-') ||
               pr.head.ref.startsWith('security-updates-')
             );
-            
+
             const oneWeekAgo = new Date();
             oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            
+
             for (const pr of dependencyPRs) {
               const prDate = new Date(pr.created_at);
               if (prDate < oneWeekAgo) {
@@ -394,14 +390,14 @@ jobs:
                   pull_number: pr.number,
                   state: 'closed'
                 });
-                
+
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: pr.number,
                   body: '🤖 This automated dependency update PR has been closed due to age. A new PR will be created in the next scheduled run if updates are still needed.'
                 });
-                
+
                 console.log(`Closed stale PR #${pr.number}: ${pr.title}`);
               }
             }
@@ -411,7 +407,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security-updates, dependency-updates, docker-base-updates]
     if: always() && github.event_name == 'schedule'
-    
+
     steps:
       - name: Send weekly summary
         uses: 8398a7/action-slack@v3

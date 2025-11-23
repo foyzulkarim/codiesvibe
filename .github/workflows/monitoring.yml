@@ -28,7 +28,7 @@ jobs:
     name: Monitor Staging Environment
     runs-on: ubuntu-latest
     if: inputs.environment == 'staging' || inputs.environment == 'both' || github.event_name == 'schedule'
-    
+
     steps:
       - name: Health Check - Staging Frontend
         id: staging-frontend
@@ -37,54 +37,54 @@ jobs:
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.STAGING_URL }}/health)
           HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
           RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
-          
+
           echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
           echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
-          
+
           if [ "$HTTP_CODE" != "200" ]; then
             echo "❌ Staging frontend health check failed: HTTP $HTTP_CODE"
             exit 1
           fi
-          
+
           if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
             echo "⚠️ Staging frontend response time slow: ${RESPONSE_TIME}s"
           fi
-          
+
           echo "✅ Staging frontend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
 
-      - name: Health Check - Staging Backend
-        id: staging-backend
+      - name: Health Check - Staging Search API
+        id: staging-search-api
         run: |
-          echo "Checking staging backend health..."
+          echo "Checking staging search-api health..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.STAGING_URL }}/api/health)
           HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
           RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
-          
+
           echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
           echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
-          
+
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Staging backend health check failed: HTTP $HTTP_CODE"
+            echo "❌ Staging search-api health check failed: HTTP $HTTP_CODE"
             exit 1
           fi
-          
+
           if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
-            echo "⚠️ Staging backend response time slow: ${RESPONSE_TIME}s"
+            echo "⚠️ Staging search-api response time slow: ${RESPONSE_TIME}s"
           fi
-          
-          echo "✅ Staging backend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+          echo "✅ Staging search-api healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
 
       - name: Functional Test - Staging Search API
         run: |
           echo "Testing staging search functionality..."
-          RESPONSE=$(curl -s "${{ env.STAGING_URL }}/api/tools/search?query=test")
-          
+          RESPONSE=$(curl -s "${{ env.STAGING_URL }}/api/search?q=test")
+
           # Check if response is valid JSON
           echo "$RESPONSE" | jq . > /dev/null || {
             echo "❌ Invalid JSON response from search API"
             exit 1
           }
-          
+
           echo "✅ Staging search API functional"
 
       - name: Alert on Staging Failure
@@ -101,7 +101,7 @@ jobs:
     name: Monitor Production Environment
     runs-on: ubuntu-latest
     if: inputs.environment == 'production' || inputs.environment == 'both' || github.event_name == 'schedule'
-    
+
     steps:
       - name: Health Check - Production Frontend
         id: production-frontend
@@ -110,60 +110,60 @@ jobs:
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.PRODUCTION_URL }}/health)
           HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
           RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
-          
+
           echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
           echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
-          
+
           if [ "$HTTP_CODE" != "200" ]; then
             echo "❌ Production frontend health check failed: HTTP $HTTP_CODE"
             exit 1
           fi
-          
+
           if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
             echo "⚠️ Production frontend response time slow: ${RESPONSE_TIME}s"
           fi
-          
+
           echo "✅ Production frontend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
 
-      - name: Health Check - Production Backend
-        id: production-backend
+      - name: Health Check - Production Search API
+        id: production-search-api
         run: |
-          echo "Checking production backend health..."
+          echo "Checking production search-api health..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code},%{time_total}" ${{ env.PRODUCTION_URL }}/api/health)
           HTTP_CODE=$(echo $RESPONSE | cut -d',' -f1)
           RESPONSE_TIME=$(echo $RESPONSE | cut -d',' -f2)
-          
+
           echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
           echo "response_time=$RESPONSE_TIME" >> $GITHUB_OUTPUT
-          
+
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Production backend health check failed: HTTP $HTTP_CODE"
+            echo "❌ Production search-api health check failed: HTTP $HTTP_CODE"
             exit 1
           fi
-          
+
           if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
-            echo "⚠️ Production backend response time slow: ${RESPONSE_TIME}s"
+            echo "⚠️ Production search-api response time slow: ${RESPONSE_TIME}s"
           fi
-          
-          echo "✅ Production backend healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
+
+          echo "✅ Production search-api healthy: HTTP $HTTP_CODE, ${RESPONSE_TIME}s"
 
       - name: SSL Certificate Check
         run: |
           echo "Checking SSL certificate..."
           SSL_INFO=$(echo | openssl s_client -servername codiesvibe.com -connect codiesvibe.com:443 2>/dev/null | openssl x509 -noout -dates)
-          
+
           NOT_AFTER=$(echo "$SSL_INFO" | grep notAfter | cut -d= -f2)
           EXPIRY_DATE=$(date -d "$NOT_AFTER" +%s)
           CURRENT_DATE=$(date +%s)
           DAYS_TO_EXPIRY=$(( (EXPIRY_DATE - CURRENT_DATE) / 86400 ))
-          
+
           echo "SSL certificate expires in $DAYS_TO_EXPIRY days"
-          
+
           if [ $DAYS_TO_EXPIRY -lt 30 ]; then
             echo "⚠️ SSL certificate expires in less than 30 days!"
             # Don't fail the job, but send alert
           fi
-          
+
           if [ $DAYS_TO_EXPIRY -lt 7 ]; then
             echo "❌ SSL certificate expires in less than 7 days!"
             exit 1
@@ -173,49 +173,49 @@ jobs:
         run: |
           echo "Checking Cloudflare integration..."
           CF_RAY_ID=$(curl -s -I ${{ env.PRODUCTION_URL }}/ | grep -i cf-ray | cut -d' ' -f2)
-          
+
           if [ -z "$CF_RAY_ID" ]; then
             echo "❌ Cloudflare integration not working"
             exit 1
           fi
-          
+
           echo "✅ Cloudflare integration working: Ray ID $CF_RAY_ID"
 
       - name: Functional Test - Production Search API
         run: |
           echo "Testing production search functionality..."
-          RESPONSE=$(curl -s "${{ env.PRODUCTION_URL }}/api/tools/search?query=test")
-          
+          RESPONSE=$(curl -s "${{ env.PRODUCTION_URL }}/api/search?q=test")
+
           # Check if response is valid JSON
           echo "$RESPONSE" | jq . > /dev/null || {
             echo "❌ Invalid JSON response from search API"
             exit 1
           }
-          
+
           # Check if we get some results
           RESULT_COUNT=$(echo "$RESPONSE" | jq '.length // 0')
           if [ "$RESULT_COUNT" -eq 0 ]; then
             echo "⚠️ Search API returned no results - possible data issue"
           fi
-          
+
           echo "✅ Production search API functional ($RESULT_COUNT results)"
 
       - name: Performance Check
         run: |
           echo "Running basic performance check..."
-          
+
           # Frontend performance
           FRONTEND_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/)
           echo "Frontend response time: ${FRONTEND_TIME}s"
-          
+
           # API performance
           API_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/api/health)
           echo "API response time: ${API_TIME}s"
-          
+
           # Search API performance
-          SEARCH_TIME=$(curl -o /dev/null -s -w '%{time_total}' "${{ env.PRODUCTION_URL }}/api/tools/search?query=test")
+          SEARCH_TIME=$(curl -o /dev/null -s -w '%{time_total}' "${{ env.PRODUCTION_URL }}/api/search?q=test")
           echo "Search API response time: ${SEARCH_TIME}s"
-          
+
           # Alert if any service is too slow
           if (( $(echo "$FRONTEND_TIME > 3.0" | bc -l) )) || (( $(echo "$API_TIME > 2.0" | bc -l) )) || (( $(echo "$SEARCH_TIME > 2.0" | bc -l) )); then
             echo "⚠️ Performance degradation detected"
@@ -235,7 +235,7 @@ jobs:
     name: Weekly Security Scan
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' && github.event.schedule == '*/15 * * * *' && (github.event.schedule == '0 2 * * 1')  # Monday 2 AM
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -243,37 +243,37 @@ jobs:
       - name: Run dependency security scan
         run: |
           echo "Running security audit..."
-          
-          # Frontend audit
-          cd frontend && npm audit --audit-level=moderate || echo "Frontend vulnerabilities found"
-          
-          # Backend audit  
-          cd ../backend && npm audit --audit-level=moderate || echo "Backend vulnerabilities found"
+
+          # Frontend audit (root directory)
+          npm audit --audit-level=moderate || echo "Frontend vulnerabilities found"
+
+          # Search API audit
+          cd search-api && npm audit --audit-level=moderate || echo "Search API vulnerabilities found"
 
       - name: Check for outdated dependencies
         run: |
           echo "Checking for outdated dependencies..."
-          
-          # Frontend
-          cd frontend && npm outdated || echo "Frontend has outdated packages"
-          
-          # Backend
-          cd ../backend && npm outdated || echo "Backend has outdated packages"
+
+          # Frontend (root directory)
+          npm outdated || echo "Frontend has outdated packages"
+
+          # Search API
+          cd search-api && npm outdated || echo "Search API has outdated packages"
 
       - name: Upload security report
         uses: actions/upload-artifact@v4
         with:
           name: weekly-security-scan
           path: |
-            frontend/npm-audit.log
-            backend/npm-audit.log
+            npm-audit.log
+            search-api/npm-audit.log
           retention-days: 90
 
   monthly-performance-baseline:
     name: Monthly Performance Baseline
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' && (github.event.schedule == '0 3 1 * *')  # First day of month at 3 AM
-    
+
     steps:
       - name: Install performance tools
         run: |
@@ -301,13 +301,13 @@ jobs:
             const performance = Math.round(report.categories.performance.score * 100);
             const accessibility = Math.round(report.categories.accessibility.score * 100);
             const bestPractices = Math.round(report.categories['best-practices'].score * 100);
-            
+
             console.log('=== Monthly Performance Baseline ===');
             console.log('Date: $(date)');
             console.log('Performance Score: ' + performance + '%');
             console.log('Accessibility Score: ' + accessibility + '%');
             console.log('Best Practices Score: ' + bestPractices + '%');
-            
+
             const summary = {
               date: new Date().toISOString(),
               performance,
@@ -315,7 +315,7 @@ jobs:
               bestPractices,
               url: '${{ env.PRODUCTION_URL }}'
             };
-            
+
             require('fs').writeFileSync('performance-summary.json', JSON.stringify(summary, null, 2));
           "
 
@@ -342,7 +342,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [health-check-staging, health-check-production]
     if: always() && (inputs.environment == 'both' || github.event_name == 'schedule')
-    
+
     steps:
       - name: Generate summary
         run: |
@@ -350,7 +350,7 @@ jobs:
           echo "Timestamp: $(date)"
           echo "Staging Status: ${{ needs.health-check-staging.result }}"
           echo "Production Status: ${{ needs.health-check-production.result }}"
-          
+
           if [ "${{ needs.health-check-staging.result }}" == "success" ] && [ "${{ needs.health-check-production.result }}" == "success" ]; then
             echo "✅ All systems operational"
           else

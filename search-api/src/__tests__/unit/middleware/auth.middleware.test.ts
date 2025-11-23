@@ -40,7 +40,7 @@ describe('Auth Middleware', () => {
           return mockRequest.headers?.authorization;
         }
         return undefined;
-      }),
+      }) as unknown as Request['get'],
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -59,8 +59,9 @@ describe('Auth Middleware', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'Authentication required',
+        error: 'Unauthorized',
         code: 'UNAUTHORIZED',
+        message: 'Authentication required',
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
@@ -89,8 +90,9 @@ describe('Auth Middleware', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'Invalid or expired token',
+        error: 'Unauthorized',
         code: 'INVALID_TOKEN',
+        message: 'Invalid or expired token',
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });
@@ -183,7 +185,7 @@ describe('Auth Middleware', () => {
   });
 
   describe('requireRole', () => {
-    it('should return 403 if user is not authenticated', () => {
+    it('should return 401 if user is not authenticated', () => {
       const middleware = requireRole('admin');
 
       middleware(
@@ -192,11 +194,11 @@ describe('Auth Middleware', () => {
         nextFunction
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'Forbidden',
-        code: 'INSUFFICIENT_PERMISSIONS',
-        message: 'You do not have permission to access this resource',
+        error: 'Unauthorized',
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
       });
       expect(nextFunction).not.toHaveBeenCalled();
     });

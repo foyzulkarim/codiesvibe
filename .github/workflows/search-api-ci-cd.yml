@@ -1,0 +1,539 @@
+# Search API CI/CD Pipeline
+# Handles search-api testing, building, and deployment
+
+name: Search API CI/CD
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'search-api/**'
+      - 'Dockerfile.search-api'
+      - '.github/workflows/search-api-ci-cd.yml'
+    tags:
+      - 'v*'
+    # Tags will only trigger if search-api files changed in the tagged commit
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - 'search-api/**'
+      - 'Dockerfile.search-api'
+      - '.github/workflows/search-api-ci-cd.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip test stage'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-search-api
+  NODE_VERSION: '24'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1: Test and Lint Search API
+  test-search-api:
+    name: Search API Tests
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'search-api/package-lock.json'
+
+      - name: Install search-api dependencies
+        working-directory: search-api
+        run: npm ci
+
+      - name: Lint search-api code
+        working-directory: search-api
+        run: npm run lint
+
+      - name: Type check search-api
+        working-directory: search-api
+        run: npm run typecheck
+
+      - name: Run search-api unit tests
+        working-directory: search-api
+        run: npm run test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret
+
+      - name: Build search-api
+        working-directory: search-api
+        run: npm run build
+
+
+  # Stage 2: Search API Security Scanning
+  security-search-api:
+    name: Search API Security
+    runs-on: ubuntu-latest
+    needs: test-search-api
+    if: ${{ !inputs.skip_tests }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'search-api/package-lock.json'
+
+      - name: Install search-api dependencies
+        working-directory: search-api
+        run: npm ci
+
+      - name: Audit search-api dependencies
+        working-directory: search-api
+        run: npm audit --audit-level=high
+
+      - name: License compliance check
+        working-directory: search-api
+        run: npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;Apache*;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary
+
+      - name: Run Trivy vulnerability scanner on source
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './search-api'
+          format: 'sarif'
+          output: 'search-api-trivy-results.sarif'
+          exit-code: '0'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('search-api-trivy-results.sarif') != ''
+        with:
+          sarif_file: 'search-api-trivy-results.sarif'
+
+  # Stage 3: Build and Push Search API Image
+  build-search-api:
+    name: Build Search API Image
+    runs-on: ubuntu-latest
+    needs: [test-search-api, security-search-api]
+    if: always() && (needs.test-search-api.result == 'success' || inputs.skip_tests) && (needs.security-search-api.result == 'success' || inputs.skip_tests)
+    outputs:
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+      digest: ${{ steps.build.outputs.digest }}
+      image-id: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value={{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=CodiesVibe Search API
+            org.opencontainers.image.description=Search API for CodiesVibe AI Tools Directory
+            org.opencontainers.image.vendor=CodiesVibe
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://codiesvibe.com
+            maintainer=CodiesVibe Team
+            component=search-api
+            environment=${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+      - name: Build and push Search API
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.search-api
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            GIT_COMMIT=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+      - name: Run Trivy scan on Search API image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'sarif'
+          output: 'search-api-image-trivy.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Search API image scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('search-api-image-trivy.sarif') != ''
+        with:
+          sarif_file: 'search-api-image-trivy.sarif'
+          category: 'search-api-image-security'
+
+      - name: Generate Search API SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: 'spdx-json'
+          output: 'search-api-sbom.spdx.json'
+
+      - name: Upload Search API SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: search-api-sbom-${{ github.sha }}
+          path: search-api-sbom.spdx.json
+          retention-days: 30
+
+  # Stage 4: Search API Integration Testing
+  api-test-search-api:
+    name: Search API Integration Testing
+    runs-on: ubuntu-latest
+    needs: build-search-api
+    if: always() && needs.build-search-api.result == 'success'
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password123
+          MONGO_INITDB_DATABASE: codiesvibe
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+          --health-start-period 40s
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+          - 6334:6334
+
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for Qdrant to be ready
+        run: |
+          echo "Waiting for Qdrant..."
+          timeout 60 bash -c 'until curl -sf http://localhost:6333/readyz; do sleep 2; done'
+          echo "Qdrant is ready!"
+
+      - name: Start test search-api
+        run: |
+          # Use the built image for testing with infrastructure dependencies
+          # Using --network host to access MongoDB service on localhost
+          docker run -d --name test-search-api \
+            --network host \
+            -e NODE_ENV=test \
+            -e JWT_SECRET=test-secret \
+            -e PORT=4003 \
+            -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
+            -e TOGETHER_API_KEY=test-api-key-for-ci \
+            -e QDRANT_HOST=localhost \
+            -e QDRANT_PORT=6333 \
+            -e VLLM_BASE_URL=http://localhost:8000 \
+            -e ENABLE_CACHE=false \
+            -e ENABLE_VECTOR_VALIDATION=false \
+            -e ENABLE_RATE_LIMITING=false \
+            -e ENABLE_SECURITY_HEADERS=false \
+            ${{ needs.build-search-api.outputs.image }}
+
+          # Give container time to start
+          sleep 5
+
+          # Show container logs for debugging
+          echo "=== Container logs ==="
+          docker logs test-search-api || true
+
+          # Wait for search-api to be ready
+          timeout 120 bash -c 'until curl -sf http://localhost:4003/health; do echo "Waiting for search-api..."; docker logs --tail 5 test-search-api 2>/dev/null || true; sleep 5; done'
+
+      - name: Install testing tools
+        run: npm install -g artillery newman
+
+      - name: Run API load testing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Create Artillery config for comprehensive API testing
+          cat > api-test-config.yml << EOF
+          config:
+            target: 'http://localhost:4003'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 25
+              - duration: 60
+                arrivalRate: 5
+            http:
+              timeout: 30
+          scenarios:
+            - name: "Health Check"
+              weight: 50
+              flow:
+                - get:
+                    url: "/health"
+                    expect:
+                      - statusCode: 200
+            - name: "Search Endpoint"
+              weight: 50
+              flow:
+                - get:
+                    url: "/api/search?q=test"
+                    expect:
+                      - statusCode: 200
+          EOF
+
+          # Run load test
+          artillery run api-test-config.yml --output search-api-load-test.json
+
+      - name: Performance analysis
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Analyze API response times
+          echo "=== Search API Performance Analysis ==="
+
+          # Test individual endpoints
+          HEALTH_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:4003/health)
+          echo "Health endpoint: ${HEALTH_TIME}s"
+
+          # Fail if any endpoint is too slow
+          if (( $(echo "$HEALTH_TIME > 3.0" | bc -l) )); then
+            echo "❌ Health endpoint too slow: ${HEALTH_TIME}s"
+            exit 1
+          fi
+
+          echo "✅ All Search API performance benchmarks passed"
+
+
+      - name: Upload API test artifacts
+        uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: search-api-tests-${{ github.sha }}
+          path: |
+            search-api-load-test.json
+            api-test-config.yml
+          retention-days: 30
+
+      - name: Cleanup test environment
+        if: always()
+        run: |
+          docker stop test-search-api || true
+          docker rm test-search-api || true
+
+  # Stage 5: Deploy to VPS (SKIPPED - Enable when VPS is ready)
+  deploy-vps:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [build-search-api, api-test-search-api]
+    if: false  # SKIPPED: Set to true when VPS is ready for deployment
+    environment:
+      name: ${{ inputs.environment || 'staging' }}
+      url: ${{ inputs.environment == 'production' && 'https://api.codiesvibe.com' || 'https://staging-api.codiesvibe.com' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Search API to VPS
+        run: |
+          set -e
+
+          ENVIRONMENT="${{ inputs.environment || 'staging' }}"
+          IMAGE="${{ needs.build-search-api.outputs.image }}"
+
+          echo "🚀 Deploying Search API to $ENVIRONMENT..."
+          echo "Image: $IMAGE"
+
+          # Copy deployment files to VPS
+          scp docker-compose.production.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/codiesvibe/
+
+          # Deploy via SSH
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            set -e
+            cd ~/codiesvibe
+
+            # Create backup of current deployment
+            if docker ps -q --filter "name=search-api" | grep -q .; then
+              echo "📦 Creating backup of current deployment..."
+              docker-compose -f docker-compose.production.yml config > backup-$(date +%Y%m%d-%H%M%S).yml
+            fi
+
+            # Set environment variables
+            export SEARCH_API_IMAGE=$IMAGE
+            export ENVIRONMENT=$ENVIRONMENT
+            export VERSION=${{ github.sha }}
+
+            # Pull and deploy the new image
+            echo "📥 Pulling new image..."
+            docker pull $IMAGE
+
+            # Stop current container gracefully
+            echo "⏸️ Stopping current container..."
+            docker-compose -f docker-compose.production.yml stop search-api || true
+
+            # Start new container
+            echo "▶️ Starting new container..."
+            docker-compose -f docker-compose.production.yml up -d search-api
+
+            # Wait for health check
+            echo "⏳ Waiting for health check..."
+            timeout 120 bash -c 'until curl -f http://localhost:4003/health; do echo "Waiting..."; sleep 5; done'
+
+            # Cleanup old images
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+
+            echo "✅ Deployment completed successfully!"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          ENVIRONMENT="${{ inputs.environment || 'staging' }}"
+
+          if [ "$ENVIRONMENT" = "production" ]; then
+            URL="https://api.codiesvibe.com"
+          else
+            URL="https://staging-api.codiesvibe.com"
+          fi
+
+          echo "🔍 Verifying deployment at $URL..."
+
+          # Wait for DNS propagation and deployment
+          sleep 30
+
+          # Health check
+          HEALTH_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$URL/health" || echo "000")
+          if [ "$HEALTH_STATUS" != "200" ]; then
+            echo "❌ Health check failed with status: $HEALTH_STATUS"
+            exit 1
+          fi
+
+          # Response time check
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$URL/health")
+          echo "Response time: ${RESPONSE_TIME}s"
+
+          if (( $(echo "$RESPONSE_TIME > 3.0" | bc -l) )); then
+            echo "⚠️ Warning: Response time is slow: ${RESPONSE_TIME}s"
+          fi
+
+          echo "✅ Deployment verification passed!"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "⚠️ Deployment failed, initiating rollback..."
+
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd ~/codiesvibe
+
+            # Find the most recent backup
+            BACKUP=$(ls -t backup-*.yml 2>/dev/null | head -1)
+
+            if [ -n "$BACKUP" ]; then
+              echo "🔄 Rolling back to $BACKUP..."
+              docker-compose -f "$BACKUP" up -d search-api
+
+              # Wait for rollback to complete
+              timeout 120 bash -c 'until curl -f http://localhost:4003/health; do echo "Waiting..."; sleep 5; done'
+
+              echo "✅ Rollback completed!"
+            else
+              echo "❌ No backup found for rollback!"
+              exit 1
+            fi
+          EOF
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          ENVIRONMENT="${{ inputs.environment || 'staging' }}"
+
+          echo "=== Deployment Summary ==="
+          echo "Status: $STATUS"
+          echo "Environment: $ENVIRONMENT"
+          echo "Image: ${{ needs.build-search-api.outputs.image }}"
+          echo "Commit: ${{ github.sha }}"
+
+  # Cleanup Job
+  cleanup:
+    name: Cleanup Search API Packages
+    runs-on: ubuntu-latest
+    needs: [build-search-api]
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Delete old search-api packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ env.IMAGE_NAME }}
+          package-type: 'container'
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+          token: ${{ secrets.GITHUB_TOKEN }}
