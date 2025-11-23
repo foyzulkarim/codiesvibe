@@ -114,7 +114,7 @@ jobs:
 
       - name: License compliance check
         working-directory: search-api
-        run: npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary
+        run: npx license-checker --onlyAllow 'MIT;MIT*;ISC;Apache-2.0;Apache*;BSD-2-Clause;BSD-3-Clause;Unlicense;UNLICENSED;0BSD;Python-2.0;(MIT OR CC0-1.0)' --excludePrivatePackages --production --summary
 
       - name: Run Trivy vulnerability scanner on source
         uses: aquasecurity/trivy-action@master
