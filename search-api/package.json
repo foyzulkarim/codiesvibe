@@ -49,7 +49,7 @@
     "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts"
   },
   "dependencies": {
-    "@langchain/community": "^0.3.57",
+    "@langchain/community": "^0.3.58",
     "@langchain/core": "^0.3.78",
     "@langchain/langgraph": "^0.2.19",
     "@langchain/ollama": "^0.2.4",
