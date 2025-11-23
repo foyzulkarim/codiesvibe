@@ -270,6 +270,14 @@ jobs:
             -e JWT_SECRET=test-secret \
             -e PORT=4003 \
             -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
+            -e TOGETHER_API_KEY=test-api-key-for-ci \
+            -e QDRANT_HOST=localhost \
+            -e QDRANT_PORT=6333 \
+            -e VLLM_BASE_URL=http://localhost:8000 \
+            -e ENABLE_CACHE=false \
+            -e ENABLE_VECTOR_VALIDATION=false \
+            -e ENABLE_RATE_LIMITING=false \
+            -e ENABLE_SECURITY_HEADERS=false \
             ${{ needs.build-search-api.outputs.image }}
 
           # Give container time to start
