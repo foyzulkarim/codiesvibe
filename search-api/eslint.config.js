@@ -27,6 +27,7 @@ export default tseslint.config(
       "prefer-const": "warn",
       "no-useless-escape": "warn",
       "no-case-declarations": "warn",
+      "no-prototype-builtins": "warn",
     },
   }
 );
