@@ -263,16 +263,24 @@ jobs:
       - name: Start test search-api
         run: |
           # Use the built image for testing with infrastructure dependencies
+          # Using --network host to access MongoDB service on localhost
           docker run -d --name test-search-api \
-            -p 4003:4003 \
             --network host \
             -e NODE_ENV=test \
             -e JWT_SECRET=test-secret \
+            -e PORT=4003 \
             -e MONGODB_URI=mongodb://admin:password123@localhost:27017/codiesvibe?authSource=admin \
             ${{ needs.build-search-api.outputs.image }}
 
+          # Give container time to start
+          sleep 5
+
+          # Show container logs for debugging
+          echo "=== Container logs ==="
+          docker logs test-search-api || true
+
           # Wait for search-api to be ready
-          timeout 300 bash -c 'until curl -f http://localhost:4003/health; do echo "Waiting for search-api..."; sleep 5; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:4003/health; do echo "Waiting for search-api..."; docker logs --tail 5 test-search-api 2>/dev/null || true; sleep 5; done'
 
       - name: Install testing tools
         run: npm install -g artillery newman
