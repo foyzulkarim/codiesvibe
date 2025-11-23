@@ -1,11 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient as axios } from '@/api/client';
+import axios from 'axios';
 import { apiConfig } from '@/config/api';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   UseToolsReturn,
   AiSearchReasoning,
 } from '@/api/types';
+
+// Get search API base URL (different from main API)
+const getSearchApiUrl = () => {
+  // Use environment variable or default to localhost for development
+  return import.meta.env.VITE_SEARCH_API_URL || 'http://localhost:4003/api';
+};
+
+// Create axios instance for search API
+const searchApiClient = axios.create({
+  baseURL: getSearchApiUrl(),
+  timeout: apiConfig.search.timeout,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Types for AI search API response
 interface AiSearchResponse {
@@ -122,17 +137,16 @@ const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => 
     if (apiConfig.features.debug) {
       console.log('aiSearchTools searchQuery:', searchQuery);
       console.log('typeof searchQuery:', typeof searchQuery);
+      console.log('Search API URL:', getSearchApiUrl());
     }
 
     // Ensure searchQuery is a string
     const searchQueryStr = typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
 
-    const response = await axios.post<AiSearchResponse>('/tools/ai-search', {
+    const response = await searchApiClient.post<AiSearchResponse>('/search', {
       query: searchQueryStr,
       limit: apiConfig.search.defaultLimit,
       debug: apiConfig.features.debug,
-    }, {
-      timeout: apiConfig.search.timeout
     });
 
     if (apiConfig.features.debug) {

@@ -87,10 +87,12 @@ export class SearchLoggerService {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.simple(),
-            winston.format.printf((info) => {
+            winston.format.timestamp(),
+            winston.format.printf((info: any) => {
+              const { timestamp, level, message, ...rest } = info;
               const correlationId = info.correlationId ? `[${info.correlationId}] ` : '';
-              return `${correlationId}${info.level}: ${info.message}`;
+              const meta = Object.keys(rest).length ? ` ${JSON.stringify(rest)}` : '';
+              return `${timestamp} ${correlationId}${level}: ${message}${meta}`;
             })
           )
         }),
