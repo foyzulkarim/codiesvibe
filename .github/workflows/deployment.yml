@@ -1,5 +1,5 @@
 # Deployment Workflow
-# Handles deployment of frontend and/or backend services to staging and production
+# Handles deployment of frontend and/or search-api services to staging and production
 
 name: Deployment
 
@@ -12,7 +12,7 @@ on:
         type: choice
         options:
         - frontend
-        - backend
+        - search-api
         - both
       image:
         description: 'Docker image to deploy (if single service)'
@@ -22,8 +22,8 @@ on:
         description: 'Frontend docker image (if deploying both)'
         required: false
         type: string
-      backend_image:
-        description: 'Backend docker image (if deploying both)'
+      search_api_image:
+        description: 'Search API docker image (if deploying both)'
         required: false
         type: string
       environment:
@@ -45,22 +45,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       frontend_image: ${{ steps.validate.outputs.frontend_image }}
-      backend_image: ${{ steps.validate.outputs.backend_image }}
+      search_api_image: ${{ steps.validate.outputs.search_api_image }}
       deploy_frontend: ${{ steps.validate.outputs.deploy_frontend }}
-      deploy_backend: ${{ steps.validate.outputs.deploy_backend }}
-    
+      deploy_search_api: ${{ steps.validate.outputs.deploy_search_api }}
+
     steps:
       - name: Validate deployment inputs
         id: validate
         run: |
           echo "Validating deployment configuration..."
-          
+
           SERVICE="${{ inputs.service }}"
           ENVIRONMENT="${{ inputs.environment }}"
-          
+
           echo "Service: $SERVICE"
           echo "Environment: $ENVIRONMENT"
-          
+
           if [ "$SERVICE" = "frontend" ]; then
             if [ -z "${{ inputs.image }}" ]; then
               echo "❌ Frontend image required when deploying frontend service"
@@ -68,31 +68,31 @@ jobs:
             fi
             echo "frontend_image=${{ inputs.image }}" >> $GITHUB_OUTPUT
             echo "deploy_frontend=true" >> $GITHUB_OUTPUT
-            echo "deploy_backend=false" >> $GITHUB_OUTPUT
-            
-          elif [ "$SERVICE" = "backend" ]; then
+            echo "deploy_search_api=false" >> $GITHUB_OUTPUT
+
+          elif [ "$SERVICE" = "search-api" ]; then
             if [ -z "${{ inputs.image }}" ]; then
-              echo "❌ Backend image required when deploying backend service"
+              echo "❌ Search API image required when deploying search-api service"
               exit 1
             fi
-            echo "backend_image=${{ inputs.image }}" >> $GITHUB_OUTPUT
+            echo "search_api_image=${{ inputs.image }}" >> $GITHUB_OUTPUT
             echo "deploy_frontend=false" >> $GITHUB_OUTPUT
-            echo "deploy_backend=true" >> $GITHUB_OUTPUT
-            
+            echo "deploy_search_api=true" >> $GITHUB_OUTPUT
+
           elif [ "$SERVICE" = "both" ]; then
-            if [ -z "${{ inputs.frontend_image }}" ] || [ -z "${{ inputs.backend_image }}" ]; then
-              echo "❌ Both frontend and backend images required when deploying both services"
+            if [ -z "${{ inputs.frontend_image }}" ] || [ -z "${{ inputs.search_api_image }}" ]; then
+              echo "❌ Both frontend and search-api images required when deploying both services"
               exit 1
             fi
             echo "frontend_image=${{ inputs.frontend_image }}" >> $GITHUB_OUTPUT
-            echo "backend_image=${{ inputs.backend_image }}" >> $GITHUB_OUTPUT
+            echo "search_api_image=${{ inputs.search_api_image }}" >> $GITHUB_OUTPUT
             echo "deploy_frontend=true" >> $GITHUB_OUTPUT
-            echo "deploy_backend=true" >> $GITHUB_OUTPUT
+            echo "deploy_search_api=true" >> $GITHUB_OUTPUT
           else
             echo "❌ Invalid service: $SERVICE"
             exit 1
           fi
-          
+
           echo "✅ Deployment configuration validated"
 
   deploy-staging:
@@ -103,76 +103,76 @@ jobs:
     environment:
       name: staging
       url: ${{ env.STAGING_URL }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.7.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_STAGING }}
 
       - name: Deploy to staging server
         run: |
           set -e
-          
+
           echo "🚀 Deploying ${{ inputs.service }} to staging..."
-          
+
           # Copy necessary files
           scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }}:~/codiesvibe/
-          
+
           # Deploy with docker-compose
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_STAGING }}@${{ secrets.SSH_HOST_STAGING }} << 'EOF'
             set -e
             cd ~/codiesvibe
-            
+
             # Create backup
             if docker-compose -f docker-compose.production.yml ps -q | grep -q .; then
               docker-compose -f docker-compose.production.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
               echo "✅ Backup created"
             fi
-            
+
             # Set environment variables
             export VERSION=${{ github.sha }}
             export ENVIRONMENT=staging
-            
+
             # Set service-specific images
             if [ "${{ needs.validate-inputs.outputs.deploy_frontend }}" = "true" ]; then
               export FRONTEND_IMAGE=${{ needs.validate-inputs.outputs.frontend_image }}
               echo "Frontend image: $FRONTEND_IMAGE"
             fi
-            
-            if [ "${{ needs.validate-inputs.outputs.deploy_backend }}" = "true" ]; then
-              export BACKEND_IMAGE=${{ needs.validate-inputs.outputs.backend_image }}
-              echo "Backend image: $BACKEND_IMAGE"
+
+            if [ "${{ needs.validate-inputs.outputs.deploy_search_api }}" = "true" ]; then
+              export SEARCH_API_IMAGE=${{ needs.validate-inputs.outputs.search_api_image }}
+              echo "Search API image: $SEARCH_API_IMAGE"
             fi
-            
+
             # Start infrastructure
             docker-compose -f docker-compose.infra.yml up -d
             sleep 30
-            
+
             # Deploy application
             echo "🚀 Deploying application..."
             docker-compose -f docker-compose.production.yml pull
-            
+
             # Deploy specific services or all
             if [ "${{ inputs.service }}" = "frontend" ]; then
               docker-compose -f docker-compose.production.yml up -d --force-recreate frontend nginx
-            elif [ "${{ inputs.service }}" = "backend" ]; then
-              docker-compose -f docker-compose.production.yml up -d --force-recreate backend
+            elif [ "${{ inputs.service }}" = "search-api" ]; then
+              docker-compose -f docker-compose.production.yml up -d --force-recreate search-api
             else
               docker-compose -f docker-compose.production.yml up -d --force-recreate
             fi
-            
+
             # Wait for services to be healthy
             echo "⏳ Waiting for services to be healthy..."
             timeout 300 bash -c 'until docker-compose -f docker-compose.production.yml ps | grep -q "healthy"; do echo "Waiting..."; sleep 5; done' || {
               echo "❌ Services failed to become healthy within 5 minutes"
               exit 1
             }
-            
+
             echo "✅ Staging deployment completed successfully"
           EOF
 
@@ -180,11 +180,11 @@ jobs:
         run: |
           echo "Running staging health checks..."
           sleep 60
-          
+
           if [ "${{ needs.validate-inputs.outputs.deploy_frontend }}" = "true" ]; then
             echo "Checking frontend health..."
             curl -f ${{ env.STAGING_URL }}/health || exit 1
-            
+
             # Check response time
             RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.STAGING_URL }}/)
             echo "Frontend response time: ${RESPONSE_TIME}s"
@@ -192,14 +192,14 @@ jobs:
               echo "⚠️ Frontend response time slow: ${RESPONSE_TIME}s"
             fi
           fi
-          
-          if [ "${{ needs.validate-inputs.outputs.deploy_backend }}" = "true" ]; then
-            echo "Checking backend health..."
+
+          if [ "${{ needs.validate-inputs.outputs.deploy_search_api }}" = "true" ]; then
+            echo "Checking search-api health..."
             curl -f ${{ env.STAGING_URL }}/api/health || exit 1
-            
+
             # Check API functionality
-            curl -f "${{ env.STAGING_URL }}/api/tools/search?query=test" || exit 1
-            
+            curl -f "${{ env.STAGING_URL }}/api/search?q=test" || exit 1
+
             # Check response time
             API_RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.STAGING_URL }}/api/health)
             echo "API response time: ${API_RESPONSE_TIME}s"
@@ -207,7 +207,7 @@ jobs:
               echo "⚠️ API response time slow: ${API_RESPONSE_TIME}s"
             fi
           fi
-          
+
           echo "✅ Staging health checks passed"
 
       - name: Notify staging deployment
@@ -228,77 +228,77 @@ jobs:
     environment:
       name: production
       url: ${{ env.PRODUCTION_URL }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.7.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_PRODUCTION }}
 
       - name: Deploy to production server
         run: |
           set -e
-          
+
           echo "🚀 Deploying ${{ inputs.service }} to production..."
-          
+
           # Copy necessary files
           scp -o StrictHostKeyChecking=no docker-compose.production.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no docker-compose.cloudflare.yml ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
           scp -o StrictHostKeyChecking=no nginx.conf ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }}:~/codiesvibe/
-          
+
           # Deploy with Cloudflare tunnels
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER_PRODUCTION }}@${{ secrets.SSH_HOST_PRODUCTION }} << 'EOF'
             set -e
             cd ~/codiesvibe
-            
+
             # Create backup
             if docker-compose -f docker-compose.cloudflare.yml ps -q | grep -q .; then
               docker-compose -f docker-compose.cloudflare.yml config > backup-compose-$(date +%Y%m%d-%H%M%S).yml
               echo "✅ Production backup created"
             fi
-            
+
             # Set environment variables
             export VERSION=${{ github.sha }}
             export ENVIRONMENT=production
-            
+
             # Set service-specific images
             if [ "${{ needs.validate-inputs.outputs.deploy_frontend }}" = "true" ]; then
               export FRONTEND_IMAGE=${{ needs.validate-inputs.outputs.frontend_image }}
               echo "Frontend image: $FRONTEND_IMAGE"
             fi
-            
-            if [ "${{ needs.validate-inputs.outputs.deploy_backend }}" = "true" ]; then
-              export BACKEND_IMAGE=${{ needs.validate-inputs.outputs.backend_image }}
-              echo "Backend image: $BACKEND_IMAGE"
+
+            if [ "${{ needs.validate-inputs.outputs.deploy_search_api }}" = "true" ]; then
+              export SEARCH_API_IMAGE=${{ needs.validate-inputs.outputs.search_api_image }}
+              echo "Search API image: $SEARCH_API_IMAGE"
             fi
-            
+
             # Start infrastructure
             docker-compose -f docker-compose.infra.yml up -d
             sleep 30
-            
+
             # Deploy with Cloudflare tunnels
             echo "🚀 Deploying to production with Cloudflare..."
             docker-compose -f docker-compose.cloudflare.yml pull
-            
+
             # Deploy specific services or all
             if [ "${{ inputs.service }}" = "frontend" ]; then
               docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate frontend nginx
-            elif [ "${{ inputs.service }}" = "backend" ]; then
-              docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate backend
+            elif [ "${{ inputs.service }}" = "search-api" ]; then
+              docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate search-api
             else
               docker-compose -f docker-compose.cloudflare.yml up -d --force-recreate
             fi
-            
+
             # Wait for services to be healthy (longer timeout for production)
             echo "⏳ Waiting for services to be healthy..."
             timeout 600 bash -c 'until docker-compose -f docker-compose.cloudflare.yml ps | grep -q "healthy"; do echo "Waiting..."; sleep 10; done' || {
               echo "❌ Services failed to become healthy within 10 minutes"
               exit 1
             }
-            
+
             echo "✅ Production deployment completed successfully"
           EOF
 
@@ -306,11 +306,11 @@ jobs:
         run: |
           echo "Running production health checks..."
           sleep 90
-          
+
           if [ "${{ needs.validate-inputs.outputs.deploy_frontend }}" = "true" ]; then
             echo "Checking production frontend..."
             curl -f ${{ env.PRODUCTION_URL }}/health || exit 1
-            
+
             # Check response time (stricter for production)
             RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/)
             echo "Production frontend response time: ${RESPONSE_TIME}s"
@@ -319,14 +319,14 @@ jobs:
               exit 1
             fi
           fi
-          
-          if [ "${{ needs.validate-inputs.outputs.deploy_backend }}" = "true" ]; then
-            echo "Checking production backend..."
+
+          if [ "${{ needs.validate-inputs.outputs.deploy_search_api }}" = "true" ]; then
+            echo "Checking production search-api..."
             curl -f ${{ env.PRODUCTION_URL }}/api/health || exit 1
-            
+
             # Check API functionality
-            curl -f "${{ env.PRODUCTION_URL }}/api/tools/search?query=test" || exit 1
-            
+            curl -f "${{ env.PRODUCTION_URL }}/api/search?q=test" || exit 1
+
             # Check response time
             API_RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' ${{ env.PRODUCTION_URL }}/api/health)
             echo "Production API response time: ${API_RESPONSE_TIME}s"
@@ -335,7 +335,7 @@ jobs:
               exit 1
             fi
           fi
-          
+
           # Check Cloudflare integration
           CF_RAY_ID=$(curl -s -I ${{ env.PRODUCTION_URL }}/ | grep -i cf-ray | cut -d' ' -f2)
           if [ -z "$CF_RAY_ID" ]; then
@@ -343,11 +343,11 @@ jobs:
             exit 1
           fi
           echo "✅ Cloudflare Ray ID: $CF_RAY_ID"
-          
+
           # Check SSL certificate
           SSL_EXPIRY=$(echo | openssl s_client -servername codiesvibe.com -connect codiesvibe.com:443 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d= -f2)
           echo "SSL certificate expires: $SSL_EXPIRY"
-          
+
           echo "✅ Production health checks passed"
 
       - name: Create GitHub Release
@@ -361,14 +361,14 @@ jobs:
             - Service: ${{ inputs.service }}
             - Environment: ${{ inputs.environment }}
             - Commit: ${{ github.sha }}
-            
+
             ## Docker Images
             ${{ needs.validate-inputs.outputs.deploy_frontend == 'true' && format('- Frontend: {0}', needs.validate-inputs.outputs.frontend_image) || '' }}
-            ${{ needs.validate-inputs.outputs.deploy_backend == 'true' && format('- Backend: {0}', needs.validate-inputs.outputs.backend_image) || '' }}
-            
+            ${{ needs.validate-inputs.outputs.deploy_search_api == 'true' && format('- Search API: {0}', needs.validate-inputs.outputs.search_api_image) || '' }}
+
             ## Deployment Status
             - ✅ Production: Deployed successfully
-            
+
             ## Health Checks
             - ✅ All services healthy
             - ✅ Performance benchmarks passed
@@ -391,7 +391,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [validate-inputs, deploy-staging, deploy-production]
     if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
-    
+
     steps:
       - name: Update deployment status
         run: |
@@ -400,7 +400,7 @@ jobs:
           echo "Environment: ${{ inputs.environment }}"
           echo "Staging: ${{ needs.deploy-staging.result }}"
           echo "Production: ${{ needs.deploy-production.result }}"
-          
+
           if [ "${{ inputs.environment }}" = "production" ]; then
             if [ "${{ needs.deploy-production.result }}" = "success" ]; then
               echo "✅ Production deployment successful"
