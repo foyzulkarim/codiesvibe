@@ -70,7 +70,7 @@ router.get('/github', (req: Request, res: Response) => {
 
     res.redirect(authUrl);
   } catch (error: unknown) {
-    searchLogger.error('GitHub OAuth initiation failed', error, {
+    searchLogger.error('GitHub OAuth initiation failed', error instanceof Error ? error : new Error(String(error)), {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
     });
@@ -128,7 +128,7 @@ router.get('/github/callback', async (req: Request, res: Response) => {
     // Redirect to frontend with tokens
     res.redirect(oauthService.getFrontendRedirectUrl(result.tokens, result.user));
   } catch (error: unknown) {
-    searchLogger.error('GitHub OAuth callback failed', error, {
+    searchLogger.error('GitHub OAuth callback failed', error instanceof Error ? error : new Error(String(error)), {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
     });
@@ -163,7 +163,7 @@ router.get('/google', (req: Request, res: Response) => {
 
     res.redirect(authUrl);
   } catch (error: unknown) {
-    searchLogger.error('Google OAuth initiation failed', error, {
+    searchLogger.error('Google OAuth initiation failed', error instanceof Error ? error : new Error(String(error)), {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
     });
@@ -221,7 +221,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     // Redirect to frontend with tokens
     res.redirect(oauthService.getFrontendRedirectUrl(result.tokens, result.user));
   } catch (error: unknown) {
-    searchLogger.error('Google OAuth callback failed', error, {
+    searchLogger.error('Google OAuth callback failed', error instanceof Error ? error : new Error(String(error)), {
       service: 'oauth-routes',
       correlationId: searchReq.correlationId,
     });

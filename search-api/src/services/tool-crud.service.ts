@@ -158,7 +158,7 @@ class ToolCrudService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tools as ITool[],
+      data: tools as unknown as ITool[],
       pagination: {
         page,
         limit,
@@ -181,7 +181,7 @@ class ToolCrudService {
       $or: [{ id: id }, { slug: id }],
     }).lean();
 
-    return tool as ITool | null;
+    return tool as unknown as ITool | null;
   }
 
   /**
@@ -208,7 +208,7 @@ class ToolCrudService {
       });
     }
 
-    return tool as ITool | null;
+    return tool as unknown as ITool | null;
   }
 
   /**
@@ -252,7 +252,7 @@ class ToolCrudService {
     await this.ensureConnection();
 
     const tools = await Tool.find().sort({ dateAdded: -1 }).lean();
-    return tools as ITool[];
+    return tools as unknown as ITool[];
   }
 }
 
