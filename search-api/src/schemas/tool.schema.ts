@@ -40,12 +40,14 @@ export const CreateToolSchema = z.object({
     .string()
     .min(50, 'Long description must be at least 50 characters')
     .max(2000, 'Long description must be at most 2000 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
 
   tagline: z
     .string()
     .max(100, 'Tagline must be at most 100 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
 
   // Categorization
   categories: z
