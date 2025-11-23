@@ -7,12 +7,25 @@ import express, { Express } from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import jwt from 'jsonwebtoken';
 import toolsRoutes from '../../../routes/tools.routes';
 import { Tool } from '../../../models/tool.model';
+
+// Set JWT secret for testing
+const TEST_JWT_SECRET = 'test-jwt-secret-for-integration-testing';
+process.env.JWT_SECRET = TEST_JWT_SECRET;
 
 describe('Tools Routes Integration Tests', () => {
   let app: Express;
   let mongoServer: MongoMemoryServer;
+  let authToken: string;
+
+  /**
+   * Generate a valid JWT token for testing
+   */
+  function generateTestToken(payload: { userId: string; email: string; role: string }): string {
+    return jwt.sign(payload, TEST_JWT_SECRET, { expiresIn: '1h' });
+  }
 
   const validTool = {
     id: 'test-tool',
@@ -48,6 +61,13 @@ describe('Tools Routes Integration Tests', () => {
     app = express();
     app.use(express.json());
     app.use('/api/tools', toolsRoutes);
+
+    // Generate auth token for protected routes
+    authToken = generateTestToken({
+      userId: 'test-user-id',
+      email: 'test@example.com',
+      role: 'admin',
+    });
   });
 
   afterAll(async () => {
@@ -63,6 +83,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should create a new tool', async () => {
       const response = await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(validTool)
         .expect('Content-Type', /json/)
         .expect(201);
@@ -70,6 +91,13 @@ describe('Tools Routes Integration Tests', () => {
       expect(response.body.id).toBe(validTool.id);
       expect(response.body.name).toBe(validTool.name);
       expect(response.body.categories).toEqual(validTool.categories);
+    });
+
+    it('should return 401 without authentication', async () => {
+      await request(app)
+        .post('/api/tools')
+        .send(validTool)
+        .expect(401);
     });
 
     it('should return 400 for invalid data', async () => {
@@ -80,6 +108,7 @@ describe('Tools Routes Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(invalidTool)
         .expect('Content-Type', /json/)
         .expect(400);
@@ -96,6 +125,7 @@ describe('Tools Routes Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(incompleteTool)
         .expect(400);
 
@@ -106,12 +136,14 @@ describe('Tools Routes Integration Tests', () => {
       // Create first tool
       await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(validTool)
         .expect(201);
 
       // Try to create duplicate
       const response = await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(validTool)
         .expect(409);
 
@@ -127,6 +159,7 @@ describe('Tools Routes Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/tools')
+        .set('Authorization', `Bearer ${authToken}`)
         .send(invalidCategoriesTool)
         .expect(400);
 
@@ -297,6 +330,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should update tool name', async () => {
       const response = await request(app)
         .patch('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated Tool Name' })
         .expect('Content-Type', /json/)
         .expect(200);
@@ -305,9 +339,17 @@ describe('Tools Routes Integration Tests', () => {
       expect(response.body.id).toBe('test-tool'); // ID should not change
     });
 
+    it('should return 401 without authentication', async () => {
+      await request(app)
+        .patch('/api/tools/test-tool')
+        .send({ name: 'Updated Tool Name' })
+        .expect(401);
+    });
+
     it('should update multiple fields', async () => {
       const response = await request(app)
         .patch('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Updated Name',
           description: 'This is an updated description with enough characters',
@@ -323,6 +365,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should return 404 for non-existent tool', async () => {
       const response = await request(app)
         .patch('/api/tools/non-existent')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated' })
         .expect(404);
 
@@ -332,6 +375,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should return 400 for invalid update data', async () => {
       const response = await request(app)
         .patch('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ id: 'Invalid ID With Spaces' })
         .expect(400);
 
@@ -351,6 +395,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should delete tool', async () => {
       await request(app)
         .delete('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(204);
 
       // Verify tool is deleted
@@ -361,9 +406,16 @@ describe('Tools Routes Integration Tests', () => {
       expect(response.body.error).toBe('Tool not found');
     });
 
+    it('should return 401 without authentication', async () => {
+      await request(app)
+        .delete('/api/tools/test-tool')
+        .expect(401);
+    });
+
     it('should return 404 for non-existent tool', async () => {
       const response = await request(app)
         .delete('/api/tools/non-existent')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
       expect(response.body.error).toBe('Tool not found');
