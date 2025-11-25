@@ -855,6 +855,9 @@ describe('Query Planner Node - Unit Tests', () => {
 
   describe('5. Edge Cases & Error Handling', () => {
     test('5.1 Null intent state - should return error', async () => {
+      // Mock console.error to suppress expected error log
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
       const mockState: typeof StateAnnotation.State = {
         schema: toolsSchema,
         domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
@@ -884,6 +887,9 @@ describe('Query Planner Node - Unit Tests', () => {
       expect(result.executionPlan).toBeNull();
       expect(result.errors).toBeDefined();
       expect(result.errors?.length).toBeGreaterThan(0);
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
 
     test('5.2 Empty intent state - should generate minimal plan', async () => {
