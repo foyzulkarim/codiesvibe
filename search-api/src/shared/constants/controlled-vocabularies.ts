@@ -1,3 +1,22 @@
+/**
+ * @deprecated This file is deprecated as of v3.0 (schema-driven pipeline)
+ *
+ * Controlled vocabularies are now defined in the domain schema instead of this shared file.
+ * This provides better type safety, validation, and domain-specific configuration.
+ *
+ * Migration path:
+ * - For tools domain: Use `toolsSchema` from `@/domains/tools/tools.schema`
+ * - Access vocabularies via: `schema.vocabularies.categories`, `schema.vocabularies.functionality`, etc.
+ * - In pipeline nodes: Extract schema from state: `const { schema } = state;`
+ *
+ * Related files:
+ * - Schema definition: `src/domains/tools/tools.schema.ts`
+ * - Schema types: `src/core/types/schema.types.ts`
+ * - Schema validator: `src/core/validators/schema.validator.ts`
+ * - Pipeline initialization: `src/core/pipeline.init.ts`
+ *
+ * This file is kept for backward compatibility and will be removed in a future version.
+ */
 export const CONTROLLED_VOCABULARIES = {
   categories: [
     // Core Technology
@@ -120,6 +139,14 @@ export const CONTROLLED_VOCABULARIES = {
   billingPeriods: ['Monthly', 'Yearly'],
 };
 
+/**
+ * @deprecated This constant is deprecated as of v3.0 (schema-driven pipeline)
+ *
+ * Vocabulary mappings are now defined in the domain schema.
+ * Use `schema.vocabularies` from `@/domains/tools/tools.schema` instead.
+ *
+ * For tools domain, import: `import { TOOLS_VOCABULARY_MAPPINGS } from '@/domains/tools';`
+ */
 export const VOCABULARY_MAPPINGS = {
   // Synonym mappings for LLM context
   categories: {
@@ -140,6 +167,14 @@ export const VOCABULARY_MAPPINGS = {
   },
 };
 
+/**
+ * @deprecated This constant is deprecated as of v3.0 (schema-driven pipeline)
+ *
+ * Price operators are now defined in the domain schema.
+ * Use `TOOLS_PRICE_OPERATORS` from `@/domains/tools/tools.schema` instead.
+ *
+ * For tools domain, import: `import { TOOLS_PRICE_OPERATORS } from '@/domains/tools';`
+ */
 export const OPERATORS = {
   LESS_THAN: 'less_than',
   LESS_THAN_OR_EQUAL: 'less_than_or_equal',
