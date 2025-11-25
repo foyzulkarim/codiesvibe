@@ -4,6 +4,7 @@ A sophisticated LangGraph-based AI search service that provides intelligent tool
 
 ## 🚀 Features
 
+- **🎯 Schema-Driven Architecture (v3.0)**: Decoupled design with domain separation for maximum maintainability
 - **🧠 LangGraph 3-Node Pipeline**: Intent extraction → Query planning → Query execution
 - **🔍 Multi-Vector Search**: Semantic, categorical, functional, and alias-based embeddings
 - **⚡ Real-Time AI**: Integration with vLLM for high-performance AI model serving
@@ -35,6 +36,130 @@ A sophisticated LangGraph-based AI search service that provides intelligent tool
 │   Host API      │    │  Vector DB       │    │  Document DB    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
+
+### Schema-Driven Architecture (v3.0)
+
+The search API uses a **schema-driven architecture** for maximum decoupling and maintainability:
+
+#### Core Principles
+- **Domain Separation**: Core framework code is separate from domain-specific logic
+- **Schema Configuration**: All domain knowledge defined in `DomainSchema` interface
+- **Type Safety**: Full TypeScript type checking across schema definitions
+- **Validation**: Schema validation at startup catches configuration errors early
+
+#### Architecture Layers
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Schema-Driven Pipeline                    │
+├─────────────────────────────────────────────────────────────┤
+│  Core Framework (Domain-Agnostic)                           │
+│  • schema.types.ts - DomainSchema interface                 │
+│  • schema.validator.ts - Schema validation                  │
+│  • templates.ts - Prompt templates with placeholders        │
+│  • prompt.generator.ts - Dynamic prompt generation          │
+│  • pipeline.init.ts - Schema validation & wiring            │
+├─────────────────────────────────────────────────────────────┤
+│  Domain Layer (Tools-Specific)                              │
+│  • tools.schema.ts - toolsSchema definition                 │
+│  • tools.filters.ts - buildToolsFilters() logic            │
+│  • tools.validators.ts - validateToolsQueryPlan() logic    │
+├─────────────────────────────────────────────────────────────┤
+│  LangGraph Nodes (Schema-Powered)                          │
+│  • intent-extractor.node.ts - Uses schema prompts          │
+│  • query-planner.node.ts - Uses domain handlers            │
+│  • query-executor.node.ts - Executes with schema config    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Key Components
+
+**1. Domain Schema** (`src/core/types/schema.types.ts`)
+```typescript
+interface DomainSchema {
+  name: string;                              // Domain identifier
+  version: string;                           // Schema version
+  vocabularies: DomainVocabularies;         // Controlled vocabularies
+  intentFields: IntentFieldDefinition[];    // LLM extraction schema
+  vectorCollections: VectorCollectionDefinition[]; // Vector DB config
+  structuredDatabase: StructuredDatabaseDefinition; // MongoDB config
+}
+```
+
+**2. Schema Validator** (`src/core/validators/schema.validator.ts`)
+- Validates schema structure at startup
+- Catches configuration errors before runtime
+- Provides detailed validation messages
+
+**3. Prompt Generator** (`src/core/prompts/prompt.generator.ts`)
+- Generates LLM prompts dynamically from schema
+- Replaces hardcoded prompts with template-based system
+- Supports `{{PLACEHOLDER}}` syntax for dynamic content
+
+**4. Domain Handlers** (`src/domains/tools/`)
+- `tools.schema.ts` - Complete tools domain schema definition
+- `tools.filters.ts` - MongoDB filter mapping logic
+- `tools.validators.ts` - Query plan validation and recommendations
+
+**5. Pipeline Initialization** (`src/core/pipeline.init.ts`)
+```typescript
+const pipelineConfig = initializePipeline();
+// Returns: { schema, domainHandlers }
+// - schema: Validated domain schema
+// - domainHandlers: { buildFilters, validateQueryPlan }
+```
+
+#### Migration Benefits
+
+**Before (v2.x)**: Hardcoded domain knowledge in every node
+- ❌ 200+ lines of hardcoded prompts per node
+- ❌ 150+ lines of inline filter logic
+- ❌ Domain knowledge scattered across files
+- ❌ Difficult to maintain and extend
+
+**After (v3.0)**: Schema-driven configuration
+- ✅ Prompts generated dynamically from schema
+- ✅ Domain logic extracted to dedicated files
+- ✅ Single source of truth for vocabularies
+- ✅ Easy to add new domains or modify existing ones
+
+#### Adding a New Domain
+
+To add a new domain (e.g., "recipes"):
+
+1. **Define Schema** (`src/domains/recipes/recipes.schema.ts`)
+```typescript
+export const recipesSchema: DomainSchema = {
+  name: 'recipes',
+  version: '1.0.0',
+  vocabularies: { cuisines: [...], dietTypes: [...] },
+  intentFields: [...],
+  vectorCollections: [...],
+  structuredDatabase: {...}
+};
+```
+
+2. **Implement Handlers** (`src/domains/recipes/recipes.filters.ts`)
+```typescript
+export function buildRecipesFilters(intentState: any): any[] {
+  // Domain-specific filter mapping logic
+}
+```
+
+3. **Wire Pipeline** (`src/core/pipeline.init.ts`)
+```typescript
+export function initializeRecipesPipeline() {
+  return {
+    schema: recipesSchema,
+    domainHandlers: {
+      buildFilters: buildRecipesFilters,
+      validateQueryPlan: validateRecipesQueryPlan
+    }
+  };
+}
+```
+
+**No changes needed** to core framework or LangGraph nodes!
 
 ## 🚀 Quick Start
 
