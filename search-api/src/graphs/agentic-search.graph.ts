@@ -325,9 +325,14 @@ export async function* streamSearchWithAgenticPipeline(
   const startTime = Date.now();
 
   try {
+    // Initialize pipeline with schema and domain handlers
+    const pipelineConfig = initializePipeline();
+
     // Initialize state
     const state: typeof StateAnnotation.State = {
       query,
+      schema: pipelineConfig.schema!,
+      domainHandlers: pipelineConfig.domainHandlers!,
       intentState: null,
       executionPlan: null,
       candidates: [],
