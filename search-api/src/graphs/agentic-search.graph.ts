@@ -9,6 +9,9 @@ import { queryPlannerNode } from "@/graphs/nodes/query-planner.node";
 import { queryExecutorNode } from "@/graphs/nodes/query-executor.node";
 import { cacheStoreNode } from "@/graphs/nodes/cache-store.node";
 
+// Import pipeline initialization for schema-driven architecture
+import { initializePipeline } from "@/core/pipeline.init";
+
 /**
  * Agentic Search Graph - Enhanced Pipeline with Intelligent Caching
  *
@@ -110,9 +113,16 @@ export async function searchWithAgenticPipeline(
   const startTime = Date.now();
 
   try {
-    // Initialize state
+    // Initialize pipeline with schema and domain handlers
+    const pipelineConfig = initializePipeline();
+
+    // Initialize state with schema and domain handlers
     const initialState: typeof StateAnnotation.State = {
       query,
+      // Schema-driven configuration (NEW)
+      schema: pipelineConfig.schema!,
+      domainHandlers: pipelineConfig.domainHandlers!,
+      // Pipeline state
       intentState: null,
       executionPlan: null,
       candidates: [],
@@ -130,7 +140,7 @@ export async function searchWithAgenticPipeline(
         nodeExecutionTimes: {},
         threadId: options.threadId,
         totalNodesExecuted: 0,
-        pipelineVersion: "2.1-llm-first-with-caching",
+        pipelineVersion: "3.0-schema-driven-pipeline",
         ...options.metadata
       }
     };
@@ -221,7 +231,7 @@ export async function searchWithAgenticPipeline(
         nodeExecutionTimes: {},
         threadId: options.threadId,
         totalNodesExecuted: 0,
-        pipelineVersion: "2.1-llm-first-with-caching"
+        pipelineVersion: "3.0-schema-driven-pipeline"
       }
     };
   }
@@ -281,7 +291,7 @@ export async function batchSearchWithAgenticPipeline(
           executionPath: ["batch-search"],
           nodeExecutionTimes: {},
           totalNodesExecuted: 0,
-          pipelineVersion: "2.1-llm-first-with-caching"
+          pipelineVersion: "3.0-schema-driven-pipeline"
         }
       }));
 
@@ -335,7 +345,7 @@ export async function* streamSearchWithAgenticPipeline(
         nodeExecutionTimes: {},
         threadId: options.threadId,
         totalNodesExecuted: 0,
-        pipelineVersion: "2.1-llm-first-with-caching"
+        pipelineVersion: "3.0-schema-driven-pipeline"
       }
     };
 
@@ -377,7 +387,7 @@ export async function* streamSearchWithAgenticPipeline(
           nodeExecutionTimes: {},
           threadId: options.threadId,
           totalNodesExecuted: 0,
-          pipelineVersion: "2.1-llm-first-with-caching"
+          pipelineVersion: "3.0-schema-driven-pipeline"
         }
       },
       progress: -1
