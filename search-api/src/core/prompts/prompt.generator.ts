@@ -87,7 +87,7 @@ export function generateQueryPlanningPrompt(
  */
 function generateIntentFieldsSchema(fields: IntentFieldDefinition[]): string {
   const fieldLines = fields.map((field) => {
-    let typeStr = field.type;
+    let typeStr: string = field.type;
 
     if (field.type === 'enum' && field.enumValues) {
       typeStr = field.enumValues.map((v) => `"${v}"`).join(' | ');
