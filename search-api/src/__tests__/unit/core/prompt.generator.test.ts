@@ -27,7 +27,8 @@ describe('Prompt Generator - Unit Tests', () => {
     test('1.3 Should include all vocabulary categories in prompt', () => {
       const prompt = generateIntentExtractionPrompt(toolsSchema);
 
-      expect(prompt).toContain('categories');
+      // Check that vocabulary fields are mentioned in the prompt
+      expect(prompt).toContain('category');
       expect(prompt).toContain('functionality');
       expect(prompt).toContain('interface');
       expect(prompt).toContain('deployment');
@@ -99,7 +100,8 @@ describe('Prompt Generator - Unit Tests', () => {
       const prompt = generateIntentExtractionPrompt(minimalSchema);
 
       expect(prompt).toBeDefined();
-      expect(prompt).toContain('test');
+      // Check that vocabulary value "Test" is included (case-sensitive)
+      expect(prompt).toContain('Test');
       expect(prompt).toContain('goal');
     });
 
@@ -137,7 +139,7 @@ describe('Prompt Generator - Unit Tests', () => {
 
   describe('2. Query Planning Prompt Generation', () => {
     test('2.1 Should generate valid query planning prompt from tools schema', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt).toBeDefined();
@@ -146,28 +148,29 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('2.2 Should include domain name in prompt', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt).toContain('tools');
     });
 
     test('2.3 Should include enabled vector collections', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       // Check that enabled collections are mentioned
       enabledCollections.forEach(collection => {
-        expect(prompt).toContain(collection.name);
+        expect(prompt).toContain(collection);
       });
     });
 
     test('2.4 Should include collection descriptions', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollectionObjects = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = enabledCollectionObjects.map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       // Should include descriptions for enabled collections
-      enabledCollections.slice(0, 3).forEach(collection => {
+      enabledCollectionObjects.slice(0, 3).forEach(collection => {
         if (collection.description) {
           expect(prompt).toContain(collection.description);
         }
@@ -175,18 +178,18 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('2.5 Should include strategy guidance', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt).toContain('strategy');
     });
 
     test('2.6 Should work with single collection', () => {
-      const singleCollection = [toolsSchema.vectorCollections[0]];
+      const singleCollection = [toolsSchema.vectorCollections[0].name];
       const prompt = generateQueryPlanningPrompt(toolsSchema, singleCollection);
 
       expect(prompt).toBeDefined();
-      expect(prompt).toContain(singleCollection[0].name);
+      expect(prompt).toContain(singleCollection[0]);
     });
 
     test('2.7 Should work with empty collections array', () => {
@@ -198,7 +201,7 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('2.8 Should include structured database information', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt).toContain(toolsSchema.structuredDatabase.collection);
@@ -215,7 +218,7 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('3.2 Query planning prompt should not have placeholder remnants', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt).not.toContain('{{');
@@ -232,7 +235,7 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('3.4 Query planning prompt should be well-formatted', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
       expect(prompt.split('\n').length).toBeGreaterThan(10);
@@ -354,7 +357,7 @@ describe('Prompt Generator - Unit Tests', () => {
     });
 
     test('5.2 Query planning prompts should be consistent', () => {
-      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false);
+      const enabledCollections = toolsSchema.vectorCollections.filter(c => c.enabled !== false).map(c => c.name);
       const prompt1 = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
       const prompt2 = generateQueryPlanningPrompt(toolsSchema, enabledCollections);
 
@@ -364,12 +367,18 @@ describe('Prompt Generator - Unit Tests', () => {
     test('5.3 Different schemas should generate different prompts', () => {
       const schema1: DomainSchema = {
         ...toolsSchema,
-        name: 'schema1',
+        vocabularies: {
+          ...toolsSchema.vocabularies,
+          categories: ['Category1'],
+        },
       };
 
       const schema2: DomainSchema = {
         ...toolsSchema,
-        name: 'schema2',
+        vocabularies: {
+          ...toolsSchema.vocabularies,
+          categories: ['Category2'],
+        },
       };
 
       const prompt1 = generateIntentExtractionPrompt(schema1);

@@ -48,7 +48,8 @@ describe('Pipeline Initialization - Unit Tests', () => {
 
       expect(result.domainHandlers).toBeDefined();
       expect(result.domainHandlers?.buildFilters).toBe(buildToolsFilters);
-      expect(result.domainHandlers?.validateQueryPlan).toBe(validateToolsQueryPlan);
+      // validateQueryPlan is wrapped to adapt signature, so check it's a function
+      expect(typeof result.domainHandlers?.validateQueryPlan).toBe('function');
     });
 
     test('1.4 Should wire all required handlers', () => {
@@ -66,7 +67,7 @@ describe('Pipeline Initialization - Unit Tests', () => {
 
       // Test that validateQueryPlan is callable
       const mockQueryPlan = {
-        strategy: 'test',
+        strategy: 'hybrid' as const,
         vectorSources: [],
         structuredSources: [],
         fusion: 'none' as const,
@@ -149,7 +150,7 @@ describe('Pipeline Initialization - Unit Tests', () => {
         priceRange: {
           min: 10,
           max: 50,
-          billingPeriod: 'Monthly',
+          billingPeriod: 'Monthly' as const,
         },
       };
 
@@ -164,12 +165,12 @@ describe('Pipeline Initialization - Unit Tests', () => {
       const result = initializePipeline();
 
       const mockQueryPlan = {
-        strategy: 'hybrid',
+        strategy: 'hybrid' as const,
         vectorSources: [
           {
             collection: 'tools',
-            embeddingType: 'semantic',
-            queryVectorSource: 'query_text',
+            embeddingType: 'semantic' as const,
+            queryVectorSource: 'query_text' as const,
             topK: 10,
           },
         ],
@@ -182,8 +183,9 @@ describe('Pipeline Initialization - Unit Tests', () => {
 
       const validationResult = result.domainHandlers?.validateQueryPlan(mockQueryPlan, {});
       expect(validationResult).toBeDefined();
-      expect(validationResult).toHaveProperty('isValid');
-      expect(validationResult).toHaveProperty('recommendations');
+      expect(validationResult).toHaveProperty('valid');
+      expect(validationResult).toHaveProperty('errors');
+      expect(validationResult).toHaveProperty('warnings');
     });
 
     test('3.4 buildFilters should handle multiple filters', () => {
@@ -212,8 +214,12 @@ describe('Pipeline Initialization - Unit Tests', () => {
       const result1 = initializePipeline();
       const result2 = initializePipeline();
 
+      // buildFilters should be the same reference (no wrapper)
       expect(result1.domainHandlers?.buildFilters).toBe(result2.domainHandlers?.buildFilters);
-      expect(result1.domainHandlers?.validateQueryPlan).toBe(result2.domainHandlers?.validateQueryPlan);
+
+      // validateQueryPlan is wrapped, so references differ, but behavior should be identical
+      expect(typeof result1.domainHandlers?.validateQueryPlan).toBe('function');
+      expect(typeof result2.domainHandlers?.validateQueryPlan).toBe('function');
     });
 
     test('4.3 Calling initializePipeline multiple times should not throw', () => {

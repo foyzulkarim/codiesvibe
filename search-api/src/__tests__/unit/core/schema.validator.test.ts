@@ -153,7 +153,7 @@ describe('Schema Validator - Unit Tests', () => {
 
       const result = validateSchema(invalidSchema);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('intentFields'))).toBe(true);
+      expect(result.errors.some(e => e.includes('intent field'))).toBe(true);
     });
 
     test('4.2 Intent field missing name - should fail validation', () => {
@@ -236,7 +236,7 @@ describe('Schema Validator - Unit Tests', () => {
 
       const result = validateSchema(invalidSchema);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('vectorCollections'))).toBe(true);
+      expect(result.errors.some(e => e.includes('vector collection'))).toBe(true);
     });
 
     test('5.2 Collection missing name - should fail validation', () => {

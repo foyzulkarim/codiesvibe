@@ -121,34 +121,50 @@ export function buildToolsFilters(intentState: any): any[] {
   // ============================================================================
   // CATEGORY FILTER
   // ============================================================================
-  if (intentState.category) {
-    filters.push({
-      field: 'categories.primary',
-      operator: 'in',
-      value: [intentState.category],
-    });
+  if (intentState.category || intentState.categories) {
+    const categoryValue = intentState.categories || intentState.category;
+    // Skip if empty array
+    if (Array.isArray(categoryValue) && categoryValue.length === 0) {
+      // Skip empty array
+    } else {
+      filters.push({
+        field: 'categories.primary',
+        operator: 'in',
+        value: Array.isArray(categoryValue) ? categoryValue : [categoryValue],
+      });
+    }
   }
 
   // ============================================================================
   // INTERFACE FILTER
   // ============================================================================
   if (intentState.interface) {
-    filters.push({
-      field: 'interface',
-      operator: 'in',
-      value: [intentState.interface],
-    });
+    // Skip if empty array
+    if (Array.isArray(intentState.interface) && intentState.interface.length === 0) {
+      // Skip empty array
+    } else {
+      filters.push({
+        field: 'interface',
+        operator: 'in',
+        value: Array.isArray(intentState.interface) ? intentState.interface : [intentState.interface],
+      });
+    }
   }
 
   // ============================================================================
   // DEPLOYMENT FILTER
   // ============================================================================
   if (intentState.deployment) {
-    filters.push({
-      field: 'deployment',
-      operator: 'in',
-      value: [intentState.deployment],
-    });
+    // Skip if empty array
+    if (Array.isArray(intentState.deployment) && intentState.deployment.length === 0) {
+      // Skip empty array
+    } else {
+      filters.push({
+        field: 'deployment',
+        operator: 'in',
+        value: Array.isArray(intentState.deployment) ? intentState.deployment : [intentState.deployment],
+      });
+    }
   }
 
   // ============================================================================

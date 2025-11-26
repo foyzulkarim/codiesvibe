@@ -38,7 +38,11 @@ export function initializePipeline(): Partial<typeof StateAnnotation.State> {
   // Wire domain handlers
   const domainHandlers = {
     buildFilters: buildToolsFilters,
-    validateQueryPlan: validateToolsQueryPlan,
+    validateQueryPlan: (plan: any, intentState: any) => {
+      // Adapt the tools validator to match the expected signature
+      // The tools validator expects (plan, schema) but the state type expects (plan, intentState)
+      return validateToolsQueryPlan(plan, toolsSchema);
+    },
   };
 
   console.log('🔌 Domain handlers wired: buildFilters, validateQueryPlan');
