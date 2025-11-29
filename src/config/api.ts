@@ -158,6 +158,17 @@ export const apiConfig = {
 } as const;
 
 /**
+ * Debug logging to verify configuration
+ */
+if (import.meta.env.DEV || apiConfig.features.debug) {
+  console.log('🔍 API Configuration Debug:');
+  console.log('  VITE_API_URL from env:', import.meta.env.VITE_API_URL);
+  console.log('  Final baseUrl:', apiConfig.baseUrl);
+  console.log('  NODE_ENV:', import.meta.env.NODE_ENV);
+  console.log('  DEV mode:', import.meta.env.DEV);
+}
+
+/**
  * Validate configuration on app startup
  * Logs warnings for missing required configuration
  */
