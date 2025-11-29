@@ -1,15 +1,19 @@
 import { useState } from "react";
+import { AITool } from "@/data/tools";
 import { ToolCard } from "./ToolCard";
 import { Grid, List } from "lucide-react";
-import { AITool } from "@shared/types";
 
 interface ToolGridProps {
   tools: AITool[];
   isLoading?: boolean;
   searchTerm?: string;
+  onCompare: (tool: AITool) => void;
+  onSave: (tool: AITool) => void;
+  savedTools?: Set<string>;
+  comparisonTools?: AITool[];
 }
 
-export const ToolGrid = ({ tools, isLoading, searchTerm }: ToolGridProps) => {
+export const ToolGrid = ({ tools, isLoading, searchTerm, onCompare, onSave, savedTools, comparisonTools }: ToolGridProps) => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -51,20 +55,22 @@ export const ToolGrid = ({ tools, isLoading, searchTerm }: ToolGridProps) => {
         <div className="text-sm text-muted-foreground">
           Found <span className="font-medium text-foreground">{tools.length}</span> AI coding tools
         </div>
-
+        
         <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 rounded transition-colors ${viewMode === "grid" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
+            className={`p-2 rounded transition-colors ${
+              viewMode === "grid" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
             title="Grid view"
           >
             <Grid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 rounded transition-colors ${viewMode === "list" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
+            className={`p-2 rounded transition-colors ${
+              viewMode === "list" ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
             title="List view"
           >
             <List className="w-4 h-4" />
@@ -74,7 +80,7 @@ export const ToolGrid = ({ tools, isLoading, searchTerm }: ToolGridProps) => {
 
       {/* Tool Cards */}
       <div className={
-        viewMode === "grid"
+        viewMode === "grid" 
           ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
           : "space-y-4"
       }>
@@ -85,9 +91,11 @@ export const ToolGrid = ({ tools, isLoading, searchTerm }: ToolGridProps) => {
             searchTerm={searchTerm}
             isExpanded={expandedCard === tool.id}
             onToggleExpanded={() => handleToggleExpanded(tool.id)}
+            onCompare={onCompare}
+            onSave={onSave}
           />
         ))}
-      </div>
+      </div>      
     </div>
   );
 };

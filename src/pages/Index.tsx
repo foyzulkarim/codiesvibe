@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus, Sparkles, Zap, Github, LogOut, Settings } from "lucide-react";
 import { useTools } from "@/hooks/api/useTools";
 import { FilterState } from "@/api/types";
+import { AITool, aiTools } from "@/data/tools";
 import { SORT_OPTIONS } from "@/lib/config";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -19,6 +20,9 @@ export default function Index() {
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // For the actual API search
 
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [comparisonTools, setComparisonTools] = useState<AITool[]>([]);
+  const [savedTools, setSavedTools] = useState<Set<string>>(new Set());
 
   const { user, isAuthenticated, logout, isLoading: authLoading } = useAuth();
 
@@ -32,6 +36,47 @@ export default function Index() {
     setSearchQuery(query);
   };
 
+  // Handle sort changes
+  const handleSortChange = (newSortBy: string) => {
+    setSortBy(newSortBy);
+  };
+
+  // Handle comparison
+  const handleCompare = (tool: AITool) => {
+    if (comparisonTools.find(t => t.name === tool.name)) {
+      console.log(`${tool.name} is already in comparison`);
+      return;
+    }
+
+    if (comparisonTools.length >= 3) {
+      console.log("Maximum 3 tools can be compared");
+      return;
+    }
+
+    setComparisonTools(prev => [...prev, tool]);
+  };
+
+  const handleRemoveFromComparison = (tool: AITool) => {
+    setComparisonTools(prev => prev.filter(t => t.name !== tool.name));
+  };
+
+  // Handle save/unsave
+  const handleSave = (tool: AITool) => {
+    const newSavedTools = new Set(savedTools);
+    if (savedTools.has(tool.name)) {
+      newSavedTools.delete(tool.name);
+      console.log(`${tool.name} removed from saved tools`);
+    } else {
+      newSavedTools.add(tool.name);
+      console.log(`${tool.name} added to saved tools`);
+    }
+    setSavedTools(newSavedTools);
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {   
+    setSearchQuery("");
+  };  
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,6 +159,7 @@ export default function Index() {
               onChange={setInputValue}
               onSearch={handleSearch}
               showSearchButton={true}
+              tools={aiTools}
               isLoading={isLoading}
             />
           </div>
@@ -137,9 +183,9 @@ export default function Index() {
                 isLoading={isLoading}
                 searchTerm={searchQuery}
                 totalCount={tools?.length || 0}
-              />
+              />              
             </div>
-            {/* 
+{/* 
             <SortSelector
               value={sortBy}
               onChange={handleSortChange}
@@ -158,10 +204,14 @@ export default function Index() {
               tools={tools || []}
               isLoading={isLoading}
               searchTerm={searchQuery}
+              onCompare={handleCompare}
+              onSave={handleSave}
+              savedTools={savedTools}
+              comparisonTools={comparisonTools}
             />
           )}
         </div>
-      </main>
+      </main>      
     </div>
   );
 }

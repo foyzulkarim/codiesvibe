@@ -3,13 +3,15 @@ import { Star, TrendingUp, Plus, GitCompare, Heart, ExternalLink, Calendar } fro
 import { AITool } from "@shared/types";
 
 interface ToolCardProps {
-  tool: AITool;  
+  tool: AITool;
+  onCompare?: (tool: AITool) => void;
+  onSave?: (tool: AITool) => void;
   isExpanded?: boolean;
   onToggleExpanded?: (toolId: string) => void;
   searchTerm?: string;
 }
 
-export const ToolCard = ({ tool, isExpanded, onToggleExpanded, searchTerm = '' }: ToolCardProps) => {
+export const ToolCard = ({ tool, onCompare, onSave, isExpanded, onToggleExpanded, searchTerm = '' }: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
 
   console.log('ToolCard(): tool', tool);
