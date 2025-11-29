@@ -43,7 +43,7 @@ tags:
     description: Prometheus metrics for monitoring
 
 paths:
-  /search:
+  /api/search:
     post:
       tags:
         - Search

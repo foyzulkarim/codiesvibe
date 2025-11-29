@@ -683,7 +683,7 @@ function sanitizeQuery(query: string): string {
 }
 
 // Enhanced search endpoint with comprehensive security
-app.post('/search', searchLimiter, searchTimeout, validateSearchRequest, async (req, res) => {
+app.post('/api/search', searchLimiter, searchTimeout, validateSearchRequest, async (req, res) => {
   const startTime = Date.now();
   const searchReq = req as SearchRequest;
   const clientId = req.ip || req.socket.remoteAddress || 'unknown';
@@ -843,7 +843,7 @@ async function startServer() {
       healthReadyEndpoint: `http://localhost:${PORT}/health/ready`,
       metricsEndpoint: `http://localhost:${PORT}/metrics`,
       apiDocsEndpoint: `http://localhost:${PORT}/api-docs`,
-      searchEndpoint: `http://localhost:${PORT}/search`,
+      searchEndpoint: `http://localhost:${PORT}/api/search`,
       environment: process.env.NODE_ENV || 'development'
     });
     searchLogger.info('Server endpoints available', {
