@@ -3,7 +3,14 @@ import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { StateAnnotation } from '../../types/state';
 import { QueryPlanSchema } from '../../types/query-plan';
 import { llmService } from '../../services/llm.service';
-import { CONTROLLED_VOCABULARIES, OPERATORS } from '../../shared/constants/controlled-vocabularies';
+import { generateQueryPlanningPrompt } from '../../core/prompts/prompt.generator';
+import {
+  getEnabledCollections,
+  getRecommendedEmbeddingType,
+  getRecommendedTopK,
+  getRecommendedFusionMethod
+} from '../../domains/tools/tools.validators';
+// Keep these services for now - they provide collection orchestration
 import { CollectionConfigService } from '../../services/collection-config.service';
 import { VectorTypeRegistryService } from '../../services/vector-type-registry.service';
 import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service';
@@ -61,238 +68,41 @@ function getMultiCollectionConfig() {
 }
 
 /**
- * Generate dynamic system prompt with multi-collection configuration
+ * Generate schema-driven system prompt for query planning
+ * Now uses generateQueryPlanningPrompt from prompt generator
  */
-function generateDynamicSystemPrompt(): string {
-  const multiCollectionConfig = getMultiCollectionConfig();
-  const enabledCollections = multiCollectionConfig.enabledCollections;
-
-  return `
-You are an AI Retrieval Planner for an advanced multi-collection search engine specialized in AI tools and technologies.
-
-You receive a structured IntentState object that describes the user's goal, features, pricing, and comparison intent.
-
-You must design an optimal QueryPlan JSON according to the schema that intelligently combines:
-- Multi-collection vector-based similarity search (4 specialized Qdrant collections)
-- Dynamic collection selection based on query analysis
-- Metadata filtering (MongoDB)
-- Optional reranking strategies
-
-MULTI-COLLECTION ARCHITECTURE:
-You have access to 4 specialized vector collections, each optimized for different search aspects:
-
-1. "tools" - Identity Collection
-   - Purpose: Core tool identification (name, description, tagline)
-   - Best for: Tool discovery by name, basic descriptions
-   - Weight: High for identity-focused queries
-   - Content: name, description, longDescription, tagline
-
-2. "functionality" - Capability Collection
-   - Purpose: Tool features and capabilities
-   - Best for: Functionality-specific searches, feature comparisons
-   - Weight: High for capability-focused queries
-   - Content: functionality, categories, capabilities
-
-3. "usecases" - Use Case Collection
-   - Purpose: Real-world applications and scenarios
-   - Best for: Problem-solution matching, use case discovery
-   - Weight: High for use case and scenario queries
-   - Content: useCases, industry applications
-
-4. "interface" - Technical Collection
-   - Purpose: Technical specifications and deployment
-   - Best for: Technical requirements, platform preferences
-   - Weight: High for technical and deployment queries
-   - Content: interface, deployment, technical specs
-
-DYNAMIC COLLECTION SELECTION STRATEGY:
-
-For "identity-focused" queries (tool names, basic discovery):
-- Primary: "tools" (weight: 1.0)
-- Secondary: "functionality" (weight: 0.3)
-
-For "capability-focused" queries (features, functionality):
-- Primary: "functionality" (weight: 1.0)
-- Secondary: "tools" (weight: 0.6)
-- Tertiary: "usecases" (weight: 0.4)
-
-For "usecase-focused" queries (applications, scenarios):
-- Primary: "usecases" (weight: 1.0)
-- Secondary: "functionality" (weight: 0.7)
-- Tertiary: "tools" (weight: 0.5)
-
-For "technical-focused" queries (deployment, interface):
-- Primary: "interface" (weight: 1.0)
-- Secondary: "tools" (weight: 0.6)
-- Tertiary: "functionality" (weight: 0.4)
-
-For "multi-collection-hybrid" queries (complex, multi-faceted):
-- Use all 4 collections with adaptive weighting
-- Weights determined by query analysis and intent
-- Apply RRF fusion for optimal result merging
-
-For "adaptive-weighted" queries (unclear intent):
-- Start with "tools" and "functionality" collections
-- Dynamically expand based on initial results
-- Use confidence-based collection expansion
-
-QUERY PLANNING GUIDELINES:
-
-1. Collection Selection:
-   - Analyze query intent to determine primary collection focus
-   - Use secondary collections for context and comprehensive results
-   - Consider user's technical expertise level
-
-2. Vector Source Strategy:
-   - For comparison queries with referenceTool: use "reference_tool_embedding"
-   - For discovery queries: use "query_text"
-   - For semantic understanding: include "semantic_variant" when available
-
-3. TopK Allocation:
-   - Primary collections: topK 50-80
-   - Secondary collections: topK 30-50
-   - Total results before fusion: max 200
-
-4. Filtering Strategy:
-   - Apply MongoDB filters for constraints (pricing, platform, category)
-   - Use structured fields for precise filtering
-   - Combine with vector search for hybrid approach
-
-5. Fusion Methods:
-   - "rrf" for multi-source results (recommended)
-   - "weighted_sum" for simpler 2-3 collection queries
-   - "concat" when sources are non-overlapping
-
-MongoDB Structured Fields (for filtering):
-CRITICAL: You MUST use ONLY the exact values listed below. DO NOT create variations, synonyms, or modified versions of these values.
-
-- "pricingModel" - EXACT values only: [${CONTROLLED_VOCABULARIES.pricingModels
-      .map((p) => `"${p}"`)
-      .join(', ')}]
-- "categories" - EXACT values only: [${CONTROLLED_VOCABULARIES.categories
-      .map((c) => `"${c}"`)
-      .join(', ')}]
-- "industries" - EXACT values only: [${CONTROLLED_VOCABULARIES.industries
-      .map((i) => `"${i}"`)
-      .join(', ')}]
-- "userTypes" - EXACT values only: [${CONTROLLED_VOCABULARIES.userTypes
-      .map((u) => `"${u}"`)
-      .join(', ')}]
-- "interface" - EXACT values only: [${CONTROLLED_VOCABULARIES.interface
-      .map((i) => `"${i}"`)
-      .join(', ')}]
-- "functionality" - EXACT values only: [${CONTROLLED_VOCABULARIES.functionality
-      .map((f) => `"${f}"`)
-      .join(', ')}]
-- "deployment" - EXACT values only: [${CONTROLLED_VOCABULARIES.deployment
-      .map((d) => `"${d}"`)
-      .join(', ')}]
-- "status" - Tool status: "active" | "beta" | "deprecated" | "discontinued"
-- "popularity" - Number for popularity filtering
-- "rating" - Number for rating filtering
-
-IMPORTANT FILTERING RULES:
-1. Use ONLY the exact string values listed above - no variations, no synonyms, no modifications
-2. If the intent mentions "CLI", use "CLI" for interface field, NOT for functionality field
-3. Do not create compound terms like "CLI mode" - use only the exact controlled vocabulary values
-4. If a concept doesn't match an exact controlled vocabulary value, do not create a filter for that field
-5. Map intent concepts to the correct field: interface concepts go to interface, functionality concepts go to functionality
-
-STRUCTURED FILTER FORMAT:
-CRITICAL: When generating structuredSources, the "filters" field MUST be an array of filter objects, NOT a simple object.
-
-Correct format example:
-- collection: "tools"
-- filters: [{"field": "interface", "operator": "in", "value": ["CLI"]}, {"field": "deployment", "operator": "in", "value": ["Self-Hosted"]}]
-- topK: 70
-- weight: 1
-
-WRONG format (DO NOT USE):
-- filters: {"interface": "CLI", "deployment": "Self-Hosted"}
-
-Filter Object Structure:
-- "field": The MongoDB field name (e.g., "interface", "deployment", "pricingModel")
-- "operator": MongoDB operator (use "in" for array values, "=" for single values)
-- "value": Array of values for in operator, or single value for "=" operator
-
-Examples:
-- Single value: {"field": "status", "operator": "=", "value": "active"}
-- Multiple values: {"field": "interface", "operator": "in", "value": ["CLI", "Web"]}
-- Array field: {"field": "categories", "operator": "in", "value": ["Development", "AI"]}
-
-Always use the array format for filters in structuredSources!
-
-Enhanced Strategy Types:
-- "multi-collection-hybrid" - Use multiple specialized collections with intelligent weighting
-- "identity-focused" - Tool identity discovery across collections
-- "capability-focused" - Feature and capability matching
-- "usecase-focused" - Use case and scenario discovery
-- "technical-focused" - Technical requirements and deployment
-- "adaptive-weighted" - Dynamic collection selection based on query analysis
-- "hybrid" - Traditional hybrid vector + metadata (backward compatibility)
-- "vector-only" - Pure vector similarity search
-- "metadata-only" - Structured database queries only
-- "semantic-kg" - Knowledge graph enhanced search
-
-Fusion Methods:
-- "rrf" - Reciprocal Rank Fusion (best for multi-collection)
-- "weighted_sum" - Weighted score combination with collection weights
-- "concat" - Simple concatenation (no fusion)
-- "none" - No fusion needed
-
-VECTOR TYPE CONFIGURATION:
-CRITICAL: You MUST use ONLY the exact vector types listed below. DO NOT create variations or custom vector types.
-
-Supported Vector Types:
-- "semantic" - General semantic embeddings (default)
-- "entities.categories" - Category-specific embeddings
-- "entities.functionality" - Functionality-specific embeddings  
-- "entities.interface" - Interface-specific embeddings
-- "entities.industries" - Industry-specific embeddings
-- "entities.userTypes" - User type-specific embeddings
-- "entities.aliases" - Alias-specific embeddings
-- "composites.toolType" - Tool type composite embeddings
-
-VECTOR TYPE ASSIGNMENT RULES:
-1. For "functionality" collection: use "entities.functionality"
-2. For "interface" collection: use "entities.interface" 
-3. For "tools" collection: use "semantic" (default)
-4. For "usecases" collection: use "semantic" (default)
-5. DO NOT use "entities.usecase" - this is NOT supported
-6. When in doubt, use "semantic" as the default vector type
-
-COLLECTION HEALTH CONSIDERATIONS:
-Current enabled collections: [${enabledCollections.join(', ')}]
-Always verify collection availability before including in plan.
-If a collection is unavailable, fallback to available collections.
-
-Do not exceed topK=200 for any single source.
-Use appropriate collection weights based on query intent.
-Provide clear explanation of multi-collection strategy.
-
-Return ONLY a JSON object that follows the QueryPlan schema exactly. Do not provide any explanations or conversational text.
-`;
+function generateDynamicSystemPrompt(schema: any, enabledCollections?: string[]): string {
+  return generateQueryPlanningPrompt(schema, enabledCollections);
 }
 
 /**
- * Validate and enhance query plan with multi-collection insights
+ * Validate and enhance query plan with schema and domain handlers
+ * Now uses domain-specific filter building from domainHandlers
  */
 async function validateAndEnhanceQueryPlan(
   queryPlan: any,
   intentAnalysis: any,
-  intentState: any
+  intentState: any,
+  schema: any,
+  domainHandlers: any
 ): Promise<any> {
   try {
     log('validating query plan received', {
       queryPlan: JSON.stringify(queryPlan),
     });
 
-    // Validate collection availability
-    const enabledCollections = collectionConfig.getEnabledCollectionNames();
+    // Validate collection availability using schema
+    const enabledCollections = getEnabledCollections(schema);
     const validVectorSources =
       queryPlan.vectorSources?.filter((vs: any) =>
         enabledCollections.includes(vs.collection)
       ) || [];
+
+    log('Validated vector sources against schema', {
+      totalSources: queryPlan.vectorSources?.length || 0,
+      validSources: validVectorSources.length,
+      enabledCollections,
+    });
 
     // Ensure primary collections are included
     const collectionsToInclude = new Set([
@@ -315,22 +125,11 @@ async function validateAndEnhanceQueryPlan(
       const isSecondary =
         intentAnalysis.secondaryCollections.includes(collectionName);
 
-      // Determine appropriate topK based on collection priority
-      let topK = 50; // default
-      if (isPrimary) {
-        topK = 70; // higher for primary collections
-      } else if (isSecondary) {
-        topK = 40; // lower for secondary collections
-      }
+      // Determine appropriate topK based on collection priority using validator
+      const topK = getRecommendedTopK(isPrimary, isSecondary);
 
-      // Determine embedding type based on collection purpose
-      let embeddingType = 'semantic';
-      if (collectionName === 'functionality') {
-        embeddingType = 'entities.functionality';
-      }
-      // else if (collectionName === 'usecases') {
-      //   embeddingType = 'entities.usecase';
-      // }
+      // Determine embedding type based on collection using validator
+      const embeddingType = getRecommendedEmbeddingType(collectionName);
 
       enhancedVectorSources.push({
         collection: collectionName,
@@ -342,176 +141,26 @@ async function validateAndEnhanceQueryPlan(
       });
     }
 
-    // Enhance fusion method for multi-collection
-    let fusionMethod = queryPlan.fusion || 'rrf';
-    if (enhancedVectorSources.length > 2) {
-      fusionMethod = 'rrf'; // best for multiple collections
-    } else if (enhancedVectorSources.length === 2) {
-      fusionMethod = 'weighted_sum';
-    }
+    // Enhance fusion method using domain validator
+    let fusionMethod = queryPlan.fusion || getRecommendedFusionMethod(enhancedVectorSources.length);
 
-    // Build enhanced structured sources if needed
+    // Build enhanced structured sources using domain-specific filter builder
     let enhancedStructuredSources = queryPlan.structuredSources || [];
 
-    // Add MongoDB structured source for filtering if constraints exist
-    const hasConstraints =
-      intentState.priceRange ||
-      intentState.priceComparison ||
-      intentState.category ||
-      intentState.interface ||
-      intentState.deployment ||
-      intentState.functionality ||
-      intentState.pricing;
+    // Use domain handler to build filters from intent state
+    const filters = domainHandlers.buildFilters(intentState);
 
-    if (hasConstraints) {
-      const filters: any[] = [];
+    log('Built filters using domain handler', {
+      filtersCount: filters.length,
+      filters: filters.map(f => ({ field: f.field, operator: f.operator })),
+    });
 
-      // Add price range filters
-      if (intentState.priceRange) {
-        const { min, max, billingPeriod } = intentState.priceRange;
-
-        // Create base filter for pricing array
-        const priceFilter: any = {
-          field: 'pricing',
-          operator: 'elemMatch',
-          value: {},
-        };
-
-        // Add billing period filter if specified
-        if (billingPeriod) {
-          priceFilter.value.billingPeriod = billingPeriod;
-        }
-
-        // Add price range conditions (sanitize negative values to 0)
-        const sanitizedMin = min !== null && min !== undefined ? Math.max(0, min) : null;
-        const sanitizedMax = max !== null && max !== undefined ? Math.max(0, max) : null;
-
-        if (sanitizedMin !== null && sanitizedMax !== null) {
-          priceFilter.value.price = { $gte: sanitizedMin, $lte: sanitizedMax };
-        } else if (sanitizedMin !== null) {
-          priceFilter.value.price = { $gte: sanitizedMin };
-        } else if (sanitizedMax !== null) {
-          priceFilter.value.price = { $lte: sanitizedMax };
-        }
-
-        filters.push(priceFilter);
-      }
-
-      // Add price comparison filters
-      if (intentState.priceComparison) {
-        const { operator, value, billingPeriod } =
-          intentState.priceComparison;
-
-        // Sanitize negative price values to 0
-        const sanitizedValue = Math.max(0, value);
-
-        const priceFilter: any = {
-          field: 'pricing',
-          operator: 'elemMatch',
-          value: {},
-        };
-
-        // Add billing period filter if specified
-        if (billingPeriod) {
-          priceFilter.value.billingPeriod = billingPeriod;
-        }
-
-        // Add price comparison based on operator
-        switch (operator) {
-          case OPERATORS.LESS_THAN:
-            priceFilter.value.price = { $lt: sanitizedValue };
-            break;
-          case OPERATORS.LESS_THAN_OR_EQUAL:
-            priceFilter.value.price = { $lte: sanitizedValue };
-            break;
-          case OPERATORS.GREATER_THAN:
-            priceFilter.value.price = { $gt: sanitizedValue };
-            break;
-          case OPERATORS.GREATER_THAN_OR_EQUAL:
-            priceFilter.value.price = { $gte: sanitizedValue };
-            break;
-          case OPERATORS.EQUAL:
-            priceFilter.value.price = sanitizedValue;
-            break;
-          case OPERATORS.NOT_EQUAL:
-            priceFilter.value.price = { $ne: sanitizedValue };
-            break;
-          case OPERATORS.AROUND:
-            // ±10% range for "around" operator
-            const rangePercent = 0.1; // 10%
-            const lowerBound = sanitizedValue * (1 - rangePercent);
-            const upperBound = sanitizedValue * (1 + rangePercent);
-            priceFilter.value.price = {
-              $gte: Math.round(lowerBound),
-              $lte: Math.round(upperBound),
-            };
-            break;
-          case OPERATORS.BETWEEN:
-            // BETWEEN should use priceRange instead, but handle gracefully
-            priceFilter.value.price = { $gte: 0, $lte: sanitizedValue };
-            break;
-          default:
-            // Unknown operator - log warning and use equality
-            logError(`Unknown price comparison operator: ${operator}, using equality`);
-            priceFilter.value.price = sanitizedValue;
-            break;
-        }
-
-        filters.push(priceFilter);
-      }
-
-      // Add category filter
-      if (intentState.category) {
-        filters.push({
-          field: 'categories.primary',
-          operator: 'in',
-          value: [intentState.category],
-        });
-      }
-
-      // Add interface filter
-      if (intentState.interface) {
-        filters.push({
-          field: 'interface',
-          operator: 'in',
-          value: [intentState.interface],
-        });
-      }
-
-      // Add deployment filter
-      if (intentState.deployment) {
-        filters.push({
-          field: 'deployment',
-          operator: 'in',
-          value: [intentState.deployment],
-        });
-      }
-
-      // Add functionality filter
-      if (intentState.functionality) {
-        filters.push({
-          field: 'capabilities.core',
-          operator: 'in',
-          value: [intentState.functionality],
-        });
-      }
-
-      // Add pricing model filter
-      if (intentState.pricing) {
-        filters.push({
-          field: 'pricingSummary.pricingModel',
-          operator: 'in',
-          value: [intentState.pricing],
-        });
-      }
-
-      if (filters.length > 0) {
-        enhancedStructuredSources.push({
-          source: 'mongodb',
-          filters,
-          limit: 100,
-        });
-      }
+    if (filters.length > 0) {
+      enhancedStructuredSources.push({
+        source: 'mongodb',
+        filters,
+        limit: 100,
+      });
     }
 
     // Determine appropriate strategy based on collections and sources
@@ -729,7 +378,7 @@ function analyzeQueryIntent(intentState: any): {
 export async function queryPlannerNode(
   state: typeof StateAnnotation.State
 ): Promise<Partial<typeof StateAnnotation.State>> {
-  const { intentState } = state;
+  const { intentState, schema, domainHandlers } = state;
 
   if (!intentState) {
     logError('No intent state provided for query planning');
@@ -752,14 +401,24 @@ export async function queryPlannerNode(
   // Analyze query intent for multi-collection strategy
   const intentAnalysis = analyzeQueryIntent(intentState);
 
-  log('Starting multi-collection query planning', {
+  log('Starting schema-driven query planning', {
+    schemaName: schema.name,
+    schemaVersion: schema.version,
     intentState,
     intentAnalysis,
   });
 
   try {
-    // Get dynamic system prompt with current multi-collection configuration
-    const systemPrompt = generateDynamicSystemPrompt();
+    // Get enabled collections from schema
+    const enabledCollections = getEnabledCollections(schema);
+
+    // Generate system prompt from schema
+    const systemPrompt = generateDynamicSystemPrompt(schema, enabledCollections);
+
+    log('Generated query planning prompt from schema', {
+      promptLength: systemPrompt.length,
+      enabledCollections,
+    });
 
     // Create enhanced user prompt with intent context and analysis
     const userPrompt = `
@@ -834,11 +493,13 @@ Respond with a JSON object only, following the QueryPlan schema exactly.
       query: userPrompt,
     });
 
-    // Validate and enhance query plan with multi-collection insights
+    // Validate and enhance query plan with schema and domain handlers
     const enhancedQueryPlan = await validateAndEnhanceQueryPlan(
       queryPlan,
       intentAnalysis,
-      intentState
+      intentState,
+      schema,
+      domainHandlers
     );
 
     log('Multi-collection query plan generated and validated', {

@@ -4,11 +4,25 @@ import { IntentState, IntentStateSchema } from "./intent-state";
 import { QueryPlan, QueryPlanSchema } from "./query-plan";
 import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate";
 import { ToolData } from "./tool.types";
+import { DomainSchema } from "../core/types/schema.types";
 
 // New Simplified State Schema using LangGraph's Annotation
 export const StateAnnotation = Annotation.Root({
   // Core query information
   query: Annotation<string>,
+
+  // Schema-driven configuration (NEW)
+  schema: Annotation<DomainSchema>,
+
+  // Domain-specific handlers (NEW)
+  domainHandlers: Annotation<{
+    buildFilters: (intentState: IntentState) => any[];
+    validateQueryPlan: (plan: QueryPlan, intentState: IntentState) => {
+      valid: boolean;
+      errors: string[];
+      warnings: string[];
+    };
+  }>,
 
   // New pipeline stages
   intentState: Annotation<IntentState | null>,

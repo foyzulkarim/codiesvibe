@@ -14,6 +14,9 @@
 import dotenv from 'dotenv';
 import { intentExtractorNode } from '../graphs/nodes/intent-extractor.node';
 import { StateAnnotation } from '../types/state';
+import { toolsSchema } from '../domains/tools/tools.schema';
+import { buildToolsFilters } from '../domains/tools/tools.filters';
+import { validateToolsQueryPlan } from '../domains/tools/tools.validators';
 
 // Load environment variables
 dotenv.config();
@@ -78,6 +81,8 @@ async function testIntentExtraction(testCase: any) {
   try {
     // Create minimal initial state for intent extraction
     const initialState: typeof StateAnnotation.State = {
+      schema: toolsSchema,
+      domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
       query: testCase.query,
       intentState: null,
       executionPlan: null,

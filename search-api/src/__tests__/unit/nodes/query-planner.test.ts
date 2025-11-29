@@ -8,6 +8,9 @@
 import { queryPlannerNode } from '../../../graphs/nodes/query-planner.node';
 import { StateAnnotation } from '../../../types/state';
 import { intentStateFixtures } from '../../fixtures/intent-states.fixture';
+import { toolsSchema } from '../../../domains/tools/tools.schema';
+import { buildToolsFilters } from '../../../domains/tools/tools.filters';
+import { validateToolsQueryPlan } from '../../../domains/tools/tools.validators';
 
 // Mock database connections
 jest.mock('../../../config/database', () => ({
@@ -67,6 +70,8 @@ describe('Query Planner Node - Unit Tests', () => {
   describe('1. Intent Analysis Tests', () => {
     test('1.1 Identity-focused query analysis - should return identity-focused strategy', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'find cursor alternative',
         intentState: {
           ...intentStateFixtures.freeCliTools,
@@ -101,6 +106,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('1.2 Capability-focused query analysis - should prioritize functionality collection', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'AI tools with code generation',
         intentState: {
           ...intentStateFixtures.freeOfflineAiCodeGen,
@@ -148,6 +155,8 @@ describe('Query Planner Node - Unit Tests', () => {
       };
 
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'free offline cli AI code generator',
         intentState: complexIntentState,
         executionPlan: null,
@@ -184,6 +193,8 @@ describe('Query Planner Node - Unit Tests', () => {
   describe('2. Controlled Vocabulary Validation Tests', () => {
     test('2.1 Exact category match - should use exact "Code Editor" value', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'code editor',
         intentState: intentStateFixtures.codeEditorPriceRange,
         executionPlan: null,
@@ -229,6 +240,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('2.2 Exact interface match - should use exact "CLI" value', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'cli tools',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -273,6 +286,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('2.3 Exact pricing match - should use exact "Free" value', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'free tools',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -324,6 +339,8 @@ describe('Query Planner Node - Unit Tests', () => {
   describe('3. MongoDB Filter Generation Tests - CRITICAL (Bug Focus)', () => {
     test('3.1 Price comparison: less than - MUST include $lt operator', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'tools under $50 per month',
         intentState: intentStateFixtures.aiToolsUnder50,
         executionPlan: null,
@@ -371,6 +388,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.2 Price comparison: greater than - MUST include $gt operator', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'expensive tools over $100',
         intentState: intentStateFixtures.expensiveTools,
         executionPlan: null,
@@ -414,6 +433,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.3 Price range: between min and max - MUST include $gte and $lte operators', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'code editor between $20-100',
         intentState: intentStateFixtures.codeEditorPriceRange,
         executionPlan: null,
@@ -459,6 +480,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.4 Price range: min only - MUST include $gte operator', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'tools over $50',
         intentState: {
           ...intentStateFixtures.codeEditorPriceRange,
@@ -509,6 +532,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.5 Price range: max only - MUST include $lte operator', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'tools under $200',
         intentState: {
           ...intentStateFixtures.codeEditorPriceRange,
@@ -559,6 +584,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.6 Price comparison: around - should use ±10% range with $gte and $lte', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'tools around $30 per month',
         intentState: intentStateFixtures.aroundThirtyDollars,
         executionPlan: null,
@@ -605,6 +632,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('3.7 No price filters - should not generate pricing filter', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'cli tools',
         intentState: {
           ...intentStateFixtures.freeCliTools,
@@ -650,6 +679,8 @@ describe('Query Planner Node - Unit Tests', () => {
   describe('4. Structured Source Filter Format Tests - CRITICAL', () => {
     test('4.1 Filters field MUST be an array, not a plain object', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'free cli tools',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -687,6 +718,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('4.2 Single filter structure - should be array with one object', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'cli tools',
         intentState: {
           ...intentStateFixtures.freeCliTools,
@@ -732,6 +765,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('4.3 Multiple filters structure - should be array with multiple objects', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'free cli self-hosted tools',
         intentState: intentStateFixtures.freeOfflineAiCodeGen,
         executionPlan: null,
@@ -775,6 +810,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('4.4 Operator "in" with array value - should use MongoDB $in operator', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'cli or web tools',
         intentState: {
           ...intentStateFixtures.freeCliTools,
@@ -818,7 +855,12 @@ describe('Query Planner Node - Unit Tests', () => {
 
   describe('5. Edge Cases & Error Handling', () => {
     test('5.1 Null intent state - should return error', async () => {
+      // Mock console.error to suppress expected error log
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'test query',
         intentState: null,
         executionPlan: null,
@@ -845,10 +887,15 @@ describe('Query Planner Node - Unit Tests', () => {
       expect(result.executionPlan).toBeNull();
       expect(result.errors).toBeDefined();
       expect(result.errors?.length).toBeGreaterThan(0);
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
 
     test('5.2 Empty intent state - should generate minimal plan', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'test',
         intentState: intentStateFixtures.emptyIntent,
         executionPlan: null,
@@ -879,6 +926,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('5.3 Missing billing period - should generate query without billingPeriod constraint', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'cheap tools',
         intentState: {
           ...intentStateFixtures.aiToolsUnder50,
@@ -927,6 +976,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('5.4 Negative price values - should handle gracefully or reject', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'invalid price query',
         intentState: {
           ...intentStateFixtures.codeEditorPriceRange,
@@ -974,6 +1025,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('5.5 Very high topK - should cap at maximum 200', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'all tools',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -1012,6 +1065,8 @@ describe('Query Planner Node - Unit Tests', () => {
   describe('6. Execution Stats & Metadata', () => {
     test('6.1 Execution timing - should track node execution time', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'test query',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -1044,6 +1099,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('6.2 Execution path tracking - should add query-planner to execution path', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'test query',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,
@@ -1074,6 +1131,8 @@ describe('Query Planner Node - Unit Tests', () => {
 
     test('6.3 Confidence propagation - should include confidence in plan', async () => {
       const mockState: typeof StateAnnotation.State = {
+        schema: toolsSchema,
+        domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
         query: 'test query',
         intentState: intentStateFixtures.freeCliTools,
         executionPlan: null,

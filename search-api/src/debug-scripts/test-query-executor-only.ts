@@ -27,6 +27,9 @@ import dotenv from 'dotenv';
 import { queryExecutorNode } from '../graphs/nodes/query-executor.node';
 import { StateAnnotation } from '../types/state';
 import net from 'net';
+import { toolsSchema } from '../domains/tools/tools.schema';
+import { buildToolsFilters } from '../domains/tools/tools.filters';
+import { validateToolsQueryPlan } from '../domains/tools/tools.validators';
 
 // Load environment variables
 dotenv.config();
@@ -137,6 +140,8 @@ async function testQueryExecutor(testCase: any) {
   try {
     // Create initial state with execution plan
     const initialState: typeof StateAnnotation.State = {
+      schema: toolsSchema,
+      domainHandlers: { buildFilters: buildToolsFilters, validateQueryPlan: validateToolsQueryPlan },
       query: testCase.query,
       intentState: testCase.mockIntentState || {
         primaryGoal: 'find',
