@@ -1,17 +1,15 @@
 import { Search, X, Loader2 } from "lucide-react";
-import { AITool } from "@/data/tools";
 import { Button } from "./ui/button";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
-  tools: AITool[];
   value: string;
   onChange: (value: string) => void;
   showSearchButton?: boolean;
   isLoading?: boolean;
 }
 
-export const SearchBar = ({ onSearch, tools, value, onChange, showSearchButton = false, isLoading = false }: SearchBarProps) => {
+export const SearchBar = ({ onSearch, value, onChange, showSearchButton = false, isLoading = false }: SearchBarProps) => {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
