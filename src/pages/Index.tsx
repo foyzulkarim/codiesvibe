@@ -13,14 +13,16 @@ import { LogIn, UserPlus, Sparkles, Zap, Github, LogOut, Settings } from "lucide
 import { useTools } from "@/hooks/api/useTools";
 import { FilterState } from "@/api/types";
 import { SORT_OPTIONS } from "@/lib/config";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, useUser, useClerk } from "@clerk/clerk-react";
 
 export default function Index() {
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState(""); // For the actual API search
 
-
-  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuth();
+  // Clerk authentication hooks
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   // Use the API hook for data fetching
   const { data: tools, reasoning, isLoading, isError, error } = useTools(
@@ -55,9 +57,9 @@ export default function Index() {
               </a>
 
               {/* Auth Controls */}
-              {!authLoading && (
+              {isLoaded && (
                 <>
-                  {isAuthenticated ? (
+                  {isSignedIn ? (
                     <div className="flex items-center space-x-3">
                       <Link to="/admin/tools">
                         <Button variant="ghost" size="sm">
@@ -66,22 +68,22 @@ export default function Index() {
                         </Button>
                       </Link>
                       <span className="text-sm text-muted-foreground hidden sm:inline">
-                        {user?.name}
+                        {user?.firstName || user?.emailAddresses[0]?.emailAddress}
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => logout()}>
+                      <Button variant="outline" size="sm" onClick={() => signOut()}>
                         <LogOut className="h-4 w-4 mr-2" />
                         Logout
                       </Button>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <Link to="/login">
+                      <Link to="/sign-in">
                         <Button variant="ghost" size="sm">
                           <LogIn className="h-4 w-4 mr-2" />
                           Login
                         </Button>
                       </Link>
-                      <Link to="/register">
+                      <Link to="/sign-up">
                         <Button size="sm">
                           <UserPlus className="h-4 w-4 mr-2" />
                           Sign Up
