@@ -17,6 +17,7 @@ import { searchLogger, SearchLogContext } from "./config/logger";
 import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
 import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
 import { v4 as uuidv4 } from 'uuid';
+import { clerkMiddleware } from '@clerk/express';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
@@ -24,12 +25,6 @@ import { threadManager } from "./utils/thread-manager";
 
 // Import tools routes for CRUD operations
 import toolsRoutes from "./routes/tools.routes";
-
-// Import auth routes for authentication
-import authRoutes from "./routes/auth.routes";
-
-// Import OAuth routes for social login
-import oauthRoutes from "./routes/oauth.routes";
 
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service";
@@ -652,18 +647,13 @@ async function validateVectorIndexOnStartup(): Promise<void> {
 }
 
 
-// Mount auth routes
-app.use('/api/auth', authRoutes);
-searchLogger.info('Auth routes mounted at /api/auth', {
-  service: 'search-api',
-  endpoints: ['POST /api/auth/register', 'POST /api/auth/login', 'POST /api/auth/logout', 'GET /api/auth/me', 'POST /api/auth/refresh', 'PATCH /api/auth/profile', 'POST /api/auth/change-password'],
-});
+// Add Clerk middleware for authentication
+// This must be added before protected routes
+app.use(clerkMiddleware());
 
-// Mount OAuth routes
-app.use('/api/auth/oauth', oauthRoutes);
-searchLogger.info('OAuth routes mounted at /api/auth/oauth', {
+searchLogger.info('✅ Clerk authentication middleware enabled', {
   service: 'search-api',
-  endpoints: ['GET /api/auth/oauth/github', 'GET /api/auth/oauth/github/callback', 'GET /api/auth/oauth/google', 'GET /api/auth/oauth/google/callback'],
+  authProvider: 'Clerk',
 });
 
 // Mount tools CRUD routes
