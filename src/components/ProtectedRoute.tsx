@@ -1,54 +1,27 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@clerk/clerk-react';
+import { Navigate } from 'react-router-dom';
+import { ReactNode } from 'react';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: 'admin' | 'user';
+  children: ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  requiredRole,
-}) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const location = useLocation();
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isLoaded, isSignedIn } = useAuth();
 
-  // Show loading spinner while checking auth
-  if (isLoading) {
+  // Show loading state while auth is initializing
+  if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Verifying authentication...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    // Save the attempted URL for redirecting after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Check role if required
-  if (requiredRole && user?.role !== requiredRole) {
-    // User doesn't have required role
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You don't have permission to access this page.
-          </p>
-        </div>
-      </div>
-    );
+  // Redirect to sign-in if not authenticated
+  if (!isSignedIn) {
+    return <Navigate to="/sign-in" replace />;
   }
 
   return <>{children}</>;
-};
-
-export default ProtectedRoute;
+}

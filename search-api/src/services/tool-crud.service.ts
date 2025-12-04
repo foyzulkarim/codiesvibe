@@ -77,13 +77,14 @@ class ToolCrudService {
   /**
    * Create a new tool
    */
-  async createTool(data: CreateToolInput): Promise<ITool> {
+  async createTool(data: CreateToolInput, clerkUserId: string): Promise<ITool> {
     await this.ensureConnection();
 
     // Auto-generate slug from id if not provided
     const toolData = {
       ...data,
       slug: data.slug || data.id,
+      contributor: clerkUserId,
       dateAdded: new Date(),
       lastUpdated: new Date(),
     };
@@ -95,6 +96,7 @@ class ToolCrudService {
       service: 'tool-crud-service',
       toolId: savedTool.id,
       toolName: savedTool.name,
+      createdBy: clerkUserId,
     });
 
     return savedTool;

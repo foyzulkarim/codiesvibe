@@ -46,9 +46,13 @@
     "test:script:executor": "npx tsx src/debug-scripts/test-query-executor-only.ts",
     "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts",
     "setup:cache-indexes": "npx tsx src/debug-scripts/setup-cache-indexes.ts",
-    "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts"
+    "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts",
+    "verify-users": "ts-node -r tsconfig-paths/register scripts/verify-and-cleanup-users.ts verify",
+    "cleanup-users": "ts-node -r tsconfig-paths/register scripts/verify-and-cleanup-users.ts cleanup",
+    "test:ci-integration": "./scripts/test-ci-integration.sh"
   },
   "dependencies": {
+    "@clerk/express": "^1.7.0",
     "@langchain/community": "^0.3.58",
     "@langchain/core": "^0.3.78",
     "@langchain/langgraph": "^0.2.19",
@@ -60,7 +64,6 @@
     "@types/uuid": "^9.0.7",
     "@xenova/transformers": "^2.17.2",
     "axios": "^1.12.2",
-    "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -72,7 +75,6 @@
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "joi": "^18.0.1",
-    "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
     "mongodb": "^6.17.0",
     "mongoose": "^8.20.1",
