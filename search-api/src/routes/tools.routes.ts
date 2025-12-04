@@ -4,7 +4,7 @@ import { CreateToolSchema, UpdateToolSchema, GetToolsQuerySchema } from '../sche
 import { searchLogger } from '../config/logger';
 import { SearchRequest } from '../middleware/correlation.middleware';
 import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
-import { authenticateJWT, AuthenticatedRequest } from '../middleware/auth.middleware';
+import { clerkRequireAuth, ClerkAuthenticatedRequest } from '../middleware/clerk-auth.middleware';
 
 const router = Router();
 
@@ -148,8 +148,8 @@ router.get('/:id', async (req: Request, res: Response) => {
 /**
  * POST /api/tools - Create a new tool (protected)
  */
-router.post('/', authenticateJWT, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
+router.post('/', clerkRequireAuth, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
   const startTime = Date.now();
 
   try {
@@ -163,14 +163,14 @@ router.post('/', authenticateJWT, validateBody(CreateToolSchema), async (req: Re
       });
     }
 
-    const tool = await toolCrudService.createTool(req.body);
+    const tool = await toolCrudService.createTool(req.body, authReq.auth.userId);
 
     searchLogger.info('Tool created', {
       service: 'tools-api',
       correlationId: authReq.correlationId,
       toolId: tool.id,
       toolName: tool.name,
-      userId: authReq.user?.userId,
+      userId: authReq.auth.userId,
       executionTimeMs: Date.now() - startTime,
     });
 
@@ -216,8 +216,8 @@ router.post('/', authenticateJWT, validateBody(CreateToolSchema), async (req: Re
 /**
  * PATCH /api/tools/:id - Update a tool (protected)
  */
-router.patch('/:id', authenticateJWT, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
+router.patch('/:id', clerkRequireAuth, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {
@@ -234,7 +234,7 @@ router.patch('/:id', authenticateJWT, validateBody(UpdateToolSchema), async (req
       service: 'tools-api',
       correlationId: authReq.correlationId,
       toolId: id,
-      userId: authReq.user?.userId,
+      userId: authReq.auth.userId,
     });
 
     res.json(tool);
@@ -269,8 +269,8 @@ router.patch('/:id', authenticateJWT, validateBody(UpdateToolSchema), async (req
 /**
  * DELETE /api/tools/:id - Delete a tool (protected)
  */
-router.delete('/:id', authenticateJWT, async (req: Request, res: Response) => {
-  const authReq = req as AuthenticatedRequest;
+router.delete('/:id', clerkRequireAuth, async (req: Request, res: Response) => {
+  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {
@@ -287,7 +287,7 @@ router.delete('/:id', authenticateJWT, async (req: Request, res: Response) => {
       service: 'tools-api',
       correlationId: authReq.correlationId,
       toolId: id,
-      userId: authReq.user?.userId,
+      userId: authReq.auth.userId,
     });
 
     res.status(204).send();

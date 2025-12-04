@@ -11,6 +11,7 @@ import { CreateToolInput } from '../../../schemas/tool.schema';
 
 describe('ToolCrudService', () => {
   let mongoServer: MongoMemoryServer;
+  const TEST_CLERK_USER_ID = 'user_test123456789'; // Mock Clerk user ID
 
   const validToolInput: CreateToolInput = {
     id: 'test-tool',
@@ -55,7 +56,7 @@ describe('ToolCrudService', () => {
 
   describe('createTool', () => {
     it('should create a new tool successfully', async () => {
-      const tool = await toolCrudService.createTool(validToolInput);
+      const tool = await toolCrudService.createTool(validToolInput, TEST_CLERK_USER_ID);
 
       expect(tool).toBeDefined();
       expect(tool.id).toBe(validToolInput.id);
@@ -68,22 +69,22 @@ describe('ToolCrudService', () => {
 
     it('should auto-generate slug from id', async () => {
       const inputWithoutSlug = { ...validToolInput };
-      const tool = await toolCrudService.createTool(inputWithoutSlug);
+      const tool = await toolCrudService.createTool(inputWithoutSlug, TEST_CLERK_USER_ID);
 
       expect(tool.slug).toBe(validToolInput.id);
     });
 
     it('should set dateAdded and lastUpdated', async () => {
-      const tool = await toolCrudService.createTool(validToolInput);
+      const tool = await toolCrudService.createTool(validToolInput, TEST_CLERK_USER_ID);
 
       expect(tool.dateAdded).toBeDefined();
       expect(tool.lastUpdated).toBeDefined();
     });
 
     it('should throw error for duplicate id', async () => {
-      await toolCrudService.createTool(validToolInput);
+      await toolCrudService.createTool(validToolInput, TEST_CLERK_USER_ID);
 
-      await expect(toolCrudService.createTool(validToolInput)).rejects.toThrow();
+      await expect(toolCrudService.createTool(validToolInput, TEST_CLERK_USER_ID)).rejects.toThrow();
     });
 
     it('should validate categories against controlled vocabulary', async () => {
@@ -93,7 +94,7 @@ describe('ToolCrudService', () => {
         categories: ['InvalidCategory'],
       };
 
-      await expect(toolCrudService.createTool(invalidInput)).rejects.toThrow();
+      await expect(toolCrudService.createTool(invalidInput, TEST_CLERK_USER_ID)).rejects.toThrow();
     });
   });
 

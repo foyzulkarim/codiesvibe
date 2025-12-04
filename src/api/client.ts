@@ -3,6 +3,7 @@ import { generateCorrelationId, getOrCreateSessionId } from '@/lib/correlation';
 import { apiConfig } from '@/config/api';
 import { offlineQueue } from '@/lib/offline-queue';
 import { getVersionHeaders } from '@/api/version';
+import { getClerkToken } from '@/api/clerk-auth';
 
 /**
  * Extended Axios request config with metadata for tracking
@@ -56,6 +57,12 @@ apiClient.interceptors.request.use(
     // Add tracking headers
     if (!extendedConfig.headers) {
       extendedConfig.headers = {} as AxiosRequestHeaders;
+    }
+
+    // Add Clerk authentication token if available
+    const token = await getClerkToken();
+    if (token) {
+      extendedConfig.headers['Authorization'] = `Bearer ${token}`;
     }
 
     extendedConfig.headers['X-Correlation-ID'] = correlationId;
@@ -158,21 +165,13 @@ apiClient.interceptors.response.use(
       console.groupEnd();
     }
 
-    // Handle session-related errors (401 Unauthorized)
+    // Handle authentication errors (401 Unauthorized)
+    // With Clerk, 401 errors typically mean the session has expired
+    // Clerk handles token refresh automatically, but if we still get 401,
+    // the user needs to sign in again
     if (error.response?.status === 401) {
-      try {
-        // Attempt to refresh the session
-        await apiClient.post('/auth/refresh');
-
-        // Retry the original request
-        if (config) {
-          return apiClient.request(config);
-        }
-      } catch (refreshError) {
-        console.error('Session refresh failed:', refreshError);
-        // Session refresh failed - let the error propagate
-        // The application should redirect to login or handle appropriately
-      }
+      console.warn('Authentication failed. User may need to sign in again.');
+      // Let the error propagate so the app can handle redirect to sign-in
     }
 
     // Enhance error messages for better UX

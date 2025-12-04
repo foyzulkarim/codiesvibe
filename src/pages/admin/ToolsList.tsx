@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToolsAdmin, useDeleteTool, Tool, ToolsQueryParams } from '@/hooks/api/useToolsAdmin';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +44,8 @@ import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, U
 
 export default function ToolsList() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [params, setParams] = useState<ToolsQueryParams>({
     page: 1,
     limit: 20,
@@ -144,10 +145,9 @@ export default function ToolsList() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />
-            <span>{user?.name}</span>
-            <Badge variant="secondary" className="text-xs">{user?.role}</Badge>
+            <span>{user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
           </div>
-          <Button variant="outline" size="sm" onClick={() => logout()}>
+          <Button variant="outline" size="sm" onClick={() => signOut()}>
             <LogOut className="h-4 w-4 mr-2" />
             Logout
           </Button>
