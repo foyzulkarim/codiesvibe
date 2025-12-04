@@ -67,7 +67,7 @@ try {
 
 // Validate critical environment variables
 function validateEnvironment(): void {
-  const required = ['MONGODB_URI', 'QDRANT_HOST', 'QDRANT_PORT'];
+  const required = ['MONGODB_URI', 'QDRANT_HOST', 'QDRANT_PORT', 'CLERK_SECRET_KEY'];
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0) {
@@ -75,6 +75,16 @@ function validateEnvironment(): void {
       service: 'search-api',
       missingVariables: missing,
       message: 'Please check your .env file and ensure all required variables are set.'
+    });
+    process.exit(1);
+  }
+
+  // Validate Clerk key format
+  const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+  if (clerkSecretKey && !clerkSecretKey.startsWith('sk_')) {
+    searchLogger.error('❌ Invalid CLERK_SECRET_KEY format', new Error('Environment validation failed'), {
+      service: 'search-api',
+      message: 'CLERK_SECRET_KEY must start with "sk_test_" or "sk_live_"'
     });
     process.exit(1);
   }

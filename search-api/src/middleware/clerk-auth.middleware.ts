@@ -22,5 +22,11 @@ export const clerkRequireAuth = requireAuth();
  * Type guard to check if request has Clerk auth
  */
 export function isClerkAuthenticated(req: Request): req is ClerkAuthenticatedRequest {
-  return 'auth' in req && req.auth !== null && typeof (req.auth as any).userId === 'string';
+  return (
+    'auth' in req &&
+    req.auth !== null &&
+    typeof req.auth === 'object' &&
+    'userId' in req.auth &&
+    typeof req.auth.userId === 'string'
+  );
 }

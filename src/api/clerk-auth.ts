@@ -32,3 +32,23 @@ export async function getClerkToken(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Check if the user is currently authenticated
+ * Returns true if a token can be obtained, false otherwise
+ */
+export async function isAuthenticated(): Promise<boolean> {
+  const token = await getClerkToken();
+  return token !== null && token.length > 0;
+}
+
+/**
+ * Ensure the user is authenticated before proceeding
+ * Throws an error if not authenticated
+ */
+export async function requireAuthentication(): Promise<void> {
+  const authenticated = await isAuthenticated();
+  if (!authenticated) {
+    throw new Error('Authentication required. Please sign in to continue.');
+  }
+}
