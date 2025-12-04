@@ -290,6 +290,7 @@ jobs:
             -e ENABLE_VECTOR_VALIDATION=false \
             -e ENABLE_RATE_LIMITING=false \
             -e ENABLE_SECURITY_HEADERS=false \
+            -e CLERK_SECRET_KEY=sk_test_fake_key_for_ci \
             ${{ needs.build-search-api.outputs.image }}
 
           # Give container time to start
