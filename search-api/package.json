@@ -46,7 +46,10 @@
     "test:script:executor": "npx tsx src/debug-scripts/test-query-executor-only.ts",
     "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts",
     "setup:cache-indexes": "npx tsx src/debug-scripts/setup-cache-indexes.ts",
-    "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts"
+    "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts",
+    "verify-users": "ts-node -r tsconfig-paths/register scripts/verify-and-cleanup-users.ts verify",
+    "cleanup-users": "ts-node -r tsconfig-paths/register scripts/verify-and-cleanup-users.ts cleanup",
+    "test:ci-integration": "./scripts/test-ci-integration.sh"
   },
   "dependencies": {
     "@clerk/express": "^1.7.0",

@@ -63,6 +63,17 @@ apiClient.interceptors.request.use(
     const token = await getClerkToken();
     if (token) {
       extendedConfig.headers['Authorization'] = `Bearer ${token}`;
+    } else if (apiConfig.features.enableRequestLogging) {
+      // Log when token is not available (useful for debugging)
+      // Note: This is normal for public endpoints, but might indicate issues for protected ones
+      const method = extendedConfig.method?.toUpperCase();
+      const url = extendedConfig.url;
+
+      // Only log for methods that typically require authentication
+      if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        console.warn(`⚠️  No authentication token available for ${method} ${url}`);
+        console.warn('   This request may fail if the endpoint requires authentication.');
+      }
     }
 
     extendedConfig.headers['X-Correlation-ID'] = correlationId;
@@ -170,8 +181,18 @@ apiClient.interceptors.response.use(
     // Clerk handles token refresh automatically, but if we still get 401,
     // the user needs to sign in again
     if (error.response?.status === 401) {
-      console.warn('Authentication failed. User may need to sign in again.');
-      // Let the error propagate so the app can handle redirect to sign-in
+      console.warn('🔒 Authentication failed. User session may have expired.');
+      console.warn('   Redirecting to sign-in page...');
+
+      // Check if we're not already on the sign-in page to avoid infinite loops
+      if (!window.location.pathname.includes('/sign-in')) {
+        // Store the current path to redirect back after sign-in
+        const returnUrl = window.location.pathname + window.location.search;
+        sessionStorage.setItem('returnUrl', returnUrl);
+
+        // Trigger redirect to sign-in (will be handled by the app router)
+        window.location.href = `/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`;
+      }
     }
 
     // Enhance error messages for better UX
