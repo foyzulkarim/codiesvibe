@@ -67,10 +67,9 @@ CMD ["npm", "run", "dev"]
 # Production stage - Optimized production image with health checks and security
 FROM node:24-alpine AS production
 
-# Install security updates, ca-certificates, and dumb-init
-RUN apk update && apk upgrade && \
-    apk add --no-cache ca-certificates curl dumb-init && \
-    rm -rf /var/cache/apk/*
+# Install ca-certificates, curl, and dumb-init
+# Note: Skipping apk upgrade for CI stability (base image is already current)
+RUN apk add --no-cache ca-certificates curl dumb-init
 
 # Create non-root user with secure home directory
 RUN addgroup -g 1001 nodejs && \
