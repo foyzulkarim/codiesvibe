@@ -91,11 +91,11 @@ else
     print_error "Nginx health check failed"
 fi
 
-# Check backend through nginx (local HTTP check since we're testing the proxy)
+# Check search-api through nginx (local HTTP check since we're testing the proxy)
 if curl -f http://localhost/api/health >/dev/null 2>&1; then
-    print_success "Backend is accessible through nginx"
+    print_success "Search API is accessible through nginx"
 else
-    print_error "Backend health check failed"
+    print_error "Search API health check failed"
 fi
 
 # Check frontend
@@ -114,7 +114,7 @@ print_status "Local testing endpoints:"
 print_status "  Application: http://localhost"
 print_status "  API: http://localhost/api/health"
 print_status "  Nginx health: http://localhost/nginx-health"
-print_status "  Direct backend: http://localhost:4000 (troubleshooting)"
+print_status "  Direct search-api: http://localhost:4003 (troubleshooting)"
 print_warning "Note: These are local HTTP endpoints for testing."
 print_warning "In production, use HTTPS with your domain:"
 print_warning "  Application: https://codiesvibe.com"
@@ -124,7 +124,7 @@ print_warning "  API: https://api.codiesvibe.com/api"
 print_status "Recent logs from services:"
 echo "--- Frontend Logs ---"
 docker logs codiesvibe-frontend-prod --tail 10
-echo "--- Backend Logs ---"
-docker logs codiesvibe-backend-prod --tail 10
+echo "--- Search API Logs ---"
+docker logs codiesvibe-search-api-prod --tail 10
 echo "--- Nginx Logs ---"
 docker logs codiesvibe-nginx --tail 10
