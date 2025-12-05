@@ -36,9 +36,6 @@ ENV NODE_ENV=${NODE_ENV}
 # Copy source code first
 COPY . .
 
-# Copy only the shared types directory that already exists (after source to override any potential conflicts)
-COPY backend/shared ./backend/shared
-
 # Debug: Verify environment variables are set correctly
 RUN echo "Building with VITE_API_URL=${VITE_API_URL}" && echo "NODE_ENV=${NODE_ENV}"
 
@@ -54,8 +51,6 @@ RUN npm install -g nodemon
 # Copy source code for development
 COPY . .
 
-# Copy shared types from backend directory for development
-COPY backend/shared ./backend/shared
 
 # Create non-root user for security (even in development)
 RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001

@@ -258,7 +258,7 @@ services:
       - "9102:8080"
     environment:
       # Backend endpoint for metrics collection
-      - BACKEND_URL=http://backend:4000
+      - BACKEND_URL=http://search-api:4003
       - MONGODB_URL=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
       - REDIS_URL=redis://:redis123@redis:6379
       # Metrics collection configuration
