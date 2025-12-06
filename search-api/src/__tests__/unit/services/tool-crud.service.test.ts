@@ -162,7 +162,8 @@ describe('ToolCrudService', () => {
     it('should filter by pricingModel', async () => {
       const result = await toolCrudService.getTools({ pricingModel: 'Free', limit: 100 });
 
-      expect(result.data).toHaveLength(10);
+      // Tools 1-10 have ['Free'], tools 11-20 have ['Free', 'Paid'] - both contain 'Free'
+      expect(result.data).toHaveLength(20);
       result.data.forEach((tool) => {
         expect(tool.pricingModel).toContain('Free');
       });

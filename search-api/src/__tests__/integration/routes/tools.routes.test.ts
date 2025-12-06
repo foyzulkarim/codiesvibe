@@ -229,7 +229,8 @@ describe('Tools Routes Integration Tests', () => {
         .query({ pricingModel: 'Free' })
         .expect(200);
 
-      expect(response.body.data).toHaveLength(5);
+      // Tools 1-5 have ['Free'], tools 6-15 have ['Free', 'Paid'] - all contain 'Free'
+      expect(response.body.data).toHaveLength(15);
       response.body.data.forEach((tool: any) => {
         expect(tool.pricingModel).toContain('Free');
       });
