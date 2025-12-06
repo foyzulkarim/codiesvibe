@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
 
+// Approval status enum
+export const ApprovalStatusEnum = z.enum(['pending', 'approved', 'rejected']);
+export type ApprovalStatus = z.infer<typeof ApprovalStatusEnum>;
+
 // Pricing tier schema
 export const PricingSchema = z.object({
   tier: z.string().min(1, 'Tier name is required'),
@@ -115,17 +119,13 @@ export const CreateToolSchema = z.object({
   status: z
     .enum(['active', 'beta', 'deprecated', 'discontinued'])
     .default('active'),
-
-  contributor: z
-    .string()
-    .min(1, 'Contributor is required')
-    .default('system'),
+  // Note: contributor and approvalStatus are set by the server based on auth
 });
 
 // Update tool schema (all fields optional)
 export const UpdateToolSchema = CreateToolSchema.partial();
 
-// Query parameters schema for listing tools
+// Query parameters schema for listing tools (public - only approved)
 export const GetToolsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -143,7 +143,33 @@ export const GetToolsQuerySchema = z.object({
     .optional(),
 });
 
+// Query parameters schema for admin tools listing (can filter by approvalStatus)
+export const GetAdminToolsQuerySchema = GetToolsQuerySchema.extend({
+  approvalStatus: ApprovalStatusEnum.optional(),
+  contributor: z.string().optional(), // Filter by specific contributor
+});
+
+// Query parameters schema for user's own tools
+export const GetMyToolsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  approvalStatus: ApprovalStatusEnum.optional(),
+  sortBy: z.enum(['name', 'dateAdded', 'status', 'approvalStatus']).default('dateAdded'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// Schema for rejecting a tool
+export const RejectToolSchema = z.object({
+  reason: z
+    .string()
+    .min(10, 'Rejection reason must be at least 10 characters')
+    .max(500, 'Rejection reason must be at most 500 characters'),
+});
+
 // Type exports
 export type CreateToolInput = z.infer<typeof CreateToolSchema>;
 export type UpdateToolInput = z.infer<typeof UpdateToolSchema>;
 export type GetToolsQuery = z.infer<typeof GetToolsQuerySchema>;
+export type GetAdminToolsQuery = z.infer<typeof GetAdminToolsQuerySchema>;
+export type GetMyToolsQuery = z.infer<typeof GetMyToolsQuerySchema>;
+export type RejectToolInput = z.infer<typeof RejectToolSchema>;

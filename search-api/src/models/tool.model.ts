@@ -8,6 +8,9 @@ export interface IPricing {
   price: number;
 }
 
+// Approval status type
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
 // Tool document interface
 export interface ITool extends Document {
   id: string;
@@ -34,6 +37,11 @@ export interface ITool extends Document {
   lastUpdated?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  // RBAC fields
+  approvalStatus: ApprovalStatus;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
 }
 
 // Pricing subdocument schema
@@ -229,6 +237,24 @@ const ToolSchema = new Schema<ITool>(
       type: Date,
       default: Date.now,
     },
+    // RBAC fields
+    approvalStatus: {
+      type: String,
+      required: true,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    reviewedBy: {
+      type: String,
+    },
+    reviewedAt: {
+      type: Date,
+    },
+    rejectionReason: {
+      type: String,
+      maxlength: 500,
+      trim: true,
+    },
   },
   {
     timestamps: true,
@@ -273,6 +299,10 @@ ToolSchema.index(
 ToolSchema.index({ dateAdded: -1 }, { name: 'tool_date_added_index' });
 ToolSchema.index({ functionality: 1 }, { name: 'tool_functionality_index' });
 ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' });
+// RBAC indexes
+ToolSchema.index({ approvalStatus: 1 }, { name: 'tool_approval_status_index' });
+ToolSchema.index({ contributor: 1 }, { name: 'tool_contributor_index' });
+ToolSchema.index({ approvalStatus: 1, contributor: 1 }, { name: 'tool_approval_contributor_index' });
 
 // Export the model
 export const Tool = mongoose.model<ITool>('Tool', ToolSchema);

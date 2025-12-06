@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
-import { Tool, ITool } from '../models/tool.model';
-import { CreateToolInput, UpdateToolInput, GetToolsQuery } from '../schemas/tool.schema';
+import { Tool, ITool, ApprovalStatus } from '../models/tool.model';
+import {
+  CreateToolInput,
+  UpdateToolInput,
+  GetToolsQuery,
+  GetAdminToolsQuery,
+  GetMyToolsQuery,
+} from '../schemas/tool.schema';
 import { searchLogger } from '../config/logger';
 
 export interface PaginatedResult<T> {
@@ -76,17 +82,27 @@ class ToolCrudService {
 
   /**
    * Create a new tool
+   * Admin-created tools are auto-approved, maintainer-created tools are pending
    */
-  async createTool(data: CreateToolInput, clerkUserId: string): Promise<ITool> {
+  async createTool(data: CreateToolInput, clerkUserId: string, isAdmin: boolean = false): Promise<ITool> {
     await this.ensureConnection();
 
     // Auto-generate slug from id if not provided
+    // Admin-created tools are auto-approved
+    const approvalStatus: ApprovalStatus = isAdmin ? 'approved' : 'pending';
+
     const toolData = {
       ...data,
       slug: data.slug || data.id,
       contributor: clerkUserId,
       dateAdded: new Date(),
       lastUpdated: new Date(),
+      approvalStatus,
+      // If admin created and approved, set review info
+      ...(isAdmin && {
+        reviewedBy: clerkUserId,
+        reviewedAt: new Date(),
+      }),
     };
 
     const tool = new Tool(toolData);
@@ -97,13 +113,14 @@ class ToolCrudService {
       toolId: savedTool.id,
       toolName: savedTool.name,
       createdBy: clerkUserId,
+      approvalStatus,
     });
 
     return savedTool;
   }
 
   /**
-   * Get tools with pagination and filtering
+   * Get tools with pagination and filtering (PUBLIC - only approved tools)
    */
   async getTools(query: GetToolsQuery): Promise<PaginatedResult<ITool>> {
     await this.ensureConnection();
@@ -120,8 +137,10 @@ class ToolCrudService {
       pricingModel,
     } = query;
 
-    // Build filter query
-    const filter: Record<string, any> = {};
+    // Build filter query - ONLY approved tools for public access
+    const filter: Record<string, any> = {
+      approvalStatus: 'approved',
+    };
 
     if (search) {
       // Use text search for better performance
@@ -173,15 +192,23 @@ class ToolCrudService {
   }
 
   /**
-   * Get a single tool by ID
+   * Get a single tool by ID (PUBLIC - only approved tools by default)
+   * @param id - Tool ID or slug
+   * @param publicOnly - If true, only returns approved tools (default: true)
    */
-  async getToolById(id: string): Promise<ITool | null> {
+  async getToolById(id: string, publicOnly: boolean = true): Promise<ITool | null> {
     await this.ensureConnection();
 
-    // Try to find by custom id field first, then by slug
-    const tool = await Tool.findOne({
+    // Build query - for public access, only return approved tools
+    const query: Record<string, any> = {
       $or: [{ id: id }, { slug: id }],
-    }).lean();
+    };
+
+    if (publicOnly) {
+      query.approvalStatus = 'approved';
+    }
+
+    const tool = await Tool.findOne(query).lean();
 
     return tool as unknown as ITool | null;
   }
@@ -255,6 +282,197 @@ class ToolCrudService {
 
     const tools = await Tool.find().sort({ dateAdded: -1 }).lean();
     return tools as unknown as ITool[];
+  }
+
+  /**
+   * Get tools by contributor (for maintainer's my-tools)
+   */
+  async getToolsByContributor(
+    contributorId: string,
+    query: GetMyToolsQuery
+  ): Promise<PaginatedResult<ITool>> {
+    await this.ensureConnection();
+
+    const { page = 1, limit = 20, approvalStatus, sortBy = 'dateAdded', sortOrder = 'desc' } = query;
+
+    // Build filter - always filter by contributor
+    const filter: Record<string, any> = {
+      contributor: contributorId,
+    };
+
+    if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
+    }
+
+    // Calculate skip value
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sort: Record<string, 1 | -1> = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Execute query with pagination
+    const [tools, total] = await Promise.all([
+      Tool.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+      Tool.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: tools as unknown as ITool[],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Get tools for admin dashboard with full filtering capabilities
+   */
+  async getAdminTools(query: GetAdminToolsQuery): Promise<PaginatedResult<ITool>> {
+    await this.ensureConnection();
+
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      sortBy = 'dateAdded',
+      sortOrder = 'desc',
+      status,
+      category,
+      industry,
+      pricingModel,
+      approvalStatus,
+      contributor,
+    } = query;
+
+    // Build filter query - admin can see all tools
+    const filter: Record<string, any> = {};
+
+    if (search) {
+      filter.$text = { $search: search };
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (category) {
+      filter.categories = category;
+    }
+
+    if (industry) {
+      filter.industries = industry;
+    }
+
+    if (pricingModel) {
+      filter.pricingModel = pricingModel;
+    }
+
+    if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
+    }
+
+    if (contributor) {
+      filter.contributor = contributor;
+    }
+
+    // Calculate skip value
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sort: Record<string, 1 | -1> = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Execute query with pagination
+    const [tools, total] = await Promise.all([
+      Tool.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+      Tool.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: tools as unknown as ITool[],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Approve a tool (admin only)
+   */
+  async approveTool(id: string, adminUserId: string): Promise<ITool | null> {
+    await this.ensureConnection();
+
+    const tool = await Tool.findOneAndUpdate(
+      { $or: [{ id: id }, { slug: id }] },
+      {
+        $set: {
+          approvalStatus: 'approved',
+          reviewedBy: adminUserId,
+          reviewedAt: new Date(),
+          lastUpdated: new Date(),
+          // Clear rejection reason if previously rejected
+          rejectionReason: undefined,
+        },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (tool) {
+      searchLogger.info('Tool approved', {
+        service: 'tool-crud-service',
+        toolId: id,
+        approvedBy: adminUserId,
+      });
+    }
+
+    return tool as unknown as ITool | null;
+  }
+
+  /**
+   * Reject a tool (admin only)
+   */
+  async rejectTool(id: string, adminUserId: string, reason: string): Promise<ITool | null> {
+    await this.ensureConnection();
+
+    const tool = await Tool.findOneAndUpdate(
+      { $or: [{ id: id }, { slug: id }] },
+      {
+        $set: {
+          approvalStatus: 'rejected',
+          reviewedBy: adminUserId,
+          reviewedAt: new Date(),
+          rejectionReason: reason,
+          lastUpdated: new Date(),
+        },
+      },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (tool) {
+      searchLogger.info('Tool rejected', {
+        service: 'tool-crud-service',
+        toolId: id,
+        rejectedBy: adminUserId,
+        reason,
+      });
+    }
+
+    return tool as unknown as ITool | null;
   }
 }
 

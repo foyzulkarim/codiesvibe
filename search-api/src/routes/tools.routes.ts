@@ -1,10 +1,24 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { toolCrudService } from '../services/tool-crud.service';
-import { CreateToolSchema, UpdateToolSchema, GetToolsQuerySchema } from '../schemas/tool.schema';
+import {
+  CreateToolSchema,
+  UpdateToolSchema,
+  GetToolsQuerySchema,
+  GetMyToolsQuerySchema,
+  GetAdminToolsQuerySchema,
+  RejectToolSchema,
+} from '../schemas/tool.schema';
 import { searchLogger } from '../config/logger';
 import { SearchRequest } from '../middleware/correlation.middleware';
 import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
 import { clerkRequireAuth, ClerkAuthenticatedRequest } from '../middleware/clerk-auth.middleware';
+import {
+  attachUserRole,
+  requireAdmin,
+  RoleAuthenticatedRequest,
+  isAdmin,
+  isOwner,
+} from '../middleware/role.middleware';
 
 const router = Router();
 
@@ -114,7 +128,78 @@ router.get('/vocabularies', (_req: Request, res: Response) => {
 });
 
 /**
- * GET /api/tools/:id - Get a single tool by ID
+ * GET /api/tools/my-tools - Get authenticated user's own tools
+ * NOTE: This route MUST be defined before /:id to avoid matching "my-tools" as an ID
+ */
+router.get('/my-tools', clerkRequireAuth, attachUserRole, validateQuery(GetMyToolsQuerySchema), async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
+  const startTime = Date.now();
+
+  try {
+    const query = req.query as any;
+    const result = await toolCrudService.getToolsByContributor(authReq.auth.userId, query);
+
+    searchLogger.info('User tools retrieved', {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      userId: authReq.auth.userId,
+      total: result.pagination.total,
+      executionTimeMs: Date.now() - startTime,
+    });
+
+    res.json(result);
+  } catch (error) {
+    searchLogger.error('Failed to retrieve user tools', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+    });
+
+    res.status(500).json({
+      error: 'Failed to retrieve tools',
+      code: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+/**
+ * GET /api/tools/admin - Admin dashboard: list all tools with full filtering
+ * NOTE: This route MUST be defined before /:id to avoid matching "admin" as an ID
+ */
+router.get('/admin', clerkRequireAuth, attachUserRole, requireAdmin, validateQuery(GetAdminToolsQuerySchema), async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
+  const startTime = Date.now();
+
+  try {
+    const query = req.query as any;
+    const result = await toolCrudService.getAdminTools(query);
+
+    searchLogger.info('Admin tools list retrieved', {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      userId: authReq.auth.userId,
+      page: query.page,
+      limit: query.limit,
+      approvalStatus: query.approvalStatus,
+      total: result.pagination.total,
+      executionTimeMs: Date.now() - startTime,
+    });
+
+    res.json(result);
+  } catch (error) {
+    searchLogger.error('Failed to retrieve admin tools', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+    });
+
+    res.status(500).json({
+      error: 'Failed to retrieve tools',
+      code: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+/**
+ * GET /api/tools/:id - Get a single tool by ID (public - only approved tools)
  */
 router.get('/:id', async (req: Request, res: Response) => {
   const searchReq = req as SearchRequest;
@@ -147,9 +232,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 /**
  * POST /api/tools - Create a new tool (protected)
+ * - Maintainers: Tool created in 'pending' state
+ * - Admins: Tool created in 'approved' state
  */
-router.post('/', clerkRequireAuth, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
-  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
+router.post('/', clerkRequireAuth, attachUserRole, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
   const startTime = Date.now();
 
   try {
@@ -163,7 +250,9 @@ router.post('/', clerkRequireAuth, validateBody(CreateToolSchema), async (req: R
       });
     }
 
-    const tool = await toolCrudService.createTool(req.body, authReq.auth.userId);
+    // Admin-created tools are auto-approved
+    const userIsAdmin = isAdmin(req);
+    const tool = await toolCrudService.createTool(req.body, authReq.auth.userId, userIsAdmin);
 
     searchLogger.info('Tool created', {
       service: 'tools-api',
@@ -171,6 +260,8 @@ router.post('/', clerkRequireAuth, validateBody(CreateToolSchema), async (req: R
       toolId: tool.id,
       toolName: tool.name,
       userId: authReq.auth.userId,
+      userRole: authReq.userRole,
+      approvalStatus: tool.approvalStatus,
       executionTimeMs: Date.now() - startTime,
     });
 
@@ -215,26 +306,63 @@ router.post('/', clerkRequireAuth, validateBody(CreateToolSchema), async (req: R
 
 /**
  * PATCH /api/tools/:id - Update a tool (protected)
+ * - Maintainers: Can only edit their own tools while in 'pending' status
+ * - Admins: Can edit any tool
  */
-router.patch('/:id', clerkRequireAuth, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
-  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
+router.patch('/:id', clerkRequireAuth, attachUserRole, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {
-    const tool = await toolCrudService.updateTool(id, req.body);
+    // First, get the tool to check ownership and status
+    const existingTool = await toolCrudService.getToolById(id, false); // false = don't filter by approval status
 
-    if (!tool) {
+    if (!existingTool) {
       return res.status(404).json({
         error: 'Tool not found',
         code: 'NOT_FOUND',
       });
     }
 
+    // Check permissions
+    const userIsAdmin = isAdmin(req);
+    const userIsOwner = isOwner(req, existingTool.contributor);
+
+    if (!userIsAdmin) {
+      // Maintainers can only edit their own tools
+      if (!userIsOwner) {
+        searchLogger.logSecurityEvent('Unauthorized tool update attempt', {
+          service: 'tools-api',
+          correlationId: authReq.correlationId,
+          userId: authReq.auth.userId,
+          toolId: id,
+          toolOwner: existingTool.contributor,
+        }, 'warn');
+
+        return res.status(403).json({
+          error: 'You can only edit your own tools',
+          code: 'FORBIDDEN',
+        });
+      }
+
+      // Maintainers can only edit tools in 'pending' status
+      if (existingTool.approvalStatus !== 'pending') {
+        return res.status(403).json({
+          error: 'You can only edit tools that are pending approval',
+          code: 'FORBIDDEN',
+          approvalStatus: existingTool.approvalStatus,
+        });
+      }
+    }
+
+    const tool = await toolCrudService.updateTool(id, req.body);
+
     searchLogger.info('Tool updated', {
       service: 'tools-api',
       correlationId: authReq.correlationId,
       toolId: id,
       userId: authReq.auth.userId,
+      userRole: authReq.userRole,
     });
 
     res.json(tool);
@@ -267,10 +395,10 @@ router.patch('/:id', clerkRequireAuth, validateBody(UpdateToolSchema), async (re
 });
 
 /**
- * DELETE /api/tools/:id - Delete a tool (protected)
+ * DELETE /api/tools/:id - Delete a tool (admin only)
  */
-router.delete('/:id', clerkRequireAuth, async (req: Request, res: Response) => {
-  const authReq = req as ClerkAuthenticatedRequest & SearchRequest;
+router.delete('/:id', clerkRequireAuth, attachUserRole, requireAdmin, async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {
@@ -288,6 +416,7 @@ router.delete('/:id', clerkRequireAuth, async (req: Request, res: Response) => {
       correlationId: authReq.correlationId,
       toolId: id,
       userId: authReq.auth.userId,
+      userRole: authReq.userRole,
     });
 
     res.status(204).send();
@@ -300,6 +429,86 @@ router.delete('/:id', clerkRequireAuth, async (req: Request, res: Response) => {
 
     res.status(500).json({
       error: 'Failed to delete tool',
+      code: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+/**
+ * PATCH /api/tools/:id/approve - Approve a tool (admin only)
+ */
+router.patch('/:id/approve', clerkRequireAuth, attachUserRole, requireAdmin, async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
+  const { id } = req.params;
+
+  try {
+    const tool = await toolCrudService.approveTool(id, authReq.auth.userId);
+
+    if (!tool) {
+      return res.status(404).json({
+        error: 'Tool not found',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    searchLogger.info('Tool approved', {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      toolId: id,
+      approvedBy: authReq.auth.userId,
+    });
+
+    res.json(tool);
+  } catch (error) {
+    searchLogger.error('Failed to approve tool', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      toolId: id,
+    });
+
+    res.status(500).json({
+      error: 'Failed to approve tool',
+      code: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+/**
+ * PATCH /api/tools/:id/reject - Reject a tool (admin only)
+ */
+router.patch('/:id/reject', clerkRequireAuth, attachUserRole, requireAdmin, validateBody(RejectToolSchema), async (req: Request, res: Response) => {
+  const authReq = req as RoleAuthenticatedRequest & SearchRequest;
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const tool = await toolCrudService.rejectTool(id, authReq.auth.userId, reason);
+
+    if (!tool) {
+      return res.status(404).json({
+        error: 'Tool not found',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    searchLogger.info('Tool rejected', {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      toolId: id,
+      rejectedBy: authReq.auth.userId,
+      reason,
+    });
+
+    res.json(tool);
+  } catch (error) {
+    searchLogger.error('Failed to reject tool', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'tools-api',
+      correlationId: authReq.correlationId,
+      toolId: id,
+    });
+
+    res.status(500).json({
+      error: 'Failed to reject tool',
       code: 'INTERNAL_ERROR',
     });
   }
