@@ -24,7 +24,7 @@ export const mockToolsSchema: DomainSchema = {
     interface: ['Web', 'CLI', 'Desktop', 'API'],
     deployment: ['Cloud', 'Local', 'Self-Hosted'],
     industries: ['Technology', 'Software Development'],
-    pricingModels: ['Free', 'Freemium', 'Paid'],
+    pricingModels: ['Free', 'Paid'],
     billingPeriods: ['Monthly', 'Yearly'],
   },
 

@@ -134,7 +134,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Professionals',
   ],
 
-  pricingModels: ['Free', 'Freemium', 'Paid'],
+  pricingModels: ['Free', 'Paid'],
 
   billingPeriods: ['Monthly', 'Yearly'],
 };

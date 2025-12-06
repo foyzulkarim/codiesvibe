@@ -105,8 +105,6 @@ export default function ToolsList() {
     switch (pricingModel) {
       case 'Free':
         return 'default';
-      case 'Freemium':
-        return 'secondary';
       case 'Paid':
         return 'outline';
       default:
@@ -215,7 +213,6 @@ export default function ToolsList() {
                 <SelectContent>
                   <SelectItem value="all">All Pricing</SelectItem>
                   <SelectItem value="Free">Free</SelectItem>
-                  <SelectItem value="Freemium">Freemium</SelectItem>
                   <SelectItem value="Paid">Paid</SelectItem>
                 </SelectContent>
               </Select>
@@ -298,9 +295,19 @@ export default function ToolsList() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getPricingBadgeVariant(tool.pricingModel)}>
-                              {tool.pricingModel}
-                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {Array.isArray(tool.pricingModel) ? (
+                                tool.pricingModel.map((model) => (
+                                  <Badge key={model} variant={getPricingBadgeVariant(model)}>
+                                    {model}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge variant={getPricingBadgeVariant(tool.pricingModel)}>
+                                  {tool.pricingModel}
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={getStatusBadgeVariant(tool.status)}>

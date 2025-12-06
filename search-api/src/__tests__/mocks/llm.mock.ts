@@ -13,7 +13,7 @@ export class MockLLMService {
       referenceTool: null,
       comparisonMode: null,
       filters: [],
-      pricingModel: 'Free',
+      pricingModel: ['Free'],
       billingPeriod: null,
       priceRange: null,
       priceComparison: null,

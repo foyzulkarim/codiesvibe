@@ -36,7 +36,7 @@ export interface CreateToolParams {
     hasFreeTier: boolean;
     hasCustomPricing: boolean;
     billingPeriods: string[];
-    pricingModel: ('free' | 'freemium' | 'paid')[];
+    pricingModel: ('Free' | 'Paid')[];
   };
 
   pricingDetails?: Array<{

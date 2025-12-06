@@ -49,7 +49,7 @@ describe('Tools Routes Integration Tests', () => {
       { tier: 'Free', billingPeriod: 'Monthly', price: 0 },
       { tier: 'Pro', billingPeriod: 'Monthly', price: 29 },
     ],
-    pricingModel: 'Freemium',
+    pricingModel: ['Free', 'Paid'],
     interface: ['Web', 'API'],
     functionality: ['AI Chat', 'Code Generation'],
     deployment: ['Cloud'],
@@ -181,7 +181,7 @@ describe('Tools Routes Integration Tests', () => {
           slug: `tool-${i.toString().padStart(2, '0')}`,
           name: `Test Tool ${i}`,
           status: i <= 10 ? 'active' : 'beta',
-          pricingModel: i <= 5 ? 'Free' : 'Freemium',
+          pricingModel: i <= 5 ? ['Free'] : ['Free', 'Paid'],
           dateAdded: new Date(),
         });
       }
@@ -231,7 +231,7 @@ describe('Tools Routes Integration Tests', () => {
 
       expect(response.body.data).toHaveLength(5);
       response.body.data.forEach((tool: any) => {
-        expect(tool.pricingModel).toBe('Free');
+        expect(tool.pricingModel).toContain('Free');
       });
     });
 

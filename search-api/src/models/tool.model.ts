@@ -20,7 +20,7 @@ export interface ITool extends Document {
   industries: string[];
   userTypes: string[];
   pricing: IPricing[];
-  pricingModel: 'Free' | 'Freemium' | 'Paid';
+  pricingModel: string[];
   pricingUrl?: string;
   interface: string[];
   functionality: string[];
@@ -142,9 +142,14 @@ const ToolSchema = new Schema<ITool>(
       },
     },
     pricingModel: {
-      type: String,
+      type: [String],
       required: true,
       enum: CONTROLLED_VOCABULARIES.pricingModels,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.pricingModels.includes(item)),
+        message: 'pricingModel must have at least 1 entry from the valid pricing models list',
+      },
     },
     pricingUrl: {
       type: String,

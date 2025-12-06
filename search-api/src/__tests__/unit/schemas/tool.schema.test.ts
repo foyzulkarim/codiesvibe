@@ -72,7 +72,7 @@ describe('Tool Schema Validation', () => {
       industries: ['Technology'],
       userTypes: ['Developers'],
       pricing: [{ tier: 'Free', billingPeriod: 'Monthly', price: 0 }],
-      pricingModel: 'Free',
+      pricingModel: ['Free'],
       interface: ['Web'],
       functionality: ['AI Chat'],
       deployment: ['Cloud'],
@@ -164,7 +164,7 @@ describe('Tool Schema Validation', () => {
     it('should reject tool with invalid pricing model', () => {
       const invalidTool = {
         ...validTool,
-        pricingModel: 'InvalidModel',
+        pricingModel: ['InvalidModel'],
       };
 
       const result = CreateToolSchema.safeParse(invalidTool);

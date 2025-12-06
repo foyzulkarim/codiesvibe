@@ -28,7 +28,7 @@ export interface Tool {
   industries: string[];
   userTypes: string[];
   pricing: { tier: string; billingPeriod: string; price: number }[];
-  pricingModel: 'Free' | 'Freemium' | 'Paid';
+  pricingModel: ('Free' | 'Paid')[];
   pricingUrl?: string;
   interface: string[];
   functionality: string[];

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
 
@@ -346,23 +347,43 @@ export default function ToolCreate() {
                 <FormField
                   control={form.control}
                   name="pricingModel"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel>Pricing Model *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pricing model" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CONTROLLED_VOCABULARIES.pricingModels.map((model) => (
-                            <SelectItem key={model} value={model}>
-                              {model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="mb-4">
+                        <FormLabel>Pricing Model *</FormLabel>
+                        <FormDescription>Select all that apply</FormDescription>
+                      </div>
+                      <div className="space-y-2">
+                        {CONTROLLED_VOCABULARIES.pricingModels.map((model) => (
+                          <FormField
+                            key={model}
+                            control={form.control}
+                            name="pricingModel"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={model}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(model)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...field.value, model])
+                                          : field.onChange(
+                                              field.value?.filter((value: string) => value !== model)
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">{model}</FormLabel>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

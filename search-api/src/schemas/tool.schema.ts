@@ -70,9 +70,9 @@ export const CreateToolSchema = z.object({
     .array(PricingSchema)
     .min(1, 'At least one pricing tier is required'),
 
-  pricingModel: z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]], {
-    errorMap: () => ({ message: `pricingModel must be one of: ${CONTROLLED_VOCABULARIES.pricingModels.join(', ')}` }),
-  }),
+  pricingModel: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .min(1, 'At least one pricing model is required'),
 
   pricingUrl: z
     .string()
@@ -135,7 +135,12 @@ export const GetToolsQuerySchema = z.object({
   status: z.enum(['active', 'beta', 'deprecated', 'discontinued']).optional(),
   category: z.string().optional(),
   industry: z.string().optional(),
-  pricingModel: z.enum(['Free', 'Freemium', 'Paid']).optional(),
+  pricingModel: z
+    .union([
+      z.string(), // Accept comma-separated values
+      z.array(z.enum(['Free', 'Paid'])), // Accept array
+    ])
+    .optional(),
 });
 
 // Type exports
