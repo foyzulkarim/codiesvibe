@@ -2,13 +2,6 @@
   "name": "langgraph-search-system",
   "version": "1.0.0",
   "description": "Maximum Quality Search Architecture with LangGraph",
-  "_moduleAliases": {
-    "@": "dist",
-    "@/config": "dist/config",
-    "@/types": "dist/types",
-    "@/services": "dist/services",
-    "@/utils": "dist/utils"
-  },
   "scripts": {
     "build": "tsc",
     "build:prod": "tsc --sourceMap false",
@@ -21,7 +14,7 @@
     "logs:prod": "pm2 logs search-api",
     "monit:prod": "pm2 monit",
     "deploy:prod": "npm run build:prod && npm run start:prod:pm2",
-    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --ignore-watch node_modules src/server.ts",
     "dev:nodemon": "nodemon",
     "setup": "ts-node -r tsconfig-paths/register src/setup-axios.ts",
     "test": "jest",

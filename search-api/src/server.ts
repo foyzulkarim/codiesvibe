@@ -1,7 +1,4 @@
-import 'module-alias/register';
 import express from 'express';
-import axios from 'axios';
-import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -10,10 +7,8 @@ import Joi from 'joi';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import cors from 'cors';
-import winston from 'winston';
-import { StateAnnotation } from "./types/state";
 import { vectorIndexingService, HealthReport } from "./services";
-import { searchLogger, SearchLogContext } from "./config/logger";
+import { searchLogger } from "./config/logger";
 import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
 import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
 import { v4 as uuidv4 } from 'uuid';
@@ -21,7 +16,6 @@ import { clerkMiddleware } from '@clerk/express';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
-import { threadManager } from "./utils/thread-manager";
 
 // Import tools routes for CRUD operations
 import toolsRoutes from "./routes/tools.routes";
@@ -100,7 +94,7 @@ validateEnvironment();
 const app = express();
 
 // Create logs directory if it doesn't exist
-import { writeFileSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 try {
   mkdirSync('logs');
 } catch (error) {
@@ -678,8 +672,8 @@ function sanitizeQuery(query: string): string {
   return query
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
-    .replace(/[<>{}[\]\\]/g, ''); // Remove potentially dangerous characters
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F<>{}[\]\\]/g, '') // Remove control characters and potentially dangerous characters
 }
 
 // Enhanced search endpoint with comprehensive security
