@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
+import { getClerkToken } from '@/api/clerk-auth';
 import { ToolFormValues } from '@/schemas/tool-form.schema';
 import { toast } from 'sonner';
 
@@ -15,6 +16,8 @@ export interface PaginatedToolsResponse {
     hasPrevPage: boolean;
   };
 }
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Tool {
   _id?: string;
@@ -42,6 +45,11 @@ export interface Tool {
   lastUpdated?: string;
   createdAt?: string;
   updatedAt?: string;
+  // RBAC fields
+  approvalStatus: ApprovalStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface ToolsQueryParams {
@@ -54,6 +62,20 @@ export interface ToolsQueryParams {
   category?: string;
   industry?: string;
   pricingModel?: string;
+  approvalStatus?: ApprovalStatus;
+  contributor?: string;
+}
+
+// Helper to get auth headers for protected endpoints
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const token = await getClerkToken();
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 export interface Vocabularies {
@@ -152,23 +174,28 @@ export function useVocabularies() {
 }
 
 /**
- * Hook to create a new tool
+ * Hook to create a new tool (requires authentication)
  */
 export function useCreateTool() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: ToolFormValues): Promise<Tool> => {
+      const headers = await getAuthHeaders();
       const response = await fetch(`${getSearchApiUrl()}/api/tools`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to create a tool');
+        }
+        if (response.status === 403) {
+          throw new Error(errorData.error || 'You do not have permission to create tools');
+        }
         throw new Error(errorData.error || 'Failed to create tool');
       }
 
@@ -177,7 +204,10 @@ export function useCreateTool() {
     onSuccess: (newTool) => {
       // Invalidate and refetch tools list
       queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
-      toast.success(`Tool "${newTool.name}" created successfully`);
+      const statusMessage = newTool.approvalStatus === 'approved'
+        ? 'and approved'
+        : 'and is pending approval';
+      toast.success(`Tool "${newTool.name}" created ${statusMessage}`);
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create tool');
@@ -186,23 +216,28 @@ export function useCreateTool() {
 }
 
 /**
- * Hook to update a tool
+ * Hook to update a tool (requires authentication)
  */
 export function useUpdateTool() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<ToolFormValues> }): Promise<Tool> => {
+      const headers = await getAuthHeaders();
       const response = await fetch(`${getSearchApiUrl()}/api/tools/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to update this tool');
+        }
+        if (response.status === 403) {
+          throw new Error(errorData.error || 'You do not have permission to update this tool');
+        }
         throw new Error(errorData.error || 'Failed to update tool');
       }
 
@@ -221,19 +256,27 @@ export function useUpdateTool() {
 }
 
 /**
- * Hook to delete a tool
+ * Hook to delete a tool (requires admin authentication)
  */
 export function useDeleteTool() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
+      const headers = await getAuthHeaders();
       const response = await fetch(`${getSearchApiUrl()}/api/tools/${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to delete this tool');
+        }
+        if (response.status === 403) {
+          throw new Error(errorData.error || 'Only admins can delete tools');
+        }
         throw new Error(errorData.error || 'Failed to delete tool');
       }
     },
@@ -244,6 +287,156 @@ export function useDeleteTool() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete tool');
+    },
+  });
+}
+
+/**
+ * Hook to fetch user's own tools (my-tools endpoint)
+ */
+export function useMyTools(params: Omit<ToolsQueryParams, 'contributor'> = {}) {
+  const { page = 1, limit = 20, approvalStatus, sortBy, sortOrder } = params;
+
+  return useQuery({
+    queryKey: [...toolsAdminKeys.all, 'my-tools', params] as const,
+    queryFn: async (): Promise<PaginatedToolsResponse> => {
+      const headers = await getAuthHeaders();
+      const searchParams = new URLSearchParams();
+      searchParams.set('page', String(page));
+      searchParams.set('limit', String(limit));
+      if (approvalStatus) searchParams.set('approvalStatus', approvalStatus);
+      if (sortBy) searchParams.set('sortBy', sortBy);
+      if (sortOrder) searchParams.set('sortOrder', sortOrder);
+
+      const response = await fetch(`${getSearchApiUrl()}/api/tools/my-tools?${searchParams.toString()}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please sign in to view your tools');
+        }
+        throw new Error('Failed to fetch your tools');
+      }
+      return response.json();
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch admin tools list (all tools with all statuses)
+ */
+export function useAdminTools(params: ToolsQueryParams = {}) {
+  const { page = 1, limit = 20, search, sortBy, sortOrder, status, category, industry, pricingModel, approvalStatus, contributor } = params;
+
+  return useQuery({
+    queryKey: [...toolsAdminKeys.all, 'admin', params] as const,
+    queryFn: async (): Promise<PaginatedToolsResponse> => {
+      const headers = await getAuthHeaders();
+      const searchParams = new URLSearchParams();
+      searchParams.set('page', String(page));
+      searchParams.set('limit', String(limit));
+      if (search) searchParams.set('search', search);
+      if (sortBy) searchParams.set('sortBy', sortBy);
+      if (sortOrder) searchParams.set('sortOrder', sortOrder);
+      if (status) searchParams.set('status', status);
+      if (category) searchParams.set('category', category);
+      if (industry) searchParams.set('industry', industry);
+      if (pricingModel) searchParams.set('pricingModel', pricingModel);
+      if (approvalStatus) searchParams.set('approvalStatus', approvalStatus);
+      if (contributor) searchParams.set('contributor', contributor);
+
+      const response = await fetch(`${getSearchApiUrl()}/api/tools/admin?${searchParams.toString()}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Please sign in to access admin tools');
+        }
+        if (response.status === 403) {
+          throw new Error('Admin access required');
+        }
+        throw new Error('Failed to fetch admin tools');
+      }
+      return response.json();
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Hook to approve a tool (admin only)
+ */
+export function useApproveTool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<Tool> => {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${getSearchApiUrl()}/api/tools/${id}/approve`, {
+        method: 'PATCH',
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to approve tools');
+        }
+        if (response.status === 403) {
+          throw new Error('Only admins can approve tools');
+        }
+        throw new Error(errorData.error || 'Failed to approve tool');
+      }
+
+      return response.json();
+    },
+    onSuccess: (approvedTool) => {
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
+      toast.success(`Tool "${approvedTool.name}" approved`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to approve tool');
+    },
+  });
+}
+
+/**
+ * Hook to reject a tool (admin only)
+ */
+export function useRejectTool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }): Promise<Tool> => {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${getSearchApiUrl()}/api/tools/${id}/reject`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to reject tools');
+        }
+        if (response.status === 403) {
+          throw new Error('Only admins can reject tools');
+        }
+        throw new Error(errorData.error || 'Failed to reject tool');
+      }
+
+      return response.json();
+    },
+    onSuccess: (rejectedTool) => {
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
+      toast.success(`Tool "${rejectedTool.name}" rejected`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to reject tool');
     },
   });
 }
