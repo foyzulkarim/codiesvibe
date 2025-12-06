@@ -2,11 +2,8 @@
  * Price constraint extraction patterns
  */
 export const pricePatterns = {
-  free: /\b(free|no cost|no charge|gratis)\b/i,
-  paid: /\b(paid|premium|pro|commercial)\b/i,
-  freemium: /\b(freemium|free trial|free tier)\b/i,
-  subscription: /\b(subscription|monthly|annual|yearly)\b/i,
-  oneTime: /\b(one-time|one off|lifetime|perpetual)\b/i,
+  free: /\b(free|no cost|no charge|gratis|free tier|free trial)\b/i,
+  paid: /\b(paid|premium|pro|commercial|subscription|monthly|annual|yearly|one-time|one off|lifetime|perpetual)\b/i,
 
   // Price range patterns
   maxPrice: /\b(under|below|less than|cheaper than|under \$|below \$|less than \$)\s*(\$?\d+)/i,
@@ -50,24 +47,25 @@ export function extractPriceConstraints(text: string): {
   hasFreeTier?: boolean;
   maxPrice?: number;
   minPrice?: number;
-  pricingModel?: string;
+  pricingModel?: string[];
 } {
   const result: any = {};
+  const pricingModels: string[] = [];
 
   // Check for free tier
   if (pricePatterns.free.test(text)) {
     result.hasFreeTier = true;
+    pricingModels.push("Free");
   }
 
-  // Check for pricing model
-  if (pricePatterns.freemium.test(text)) {
-    result.pricingModel = "freemium";
-  } else if (pricePatterns.subscription.test(text)) {
-    result.pricingModel = "subscription";
-  } else if (pricePatterns.oneTime.test(text)) {
-    result.pricingModel = "one-time";
-  } else if (pricePatterns.paid.test(text)) {
-    result.pricingModel = "paid";
+  // Check for paid options
+  if (pricePatterns.paid.test(text)) {
+    pricingModels.push("Paid");
+  }
+
+  // Set pricing model array if any were found
+  if (pricingModels.length > 0) {
+    result.pricingModel = pricingModels;
   }
 
   // Extract price range
@@ -84,7 +82,7 @@ export function extractPriceConstraints(text: string): {
   const priceRangeMatch = text.match(pricePatterns.priceRange);
   if (priceRangeMatch) {
     result.minPrice = parseInt(priceRangeMatch[2].replace(/\$/g, ""));
-    result.maxPrice = parseInt(priceRangeMatch[3].replace(/\$/g, ""));
+    result.maxPrice = parseInt(priceRangeMatch[4].replace(/\$/g, ""));
   }
 
   return result;

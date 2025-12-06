@@ -24,7 +24,7 @@ describe('ToolCrudService', () => {
       { tier: 'Free', billingPeriod: 'Monthly', price: 0 },
       { tier: 'Pro', billingPeriod: 'Monthly', price: 29 },
     ],
-    pricingModel: 'Freemium',
+    pricingModel: ['Free', 'Paid'],
     interface: ['Web', 'API'],
     functionality: ['AI Chat', 'Code Generation'],
     deployment: ['Cloud'],
@@ -64,7 +64,7 @@ describe('ToolCrudService', () => {
       expect(tool.description).toBe(validToolInput.description);
       expect(tool.categories).toEqual(validToolInput.categories);
       expect(tool.pricing).toHaveLength(2);
-      expect(tool.pricingModel).toBe('Freemium');
+      expect(tool.pricingModel).toEqual(['Free', 'Paid']);
     });
 
     it('should auto-generate slug from id', async () => {
@@ -108,7 +108,7 @@ describe('ToolCrudService', () => {
           id: `tool-${i.toString().padStart(2, '0')}`,
           name: `Test Tool ${i}`,
           status: i <= 20 ? 'active' : 'beta',
-          pricingModel: i <= 10 ? 'Free' : i <= 20 ? 'Freemium' : 'Paid',
+          pricingModel: i <= 10 ? ['Free'] : i <= 20 ? ['Free', 'Paid'] : ['Paid'],
         });
       }
 
@@ -162,9 +162,10 @@ describe('ToolCrudService', () => {
     it('should filter by pricingModel', async () => {
       const result = await toolCrudService.getTools({ pricingModel: 'Free', limit: 100 });
 
-      expect(result.data).toHaveLength(10);
+      // Tools 1-10 have ['Free'], tools 11-20 have ['Free', 'Paid'] - both contain 'Free'
+      expect(result.data).toHaveLength(20);
       result.data.forEach((tool) => {
-        expect(tool.pricingModel).toBe('Free');
+        expect(tool.pricingModel).toContain('Free');
       });
     });
 
@@ -253,10 +254,10 @@ describe('ToolCrudService', () => {
 
     it('should update pricing model', async () => {
       const updated = await toolCrudService.updateTool('test-tool', {
-        pricingModel: 'Paid',
+        pricingModel: ['Paid'],
       });
 
-      expect(updated?.pricingModel).toBe('Paid');
+      expect(updated?.pricingModel).toEqual(['Paid']);
     });
 
     it('should update categories', async () => {

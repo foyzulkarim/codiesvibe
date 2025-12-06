@@ -29,6 +29,6 @@ export const enumValues = {
     "cloud", "self-hosted", "hybrid", "other"
   ],
   pricingModel: [
-    "free", "freemium", "subscription", "one-time", "other"
+    "Free", "Paid"
   ],
 };

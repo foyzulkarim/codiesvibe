@@ -182,22 +182,32 @@ export function buildToolsFilters(intentState: any): any[] {
   // PRICING MODEL FILTER
   // ============================================================================
   if (intentState.pricing) {
-    filters.push({
-      field: 'pricingSummary.pricingModel',
-      operator: 'in',
-      value: [intentState.pricing],
-    });
+    // Skip if empty array
+    if (Array.isArray(intentState.pricing) && intentState.pricing.length === 0) {
+      // Skip empty array
+    } else {
+      filters.push({
+        field: 'pricingModel',
+        operator: 'in',
+        value: Array.isArray(intentState.pricing) ? intentState.pricing : [intentState.pricing],
+      });
+    }
   }
 
   // ============================================================================
   // PRICING MODEL FILTER (alternative field name)
   // ============================================================================
   if (intentState.pricingModel) {
-    filters.push({
-      field: 'pricingSummary.pricingModel',
-      operator: 'in',
-      value: [intentState.pricingModel],
-    });
+    // Skip if empty array
+    if (Array.isArray(intentState.pricingModel) && intentState.pricingModel.length === 0) {
+      // Skip empty array
+    } else {
+      filters.push({
+        field: 'pricingModel',
+        operator: 'in',
+        value: Array.isArray(intentState.pricingModel) ? intentState.pricingModel : [intentState.pricingModel],
+      });
+    }
   }
 
   return filters;

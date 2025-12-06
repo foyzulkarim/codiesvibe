@@ -318,7 +318,7 @@ describe('Query Planner Node - Unit Tests', () => {
         (source) =>
           source.filters?.some(
             (filter) =>
-              (filter.field === 'pricing' || filter.field === 'pricingSummary.pricingModel') &&
+              (filter.field === 'pricing' || filter.field === 'pricingModel') &&
               (filter.value === 'Free' ||
                 (Array.isArray(filter.value) && filter.value.includes('Free')))
           )

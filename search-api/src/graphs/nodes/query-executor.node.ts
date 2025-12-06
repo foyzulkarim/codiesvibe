@@ -381,7 +381,9 @@ async function executeVectorSearch(
         metadata: {
           name: result.payload?.name || 'Unknown Tool',
           category: result.payload?.category,
-          pricing: result.payload?.pricingSummary?.pricingModel?.[0],
+          pricing: Array.isArray(result.payload?.pricingModel)
+            ? result.payload.pricingModel.join(', ')
+            : result.payload?.pricingModel,
           platform: result.payload?.interface?.[0],
           features: result.payload?.features || [],
           description: result.payload?.description,
@@ -502,10 +504,12 @@ async function executeStructuredSearch(
       score: 0.5, // Default score for structured results (will be normalized later)
       metadata: {
         name: tool.name || 'Unknown Tool',
-        category: tool.categories?.primary?.[0],
-        pricing: tool.pricingSummary?.pricingModel?.[0],
+        category: tool.categories?.primary?.[0] || tool.categories?.[0],
+        pricing: Array.isArray(tool.pricingModel)
+          ? tool.pricingModel.join(', ')
+          : tool.pricingModel,
         platform: tool.interface?.[0],
-        features: tool.capabilities?.core || [],
+        features: tool.capabilities?.core || tool.functionality || [],
         description: tool.description || tool.tagline,
       },
       provenance: {

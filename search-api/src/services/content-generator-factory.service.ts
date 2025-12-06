@@ -349,15 +349,15 @@ class InterfaceContentGenerator implements ContentGenerator {
     const contentParts: string[] = [];
 
     this.addWeighted(tool.interface, 2.0, contentParts);
-    this.addWeighted([tool.pricingModel], 1.5, contentParts);
+    this.addWeighted(tool.pricingModel, 1.5, contentParts);
     this.addWeighted([tool.status], 1.0, contentParts);
 
     // Add technical context
     if (tool.interface.length > 0) {
       contentParts.push(`Available interfaces: ${tool.interface.join(', ')}`);
     }
-    if (tool.pricingModel) {
-      contentParts.push(`Pricing model: ${tool.pricingModel}`);
+    if (tool.pricingModel && tool.pricingModel.length > 0) {
+      contentParts.push(`Pricing model: ${tool.pricingModel.join(', ')}`);
     }
     if (tool.status) {
       contentParts.push(`Current status: ${tool.status}`);

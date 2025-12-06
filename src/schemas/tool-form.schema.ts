@@ -31,7 +31,7 @@ export const CONTROLLED_VOCABULARIES = {
     'Business Owners', 'Startup Teams', 'Students', 'Teachers', 'Remote Teams',
     'Non-Technical Users', 'Freelancers', 'Consultants', 'General Users', 'Professionals',
   ],
-  pricingModels: ['Free', 'Freemium', 'Paid'] as const,
+  pricingModels: ['Free', 'Paid'] as const,
   billingPeriods: ['Monthly', 'Yearly'] as const,
   statuses: ['active', 'beta', 'deprecated', 'discontinued'] as const,
 };
@@ -96,7 +96,9 @@ export const ToolFormSchema = z.object({
     .array(PricingTierSchema)
     .min(1, 'At least one pricing tier is required'),
 
-  pricingModel: z.enum(CONTROLLED_VOCABULARIES.pricingModels),
+  pricingModel: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels))
+    .min(1, 'At least one pricing model is required'),
 
   pricingUrl: z
     .string()
@@ -156,7 +158,7 @@ export const defaultToolFormValues: Partial<ToolFormValues> = {
   industries: [],
   userTypes: [],
   pricing: [{ tier: 'Free', billingPeriod: 'Monthly', price: 0 }],
-  pricingModel: 'Free',
+  pricingModel: ['Free'],
   pricingUrl: '',
   interface: [],
   functionality: [],
