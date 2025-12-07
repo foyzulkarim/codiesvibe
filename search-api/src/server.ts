@@ -19,10 +19,12 @@ import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph.js";
 
 // Import tools routes for CRUD operations
 import toolsRoutes from "./routes/tools.routes.js";
+import syncRoutes from "./routes/sync.routes.js";
 
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service.js";
 import { gracefulShutdown } from "./services/graceful-shutdown.service.js";
+import { syncWorkerService } from "./services/sync-worker.service.js";
 import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database.js";
 import { metricsService } from "./services/metrics.service.js";
 import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor.js";
@@ -608,6 +610,22 @@ searchLogger.info('Tools CRUD routes mounted at /api/tools', {
   endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools (protected)', 'PATCH /api/tools/:id (protected)', 'DELETE /api/tools/:id (protected)', 'GET /api/tools/vocabularies'],
 });
 
+// Mount sync routes (admin only)
+app.use('/api/sync', syncRoutes);
+searchLogger.info('Sync admin routes mounted at /api/sync', {
+  service: 'search-api',
+  endpoints: [
+    'GET /api/sync/status (admin)',
+    'GET /api/sync/stats (admin)',
+    'GET /api/sync/worker (admin)',
+    'POST /api/sync/sweep (admin)',
+    'POST /api/sync/retry/:toolId (admin)',
+    'POST /api/sync/retry-all (admin)',
+    'GET /api/sync/failed (admin)',
+    'GET /api/sync/pending (admin)',
+  ],
+});
+
 // Enhanced query sanitization function
 function sanitizeQuery(query: string): string {
   return query
@@ -858,6 +876,11 @@ async function startServer() {
       searchLogger.info('🔄 Executing beforeShutdown tasks', {
         service: 'search-api',
       });
+      // Stop sync worker first to prevent new operations
+      syncWorkerService.stop();
+      searchLogger.info('🛑 Sync worker stopped', {
+        service: 'search-api',
+      });
       // Shutdown circuit breakers
       await circuitBreakerManager.shutdown();
     },
@@ -875,6 +898,20 @@ async function startServer() {
     timeout: '30s',
     signals: ['SIGTERM', 'SIGINT'],
   });
+
+  // Start sync worker for background sync operations
+  const enableSyncWorker = process.env.ENABLE_SYNC_WORKER !== 'false';
+  if (enableSyncWorker) {
+    syncWorkerService.start();
+    searchLogger.info('✅ Sync worker started for background Qdrant synchronization', {
+      service: 'search-api',
+      workerStatus: syncWorkerService.getStatus(),
+    });
+  } else {
+    searchLogger.info('⚠️  Sync worker disabled (ENABLE_SYNC_WORKER=false)', {
+      service: 'search-api',
+    });
+  }
 }
 
 // Start the server

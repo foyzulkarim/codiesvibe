@@ -26,6 +26,37 @@ export interface PaginatedToolsResponse {
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
+// ============================================
+// SYNC METADATA TYPES
+// ============================================
+
+export type SyncStatus = 'synced' | 'pending' | 'failed' | 'stale';
+export type SyncCollectionName = 'tools' | 'functionality' | 'usecases' | 'interface';
+
+export interface CollectionSyncStatus {
+  status: SyncStatus;
+  lastSyncedAt: string | null;
+  lastSyncAttemptAt: string | null;
+  lastError: string | null;
+  errorCode: string | null;
+  retryCount: number;
+  contentHash: string;
+  vectorVersion: number;
+}
+
+export interface SyncMetadata {
+  overallStatus: SyncStatus;
+  collections: {
+    tools: CollectionSyncStatus;
+    functionality: CollectionSyncStatus;
+    usecases: CollectionSyncStatus;
+    interface: CollectionSyncStatus;
+  };
+  lastModifiedFields: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Tool {
   _id?: string;
   id: string;
@@ -57,6 +88,8 @@ export interface Tool {
   reviewedBy?: string;
   reviewedAt?: string;
   rejectionReason?: string;
+  // Sync metadata
+  syncMetadata?: SyncMetadata;
 }
 
 export interface ToolsQueryParams {

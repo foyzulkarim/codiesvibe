@@ -9,7 +9,9 @@ import {
   Tool,
   ToolsQueryParams,
   ApprovalStatus,
+  SyncStatus,
 } from '@/hooks/api/useToolsAdmin';
+import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
 import { useClerk } from '@clerk/clerk-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
@@ -66,7 +68,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, User, Check, X, AlertCircle } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, User, Check, X, AlertCircle, RefreshCw, Cloud, CloudOff } from 'lucide-react';
 
 export default function ToolsList() {
   const navigate = useNavigate();
@@ -100,6 +102,7 @@ export default function ToolsList() {
   const deleteTool = useDeleteTool();
   const approveTool = useApproveTool();
   const rejectTool = useRejectTool();
+  const retryToolSync = useRetryToolSync();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +197,25 @@ export default function ToolsList() {
       default:
         return 'outline';
     }
+  };
+
+  const getSyncBadgeVariant = (syncStatus: SyncStatus | undefined) => {
+    switch (syncStatus) {
+      case 'synced':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'failed':
+        return 'destructive';
+      case 'stale':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+
+  const handleRetrySync = async (toolId: string) => {
+    await retryToolSync.mutateAsync(toolId);
   };
 
   // Check if user can edit a tool (owner of pending tool, or admin)
@@ -375,6 +397,7 @@ export default function ToolsList() {
                       <TableHead>Pricing</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Approval</TableHead>
+                      {isAdmin && <TableHead>Sync</TableHead>}
                       <TableHead className="hidden lg:table-cell">Added</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -382,7 +405,7 @@ export default function ToolsList() {
                   <TableBody>
                     {data.data.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-12">
+                        <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12">
                           <p className="text-muted-foreground">No tools found</p>
                           <Button
                             variant="outline"
@@ -458,6 +481,50 @@ export default function ToolsList() {
                               </div>
                             </TooltipProvider>
                           </TableCell>
+                          {/* Sync Status - Admin only */}
+                          {isAdmin && (
+                            <TableCell>
+                              <TooltipProvider>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant={getSyncBadgeVariant(tool.syncMetadata?.overallStatus)}>
+                                    {tool.syncMetadata?.overallStatus || 'pending'}
+                                  </Badge>
+                                  {tool.syncMetadata?.overallStatus === 'failed' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          onClick={() => handleRetrySync(tool.id)}
+                                          disabled={retryToolSync.isPending}
+                                        >
+                                          <RefreshCw className={`h-3 w-3 ${retryToolSync.isPending ? 'animate-spin' : ''}`} />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-[300px]">
+                                        <p className="font-medium">Click to retry sync</p>
+                                        {tool.syncMetadata?.collections && (
+                                          <div className="mt-1 text-xs">
+                                            {Object.entries(tool.syncMetadata.collections)
+                                              .filter(([, status]) => status.status === 'failed')
+                                              .map(([name, status]) => (
+                                                <p key={name}>
+                                                  {name}: {status.lastError?.substring(0, 50)}
+                                                </p>
+                                              ))}
+                                          </div>
+                                        )}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                  {tool.syncMetadata?.overallStatus === 'synced' && (
+                                    <Cloud className="h-4 w-4 text-green-500" />
+                                  )}
+                                </div>
+                              </TooltipProvider>
+                            </TableCell>
+                          )}
                           <TableCell className="hidden lg:table-cell">
                             {new Date(tool.dateAdded).toLocaleDateString()}
                           </TableCell>
