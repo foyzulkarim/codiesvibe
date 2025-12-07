@@ -11,6 +11,50 @@ export interface IPricing {
 // Approval status type
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
+// ============================================
+// SYNC STATUS TYPES
+// ============================================
+
+/**
+ * Possible sync statuses for vector database synchronization
+ */
+export type SyncStatus = 'synced' | 'pending' | 'failed' | 'stale';
+
+/**
+ * Collection names that are synced to Qdrant
+ */
+export type SyncCollectionName = 'tools' | 'functionality' | 'usecases' | 'interface';
+
+/**
+ * Sync status for a single Qdrant collection
+ */
+export interface ICollectionSyncStatus {
+  status: SyncStatus;
+  lastSyncedAt: Date | null;
+  lastSyncAttemptAt: Date | null;
+  lastError: string | null;
+  errorCode: string | null;
+  retryCount: number;
+  contentHash: string;
+  vectorVersion: number;
+}
+
+/**
+ * Overall sync metadata for a tool across all collections
+ */
+export interface ISyncMetadata {
+  overallStatus: SyncStatus;
+  collections: {
+    tools: ICollectionSyncStatus;
+    functionality: ICollectionSyncStatus;
+    usecases: ICollectionSyncStatus;
+    interface: ICollectionSyncStatus;
+  };
+  lastModifiedFields: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Tool document interface
 export interface ITool extends Document {
   id: string;
@@ -42,6 +86,8 @@ export interface ITool extends Document {
   reviewedBy?: string;
   reviewedAt?: Date;
   rejectionReason?: string;
+  // Sync metadata for Qdrant synchronization
+  syncMetadata?: ISyncMetadata;
 }
 
 // Pricing subdocument schema
@@ -64,6 +110,130 @@ const PricingSchema = new Schema<IPricing>(
   },
   { _id: false }
 );
+
+// ============================================
+// SYNC METADATA SCHEMAS
+// ============================================
+
+/**
+ * Schema for per-collection sync status
+ */
+const CollectionSyncStatusSchema = new Schema<ICollectionSyncStatus>(
+  {
+    status: {
+      type: String,
+      enum: ['synced', 'pending', 'failed', 'stale'],
+      default: 'pending',
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    lastSyncAttemptAt: {
+      type: Date,
+      default: null,
+    },
+    lastError: {
+      type: String,
+      default: null,
+      maxlength: 1000,
+    },
+    errorCode: {
+      type: String,
+      default: null,
+      maxlength: 100,
+    },
+    retryCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    contentHash: {
+      type: String,
+      default: '',
+    },
+    vectorVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Default collection sync status for new tools
+ */
+const defaultCollectionSyncStatus = (): ICollectionSyncStatus => ({
+  status: 'pending',
+  lastSyncedAt: null,
+  lastSyncAttemptAt: null,
+  lastError: null,
+  errorCode: null,
+  retryCount: 0,
+  contentHash: '',
+  vectorVersion: 0,
+});
+
+/**
+ * Schema for overall sync metadata
+ */
+const SyncMetadataSchema = new Schema<ISyncMetadata>(
+  {
+    overallStatus: {
+      type: String,
+      enum: ['synced', 'pending', 'failed', 'stale'],
+      default: 'pending',
+    },
+    collections: {
+      tools: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      functionality: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      usecases: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      interface: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+    },
+    lastModifiedFields: {
+      type: [String],
+      default: [],
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Create default sync metadata for new tools
+ */
+export const createDefaultSyncMetadata = (): ISyncMetadata => ({
+  overallStatus: 'pending',
+  collections: {
+    tools: defaultCollectionSyncStatus(),
+    functionality: defaultCollectionSyncStatus(),
+    usecases: defaultCollectionSyncStatus(),
+    interface: defaultCollectionSyncStatus(),
+  },
+  lastModifiedFields: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
 
 // Tool schema
 const ToolSchema = new Schema<ITool>(
@@ -255,6 +425,11 @@ const ToolSchema = new Schema<ITool>(
       maxlength: 500,
       trim: true,
     },
+    // Sync metadata for Qdrant synchronization
+    syncMetadata: {
+      type: SyncMetadataSchema,
+      default: createDefaultSyncMetadata,
+    },
   },
   {
     timestamps: true,
@@ -303,6 +478,50 @@ ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' });
 ToolSchema.index({ approvalStatus: 1 }, { name: 'tool_approval_status_index' });
 ToolSchema.index({ contributor: 1 }, { name: 'tool_contributor_index' });
 ToolSchema.index({ approvalStatus: 1, contributor: 1 }, { name: 'tool_approval_contributor_index' });
+
+// ============================================
+// SYNC INDEXES
+// ============================================
+
+// Overall sync status for quick filtering
+ToolSchema.index(
+  { 'syncMetadata.overallStatus': 1 },
+  { name: 'tool_sync_overall_status_index' }
+);
+
+// Per-collection sync status for targeted queries
+ToolSchema.index(
+  { 'syncMetadata.collections.tools.status': 1 },
+  { name: 'tool_sync_tools_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.functionality.status': 1 },
+  { name: 'tool_sync_functionality_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.usecases.status': 1 },
+  { name: 'tool_sync_usecases_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.interface.status': 1 },
+  { name: 'tool_sync_interface_status_index' }
+);
+
+// Compound index for worker queries (find failed/pending with retry count)
+ToolSchema.index(
+  {
+    'syncMetadata.overallStatus': 1,
+    'syncMetadata.collections.tools.retryCount': 1,
+    'syncMetadata.collections.tools.lastSyncAttemptAt': 1,
+  },
+  { name: 'tool_sync_worker_query_index' }
+);
+
+// Last sync attempt for rate limiting / backoff calculations
+ToolSchema.index(
+  { 'syncMetadata.collections.tools.lastSyncAttemptAt': 1 },
+  { name: 'tool_sync_last_attempt_index' }
+);
 
 // Export the model
 export const Tool = mongoose.model<ITool>('Tool', ToolSchema);
