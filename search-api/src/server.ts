@@ -160,6 +160,38 @@ const searchLimiter = rateLimit({
   }
 });
 
+// Rate limiting for tools create/update operations
+// Prevents spam tool submissions and excessive updates
+export const toolsMutationLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // limit each IP to 10 create/update operations per 5 minutes
+  message: {
+    error: 'Too many tool modifications',
+    code: 'TOOLS_MUTATION_RATE_LIMIT_EXCEEDED',
+    retryAfter: '5 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const searchReq = req as SearchRequest;
+    searchLogger.logSecurityEvent('Tools mutation rate limit exceeded', {
+      correlationId: searchReq.correlationId,
+      service: 'search-api',
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path,
+      method: req.method,
+      userId: (req as any).auth?.userId,
+      timestamp: new Date().toISOString()
+    }, 'warn');
+    res.status(429).json({
+      error: 'Too many tool modifications',
+      code: 'TOOLS_MUTATION_RATE_LIMIT_EXCEEDED',
+      retryAfter: '5 minutes'
+    });
+  }
+});
+
 // Security middleware stack (conditional)
 if (process.env.ENABLE_SECURITY_HEADERS !== 'false') {
   app.use(helmet({

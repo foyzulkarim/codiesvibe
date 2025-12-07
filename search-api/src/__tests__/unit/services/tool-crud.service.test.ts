@@ -101,6 +101,7 @@ describe('ToolCrudService', () => {
   describe('getTools', () => {
     beforeEach(async () => {
       // Create multiple tools for testing pagination
+      // NOTE: getTools() filters by approvalStatus: 'approved' by default
       const tools = [];
       for (let i = 1; i <= 25; i++) {
         tools.push({
@@ -117,6 +118,7 @@ describe('ToolCrudService', () => {
           ...tool,
           slug: tool.id,
           dateAdded: new Date(),
+          approvalStatus: 'approved', // Required for getTools() to return these
         });
       }
     });
@@ -201,6 +203,7 @@ describe('ToolCrudService', () => {
         ...validToolInput,
         slug: validToolInput.id,
         dateAdded: new Date(),
+        approvalStatus: 'approved', // Required for getToolById() with publicOnly=true (default)
       });
     });
 

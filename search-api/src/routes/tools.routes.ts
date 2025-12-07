@@ -19,6 +19,7 @@ import {
   isAdmin,
   isOwner,
 } from '../middleware/role.middleware';
+import { toolsMutationLimiter } from '../server';
 
 const router = Router();
 
@@ -78,10 +79,11 @@ const validateQuery = (schema: any) => {
 };
 
 /**
- * GET /api/tools - List tools with pagination and filtering (protected)
+ * GET /api/tools - List tools with pagination and filtering (public)
+ * Returns only approved tools - no authentication required
  */
-router.get('/', clerkRequireAuth, attachUserRole, validateQuery(GetToolsQuerySchema), async (req: Request, res: Response) => {
-  const searchReq = req as RoleAuthenticatedRequest & SearchRequest;
+router.get('/', validateQuery(GetToolsQuerySchema), async (req: Request, res: Response) => {
+  const searchReq = req as SearchRequest;
   const startTime = Date.now();
 
   try {
@@ -247,11 +249,12 @@ router.get('/:id', clerkRequireAuth, attachUserRole, async (req: Request, res: R
 });
 
 /**
- * POST /api/tools - Create a new tool (protected)
+ * POST /api/tools - Create a new tool (protected, rate limited)
  * - Maintainers: Tool created in 'pending' state
  * - Admins: Tool created in 'approved' state
+ * - Rate limit: 10 requests per 5 minutes
  */
-router.post('/', clerkRequireAuth, attachUserRole, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
+router.post('/', clerkRequireAuth, attachUserRole, toolsMutationLimiter, validateBody(CreateToolSchema), async (req: Request, res: Response) => {
   const authReq = req as RoleAuthenticatedRequest & SearchRequest;
   const startTime = Date.now();
 
@@ -321,11 +324,12 @@ router.post('/', clerkRequireAuth, attachUserRole, validateBody(CreateToolSchema
 });
 
 /**
- * PATCH /api/tools/:id - Update a tool (protected)
+ * PATCH /api/tools/:id - Update a tool (protected, rate limited)
  * - Maintainers: Can only edit their own tools while in 'pending' status
  * - Admins: Can edit any tool
+ * - Rate limit: 10 requests per 5 minutes
  */
-router.patch('/:id', clerkRequireAuth, attachUserRole, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
+router.patch('/:id', clerkRequireAuth, attachUserRole, toolsMutationLimiter, validateBody(UpdateToolSchema), async (req: Request, res: Response) => {
   const authReq = req as RoleAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
@@ -458,14 +462,26 @@ router.patch('/:id/approve', clerkRequireAuth, attachUserRole, requireAdmin, asy
   const { id } = req.params;
 
   try {
-    const tool = await toolCrudService.approveTool(id, authReq.auth.userId);
+    // First check if tool exists and its current status
+    const existingTool = await toolCrudService.getToolById(id, false);
 
-    if (!tool) {
+    if (!existingTool) {
       return res.status(404).json({
         error: 'Tool not found',
         code: 'NOT_FOUND',
       });
     }
+
+    // Check if tool is already approved
+    if (existingTool.approvalStatus === 'approved') {
+      return res.status(400).json({
+        error: 'Tool is already approved',
+        code: 'VALIDATION_ERROR',
+        currentStatus: existingTool.approvalStatus,
+      });
+    }
+
+    const tool = await toolCrudService.approveTool(id, authReq.auth.userId);
 
     searchLogger.info('Tool approved', {
       service: 'tools-api',

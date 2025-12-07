@@ -21,6 +21,34 @@ const userRoles: Record<string, 'admin' | 'maintainer'> = {
   [OTHER_MAINTAINER_ID]: 'maintainer',
 };
 
+// Mock the server module to avoid importing the full server with side effects
+// This provides a mock for the toolsMutationLimiter used in routes
+jest.mock('../../../server', () => ({
+  toolsMutationLimiter: (req: any, res: any, next: any) => {
+    // Simple mock that tracks request count per IP for testing
+    const ip = req.ip || 'test-ip';
+    const key = `rate-limit-${ip}`;
+    const requestCount = (global as any)[key] || 0;
+
+    // Set rate limit headers for testing
+    res.setHeader('RateLimit-Limit', '10');
+    res.setHeader('RateLimit-Remaining', Math.max(0, 10 - requestCount - 1).toString());
+    res.setHeader('RateLimit-Reset', Math.floor(Date.now() / 1000 + 300).toString());
+
+    // Simulate rate limiting after 10 requests
+    if (requestCount >= 10) {
+      return res.status(429).json({
+        error: 'Too many tool modifications',
+        code: 'TOOLS_MUTATION_RATE_LIMIT_EXCEEDED',
+        retryAfter: '5 minutes',
+      });
+    }
+
+    (global as any)[key] = requestCount + 1;
+    next();
+  },
+}));
+
 // Mock Clerk authentication and role middleware BEFORE importing routes
 jest.mock('../../../middleware/clerk-auth.middleware', () => ({
   clerkRequireAuth: (req: any, res: any, next: any) => {
@@ -107,6 +135,10 @@ describe('Tools Routes RBAC Integration Tests', () => {
 
   beforeEach(async () => {
     await Tool.deleteMany({});
+    // Reset rate limit counters between tests
+    Object.keys(global).filter(key => key.startsWith('rate-limit-')).forEach(key => {
+      delete (global as any)[key];
+    });
   });
 
   describe('Approval Status on Create', () => {
@@ -495,6 +527,108 @@ describe('Tools Routes RBAC Integration Tests', () => {
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].id).toBe('approved-public');
       expect(response.body.data[0].approvalStatus).toBe('approved');
+    });
+  });
+
+  describe('Rate Limiting on Create/Update', () => {
+    beforeEach(async () => {
+      // Reset rate limit counter for each test
+      Object.keys(global as any).forEach(key => {
+        if (key.startsWith('rate-limit-')) {
+          delete (global as any)[key];
+        }
+      });
+    });
+
+    it('should include rate limit headers on POST /api/tools', async () => {
+      const tool = createValidTool({ id: 'rate-limit-test-tool' });
+
+      const response = await request(app)
+        .post('/api/tools')
+        .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+        .send(tool)
+        .expect(201);
+
+      // Check for rate limit headers
+      expect(response.headers['ratelimit-limit']).toBe('10');
+      expect(response.headers['ratelimit-remaining']).toBeDefined();
+      expect(response.headers['ratelimit-reset']).toBeDefined();
+    });
+
+    it('should include rate limit headers on PATCH /api/tools/:id', async () => {
+      // Create a tool first
+      const toolId = 'rate-limit-patch-tool';
+      await Tool.create({
+        ...createValidTool({ id: toolId }),
+        slug: toolId,
+        contributor: MAINTAINER_USER_ID,
+        approvalStatus: 'pending',
+        dateAdded: new Date(),
+      });
+
+      const response = await request(app)
+        .patch(`/api/tools/${toolId}`)
+        .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+        .send({ name: 'Updated Name' })
+        .expect(200);
+
+      // Check for rate limit headers
+      expect(response.headers['ratelimit-limit']).toBe('10');
+      expect(response.headers['ratelimit-remaining']).toBeDefined();
+      expect(response.headers['ratelimit-reset']).toBeDefined();
+    });
+
+    it('should return 429 when rate limit is exceeded on POST', async () => {
+      // Exhaust the rate limit (mock is set to 10 requests)
+      for (let i = 0; i < 10; i++) {
+        const tool = createValidTool({ id: `rate-exhaust-${i}` });
+        await request(app)
+          .post('/api/tools')
+          .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+          .send(tool);
+      }
+
+      // 11th request should be rate limited
+      const tool = createValidTool({ id: 'rate-limited-tool' });
+      const response = await request(app)
+        .post('/api/tools')
+        .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+        .send(tool)
+        .expect(429);
+
+      expect(response.body.code).toBe('TOOLS_MUTATION_RATE_LIMIT_EXCEEDED');
+      expect(response.body.error).toBe('Too many tool modifications');
+      expect(response.body.retryAfter).toBe('5 minutes');
+    });
+
+    it('should return 429 when rate limit is exceeded on PATCH', async () => {
+      // Create a tool to update
+      const toolId = 'rate-patch-exhaust-tool';
+      await Tool.create({
+        ...createValidTool({ id: toolId }),
+        slug: toolId,
+        contributor: MAINTAINER_USER_ID,
+        approvalStatus: 'pending',
+        dateAdded: new Date(),
+      });
+
+      // Exhaust the rate limit (mock is set to 10 requests)
+      for (let i = 0; i < 10; i++) {
+        await request(app)
+          .patch(`/api/tools/${toolId}`)
+          .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+          .send({ name: `Update ${i}` });
+      }
+
+      // 11th request should be rate limited
+      const response = await request(app)
+        .patch(`/api/tools/${toolId}`)
+        .set('Authorization', `Bearer ${MAINTAINER_USER_ID}`)
+        .send({ name: 'Rate Limited Update' })
+        .expect(429);
+
+      expect(response.body.code).toBe('TOOLS_MUTATION_RATE_LIMIT_EXCEEDED');
+      expect(response.body.error).toBe('Too many tool modifications');
     });
   });
 });
