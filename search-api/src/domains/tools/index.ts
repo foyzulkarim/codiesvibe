@@ -13,14 +13,14 @@ export {
   defineToolsSchema,
   TOOLS_VOCABULARY_MAPPINGS,
   TOOLS_PRICE_OPERATORS,
-} from './tools.schema';
+} from './tools.schema.js';
 
 // Export filter mapping functions
 export {
   buildToolsFilters,
   hasFilterConstraints,
   sanitizePrice,
-} from './tools.filters';
+} from './tools.filters.js';
 
 // Export validation functions
 export {
@@ -30,27 +30,45 @@ export {
   getRecommendedFusionMethod,
   isCollectionEnabled,
   getEnabledCollections,
-} from './tools.validators';
+} from './tools.validators.js';
+
+// Import for convenient namespace
+import {
+  toolsSchema,
+  TOOLS_VOCABULARY_MAPPINGS,
+  TOOLS_PRICE_OPERATORS,
+} from './tools.schema.js';
+import {
+  buildToolsFilters,
+  hasFilterConstraints,
+  sanitizePrice,
+} from './tools.filters.js';
+import {
+  validateToolsQueryPlan,
+  getRecommendedEmbeddingType,
+  getRecommendedTopK,
+  getRecommendedFusionMethod,
+  isCollectionEnabled,
+  getEnabledCollections,
+} from './tools.validators.js';
 
 // Re-export as convenient namespace
 export const ToolsDomain = {
   // Schema
-  schema: require('./tools.schema').toolsSchema,
-  vocabularyMappings: require('./tools.schema').TOOLS_VOCABULARY_MAPPINGS,
-  priceOperators: require('./tools.schema').TOOLS_PRICE_OPERATORS,
+  schema: toolsSchema,
+  vocabularyMappings: TOOLS_VOCABULARY_MAPPINGS,
+  priceOperators: TOOLS_PRICE_OPERATORS,
 
   // Filters
-  buildFilters: require('./tools.filters').buildToolsFilters,
-  hasFilterConstraints: require('./tools.filters').hasFilterConstraints,
-  sanitizePrice: require('./tools.filters').sanitizePrice,
+  buildFilters: buildToolsFilters,
+  hasFilterConstraints,
+  sanitizePrice,
 
   // Validators
-  validateQueryPlan: require('./tools.validators').validateToolsQueryPlan,
-  getRecommendedEmbeddingType: require('./tools.validators')
-    .getRecommendedEmbeddingType,
-  getRecommendedTopK: require('./tools.validators').getRecommendedTopK,
-  getRecommendedFusionMethod: require('./tools.validators')
-    .getRecommendedFusionMethod,
-  isCollectionEnabled: require('./tools.validators').isCollectionEnabled,
-  getEnabledCollections: require('./tools.validators').getEnabledCollections,
+  validateQueryPlan: validateToolsQueryPlan,
+  getRecommendedEmbeddingType,
+  getRecommendedTopK,
+  getRecommendedFusionMethod,
+  isCollectionEnabled,
+  getEnabledCollections,
 } as const;

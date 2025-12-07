@@ -7,7 +7,7 @@
  * @module domains/tools
  */
 
-import { TOOLS_PRICE_OPERATORS } from './tools.schema';
+import { TOOLS_PRICE_OPERATORS } from './tools.schema.js';
 
 /**
  * Build MongoDB filters from intent state

@@ -1,6 +1,6 @@
 import { Db, MongoClient } from "mongodb";
-import { connectToMongoDB } from "@/config/database";
-import { embeddingConfig } from "@/config/constants";
+import { connectToMongoDB } from "#config/database";
+import { embeddingConfig } from "#config/constants";
 
 /**
  * Script to set up MongoDB indexes for the plans collection
@@ -142,7 +142,7 @@ async function setupCacheIndexes(): Promise<void> {
     console.log("\n🧪 Inserting sample cache data for testing...");
 
     // Use Together AI embedding service
-    const { productionEmbeddingService } = await import("@/services/production-embedding.service");
+    const { productionEmbeddingService } = await import("#services/production-embedding.service");
     await productionEmbeddingService.initialize();
 
     const sampleQuery = "code editor";

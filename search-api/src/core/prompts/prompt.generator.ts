@@ -7,14 +7,14 @@
  * @module core/prompts/generator
  */
 
-import { DomainSchema, IntentFieldDefinition } from '../types/schema.types';
+import { DomainSchema, IntentFieldDefinition } from '../types/schema.types.js';
 import {
   INTENT_EXTRACTION_TEMPLATE,
   QUERY_PLANNING_TEMPLATE,
   PRICE_EXTRACTION_RULES,
   INTENT_EXTRACTION_EXAMPLES,
   FUSION_METHODS_DESCRIPTION,
-} from './templates';
+} from './templates.js';
 
 /**
  * Generate Intent Extraction system prompt from schema

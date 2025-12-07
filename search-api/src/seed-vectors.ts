@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { vectorSeedingService } from './services/vector-seeding.service';
-import { mongoDBService } from './services/mongodb.service';
-import { qdrantService } from './services/qdrant.service';
-import { embeddingService } from './services/embedding.service';
+import { vectorSeedingService } from './services/vector-seeding.service.js';
+import { mongoDBService } from './services/mongodb.service.js';
+import { qdrantService } from './services/qdrant.service.js';
+import { embeddingService } from './services/embedding.service.js';
 
 /**
  * Command line arguments interface
