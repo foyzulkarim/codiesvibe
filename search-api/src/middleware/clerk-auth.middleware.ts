@@ -15,72 +15,49 @@ export interface ClerkAuthenticatedRequest extends Request {
 
 /**
  * Debug middleware to log authentication state before requireAuth
+ * Only logs in development environment with DEBUG_AUTH=true
  */
 export const debugAuthState = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  const hasAuthHeader = !!authHeader;
-  const authHeaderPreview = authHeader
-    ? `${authHeader.substring(0, 30)}...${authHeader.substring(authHeader.length - 20)}`
-    : 'none';
+  // Only log in development environment with explicit debug flag
+  if (process.env.NODE_ENV !== 'development' || process.env.DEBUG_AUTH !== 'true') {
+    next();
+    return;
+  }
 
-  // Try to get auth state from clerkMiddleware
   const auth = getAuth(req);
 
-  searchLogger.info('🔐 [DEBUG] Auth state before requireAuth', {
+  searchLogger.info('[DEBUG] Auth state', {
     service: 'clerk-auth-middleware',
     path: req.path,
     method: req.method,
-    hasAuthHeader,
-    authHeaderPreview,
-    authFromClerkMiddleware: auth ? {
+    hasAuthHeader: !!req.headers.authorization,
+    authState: auth ? {
       userId: auth.userId,
-      sessionId: auth.sessionId,
-      sessionClaims: auth.sessionClaims ? 'present' : 'missing',
-    } : 'null/undefined',
-    reqAuthExists: 'auth' in req,
-    reqAuth: (req as any).auth ? {
-      userId: (req as any).auth.userId,
-      sessionId: (req as any).auth.sessionId,
-    } : 'not set',
-    clerkEnvCheck: {
-      hasSecretKey: !!process.env.CLERK_SECRET_KEY,
-      secretKeyPrefix: process.env.CLERK_SECRET_KEY?.substring(0, 15) + '...',
-      hasPublishableKey: !!process.env.CLERK_PUBLISHABLE_KEY,
-    },
+      hasSessionClaims: !!auth.sessionClaims,
+    } : 'not authenticated',
   });
 
   next();
 };
 
 /**
- * Wrapper around requireAuth that logs errors
+ * Clerk authentication middleware
+ * Requires a valid Clerk session and attaches user info to req.auth
  */
 const clerkRequireAuthBase = requireAuth();
 
 export const clerkRequireAuth = (req: Request, res: Response, next: NextFunction) => {
-  // First run debug logging
+  // Run debug logging first (only in dev with DEBUG_AUTH=true)
   debugAuthState(req, res, () => {
     // Then run the actual requireAuth
     clerkRequireAuthBase(req, res, (err?: any) => {
       if (err) {
-        searchLogger.error('🔐 [DEBUG] requireAuth failed', err, {
+        // Only log auth failures (not verbose success logging)
+        searchLogger.warn('Authentication failed', {
           service: 'clerk-auth-middleware',
           path: req.path,
           method: req.method,
-          errorMessage: err.message,
-          errorName: err.name,
-          errorCode: err.code,
-          errorStatus: err.status,
-          errorClerkError: err.clerkError,
-        });
-      } else {
-        const authReq = req as ClerkAuthenticatedRequest;
-        searchLogger.info('🔐 [DEBUG] requireAuth succeeded', {
-          service: 'clerk-auth-middleware',
-          path: req.path,
-          method: req.method,
-          userId: authReq.auth?.userId,
-          sessionId: authReq.auth?.sessionId,
+          errorCode: err.code || err.status,
         });
       }
       next(err);

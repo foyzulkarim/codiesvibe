@@ -76,6 +76,9 @@ searchClient.interceptors.response.use(
       console.error(`[Search API] Error ${error.response?.status}:`, error.message);
     }
 
+    // Determine user-friendly error message without mutating original error
+    let userMessage = error.message;
+
     // Handle authentication errors
     if (error.response?.status === 401) {
       // Check if we're not already on the sign-in page
@@ -84,39 +87,49 @@ searchClient.interceptors.response.use(
         sessionStorage.setItem('returnUrl', returnUrl);
         window.location.href = `/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`;
       }
-      error.message = 'Please sign in to continue';
+      userMessage = 'Please sign in to continue';
     }
 
     // Handle permission errors
     if (error.response?.status === 403) {
       const data = error.response.data;
-      error.message = data?.error || data?.message || 'Permission denied';
+      userMessage = data?.error || data?.message || 'Permission denied';
     }
 
     // Handle not found
     if (error.response?.status === 404) {
-      error.message = 'Resource not found';
+      userMessage = 'Resource not found';
     }
 
     // Handle server errors
     if (error.response?.status && error.response.status >= 500) {
-      error.message = 'Server error. Please try again later.';
+      userMessage = 'Server error. Please try again later.';
     }
 
     // Handle network errors
     if (!error.response) {
-      error.message = 'Network error. Please check your connection.';
+      userMessage = 'Network error. Please check your connection.';
     }
 
     // Extract error message from response if available
     if (error.response?.data) {
       const data = error.response.data;
       if (data.error || data.message) {
-        error.message = data.error || data.message || error.message;
+        userMessage = data.error || data.message || userMessage;
       }
     }
 
-    return Promise.reject(error);
+    // Create a new error object instead of mutating the original
+    const enhancedError = new Error(userMessage) as Error & {
+      originalError: AxiosError<ApiErrorData>;
+      response: typeof error.response;
+      status: number | undefined;
+    };
+    enhancedError.originalError = error;
+    enhancedError.response = error.response;
+    enhancedError.status = error.response?.status;
+
+    return Promise.reject(enhancedError);
   }
 );
 

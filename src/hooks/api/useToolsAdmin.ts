@@ -147,34 +147,38 @@ export function useVocabularies() {
 /**
  * Hook to fetch user's own tools (requires authentication)
  */
-export function useMyTools(params: Omit<ToolsQueryParams, 'contributor'> = {}) {
+export function useMyTools(params: Omit<ToolsQueryParams, 'contributor'> & { enabled?: boolean } = {}) {
+  const { enabled = true, ...queryParams } = params;
   return useQuery({
-    queryKey: toolsAdminKeys.myTools(params),
+    queryKey: toolsAdminKeys.myTools(queryParams),
     queryFn: async (): Promise<PaginatedToolsResponse> => {
-      const searchParams = buildToolsQueryParams(params);
+      const searchParams = buildToolsQueryParams(queryParams);
       const response = await searchClient.get<PaginatedToolsResponse>(
         `/tools/my-tools?${searchParams.toString()}`
       );
       return response.data;
     },
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
 /**
  * Hook to fetch admin tools list (requires admin authentication)
  */
-export function useAdminTools(params: ToolsQueryParams = {}) {
+export function useAdminTools(params: ToolsQueryParams & { enabled?: boolean } = {}) {
+  const { enabled = true, ...queryParams } = params;
   return useQuery({
-    queryKey: toolsAdminKeys.adminTools(params),
+    queryKey: toolsAdminKeys.adminTools(queryParams),
     queryFn: async (): Promise<PaginatedToolsResponse> => {
-      const searchParams = buildToolsQueryParams(params);
+      const searchParams = buildToolsQueryParams(queryParams);
       const response = await searchClient.get<PaginatedToolsResponse>(
         `/tools/admin?${searchParams.toString()}`
       );
       return response.data;
     },
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 

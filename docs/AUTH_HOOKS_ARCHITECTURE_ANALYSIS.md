@@ -265,6 +265,54 @@ src/
 
 ---
 
+## Clerk Dashboard Configuration
+
+### Session Token Customization (Required for RBAC)
+
+To enable role-based access control without API calls on every request, you must configure Clerk to include user metadata in the session token (JWT).
+
+**Steps:**
+
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com)
+2. Select your application
+3. Navigate to **Sessions** in the left sidebar
+4. Click **Customize session token**
+5. In the Claims editor, add:
+
+```json
+{
+  "metadata": "{{user.public_metadata}}"
+}
+```
+
+6. Click **Save**
+
+### Setting User Roles
+
+To assign a role to a user:
+
+1. Go to **Users** in the Clerk Dashboard
+2. Select the user
+3. Click **Edit public metadata**
+4. Add:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+Valid roles: `admin` or `maintainer` (default if not set)
+
+### How It Works
+
+- The session token (JWT) now includes `metadata.role`
+- The backend reads the role from `auth.sessionClaims.metadata.role`
+- No API call to Clerk is required on each request
+- Role changes take effect on the next token refresh (typically < 60s)
+
+---
+
 ## Testing Considerations
 
 ### Unit Tests

@@ -10,7 +10,7 @@ import {
   ToolsQueryParams,
   ApprovalStatus,
 } from '@/hooks/api/useToolsAdmin';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useClerk } from '@clerk/clerk-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,9 +70,9 @@ import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, U
 
 export default function ToolsList() {
   const navigate = useNavigate();
-  const { user } = useUser();
+  // const { role, isLoading: isRoleLoading, userId } = useUserRole();
   const { signOut } = useClerk();
-  const { isAdmin, role, isLoading: roleLoading } = useUserRole();
+  const { isAdmin, role, isLoading: roleLoading, userId } = useUserRole();
   const [params, setParams] = useState<ToolsQueryParams>({
     page: 1,
     limit: 20,
@@ -85,8 +85,15 @@ export default function ToolsList() {
   const [toolToReject, setToolToReject] = useState<string | null>(null);
 
   // Use admin endpoint for admins, my-tools for maintainers
-  const adminQuery = useAdminTools(params);
-  const myToolsQuery = useMyTools(params);
+  // Only enable the appropriate query based on role (once role is loaded)
+  const adminQuery = useAdminTools({
+    ...params,
+    enabled: !roleLoading && isAdmin,
+  });
+  const myToolsQuery = useMyTools({
+    ...params,
+    enabled: !roleLoading && !isAdmin,
+  });
   const { data, isLoading: dataLoading, isError, error } = isAdmin ? adminQuery : myToolsQuery;
   const isLoading = roleLoading || dataLoading;
 
@@ -193,7 +200,7 @@ export default function ToolsList() {
   const canEditTool = (tool: Tool) => {
     if (isAdmin) return true;
     // Maintainers can only edit their own pending tools
-    return tool.contributor === user?.id && tool.approvalStatus === 'pending';
+    return tool.contributor === userId && tool.approvalStatus === 'pending';
   };
 
   // Generate page numbers for pagination
@@ -227,7 +234,12 @@ export default function ToolsList() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />
-            <span>{user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
+            <span>{userId ? `User (${role || 'loading...'})` : 'Loading...'}</span>
+            {role && (
+              <Badge variant={role === 'admin' ? 'default' : 'secondary'} className="ml-1">
+                {role}
+              </Badge>
+            )}
           </div>
           <Button variant="outline" size="sm" onClick={() => signOut()}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -327,10 +339,13 @@ export default function ToolsList() {
             </div>
           </div>
 
-          {/* Loading state */}
+          {/* Loading state - for role or tools data */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">
+                {roleLoading ? 'Loading user role...' : 'Loading tools...'}
+              </span>
             </div>
           )}
 

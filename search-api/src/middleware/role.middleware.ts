@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { clerkClient } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import { ClerkAuthenticatedRequest } from './clerk-auth.middleware';
 import { searchLogger } from '../config/logger';
 import { SearchRequest } from './correlation.middleware';
@@ -18,39 +18,41 @@ export interface RoleAuthenticatedRequest extends ClerkAuthenticatedRequest {
 const DEFAULT_ROLE: UserRole = 'maintainer';
 
 /**
- * Get user role from Clerk public metadata
- * Falls back to 'maintainer' if no role is set
+ * Get user role from Clerk session claims (JWT)
+ *
+ * IMPORTANT: This requires configuring the Clerk Dashboard to include the role
+ * in the session token. Go to Clerk Dashboard > Sessions > Customize session token
+ * and add: { "metadata": "{{user.public_metadata}}" }
+ *
+ * This avoids making an API call to Clerk on every request.
+ * Falls back to 'maintainer' if no role is set.
  */
-async function getUserRole(userId: string): Promise<UserRole> {
-  try {
-    const user = await clerkClient.users.getUser(userId);
-    const role = user.publicMetadata?.role as string | undefined;
+function getUserRoleFromClaims(req: Request): UserRole {
+  const auth = getAuth(req);
 
-    if (role === 'admin') {
-      return 'admin';
-    }
+  // Access role from session claims
+  // The structure depends on your Clerk session token configuration
+  // With { "metadata": "{{user.public_metadata}}" }, it will be at auth.sessionClaims?.metadata?.role
+  const sessionClaims = auth?.sessionClaims as Record<string, unknown> | undefined;
+  const metadata = sessionClaims?.metadata as Record<string, unknown> | undefined;
+  const role = metadata?.role as string | undefined;
 
-    return DEFAULT_ROLE;
-  } catch (error) {
-    searchLogger.error('Failed to fetch user role from Clerk', error instanceof Error ? error : new Error('Unknown error'), {
-      service: 'role-middleware',
-      userId,
-    });
-    return DEFAULT_ROLE;
+  if (role === 'admin') {
+    return 'admin';
   }
+
+  return DEFAULT_ROLE;
 }
 
 /**
  * Middleware to attach user role to request
  * Must be used after clerkRequireAuth middleware
+ *
+ * Reads role from JWT session claims (no API call required)
  */
-export const attachUserRole = async (req: Request, res: Response, next: NextFunction) => {
-  // clerkRequireAuth middleware already validated authentication
-  // req.auth is guaranteed to exist at this point
-  const authReq = req as ClerkAuthenticatedRequest;
-
+export const attachUserRole = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const role = await getUserRole(authReq.auth.userId);
+    const role = getUserRoleFromClaims(req);
     (req as RoleAuthenticatedRequest).userRole = role;
     next();
   } catch (error) {
