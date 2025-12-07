@@ -29,7 +29,7 @@ describe('ToolCrudService', () => {
     functionality: ['AI Chat', 'Code Generation'],
     deployment: ['Cloud'],
     status: 'active',
-    contributor: 'test-user',
+    // Note: contributor is set by the service based on userId parameter
   };
 
   beforeAll(async () => {
