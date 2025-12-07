@@ -532,6 +532,7 @@ jobs:
     steps:
       - name: Delete old search-api packages
         uses: actions/delete-package-versions@v5
+        continue-on-error: true  # Don't fail if package doesn't exist yet
         with:
           package-name: ${{ env.IMAGE_NAME }}
           package-type: 'container'
