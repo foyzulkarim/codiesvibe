@@ -1,11 +1,3 @@
-// API Configuration
-export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  timeout: 10000,
-  retryAttempts: 3,
-  retryDelay: 1000,
-};
-
 // Environment detection
 export const isDevelopment = import.meta.env.DEV;
 export const isProduction = import.meta.env.PROD;
@@ -14,7 +6,10 @@ export const isProduction = import.meta.env.PROD;
 export const API_ENDPOINTS = {
   tools: '/tools',
   tool: (id: string) => `/tools/${id}`,
-  health: '/health',
+  search: '/search',
+  vocabularies: '/tools/vocabularies',
+  myTools: '/tools/my-tools',
+  adminTools: '/tools/admin',
 };
 
 // Default pagination settings
@@ -23,7 +18,7 @@ export const DEFAULT_PAGINATION = {
   limit: 20,
 };
 
-// Default sorting options - Updated for v2.0
+// Default sorting options
 export const SORT_OPTIONS = {
   POPULARITY: 'popularity',
   RATING: 'rating',
@@ -34,4 +29,4 @@ export const SORT_OPTIONS = {
   RELEVANCE: 'relevance',
 } as const;
 
-export type SortOption = typeof SORT_OPTIONS[keyof typeof SORT_OPTIONS];
+export type SortOption = (typeof SORT_OPTIONS)[keyof typeof SORT_OPTIONS];

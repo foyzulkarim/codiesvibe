@@ -78,10 +78,10 @@ const validateQuery = (schema: any) => {
 };
 
 /**
- * GET /api/tools - List tools with pagination and filtering
+ * GET /api/tools - List tools with pagination and filtering (protected)
  */
-router.get('/', validateQuery(GetToolsQuerySchema), async (req: Request, res: Response) => {
-  const searchReq = req as SearchRequest;
+router.get('/', clerkRequireAuth, attachUserRole, validateQuery(GetToolsQuerySchema), async (req: Request, res: Response) => {
+  const searchReq = req as RoleAuthenticatedRequest & SearchRequest;
   const startTime = Date.now();
 
   try {
@@ -112,9 +112,9 @@ router.get('/', validateQuery(GetToolsQuerySchema), async (req: Request, res: Re
 });
 
 /**
- * GET /api/tools/vocabularies - Get controlled vocabularies for forms
+ * GET /api/tools/vocabularies - Get controlled vocabularies for forms (protected)
  */
-router.get('/vocabularies', (_req: Request, res: Response) => {
+router.get('/vocabularies', clerkRequireAuth, attachUserRole, (_req: Request, res: Response) => {
   res.json({
     categories: CONTROLLED_VOCABULARIES.categories,
     industries: CONTROLLED_VOCABULARIES.industries,
@@ -199,10 +199,10 @@ router.get('/admin', clerkRequireAuth, attachUserRole, requireAdmin, validateQue
 });
 
 /**
- * GET /api/tools/:id - Get a single tool by ID (public - only approved tools)
+ * GET /api/tools/:id - Get a single tool by ID (protected)
  */
-router.get('/:id', async (req: Request, res: Response) => {
-  const searchReq = req as SearchRequest;
+router.get('/:id', clerkRequireAuth, attachUserRole, async (req: Request, res: Response) => {
+  const searchReq = req as RoleAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {

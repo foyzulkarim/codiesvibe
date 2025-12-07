@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { clerkClient } from '@clerk/express';
-import { ClerkAuthenticatedRequest, isClerkAuthenticated } from './clerk-auth.middleware';
+import { ClerkAuthenticatedRequest } from './clerk-auth.middleware';
 import { searchLogger } from '../config/logger';
 import { SearchRequest } from './correlation.middleware';
 
@@ -45,15 +45,12 @@ async function getUserRole(userId: string): Promise<UserRole> {
  * Must be used after clerkRequireAuth middleware
  */
 export const attachUserRole = async (req: Request, res: Response, next: NextFunction) => {
-  if (!isClerkAuthenticated(req)) {
-    return res.status(401).json({
-      error: 'Authentication required',
-      code: 'UNAUTHORIZED',
-    });
-  }
+  // clerkRequireAuth middleware already validated authentication
+  // req.auth is guaranteed to exist at this point
+  const authReq = req as ClerkAuthenticatedRequest;
 
   try {
-    const role = await getUserRole(req.auth.userId);
+    const role = await getUserRole(authReq.auth.userId);
     (req as RoleAuthenticatedRequest).userRole = role;
     next();
   } catch (error) {
@@ -99,9 +96,10 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 
 /**
  * Type guard to check if request has role attached
+ * Should only be called after clerkRequireAuth and attachUserRole middleware
  */
 export function hasRole(req: Request): req is RoleAuthenticatedRequest {
-  return isClerkAuthenticated(req) && 'userRole' in req;
+  return 'auth' in req && 'userRole' in req;
 }
 
 /**
@@ -113,10 +111,9 @@ export function isAdmin(req: Request): boolean {
 
 /**
  * Check if user is the owner of a resource
+ * Should only be called after clerkRequireAuth middleware
  */
 export function isOwner(req: Request, contributorId: string): boolean {
-  if (!isClerkAuthenticated(req)) {
-    return false;
-  }
-  return req.auth.userId === contributorId;
+  const authReq = req as ClerkAuthenticatedRequest;
+  return authReq.auth?.userId === contributorId;
 }
