@@ -5,9 +5,9 @@
 
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool, ITool } from '../../../models/tool.model';
-import { toolCrudService } from '../../../services/tool-crud.service';
-import { CreateToolInput } from '../../../schemas/tool.schema';
+import { Tool, ITool } from '../../../models/tool.model.js';
+import { toolCrudService } from '../../../services/tool-crud.service.js';
+import { CreateToolInput } from '../../../schemas/tool.schema.js';
 
 describe('ToolCrudService', () => {
   let mongoServer: MongoMemoryServer;

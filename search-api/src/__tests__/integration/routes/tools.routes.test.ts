@@ -7,11 +7,11 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model';
+import { Tool } from '../../../models/tool.model.js';
 
-// Mock the server module to avoid importing the full server with side effects
+// Mock the rate limiters module to avoid using the actual rate limiter in tests
 // This provides a mock for the toolsMutationLimiter used in routes
-jest.mock('../../../server', () => ({
+jest.mock('../../../middleware/rate-limiters', () => ({
   toolsMutationLimiter: (req: any, res: any, next: any) => {
     // Simple mock that just passes through
     res.setHeader('RateLimit-Limit', '10');
@@ -68,7 +68,7 @@ jest.mock('../../../middleware/role.middleware', () => {
   };
 });
 
-import toolsRoutes from '../../../routes/tools.routes';
+import toolsRoutes from '../../../routes/tools.routes.js';
 
 describe('Tools Routes Integration Tests', () => {
   let app: Express;

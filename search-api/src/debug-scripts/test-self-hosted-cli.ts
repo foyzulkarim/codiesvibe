@@ -4,7 +4,7 @@
  * Debug script to test "Self hosted cli" query and analyze rankings
  */
 
-import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph';
+import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph.js';
 
 async function testSelfHostedCLIRanking() {
   console.log('🚀 Testing "Self hosted cli" query ranking');

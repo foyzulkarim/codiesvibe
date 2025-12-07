@@ -12,11 +12,11 @@
  */
 
 import dotenv from 'dotenv';
-import { queryPlannerNode } from '../graphs/nodes/query-planner.node';
-import { StateAnnotation } from '../types/state';
-import { toolsSchema } from '../domains/tools/tools.schema';
-import { buildToolsFilters } from '../domains/tools/tools.filters';
-import { validateToolsQueryPlan } from '../domains/tools/tools.validators';
+import { queryPlannerNode } from '../graphs/nodes/query-planner.node.js';
+import { StateAnnotation } from '../types/state.js';
+import { toolsSchema } from '../domains/tools/tools.schema.js';
+import { buildToolsFilters } from '../domains/tools/tools.filters.js';
+import { validateToolsQueryPlan } from '../domains/tools/tools.validators.js';
 
 // Load environment variables
 dotenv.config();

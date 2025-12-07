@@ -1,4 +1,4 @@
-import { CollectionConfigService } from './collection-config.service';
+import { CollectionConfigService } from './collection-config.service.js';
 
 export interface VectorTypeMetadata {
   name: string;

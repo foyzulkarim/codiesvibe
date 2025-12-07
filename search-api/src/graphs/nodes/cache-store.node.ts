@@ -1,5 +1,5 @@
-import { StateAnnotation } from '../../types/state';
-import { planCacheService } from '../../services/plan-cache.service';
+import { StateAnnotation } from '../../types/state.js';
+import { planCacheService } from '../../services/plan-cache.service.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

@@ -1,4 +1,4 @@
-import { Candidate } from '../types/candidate';
+import { Candidate } from '../types/candidate.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

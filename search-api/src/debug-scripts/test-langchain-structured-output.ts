@@ -14,7 +14,7 @@
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
-import { IntentStateSchema, IntentState } from '../types/intent-state';
+import { IntentStateSchema, IntentState } from '../types/intent-state.js';
 
 // Load environment variables
 dotenv.config();

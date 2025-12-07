@@ -3,7 +3,7 @@
  * Tests for Zod validation schemas
  */
 
-import { CreateToolSchema, UpdateToolSchema, GetToolsQuerySchema, PricingSchema } from '../../../schemas/tool.schema';
+import { CreateToolSchema, UpdateToolSchema, GetToolsQuerySchema, PricingSchema } from '../../../schemas/tool.schema.js';
 
 describe('Tool Schema Validation', () => {
   describe('PricingSchema', () => {

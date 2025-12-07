@@ -1,8 +1,8 @@
 import { Annotation, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
-import { Intent, IntentSchema } from "./intent";
-import { Plan, PlanSchema } from "./plan";
-import { StateAnnotation } from "./state";
+import { Intent, IntentSchema } from "./intent.js";
+import { Plan, PlanSchema } from "./plan.js";
+import { StateAnnotation } from "./state.js";
 
 // Enhanced State Schema for AI Search Enhancement v2.0
 // This extends the existing StateAnnotation with new fields for context enrichment,

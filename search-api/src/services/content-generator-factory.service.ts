@@ -1,5 +1,5 @@
-import { ToolData, ToolDataValidator } from '../types/tool.types';
-import { CollectionConfigService } from './collection-config.service';
+import { ToolData, ToolDataValidator } from '../types/tool.types.js';
+import { CollectionConfigService } from './collection-config.service.js';
 
 export interface ContentGenerator {
   generate(tool: ToolData): string;

@@ -26,7 +26,7 @@ import {
   isAdmin,
   isOwner,
   RoleAuthenticatedRequest,
-} from '../../../middleware/role.middleware';
+} from '../../../middleware/role.middleware.js';
 
 describe('Role Middleware', () => {
   let mockReq: any;

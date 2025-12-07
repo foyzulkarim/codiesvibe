@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { toolCrudService } from '../services/tool-crud.service';
+import { toolCrudService } from '../services/tool-crud.service.js';
 import {
   CreateToolSchema,
   UpdateToolSchema,
@@ -7,19 +7,19 @@ import {
   GetMyToolsQuerySchema,
   GetAdminToolsQuerySchema,
   RejectToolSchema,
-} from '../schemas/tool.schema';
-import { searchLogger } from '../config/logger';
-import { SearchRequest } from '../middleware/correlation.middleware';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
-import { clerkRequireAuth, ClerkAuthenticatedRequest } from '../middleware/clerk-auth.middleware';
+} from '../schemas/tool.schema.js';
+import { searchLogger } from '../config/logger.js';
+import { SearchRequest } from '../middleware/correlation.middleware.js';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
+import { clerkRequireAuth, ClerkAuthenticatedRequest } from '../middleware/clerk-auth.middleware.js';
 import {
   attachUserRole,
   requireAdmin,
   RoleAuthenticatedRequest,
   isAdmin,
   isOwner,
-} from '../middleware/role.middleware';
-import { toolsMutationLimiter } from '../server';
+} from '../middleware/role.middleware.js';
+import { toolsMutationLimiter } from '../middleware/rate-limiters.js';
 
 const router = Router();
 

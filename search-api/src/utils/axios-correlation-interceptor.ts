@@ -4,8 +4,8 @@
  */
 
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
-import { correlationContext } from './correlation-context';
-import { searchLogger } from '../config/logger';
+import { correlationContext } from './correlation-context.js';
+import { searchLogger } from '../config/logger.js';
 
 /**
  * Setup Axios interceptor to add correlation ID to all outgoing requests

@@ -7,7 +7,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model';
+import { Tool } from '../../../models/tool.model.js';
 
 // Test user IDs
 const ADMIN_USER_ID = 'user_admin123';
@@ -21,9 +21,9 @@ const userRoles: Record<string, 'admin' | 'maintainer'> = {
   [OTHER_MAINTAINER_ID]: 'maintainer',
 };
 
-// Mock the server module to avoid importing the full server with side effects
+// Mock the rate limiters module to avoid using the actual rate limiter in tests
 // This provides a mock for the toolsMutationLimiter used in routes
-jest.mock('../../../server', () => ({
+jest.mock('../../../middleware/rate-limiters', () => ({
   toolsMutationLimiter: (req: any, res: any, next: any) => {
     // Simple mock that tracks request count per IP for testing
     const ip = req.ip || 'test-ip';
@@ -94,7 +94,7 @@ jest.mock('../../../middleware/role.middleware', () => {
   };
 });
 
-import toolsRoutes from '../../../routes/tools.routes';
+import toolsRoutes from '../../../routes/tools.routes.js';
 
 describe('Tools Routes RBAC Integration Tests', () => {
   let app: Express;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { requireAuth, getAuth } from '@clerk/express';
-import { searchLogger } from '../config/logger';
+import { searchLogger } from '../config/logger.js';
 
 /**
  * Extended Express Request with Clerk authentication

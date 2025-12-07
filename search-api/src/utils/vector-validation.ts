@@ -1,8 +1,8 @@
-import { getSupportedVectorTypes, isSupportedVectorType } from "@/config/database";
+import { getSupportedVectorTypes, isSupportedVectorType } from "#config/database";
 import {
   isEnhancedVectorTypeSupported,
   validateEnhancedVectors as validateEnhancedVectorsSchema
-} from "@/config/enhanced-qdrant-schema";
+} from "#config/enhanced-qdrant-schema";
 
 /**
  * Validation errors for vector operations

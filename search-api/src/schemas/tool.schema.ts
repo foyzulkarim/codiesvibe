@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
 
 // Approval status enum
 export const ApprovalStatusEnum = z.enum(['pending', 'approved', 'rejected']);

@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
-import { Tool, ITool, ApprovalStatus } from '../models/tool.model';
+import { Tool, ITool, ApprovalStatus } from '../models/tool.model.js';
 import {
   CreateToolInput,
   UpdateToolInput,
   GetToolsQuery,
   GetAdminToolsQuery,
   GetMyToolsQuery,
-} from '../schemas/tool.schema';
-import { searchLogger } from '../config/logger';
+} from '../schemas/tool.schema.js';
+import { searchLogger } from '../config/logger.js';
 
 export interface PaginatedResult<T> {
   data: T[];

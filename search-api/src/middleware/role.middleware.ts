@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { getAuth } from '@clerk/express';
-import { ClerkAuthenticatedRequest } from './clerk-auth.middleware';
-import { searchLogger } from '../config/logger';
-import { SearchRequest } from './correlation.middleware';
+import { ClerkAuthenticatedRequest } from './clerk-auth.middleware.js';
+import { searchLogger } from '../config/logger.js';
+import { SearchRequest } from './correlation.middleware.js';
 
 // User roles
 export type UserRole = 'admin' | 'maintainer';

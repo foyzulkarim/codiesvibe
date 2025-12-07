@@ -6,7 +6,7 @@
  * All required fields are provided with valid enum values from controlled vocabularies
  */
 
-import type { IntentState } from '../../types/intent-state';
+import type { IntentState } from '../../types/intent-state.js';
 
 export const intentStateFixtures = {
   /**

@@ -145,7 +145,7 @@ export const CONTROLLED_VOCABULARIES = {
  * Vocabulary mappings are now defined in the domain schema.
  * Use `schema.vocabularies` from `@/domains/tools/tools.schema` instead.
  *
- * For tools domain, import: `import { TOOLS_VOCABULARY_MAPPINGS } from '@/domains/tools';`
+ * For tools domain, import: `import { TOOLS_VOCABULARY_MAPPINGS } from '#domains/tools';`
  */
 export const VOCABULARY_MAPPINGS = {
   // Synonym mappings for LLM context
@@ -173,7 +173,7 @@ export const VOCABULARY_MAPPINGS = {
  * Price operators are now defined in the domain schema.
  * Use `TOOLS_PRICE_OPERATORS` from `@/domains/tools/tools.schema` instead.
  *
- * For tools domain, import: `import { TOOLS_PRICE_OPERATORS } from '@/domains/tools';`
+ * For tools domain, import: `import { TOOLS_PRICE_OPERATORS } from '#domains/tools';`
  */
 export const OPERATORS = {
   LESS_THAN: 'less_than',

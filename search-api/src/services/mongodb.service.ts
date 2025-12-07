@@ -1,5 +1,5 @@
 import { Db, ObjectId } from "mongodb";
-import { connectToMongoDB, disconnectFromMongoDB } from "../config/database";
+import { connectToMongoDB, disconnectFromMongoDB } from "../config/database.js";
 
 export class MongoDBService {
   private db: Db | null = null;

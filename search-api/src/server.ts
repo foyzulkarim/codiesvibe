@@ -1,34 +1,33 @@
-import 'module-alias/register';
 import express from 'express';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import Joi from 'joi';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import cors from 'cors';
-import { vectorIndexingService, HealthReport } from "./services";
-import { searchLogger } from "./config/logger";
-import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
-import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
+import { vectorIndexingService, HealthReport } from "./services/index.js";
+import { searchLogger } from "./config/logger.js";
+import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware.js";
+import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware.js";
+import { limiter, searchLimiter, toolsMutationLimiter } from "./middleware/rate-limiters.js";
 import { v4 as uuidv4 } from 'uuid';
 import { clerkMiddleware } from '@clerk/express';
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
-import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
+import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph.js";
 
 // Import tools routes for CRUD operations
-import toolsRoutes from "./routes/tools.routes";
+import toolsRoutes from "./routes/tools.routes.js";
 
 // Import health check and graceful shutdown services
-import { healthCheckService } from "./services/health-check.service";
-import { gracefulShutdown } from "./services/graceful-shutdown.service";
-import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database";
-import { metricsService } from "./services/metrics.service";
-import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
-import { circuitBreakerManager } from "./services/circuit-breaker.service";
-import { configureHttpClient, destroyHttpAgents } from "./config/http-client";
+import { healthCheckService } from "./services/health-check.service.js";
+import { gracefulShutdown } from "./services/graceful-shutdown.service.js";
+import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database.js";
+import { metricsService } from "./services/metrics.service.js";
+import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor.js";
+import { circuitBreakerManager } from "./services/circuit-breaker.service.js";
+import { configureHttpClient, destroyHttpAgents } from "./config/http-client.js";
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
@@ -101,97 +100,6 @@ try {
 } catch (error) {
   // Directory already exists
 }
-
-// Advanced rate limiting configuration
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP',
-    code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  handler: (req, res) => {
-    const searchReq = req as SearchRequest;
-    searchLogger.logSecurityEvent('Rate limit exceeded', {
-      correlationId: searchReq.correlationId,
-      service: 'search-api',
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      path: req.path,
-      method: req.method,
-      timestamp: new Date().toISOString()
-    }, 'warn');
-    res.status(429).json({
-      error: 'Too many requests from this IP',
-      code: 'RATE_LIMIT_EXCEEDED',
-      retryAfter: '15 minutes'
-    });
-  }
-});
-
-// Stricter rate limiting for search endpoint
-const searchLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // limit each IP to 30 search requests per minute
-  message: {
-    error: 'Too many search requests',
-    code: 'SEARCH_RATE_LIMIT_EXCEEDED',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    const searchReq = req as SearchRequest;
-    searchLogger.logSecurityEvent('Search rate limit exceeded', {
-      correlationId: searchReq.correlationId,
-      service: 'search-api',
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      query: req.body?.query,
-      timestamp: new Date().toISOString()
-    }, 'warn');
-    res.status(429).json({
-      error: 'Too many search requests',
-      code: 'SEARCH_RATE_LIMIT_EXCEEDED',
-      retryAfter: '1 minute'
-    });
-  }
-});
-
-// Rate limiting for tools create/update operations
-// Prevents spam tool submissions and excessive updates
-export const toolsMutationLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // limit each IP to 10 create/update operations per 5 minutes
-  message: {
-    error: 'Too many tool modifications',
-    code: 'TOOLS_MUTATION_RATE_LIMIT_EXCEEDED',
-    retryAfter: '5 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    const searchReq = req as SearchRequest;
-    searchLogger.logSecurityEvent('Tools mutation rate limit exceeded', {
-      correlationId: searchReq.correlationId,
-      service: 'search-api',
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      path: req.path,
-      method: req.method,
-      userId: (req as any).auth?.userId,
-      timestamp: new Date().toISOString()
-    }, 'warn');
-    res.status(429).json({
-      error: 'Too many tool modifications',
-      code: 'TOOLS_MUTATION_RATE_LIMIT_EXCEEDED',
-      retryAfter: '5 minutes'
-    });
-  }
-});
 
 // Security middleware stack (conditional)
 if (process.env.ENABLE_SECURITY_HEADERS !== 'false') {

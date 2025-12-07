@@ -4,7 +4,7 @@
  */
 
 import CircuitBreaker from 'opossum';
-import { searchLogger } from '../config/logger';
+import { searchLogger } from '../config/logger.js';
 
 export interface CircuitBreakerConfig {
   timeout?: number; // Request timeout in ms (default: 3000)

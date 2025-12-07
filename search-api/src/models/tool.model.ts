@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
 
 // Pricing subdocument interface
 export interface IPricing {

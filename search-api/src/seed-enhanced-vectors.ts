@@ -13,11 +13,10 @@
  *   npm run seed:enhanced-vectors -- --force
  */
 
-import 'module-alias/register';
-import { enhancedVectorIndexingService } from './services/enhanced-vector-indexing.service';
-import { qdrantService } from './services/qdrant.service';
-import { shouldUseEnhancedCollection, getSupportedVectorTypes } from './config/database';
-import { getEnabledVectorTypes as getEnhancedVectorTypes } from './config/enhanced-qdrant-schema';
+import { enhancedVectorIndexingService } from './services/enhanced-vector-indexing.service.js';
+import { qdrantService } from './services/qdrant.service.js';
+import { shouldUseEnhancedCollection, getSupportedVectorTypes } from './config/database.js';
+import { getEnabledVectorTypes as getEnhancedVectorTypes } from './config/enhanced-qdrant-schema.js';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
