@@ -4,15 +4,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { clerkClient } from '@clerk/express';
 
-// Mock Clerk client before importing the middleware
+// Mock getAuth from @clerk/express before importing the middleware
 jest.mock('@clerk/express', () => ({
-  clerkClient: {
-    users: {
-      getUser: jest.fn(),
-    },
-  },
+  getAuth: jest.fn(),
 }));
 
 // Mock logger to prevent console output during tests
@@ -23,6 +18,7 @@ jest.mock('../../../config/logger', () => ({
   },
 }));
 
+import { getAuth } from '@clerk/express';
 import {
   attachUserRole,
   requireAdmin,
@@ -64,54 +60,79 @@ describe('Role Middleware', () => {
   });
 
   describe('attachUserRole', () => {
-    it('should attach admin role when user has admin in publicMetadata', async () => {
-      (clerkClient.users.getUser as jest.Mock).mockResolvedValue({
-        publicMetadata: { role: 'admin' },
+    it('should attach admin role when session claims include admin role', () => {
+      (getAuth as jest.Mock).mockReturnValue({
+        userId: 'user_test123',
+        sessionClaims: {
+          metadata: { role: 'admin' },
+        },
       });
 
-      await attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
 
       expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('admin');
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('should attach maintainer role when user has no role in publicMetadata', async () => {
-      (clerkClient.users.getUser as jest.Mock).mockResolvedValue({
-        publicMetadata: {},
+    it('should attach maintainer role when session claims have no role', () => {
+      (getAuth as jest.Mock).mockReturnValue({
+        userId: 'user_test123',
+        sessionClaims: {
+          metadata: {},
+        },
       });
 
-      await attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
 
       expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('should attach maintainer role when publicMetadata is undefined', async () => {
-      (clerkClient.users.getUser as jest.Mock).mockResolvedValue({});
-
-      await attachUserRole(mockReq as Request, mockRes as Response, mockNext);
-
-      expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
-      expect(mockNext).toHaveBeenCalled();
-    });
-
-    it('should default to maintainer role on Clerk API error', async () => {
-      (clerkClient.users.getUser as jest.Mock).mockRejectedValue(new Error('Clerk API error'));
-
-      await attachUserRole(mockReq as Request, mockRes as Response, mockNext);
-
-      expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
-      expect(mockNext).toHaveBeenCalled();
-    });
-
-    it('should call Clerk API with correct userId', async () => {
-      (clerkClient.users.getUser as jest.Mock).mockResolvedValue({
-        publicMetadata: { role: 'admin' },
+    it('should attach maintainer role when metadata is undefined', () => {
+      (getAuth as jest.Mock).mockReturnValue({
+        userId: 'user_test123',
+        sessionClaims: {},
       });
 
-      await attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
 
-      expect(clerkClient.users.getUser).toHaveBeenCalledWith('user_test123');
+      expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should attach maintainer role when sessionClaims is undefined', () => {
+      (getAuth as jest.Mock).mockReturnValue({
+        userId: 'user_test123',
+      });
+
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+
+      expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should attach maintainer role when getAuth returns null', () => {
+      (getAuth as jest.Mock).mockReturnValue(null);
+
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+
+      expect((mockReq as RoleAuthenticatedRequest).userRole).toBe('maintainer');
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should return 500 when getAuth throws an error', () => {
+      (getAuth as jest.Mock).mockImplementation(() => {
+        throw new Error('Auth error');
+      });
+
+      attachUserRole(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockStatus).toHaveBeenCalledWith(500);
+      expect(mockJson).toHaveBeenCalledWith({
+        error: 'Failed to process authentication',
+        code: 'INTERNAL_ERROR',
+      });
     });
   });
 
