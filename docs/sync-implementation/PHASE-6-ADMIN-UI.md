@@ -1,6 +1,7 @@
 # Phase 6: Admin UI - Sync Visibility
 
 > **Prerequisites:** Complete Phases 1-5
+> **Updated:** Integrates with RBAC implementation (useMyTools, useAdminTools, searchClient)
 
 ---
 
@@ -8,11 +9,16 @@
 
 This phase adds sync visibility to the existing Admin UI by:
 - Extending type definitions in `useToolsAdmin.ts`
-- Adding sync hooks that follow the existing `fetch`-based pattern
+- Adding sync hooks using `searchClient` (consistent with RBAC patterns)
 - Creating reusable sync components
-- Integrating sync status column into the existing `ToolsList.tsx`
+- Integrating sync status column into the existing `ToolsList.tsx` (after Approval column)
 
-**Integration Approach:** We're extending existing files where possible to maintain consistency with the established patterns (TanStack Query, fetch API, Sonner toasts).
+**Integration Approach:** We're extending existing files and using the established patterns:
+- `searchClient` (axios-based with auto auth token injection)
+- `buildToolsQueryParams` / `buildQueryParams` utilities
+- TanStack Query with `toolsAdminKeys` pattern
+- Sonner toasts for notifications
+- RBAC: Sync operations are admin-only
 
 ---
 
@@ -20,11 +26,11 @@ This phase adds sync visibility to the existing Admin UI by:
 
 **File:** `src/hooks/api/useToolsAdmin.ts`
 
-Add these type definitions **after the existing interfaces** (around line 68):
+Add these type definitions **after the existing interfaces** (after `Vocabularies` interface):
 
 ```typescript
 // ============================================
-// SYNC STATUS TYPES (add after existing interfaces)
+// SYNC STATUS TYPES (add after Vocabularies interface)
 // ============================================
 
 /**
@@ -63,7 +69,7 @@ export interface SyncMetadata {
 }
 ```
 
-**Update the existing Tool interface** (around line 19) to include `syncMetadata`:
+**Update the existing Tool interface** to include `syncMetadata` (add after RBAC fields):
 
 ```typescript
 export interface Tool {
@@ -93,7 +99,13 @@ export interface Tool {
   createdAt?: string;
   updatedAt?: string;
 
-  /** Sync status metadata - added for Qdrant sync tracking */
+  // RBAC fields (existing)
+  approvalStatus: ApprovalStatus;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+
+  // Sync metadata (NEW)
   syncMetadata?: SyncMetadata;
 }
 ```
@@ -111,10 +123,45 @@ export interface ToolsQueryParams {
   category?: string;
   industry?: string;
   pricingModel?: string;
+  approvalStatus?: ApprovalStatus;
+  contributor?: string;
 
   // New sync filters
   syncStatus?: SyncStatus | 'all';
   syncCollection?: SyncCollectionName | 'all';
+}
+```
+
+**Update `buildToolsQueryParams`** in `src/lib/query-params.ts`:
+
+```typescript
+export function buildToolsQueryParams(params: ToolsQueryParams): URLSearchParams {
+  const searchParams = new URLSearchParams();
+
+  const entries: Record<string, unknown> = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 20,
+    search: params.search,
+    sortBy: params.sortBy,
+    sortOrder: params.sortOrder,
+    status: params.status,
+    category: params.category,
+    industry: params.industry,
+    pricingModel: params.pricingModel,
+    approvalStatus: params.approvalStatus,
+    contributor: params.contributor,
+    // New sync filters
+    syncStatus: params.syncStatus,
+    syncCollection: params.syncCollection,
+  };
+
+  Object.entries(entries).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  return searchParams;
 }
 ```
 
@@ -124,18 +171,27 @@ export interface ToolsQueryParams {
 
 **New File:** `src/hooks/api/useSyncAdmin.ts`
 
-This file follows the same patterns as `useToolsAdmin.ts` (fetch API, TanStack Query, Sonner toasts):
+This file follows the same patterns as `useToolsAdmin.ts`:
+- Uses `searchClient` (axios with auto auth token injection)
+- Uses `buildQueryParams` utility for URL construction
+- TanStack Query with structured query keys
+- Sonner toasts for notifications
+
+**Note:** Sync operations are admin-only. The `searchClient` automatically handles authentication.
 
 ```typescript
+/**
+ * Sync Admin Hooks
+ *
+ * React Query hooks for vector sync operations with the Search API.
+ * All sync operations require admin authentication.
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { searchClient } from '@/api/search-client';
+import { buildQueryParams } from '@/lib/query-params';
 import { toast } from 'sonner';
 import { SyncCollectionName, SyncStatus, toolsAdminKeys } from './useToolsAdmin';
-
-// Reuse the same API URL pattern from useToolsAdmin
-const getSearchApiUrl = () => {
-  return import.meta.env.VITE_SEARCH_API_URL || 'http://localhost:4003';
-};
 
 // ============================================
 // TYPES
@@ -211,7 +267,7 @@ export interface ToolSyncResult {
 }
 
 // ============================================
-// QUERY KEYS (following useToolsAdmin pattern)
+// QUERY KEYS (following toolsAdminKeys pattern)
 // ============================================
 
 export const syncAdminKeys = {
@@ -226,7 +282,7 @@ export const syncAdminKeys = {
 // ============================================
 
 /**
- * Get overall sync status and statistics
+ * Get overall sync status and statistics (public - for dashboard)
  *
  * Refreshes every 15 seconds to show near-real-time status.
  */
@@ -234,11 +290,8 @@ export function useSyncStatus() {
   return useQuery<SyncStats>({
     queryKey: syncAdminKeys.status(),
     queryFn: async () => {
-      const response = await fetch(`${getSearchApiUrl()}/api/sync/status`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch sync status');
-      }
-      return response.json();
+      const response = await searchClient.get<SyncStats>('/sync/status');
+      return response.data;
     },
     refetchInterval: 15000, // Refresh every 15 seconds
     staleTime: 10000, // Consider data stale after 10 seconds
@@ -246,42 +299,38 @@ export function useSyncStatus() {
 }
 
 /**
- * Get tools filtered by sync status
+ * Get tools filtered by sync status (admin only)
  */
 export function useSyncTools(params: {
   status?: SyncStatus | 'all';
   collection?: SyncCollectionName | 'all';
   page?: number;
   limit?: number;
+  enabled?: boolean;
 }) {
-  const { status = 'all', collection = 'all', page = 1, limit = 20 } = params;
+  const { status = 'all', collection = 'all', page = 1, limit = 20, enabled = true } = params;
 
   return useQuery({
     queryKey: syncAdminKeys.tools({ status, collection, page, limit }),
     queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      if (status !== 'all') searchParams.set('status', status);
-      if (collection !== 'all') searchParams.set('collection', collection);
-      searchParams.set('page', String(page));
-      searchParams.set('limit', String(limit));
-
-      const response = await fetch(
-        `${getSearchApiUrl()}/api/sync/tools?${searchParams.toString()}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch sync tools');
-      }
-      return response.json();
+      const searchParams = buildQueryParams({
+        status: status !== 'all' ? status : undefined,
+        collection: collection !== 'all' ? collection : undefined,
+        page,
+        limit,
+      });
+      const response = await searchClient.get(`/sync/tools?${searchParams.toString()}`);
+      return response.data;
     },
+    enabled,
   });
 }
 
 /**
- * Sync a single tool (retry/force sync)
+ * Sync a single tool (admin only - retry/force sync)
  */
 export function useSyncTool() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -293,28 +342,15 @@ export function useSyncTool() {
       force?: boolean;
       collections?: SyncCollectionName[];
     }): Promise<ToolSyncResult> => {
-      const token = await getToken();
-      const response = await fetch(
-        `${getSearchApiUrl()}/api/sync/tools/${toolId}/retry`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ force, collections }),
-        }
+      const response = await searchClient.post<ToolSyncResult>(
+        `/sync/tools/${toolId}/retry`,
+        { force, collections }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to sync tool');
-      }
-      return response.json();
+      return response.data;
     },
     onSuccess: (data) => {
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
 
       // Show result toast
@@ -336,11 +372,10 @@ export function useSyncTool() {
 }
 
 /**
- * Sync multiple tools in batch
+ * Sync multiple tools in batch (admin only)
  */
 export function useSyncBatch() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -352,24 +387,15 @@ export function useSyncBatch() {
       force?: boolean;
       collections?: SyncCollectionName[];
     }) => {
-      const token = await getToken();
-      const response = await fetch(`${getSearchApiUrl()}/api/sync/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ toolIds, force, collections }),
+      const response = await searchClient.post('/sync/batch', {
+        toolIds,
+        force,
+        collections,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to batch sync');
-      }
-      return response.json();
+      return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
 
       const successCount = data.results.filter((r: ToolSyncResult) => r.success).length;
@@ -382,28 +408,15 @@ export function useSyncBatch() {
 }
 
 /**
- * Queue all pending/stale/failed tools for sync
+ * Queue all pending/stale/failed tools for sync (admin only)
  */
 export function useSyncAllPending() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      const token = await getToken();
-      const response = await fetch(`${getSearchApiUrl()}/api/sync/all-pending`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to queue tools');
-      }
-      return response.json();
+      const response = await searchClient.post('/sync/all-pending');
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
@@ -416,32 +429,19 @@ export function useSyncAllPending() {
 }
 
 /**
- * Force run worker cycle
+ * Force run worker cycle (admin only)
  */
 export function useForceWorkerRun() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      const token = await getToken();
-      const response = await fetch(`${getSearchApiUrl()}/api/sync/worker/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Worker run failed');
-      }
-      return response.json();
+      const response = await searchClient.post('/sync/worker/run');
+      return response.data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
 
       const stats = data.stats;
       if (stats) {
@@ -459,31 +459,18 @@ export function useForceWorkerRun() {
 }
 
 /**
- * Reset sync status for a tool (marks as pending for re-sync)
+ * Reset sync status for a tool (admin only - marks as pending for re-sync)
  */
 export function useResetSyncStatus() {
   const queryClient = useQueryClient();
-  const { getToken } = useAuth();
 
   return useMutation({
     mutationFn: async (toolId: string) => {
-      const token = await getToken();
-      const response = await fetch(`${getSearchApiUrl()}/api/sync/reset/${toolId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Reset failed');
-      }
-      return response.json();
+      const response = await searchClient.post(`/sync/reset/${toolId}`);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
       toast.success('Sync status reset');
     },
@@ -986,53 +973,73 @@ export function SyncStatusWidget() {
 
 **File:** `src/pages/admin/ToolsList.tsx`
 
-This section shows exact changes to integrate sync status into the existing tools list.
+This section shows exact changes to integrate sync status into the existing RBAC-enabled tools list.
+
+**Important:** The ToolsList now has RBAC features:
+- Role-based queries (`useAdminTools` for admins, `useMyTools` for maintainers)
+- Approval column with approve/reject actions
+- Sync features should only be visible/actionable for admins
 
 ### Step 1: Add Imports
 
-Add at the top of the file (after existing imports):
+Update imports to include sync components and types:
 
 ```tsx
-// Add after line 43 (after existing lucide imports)
+// Update the import from useToolsAdmin to include SyncStatus
+import {
+  useMyTools,
+  useAdminTools,
+  useDeleteTool,
+  useApproveTool,
+  useRejectTool,
+  Tool,
+  ToolsQueryParams,
+  ApprovalStatus,
+  SyncStatus,  // NEW
+} from '@/hooks/api/useToolsAdmin';
+
+// Add sync components (after lucide imports)
 import { SyncStatusIndicator } from '@/components/admin/SyncStatusIndicator';
 import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
 ```
 
-### Step 2: Add Sync Status Filter
+### Step 2: Add Sync Status Filter (Admin Only)
 
-Add a new filter dropdown after the pricing filter (around line 218):
+Add sync filter after the Approval filter (only shown for admins):
 
 ```tsx
-{/* Add after the pricing filter Select */}
-<Select
-  value={params.syncStatus || 'all'}
-  onValueChange={(value) => setParams((prev) => ({
-    ...prev,
-    syncStatus: value === 'all' ? undefined : value as SyncStatus,
-    page: 1,
-  }))}
->
-  <SelectTrigger className="w-[150px]">
-    <SelectValue placeholder="Sync Status" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="all">All Sync</SelectItem>
-    <SelectItem value="synced">Synced</SelectItem>
-    <SelectItem value="pending">Pending</SelectItem>
-    <SelectItem value="stale">Stale</SelectItem>
-    <SelectItem value="failed">Failed</SelectItem>
-  </SelectContent>
-</Select>
+{/* Add after the approvalStatus filter Select - admin only */}
+{isAdmin && (
+  <Select
+    value={params.syncStatus || 'all'}
+    onValueChange={(value) => setParams((prev) => ({
+      ...prev,
+      syncStatus: value === 'all' ? undefined : value as SyncStatus,
+      page: 1,
+    }))}
+  >
+    <SelectTrigger className="w-[130px]">
+      <SelectValue placeholder="Sync" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Sync</SelectItem>
+      <SelectItem value="synced">Synced</SelectItem>
+      <SelectItem value="pending">Pending</SelectItem>
+      <SelectItem value="stale">Stale</SelectItem>
+      <SelectItem value="failed">Failed</SelectItem>
+    </SelectContent>
+  </Select>
+)}
 ```
 
-### Step 3: Add SyncStatusWidget
+### Step 3: Add SyncStatusWidget (Admin Only)
 
-Add the widget inside CardContent, before the filters (around line 172):
+Add the widget inside CardContent, before the filters - only for admins:
 
 ```tsx
 <CardContent>
-  {/* Add sync health widget */}
-  <SyncStatusWidget />
+  {/* Sync health widget - admin only */}
+  {isAdmin && <SyncStatusWidget />}
 
   {/* Existing filters */}
   <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -1040,9 +1047,9 @@ Add the widget inside CardContent, before the filters (around line 172):
   </div>
 ```
 
-### Step 4: Add Sync Column Header
+### Step 4: Add Sync Column Header (Admin Only)
 
-Add a new table header after "Status" column (around line 253):
+Add sync column after the Approval column - conditionally for admins:
 
 ```tsx
 <TableHeader>
@@ -1051,101 +1058,116 @@ Add a new table header after "Status" column (around line 253):
     <TableHead className="hidden md:table-cell">Categories</TableHead>
     <TableHead>Pricing</TableHead>
     <TableHead>Status</TableHead>
-    <TableHead className="w-[100px]">Sync</TableHead>  {/* NEW */}
+    <TableHead>Approval</TableHead>
+    {isAdmin && <TableHead className="w-[100px]">Sync</TableHead>}  {/* NEW - admin only */}
     <TableHead className="hidden lg:table-cell">Added</TableHead>
     <TableHead className="text-right">Actions</TableHead>
   </TableRow>
 </TableHeader>
 ```
 
-### Step 5: Add Sync Status Cell
+### Step 5: Add Sync Status Cell (Admin Only)
 
-Add the sync status cell in each row, after the Status badge (around line 316):
+Add sync cell after the Approval cell - conditionally for admins:
 
 ```tsx
-{/* After the Status TableCell */}
+{/* After the Approval TableCell */}
 <TableCell>
-  <Badge variant={getStatusBadgeVariant(tool.status)}>
-    {tool.status}
-  </Badge>
+  <TooltipProvider>
+    <div className="flex items-center gap-1">
+      <Badge variant={getApprovalBadgeVariant(tool.approvalStatus)}>
+        {tool.approvalStatus}
+      </Badge>
+      {/* ... rejection reason tooltip ... */}
+    </div>
+  </TooltipProvider>
 </TableCell>
 
-{/* Add Sync Status Cell - NEW */}
-<TableCell>
-  <SyncStatusIndicator tool={tool} compact />
-</TableCell>
+{/* Add Sync Status Cell - admin only */}
+{isAdmin && (
+  <TableCell>
+    <SyncStatusIndicator tool={tool} compact />
+  </TableCell>
+)}
 
-{/* Before the Added date cell */}
+{/* Added date cell */}
 <TableCell className="hidden lg:table-cell">
   {new Date(tool.dateAdded).toLocaleDateString()}
 </TableCell>
 ```
 
-### Step 6: Import SyncStatus Type
+### Step 6: Update Column Span for Empty State
 
-Add the import for the type (at the top with other imports):
+Update the colspan to account for the new column:
 
 ```tsx
-// Update the import from useToolsAdmin to include SyncStatus
-import {
-  useToolsAdmin,
-  useDeleteTool,
-  Tool,
-  ToolsQueryParams,
-  SyncStatus  // NEW
-} from '@/hooks/api/useToolsAdmin';
+{data.data.length === 0 ? (
+  <TableRow>
+    <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-12">
+      {/* ... empty state content ... */}
+    </TableCell>
+  </TableRow>
+) : (
+  // ... rows ...
+)}
 ```
 
 ### Complete ToolsList.tsx Changes Summary
 
-Here's what the key changes look like in context:
+Here's how the key changes integrate with the existing RBAC structure:
 
 ```tsx
 // src/pages/admin/ToolsList.tsx
 
 // 1. Updated imports
 import {
-  useToolsAdmin,
+  useMyTools,
+  useAdminTools,
   useDeleteTool,
+  useApproveTool,
+  useRejectTool,
   Tool,
   ToolsQueryParams,
-  SyncStatus
+  ApprovalStatus,
+  SyncStatus,  // NEW
 } from '@/hooks/api/useToolsAdmin';
 import { SyncStatusIndicator } from '@/components/admin/SyncStatusIndicator';
 import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
 
-// 2. In the component, CardContent becomes:
+// 2. In the component, CardContent becomes (with RBAC awareness):
 <CardContent>
-  {/* Sync health overview */}
-  <SyncStatusWidget />
+  {/* Sync health overview - admin only */}
+  {isAdmin && <SyncStatusWidget />}
 
-  {/* Filters - add sync filter */}
+  {/* Filters - including sync filter for admins */}
   <div className="flex flex-col md:flex-row gap-4 mb-6">
-    {/* ... existing search and filters ... */}
+    {/* ... existing search, status, pricing, approval filters ... */}
 
-    {/* New sync status filter */}
-    <Select
-      value={params.syncStatus || 'all'}
-      onValueChange={(value) => setParams((prev) => ({
-        ...prev,
-        syncStatus: value === 'all' ? undefined : value as SyncStatus,
-        page: 1,
-      }))}
-    >
-      <SelectTrigger className="w-[130px]">
-        <SelectValue placeholder="Sync" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All Sync</SelectItem>
-        <SelectItem value="synced">Synced</SelectItem>
-        <SelectItem value="pending">Pending</SelectItem>
-        <SelectItem value="stale">Stale</SelectItem>
-        <SelectItem value="failed">Failed</SelectItem>
-      </SelectContent>
-    </Select>
+    {/* New sync status filter - admin only */}
+    {isAdmin && (
+      <Select
+        value={params.syncStatus || 'all'}
+        onValueChange={(value) => setParams((prev) => ({
+          ...prev,
+          syncStatus: value === 'all' ? undefined : value as SyncStatus,
+          page: 1,
+        }))}
+      >
+        <SelectTrigger className="w-[130px]">
+          <SelectValue placeholder="Sync" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Sync</SelectItem>
+          <SelectItem value="synced">Synced</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="stale">Stale</SelectItem>
+          <SelectItem value="failed">Failed</SelectItem>
+        </SelectContent>
+      </Select>
+    )}
   </div>
 
-  {/* Table with new Sync column */}
+  {/* Table with RBAC-aware columns */}
   <Table>
     <TableHeader>
       <TableRow>
@@ -1153,7 +1175,8 @@ import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
         <TableHead className="hidden md:table-cell">Categories</TableHead>
         <TableHead>Pricing</TableHead>
         <TableHead>Status</TableHead>
-        <TableHead className="w-[100px]">Sync</TableHead>
+        <TableHead>Approval</TableHead>
+        {isAdmin && <TableHead className="w-[100px]">Sync</TableHead>}
         <TableHead className="hidden lg:table-cell">Added</TableHead>
         <TableHead className="text-right">Actions</TableHead>
       </TableRow>
@@ -1161,22 +1184,36 @@ import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
     <TableBody>
       {data.data.map((tool: Tool) => (
         <TableRow key={tool.id}>
-          {/* ... existing cells ... */}
+          {/* ... name, categories, pricing cells ... */}
           <TableCell>
             <Badge variant={getStatusBadgeVariant(tool.status)}>
               {tool.status}
             </Badge>
           </TableCell>
 
-          {/* New Sync Status Cell */}
+          {/* Approval cell with rejection tooltip */}
           <TableCell>
-            <SyncStatusIndicator tool={tool} compact />
+            <TooltipProvider>
+              <div className="flex items-center gap-1">
+                <Badge variant={getApprovalBadgeVariant(tool.approvalStatus)}>
+                  {tool.approvalStatus}
+                </Badge>
+                {/* ... rejection tooltip ... */}
+              </div>
+            </TooltipProvider>
           </TableCell>
+
+          {/* Sync Status Cell - admin only */}
+          {isAdmin && (
+            <TableCell>
+              <SyncStatusIndicator tool={tool} compact />
+            </TableCell>
+          )}
 
           <TableCell className="hidden lg:table-cell">
             {new Date(tool.dateAdded).toLocaleDateString()}
           </TableCell>
-          {/* ... actions cell ... */}
+          {/* ... actions cell with approve/reject/edit/delete ... */}
         </TableRow>
       ))}
     </TableBody>
