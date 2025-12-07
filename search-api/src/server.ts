@@ -23,7 +23,7 @@ import toolsRoutes from "./routes/tools.routes";
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service";
 import { gracefulShutdown } from "./services/graceful-shutdown.service";
-import { getMongoClient, getQdrantClient } from "./config/database";
+import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database";
 import { metricsService } from "./services/metrics.service";
 import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
 import { circuitBreakerManager } from "./services/circuit-breaker.service";
@@ -824,6 +824,28 @@ app.post('/api/search', searchLimiter, searchTimeout, validateSearchRequest, asy
 
 // Start server with vector index validation
 async function startServer() {
+  // Connect to MongoDB before starting the server
+  searchLogger.info('🔄 Connecting to MongoDB...', {
+    service: 'search-api',
+    database: mongoConfig.dbName,
+    uri: mongoConfig.uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')
+  });
+  
+  try {
+    await connectToMongoDB();
+    searchLogger.info('✅ Connected to MongoDB database', {
+      service: 'search-api',
+      database: mongoConfig.dbName,
+      uri: mongoConfig.uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')
+    });
+  } catch (error) {
+    searchLogger.error('❌ Failed to connect to MongoDB', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+      database: mongoConfig.dbName,
+    });
+    throw error;
+  }
+
   // Perform vector index validation before starting the server
   // await validateVectorIndexOnStartup();
 
@@ -862,6 +884,8 @@ async function startServer() {
     healthCheckService.setMongoClient(mongoClient);
     searchLogger.info('✅ MongoDB client registered with health check service', {
       service: 'search-api',
+      database: process.env.MONGODB_DB_NAME || 'toolsearch',
+      uri: process.env.MONGODB_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@') || 'mongodb://localhost:27017'
     });
   } else {
     searchLogger.warn('⚠️  MongoDB client not available for health checks', {

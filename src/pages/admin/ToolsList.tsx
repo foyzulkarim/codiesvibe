@@ -288,7 +288,7 @@ export default function ToolsList() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="beta">Beta</SelectItem>
                   <SelectItem value="deprecated">Deprecated</SelectItem>
@@ -318,7 +318,7 @@ export default function ToolsList() {
                   <SelectValue placeholder="Approval" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">Approval</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>

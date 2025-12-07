@@ -200,15 +200,31 @@ router.get('/admin', clerkRequireAuth, attachUserRole, requireAdmin, validateQue
 
 /**
  * GET /api/tools/:id - Get a single tool by ID (protected)
+ * - Admins can view any tool regardless of approval status
+ * - Maintainers can view their own tools regardless of approval status
+ * - For other tools, only approved tools are returned
  */
 router.get('/:id', clerkRequireAuth, attachUserRole, async (req: Request, res: Response) => {
   const searchReq = req as RoleAuthenticatedRequest & SearchRequest;
   const { id } = req.params;
 
   try {
-    const tool = await toolCrudService.getToolById(id);
+    // First, try to get the tool without approval filter to check ownership
+    const tool = await toolCrudService.getToolById(id, false);
 
     if (!tool) {
+      return res.status(404).json({
+        error: 'Tool not found',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    // Check access permissions
+    const userIsAdmin = isAdmin(searchReq);
+    const userIsOwner = isOwner(searchReq, tool.contributor);
+
+    // If tool is not approved, only admin or owner can view it
+    if (tool.approvalStatus !== 'approved' && !userIsAdmin && !userIsOwner) {
       return res.status(404).json({
         error: 'Tool not found',
         code: 'NOT_FOUND',

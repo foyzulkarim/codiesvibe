@@ -64,7 +64,7 @@ export default function Index() {
                       <Link to="/admin/tools">
                         <Button variant="ghost" size="sm">
                           <Settings className="h-4 w-4 mr-2" />
-                          Admin
+                          Tools
                         </Button>
                       </Link>
                       <span className="text-sm text-muted-foreground hidden sm:inline">
