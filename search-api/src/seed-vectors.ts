@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'module-alias/register';
 import { vectorSeedingService } from './services/vector-seeding.service';
 import { mongoDBService } from './services/mongodb.service';
 import { qdrantService } from './services/qdrant.service';
