@@ -1,49 +1,36 @@
+/**
+ * Clerk Authentication Initializer
+ *
+ * Initializes the Clerk token getter for the Search API client.
+ * This component should be rendered once at the app root level.
+ *
+ * Uses useLayoutEffect to ensure the token getter is set before
+ * any child components make API calls, preventing race conditions.
+ */
+
 import { useAuth } from '@clerk/clerk-react';
-import { useEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { setClerkTokenGetter } from '@/api/clerk-auth';
 
-/**
- * Retry logic for token retrieval
- */
-async function getTokenWithRetry(
-  getToken: () => Promise<string | null>,
-  maxRetries = 3,
-  delayMs = 1000
-): Promise<string | null> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const token = await getToken();
-      return token;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error');
-
-      if (attempt < maxRetries) {
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
-        console.warn(`Token retrieval attempt ${attempt} failed, retrying...`, error);
-      }
-    }
-  }
-
-  // All retries failed
-  console.error('Failed to get Clerk token after multiple attempts:', lastError);
-  return null;
-}
-
-/**
- * Component to initialize Clerk authentication integration with API client
- * This component should be rendered once at the app root level
- */
 export function ClerkAuthInitializer() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
+  const hasInitialized = useRef(false);
 
-  useEffect(() => {
-    // Set up the token getter for the API client with retry logic
-    setClerkTokenGetter(async () => {
-      return await getTokenWithRetry(getToken);
-    });
+  // Use useLayoutEffect to set up the token getter synchronously
+  // before any child components render and potentially make API calls
+  useLayoutEffect(() => {
+    // Only initialize once when Clerk is loaded
+    if (isLoaded && !hasInitialized.current) {
+      setClerkTokenGetter(getToken);
+      hasInitialized.current = true;
+    }
+  }, [getToken, isLoaded]);
+
+  // Also update the token getter if it changes (e.g., after sign-in/sign-out)
+  useLayoutEffect(() => {
+    if (hasInitialized.current) {
+      setClerkTokenGetter(getToken);
+    }
   }, [getToken]);
 
   // This component doesn't render anything

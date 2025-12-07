@@ -1,16 +1,16 @@
-import { mongoDBService } from "./mongodb.service";
-import { qdrantService } from "./qdrant.service";
-import { embeddingService } from "./embedding.service";
-import { getSupportedVectorTypes, shouldUseEnhancedCollection } from "@/config/database";
+import { mongoDBService } from "./mongodb.service.js";
+import { qdrantService } from "./qdrant.service.js";
+import { embeddingService } from "./embedding.service.js";
+import { getSupportedVectorTypes, shouldUseEnhancedCollection } from "#config/database";
 import {
   getEnabledVectorTypes,
   isEnhancedVectorTypeSupported,
   validateEnhancedVectors
-} from "@/config/enhanced-qdrant-schema";
+} from "#config/enhanced-qdrant-schema";
 
 // Import existing types from centralized location
-import { ToolData } from "../types/tool.types";
-import { IndexingProgress, HealthReport } from "./vector-indexing.service";
+import { ToolData } from "../types/tool.types.js";
+import { IndexingProgress, HealthReport } from "./vector-indexing.service.js";
 
 // Enhanced types for multi-vector indexing
 export interface MultiVectorPayload {

@@ -1,6 +1,6 @@
-import { planCacheService } from '@/services/plan-cache.service';
-import { searchWithAgenticPipeline } from '@/graphs/agentic-search.graph';
-import { embeddingService } from '@/services/embedding.service';
+import { planCacheService } from '#services/plan-cache.service';
+import { searchWithAgenticPipeline } from '#graphs/agentic-search.graph';
+import { embeddingService } from '#services/embedding.service';
 
 /**
  * Test script for the caching implementation

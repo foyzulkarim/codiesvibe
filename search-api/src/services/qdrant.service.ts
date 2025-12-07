@@ -8,13 +8,13 @@ import {
   getEnhancedCollectionName,
   shouldUseEnhancedCollection,
   getCollectionNameForVectorType
-} from "@/config/database";
+} from "#config/database";
 import {
   isEnhancedVectorTypeSupported,
   validateEnhancedVectors,
   getVectorConfig
-} from "@/config/enhanced-qdrant-schema";
-import { embeddingService } from "./embedding.service";
+} from "#config/enhanced-qdrant-schema";
+import { embeddingService } from "./embedding.service.js";
 import { createHash } from "crypto";
 import {
   VectorValidationError,
@@ -24,9 +24,9 @@ import {
   validateVectorType,
   validateToolId,
   validateEmbedding
-} from "@/utils/vector-validation";
-import { CollectionConfigService } from "./collection-config.service";
-import { ContentGeneratorFactory } from "./content-generator-factory.service";
+} from "#utils/vector-validation";
+import { CollectionConfigService } from "./collection-config.service.js";
+import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 
 // Multi-collection management interfaces
 export interface CollectionInfo {

@@ -1,20 +1,20 @@
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 
-import { StateAnnotation } from '../../types/state';
-import { QueryPlanSchema } from '../../types/query-plan';
-import { llmService } from '../../services/llm.service';
-import { generateQueryPlanningPrompt } from '../../core/prompts/prompt.generator';
+import { StateAnnotation } from '../../types/state.js';
+import { QueryPlanSchema } from '../../types/query-plan.js';
+import { llmService } from '../../services/llm.service.js';
+import { generateQueryPlanningPrompt } from '../../core/prompts/prompt.generator.js';
 import {
   getEnabledCollections,
   getRecommendedEmbeddingType,
   getRecommendedTopK,
   getRecommendedFusionMethod
-} from '../../domains/tools/tools.validators';
+} from '../../domains/tools/tools.validators.js';
 // Keep these services for now - they provide collection orchestration
-import { CollectionConfigService } from '../../services/collection-config.service';
-import { VectorTypeRegistryService } from '../../services/vector-type-registry.service';
-import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service';
-import { ContentGeneratorFactory } from '../../services/content-generator-factory.service';
+import { CollectionConfigService } from '../../services/collection-config.service.js';
+import { VectorTypeRegistryService } from '../../services/vector-type-registry.service.js';
+import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service.js';
+import { ContentGeneratorFactory } from '../../services/content-generator-factory.service.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

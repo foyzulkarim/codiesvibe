@@ -5,9 +5,9 @@
 
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool, ITool } from '../../../models/tool.model';
-import { toolCrudService } from '../../../services/tool-crud.service';
-import { CreateToolInput } from '../../../schemas/tool.schema';
+import { Tool, ITool } from '../../../models/tool.model.js';
+import { toolCrudService } from '../../../services/tool-crud.service.js';
+import { CreateToolInput } from '../../../schemas/tool.schema.js';
 
 describe('ToolCrudService', () => {
   let mongoServer: MongoMemoryServer;
@@ -29,7 +29,7 @@ describe('ToolCrudService', () => {
     functionality: ['AI Chat', 'Code Generation'],
     deployment: ['Cloud'],
     status: 'active',
-    contributor: 'test-user',
+    // Note: contributor is set by the service based on userId parameter
   };
 
   beforeAll(async () => {
@@ -101,6 +101,7 @@ describe('ToolCrudService', () => {
   describe('getTools', () => {
     beforeEach(async () => {
       // Create multiple tools for testing pagination
+      // NOTE: getTools() filters by approvalStatus: 'approved' by default
       const tools = [];
       for (let i = 1; i <= 25; i++) {
         tools.push({
@@ -117,6 +118,7 @@ describe('ToolCrudService', () => {
           ...tool,
           slug: tool.id,
           dateAdded: new Date(),
+          approvalStatus: 'approved', // Required for getTools() to return these
         });
       }
     });
@@ -201,6 +203,7 @@ describe('ToolCrudService', () => {
         ...validToolInput,
         slug: validToolInput.id,
         dateAdded: new Date(),
+        approvalStatus: 'approved', // Required for getToolById() with publicOnly=true (default)
       });
     });
 

@@ -195,7 +195,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           build-args: |
             BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             GIT_COMMIT=${{ github.sha }}
@@ -532,6 +532,7 @@ jobs:
     steps:
       - name: Delete old search-api packages
         uses: actions/delete-package-versions@v5
+        continue-on-error: true  # Don't fail if package doesn't exist yet
         with:
           package-name: ${{ env.IMAGE_NAME }}
           package-type: 'container'

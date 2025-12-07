@@ -1,9 +1,8 @@
 #!/usr/bin/env ts-node
 
 import 'dotenv/config';
-import 'module-alias/register';
-import { connectToQdrant } from '@/config/database';
-import { CollectionConfigService } from '@/services/collection-config.service';
+import { connectToQdrant } from '#config/database';
+import { CollectionConfigService } from '#services/collection-config.service';
 
 async function createCollections() {
   console.log('🚀 Starting simple collection creation process...');

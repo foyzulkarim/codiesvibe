@@ -1,10 +1,10 @@
-import { StateAnnotation } from '../../types/state';
-import { QueryPlan } from '../../types/query-plan';
-import { Candidate, QueryExecutorOutput } from '../../types/candidate';
-import { QdrantService } from '../../services/qdrant.service';
-import { MongoDBService } from '../../services/mongodb.service';
-import { EmbeddingService } from '../../services/embedding.service';
-import { fuseResults, groupCandidatesBySource } from '../../utils/fusion';
+import { StateAnnotation } from '../../types/state.js';
+import { QueryPlan } from '../../types/query-plan.js';
+import { Candidate, QueryExecutorOutput } from '../../types/candidate.js';
+import { QdrantService } from '../../services/qdrant.service.js';
+import { MongoDBService } from '../../services/mongodb.service.js';
+import { EmbeddingService } from '../../services/embedding.service.js';
+import { fuseResults, groupCandidatesBySource } from '../../utils/fusion.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

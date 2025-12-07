@@ -1,4 +1,4 @@
-import { embeddingConfig } from "@/config/constants";
+import { embeddingConfig } from "#config/constants";
 
 interface CacheEntry {
   embedding: number[];

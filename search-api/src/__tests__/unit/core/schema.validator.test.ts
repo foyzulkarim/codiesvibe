@@ -4,9 +4,9 @@
  * Tests the schema validation logic that runs at pipeline startup
  */
 
-import { validateSchema, assertValidSchema } from '../../../core/validators/schema.validator';
-import { DomainSchema } from '../../../core/types/schema.types';
-import { toolsSchema } from '../../../domains/tools/tools.schema';
+import { validateSchema, assertValidSchema } from '../../../core/validators/schema.validator.js';
+import { DomainSchema } from '../../../core/types/schema.types.js';
+import { toolsSchema } from '../../../domains/tools/tools.schema.js';
 
 describe('Schema Validator - Unit Tests', () => {
   describe('1. Valid Schema Tests', () => {

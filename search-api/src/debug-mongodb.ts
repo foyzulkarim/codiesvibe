@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mongoDBService } from './services/mongodb.service';
+import { mongoDBService } from './services/mongodb.service.js';
 
 async function debugMongoDB() {
   console.log('🔍 Debugging MongoDB connection and tools data...\n');

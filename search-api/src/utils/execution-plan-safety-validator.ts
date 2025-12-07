@@ -1,7 +1,7 @@
-import { Plan, MultiStrategyPlan, Function, PlanReasoning } from "../types/plan";
-import { StateAnnotation } from "../types/state";
-import { ExecutionPlanSchema, ExecutionStepSchema } from "../types/enhanced-state";
-import { defaultEnhancedSearchConfig } from "../config/enhanced-search-config";
+import { Plan, MultiStrategyPlan, Function, PlanReasoning } from "../types/plan.js";
+import { StateAnnotation } from "../types/state.js";
+import { ExecutionPlanSchema, ExecutionStepSchema } from "../types/enhanced-state.js";
+import { defaultEnhancedSearchConfig } from "../config/enhanced-search-config.js";
 
 // Safety validation result interface
 export interface SafetyValidationResult {

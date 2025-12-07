@@ -13,7 +13,7 @@
  * @module domains/tools
  */
 
-import { DomainSchema } from '@/core/types/schema.types';
+import { DomainSchema } from '#core/types/schema.types';
 
 /**
  * Tools Domain Schema
