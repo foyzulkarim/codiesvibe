@@ -238,7 +238,8 @@ class ToolCrudService {
     }
 
     // Detect which fields changed
-    const changedFields = contentHashService.detectChangedFields(existingTool, data);
+    // Type assertion needed because UpdateToolInput from Zod may have slightly different type inference
+    const changedFields = contentHashService.detectChangedFields(existingTool, data as Partial<ITool>);
 
     // Build base update data
     const updateData: Record<string, any> = {

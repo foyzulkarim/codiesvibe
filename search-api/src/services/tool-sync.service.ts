@@ -21,7 +21,7 @@ import {
   SyncStatus,
   ICollectionSyncStatus,
 } from '../models/tool.model.js';
-import { ToolDataValidator } from '../types/tool.types.js';
+import { ToolData, ToolDataValidator } from '../types/tool.types.js';
 
 // ============================================
 // TYPES AND INTERFACES
@@ -679,12 +679,12 @@ export class ToolSyncService {
   /**
    * Convert ITool to ToolData format
    */
-  private convertToToolData(tool: ITool): Record<string, unknown> {
+  private convertToToolData(tool: ITool): ToolData {
     const toolObj = tool.toObject ? tool.toObject() : tool;
     return {
       ...toolObj,
       _id: tool._id?.toString(),
-    } as Record<string, unknown>;
+    } as ToolData;
   }
 
   /**

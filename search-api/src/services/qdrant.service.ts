@@ -1701,7 +1701,8 @@ export class QdrantService {
         lastPayloadUpdate: new Date().toISOString(),
       };
 
-      await this.client.setPayload(collectionName, {
+      // Type assertion needed as setPayload exists at runtime but not in TS definitions
+      await (this.client as any).setPayload(collectionName, {
         points: [pointId],
         payload: payloadWithTimestamp,
       });
@@ -1780,7 +1781,8 @@ export class QdrantService {
     try {
       const pointId = this.toPointId(toolId);
 
-      await this.client.overwritePayload(collectionName, {
+      // Type assertion needed as overwritePayload exists at runtime but not in TS definitions
+      await (this.client as any).overwritePayload(collectionName, {
         points: [pointId],
         payload: {
           ...payload,
@@ -1814,7 +1816,8 @@ export class QdrantService {
     try {
       const pointId = this.toPointId(toolId);
 
-      await this.client.deletePayload(collectionName, {
+      // Type assertion needed as deletePayload exists at runtime but not in TS definitions
+      await (this.client as any).deletePayload(collectionName, {
         points: [pointId],
         keys: fields,
       });

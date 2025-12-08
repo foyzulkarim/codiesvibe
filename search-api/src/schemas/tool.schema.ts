@@ -122,8 +122,123 @@ export const CreateToolSchema = z.object({
   // Note: contributor and approvalStatus are set by the server based on auth
 });
 
-// Update tool schema (all fields optional)
-export const UpdateToolSchema = CreateToolSchema.partial();
+// Update tool schema (all fields optional, but arrays like pricing must have complete objects if provided)
+export const UpdateToolSchema = z.object({
+  // Identity fields
+  id: z
+    .string()
+    .min(1, 'ID is required')
+    .max(100, 'ID must be at most 100 characters')
+    .regex(/^[a-z0-9-]+$/, 'ID must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
+
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be at most 100 characters')
+    .optional(),
+
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .max(100, 'Slug must be at most 100 characters')
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
+
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(200, 'Description must be at most 200 characters')
+    .optional(),
+
+  longDescription: z
+    .string()
+    .min(50, 'Long description must be at least 50 characters')
+    .max(2000, 'Long description must be at most 2000 characters')
+    .optional()
+    .or(z.literal('')),
+
+  tagline: z
+    .string()
+    .max(100, 'Tagline must be at most 100 characters')
+    .optional()
+    .or(z.literal('')),
+
+  // Categorization
+  categories: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]))
+    .min(1, 'At least one category is required')
+    .max(5, 'At most 5 categories allowed')
+    .optional(),
+
+  industries: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]))
+    .min(1, 'At least one industry is required')
+    .max(10, 'At most 10 industries allowed')
+    .optional(),
+
+  userTypes: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]))
+    .min(1, 'At least one user type is required')
+    .max(10, 'At most 10 user types allowed')
+    .optional(),
+
+  // Pricing - if provided, must have complete pricing tiers
+  pricing: z
+    .array(PricingSchema)
+    .min(1, 'At least one pricing tier is required')
+    .optional(),
+
+  pricingModel: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .min(1, 'At least one pricing model is required')
+    .optional(),
+
+  pricingUrl: z
+    .string()
+    .url('Pricing URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  // Technical specifications
+  interface: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]))
+    .min(1, 'At least one interface is required')
+    .optional(),
+
+  functionality: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]))
+    .min(1, 'At least one functionality is required')
+    .optional(),
+
+  deployment: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]))
+    .min(1, 'At least one deployment option is required')
+    .optional(),
+
+  // Metadata
+  logoUrl: z
+    .string()
+    .url('Logo URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  website: z
+    .string()
+    .url('Website must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  documentation: z
+    .string()
+    .url('Documentation URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  status: z
+    .enum(['active', 'beta', 'deprecated', 'discontinued'])
+    .optional(),
+});
 
 // Query parameters schema for listing tools (public - only approved)
 export const GetToolsQuerySchema = z.object({
