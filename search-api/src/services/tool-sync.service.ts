@@ -14,7 +14,13 @@ import {
   COLLECTION_FIELDS,
   METADATA_ONLY_FIELDS,
 } from './content-hash.service.js';
-import { Tool, ITool, SyncCollectionName, SyncStatus, ICollectionSyncStatus } from '../models/tool.model.js';
+import {
+  Tool,
+  ITool,
+  SyncCollectionName,
+  SyncStatus,
+  ICollectionSyncStatus,
+} from '../models/tool.model.js';
 import { ToolDataValidator } from '../types/tool.types.js';
 
 // ============================================
@@ -104,12 +110,17 @@ export class ToolSyncService {
    * @param options - Sync options
    * @returns Sync result with per-collection status
    */
-  async syncTool(tool: ITool, options: SyncOptions = {}): Promise<ToolSyncResult> {
+  async syncTool(
+    tool: ITool,
+    options: SyncOptions = {}
+  ): Promise<ToolSyncResult> {
     const startTime = Date.now();
     const toolId = this.deriveToolId(tool);
     const collections = options.collections || this.getAllCollectionNames();
 
-    console.log(`🔄 [ToolSync] Starting sync for tool "${tool.name}" (${toolId}) to ${collections.length} collections`);
+    console.log(
+      `🔄 [ToolSync] Starting sync for tool "${tool.name}" (${toolId}) to ${collections.length} collections`
+    );
 
     const results: CollectionSyncResult[] = [];
     let syncedCount = 0;
@@ -121,19 +132,26 @@ export class ToolSyncService {
       if (!options.force) {
         const needsSync = this.checkNeedsSync(tool, collection);
         if (!needsSync) {
-          console.log(`⏭️ [ToolSync] Skipping ${collection} - content unchanged`);
+          console.log(
+            `⏭️ [ToolSync] Skipping ${collection} - content unchanged`
+          );
           skippedCount++;
           results.push({
             collection,
             success: true,
-            newContentHash: tool.syncMetadata?.collections?.[collection]?.contentHash,
+            newContentHash:
+              tool.syncMetadata?.collections?.[collection]?.contentHash,
           });
           continue;
         }
       }
 
       // Sync to this collection
-      const result = await this.syncToolToCollection(tool, collection, options.maxRetries);
+      const result = await this.syncToolToCollection(
+        tool,
+        collection,
+        options.maxRetries
+      );
       results.push(result);
 
       if (result.success) {
@@ -149,7 +167,9 @@ export class ToolSyncService {
     }
 
     const totalDuration = Date.now() - startTime;
-    console.log(`✅ [ToolSync] Completed sync for "${tool.name}": ${syncedCount} synced, ${failedCount} failed, ${skippedCount} skipped (${totalDuration}ms)`);
+    console.log(
+      `✅ [ToolSync] Completed sync for "${tool.name}": ${syncedCount} synced, ${failedCount} failed, ${skippedCount} skipped (${totalDuration}ms)`
+    );
 
     return {
       toolId,
@@ -194,15 +214,19 @@ export class ToolSyncService {
     options: Omit<SyncOptions, 'collections'> = {}
   ): Promise<ToolSyncResult> {
     // Check if only metadata fields changed
-    const isMetadataOnly = contentHashService.isMetadataOnlyChange(changedFields);
+    const isMetadataOnly =
+      contentHashService.isMetadataOnlyChange(changedFields);
 
     if (isMetadataOnly) {
-      console.log(`📝 [ToolSync] Only metadata fields changed - updating payload only`);
+      console.log(
+        `📝 [ToolSync] Only metadata fields changed - updating payload only`
+      );
       return this.updatePayloadOnly(tool, options);
     }
 
     // Get affected collections
-    const affectedCollections = contentHashService.getAffectedCollections(changedFields);
+    const affectedCollections =
+      contentHashService.getAffectedCollections(changedFields);
 
     if (affectedCollections.length === 0) {
       console.log(`⏭️ [ToolSync] No semantic fields changed - skipping sync`);
@@ -217,7 +241,11 @@ export class ToolSyncService {
       };
     }
 
-    console.log(`🎯 [ToolSync] Changed fields affect ${affectedCollections.length} collections: ${affectedCollections.join(', ')}`);
+    console.log(
+      `🎯 [ToolSync] Changed fields affect ${
+        affectedCollections.length
+      } collections: ${affectedCollections.join(', ')}`
+    );
     return this.syncToolToCollections(tool, affectedCollections, options);
   }
 
@@ -230,7 +258,9 @@ export class ToolSyncService {
     const startTime = Date.now();
     const collections = this.getAllCollectionNames();
 
-    console.log(`🗑️ [ToolSync] Deleting tool "${toolId}" from ${collections.length} collections`);
+    console.log(
+      `🗑️ [ToolSync] Deleting tool "${toolId}" from ${collections.length} collections`
+    );
 
     const results: CollectionSyncResult[] = [];
     let successCount = 0;
@@ -239,7 +269,8 @@ export class ToolSyncService {
     for (const collection of collections) {
       const collectionStartTime = Date.now();
       try {
-        const vectorType = this.collectionConfig.getVectorTypeForCollection(collection);
+        const vectorType =
+          this.collectionConfig.getVectorTypeForCollection(collection);
         await qdrantService.deleteToolVector(toolId, vectorType);
 
         results.push({
@@ -249,8 +280,12 @@ export class ToolSyncService {
         });
         successCount++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`❌ [ToolSync] Failed to delete from ${collection}:`, errorMessage);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.error(
+          `❌ [ToolSync] Failed to delete from ${collection}:`,
+          errorMessage
+        );
 
         results.push({
           collection,
@@ -264,7 +299,9 @@ export class ToolSyncService {
     }
 
     const totalDuration = Date.now() - startTime;
-    console.log(`✅ [ToolSync] Delete completed: ${successCount} deleted, ${failedCount} failed (${totalDuration}ms)`);
+    console.log(
+      `✅ [ToolSync] Delete completed: ${successCount} deleted, ${failedCount} failed (${totalDuration}ms)`
+    );
 
     return {
       toolId,
@@ -305,7 +342,11 @@ export class ToolSyncService {
         const payload = this.generatePayload(tool, collection);
 
         // Use the payload-only update method (no embedding regeneration)
-        const result = await qdrantService.updatePayloadOnly(toolId, payload, collection);
+        const result = await qdrantService.updatePayloadOnly(
+          toolId,
+          payload,
+          collection
+        );
 
         if (result.success) {
           results.push({
@@ -325,8 +366,12 @@ export class ToolSyncService {
           failedCount++;
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`❌ [ToolSync] Failed to update payload in ${collection}:`, errorMessage);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        console.error(
+          `❌ [ToolSync] Failed to update payload in ${collection}:`,
+          errorMessage
+        );
 
         results.push({
           collection,
@@ -359,7 +404,7 @@ export class ToolSyncService {
   async retryFailedSync(toolId: string): Promise<ToolSyncResult> {
     // Find the tool
     const tool = await Tool.findOne({
-      $or: [{ _id: toolId }, { id: toolId }, { slug: toolId }],
+      _id: toolId,
     });
 
     if (!tool) {
@@ -372,14 +417,17 @@ export class ToolSyncService {
 
     if (syncMeta?.collections) {
       for (const [collection, status] of Object.entries(syncMeta.collections)) {
-        if (status.status === 'failed' || status.status === 'pending') {
+        // Include 'stale' in addition to 'failed' and 'pending'
+        if (status.status === 'failed' || status.status === 'pending' || status.status === 'stale') {
           failedCollections.push(collection as SyncCollectionName);
         }
       }
     }
 
     if (failedCollections.length === 0) {
-      console.log(`✅ [ToolSync] No failed collections to retry for "${tool.name}"`);
+      console.log(
+        `✅ [ToolSync] No failed collections to retry for "${tool.name}"`
+      );
       return {
         toolId: this.deriveToolId(tool),
         success: true,
@@ -391,7 +439,9 @@ export class ToolSyncService {
       };
     }
 
-    console.log(`🔄 [ToolSync] Retrying ${failedCollections.length} failed collections for "${tool.name}"`);
+    console.log(
+      `🔄 [ToolSync] Retrying ${failedCollections.length} failed collections for "${tool.name}"`
+    );
     return this.syncToolToCollections(tool, failedCollections, { force: true });
   }
 
@@ -416,7 +466,9 @@ export class ToolSyncService {
         // Generate content for this collection
         const content = this.generateContent(tool, collection);
         if (!content.trim()) {
-          console.warn(`⚠️ [ToolSync] Empty content for ${collection} - skipping`);
+          console.warn(
+            `⚠️ [ToolSync] Empty content for ${collection} - skipping`
+          );
           return {
             collection,
             success: false,
@@ -434,11 +486,20 @@ export class ToolSyncService {
 
         // Upsert to Qdrant
         const toolId = this.deriveToolId(tool);
-        const vectorType = this.collectionConfig.getVectorTypeForCollection(collection);
-        await qdrantService.upsertToolVector(toolId, embedding, payload, vectorType);
+        const vectorType =
+          this.collectionConfig.getVectorTypeForCollection(collection);
+        await qdrantService.upsertToolVector(
+          toolId,
+          embedding,
+          payload,
+          vectorType
+        );
 
         // Calculate new content hash
-        const newContentHash = contentHashService.generateCollectionHash(tool, collection);
+        const newContentHash = contentHashService.generateCollectionHash(
+          tool,
+          collection
+        );
 
         console.log(`✅ [ToolSync] Synced ${collection} (attempt ${attempt})`);
 
@@ -452,7 +513,9 @@ export class ToolSyncService {
         lastError = error instanceof Error ? error.message : String(error);
         lastErrorCode = this.classifyError(error);
 
-        console.warn(`⚠️ [ToolSync] Attempt ${attempt}/${maxRetries} failed for ${collection}: ${lastError}`);
+        console.warn(
+          `⚠️ [ToolSync] Attempt ${attempt}/${maxRetries} failed for ${collection}: ${lastError}`
+        );
 
         if (attempt < maxRetries && this.isRetryableError(error)) {
           await this.delay(this.RETRY_DELAY_MS * attempt);
@@ -460,7 +523,9 @@ export class ToolSyncService {
       }
     }
 
-    console.error(`❌ [ToolSync] All ${maxRetries} attempts failed for ${collection}`);
+    console.error(
+      `❌ [ToolSync] All ${maxRetries} attempts failed for ${collection}`
+    );
     return {
       collection,
       success: false,
@@ -524,7 +589,10 @@ export class ToolSyncService {
         { $set: updateData }
       );
     } catch (error) {
-      console.error(`❌ [ToolSync] Failed to update sync metadata for ${toolId}:`, error);
+      console.error(
+        `❌ [ToolSync] Failed to update sync metadata for ${toolId}:`,
+        error
+      );
       // Don't throw - metadata update failure shouldn't break sync
     }
   }
@@ -533,7 +601,8 @@ export class ToolSyncService {
    * Check if a collection needs sync based on content hash
    */
   private checkNeedsSync(tool: ITool, collection: SyncCollectionName): boolean {
-    const currentHash = tool.syncMetadata?.collections?.[collection]?.contentHash;
+    const currentHash =
+      tool.syncMetadata?.collections?.[collection]?.contentHash;
     if (!currentHash) {
       return true; // No previous hash means never synced
     }
@@ -560,27 +629,24 @@ export class ToolSyncService {
   /**
    * Generate payload for Qdrant storage
    */
-  private generatePayload(tool: ITool, collection: SyncCollectionName): Record<string, unknown> {
+  private generatePayload(
+    tool: ITool,
+    collection: SyncCollectionName
+  ): Record<string, unknown> {
     const toolId = this.deriveToolId(tool);
 
+    // Minimal base payload - only essential reference and filter fields
     const payload: Record<string, unknown> = {
-      id: tool._id?.toString(),
-      toolId,
-      name: tool.name,
-      categories: tool.categories,
-      functionality: tool.functionality,
-      interface: tool.interface,
-      industries: tool.industries,
-      userTypes: tool.userTypes,
-      deployment: tool.deployment,
-      pricingModel: tool.pricingModel,
-      status: tool.status,
+      id: tool._id?.toString(),        // MongoDB reference for fetching full data
+      toolId,                           // Slug reference
+      status: tool.status,              // Common filter field used in searches
       timestamp: new Date().toISOString(),
       collection,
     };
 
-    // Add collection-specific content fields
-    const contentFields = this.collectionConfig.getCollectionContentFields(collection);
+    // Add ONLY collection-specific content fields (avoid duplication across collections)
+    const contentFields =
+      this.collectionConfig.getCollectionContentFields(collection);
     for (const field of contentFields) {
       const value = tool[field as keyof ITool];
       if (value !== undefined) {
@@ -588,13 +654,12 @@ export class ToolSyncService {
       }
     }
 
-    // Add metadata fields for all collections
-    for (const field of METADATA_ONLY_FIELDS) {
-      const value = tool[field as keyof ITool];
-      if (value !== undefined) {
-        payload[field] = value;
-      }
-    }
+    // OPTIMIZATION: Removed METADATA_ONLY_FIELDS to reduce storage
+    // Metadata (pricing, logoUrl, website, etc.) should be fetched from MongoDB
+    // after search results are returned. This reduces Qdrant storage by ~75%.
+    //
+    // If you need certain metadata fields for filtering in Qdrant, add them explicitly:
+    // Example: payload.approvalStatus = tool.approvalStatus;
 
     return payload;
   }

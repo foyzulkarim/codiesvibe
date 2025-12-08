@@ -27,6 +27,7 @@ export class EmbeddingService {
    * Generate embedding for a single text
    */
   async generateEmbedding(text: string): Promise<number[]> {
+    console.log('[EmbeddingService] Generating embedding for text:', text);
     // Check cache first
     if (embeddingConstants.cacheEnabled && embeddingCache.has(text)) {
       return embeddingCache.get(text)!;

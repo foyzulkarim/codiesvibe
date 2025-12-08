@@ -263,16 +263,17 @@ export class SyncWorkerService {
    * Find tools that need sync processing
    */
   private async findToolsNeedingSync(): Promise<ITool[]> {
-    // Query for approved tools with pending or failed sync status
+    // Query for approved tools with pending, failed, or stale sync status
     const tools = await Tool.find({
       approvalStatus: 'approved',
       $or: [
         { 'syncMetadata.overallStatus': 'pending' },
         { 'syncMetadata.overallStatus': 'failed' },
-        { 'syncMetadata.collections.tools.status': { $in: ['pending', 'failed'] } },
-        { 'syncMetadata.collections.functionality.status': { $in: ['pending', 'failed'] } },
-        { 'syncMetadata.collections.usecases.status': { $in: ['pending', 'failed'] } },
-        { 'syncMetadata.collections.interface.status': { $in: ['pending', 'failed'] } },
+        { 'syncMetadata.overallStatus': 'stale' },
+        { 'syncMetadata.collections.tools.status': { $in: ['pending', 'failed', 'stale'] } },
+        { 'syncMetadata.collections.functionality.status': { $in: ['pending', 'failed', 'stale'] } },
+        { 'syncMetadata.collections.usecases.status': { $in: ['pending', 'failed', 'stale'] } },
+        { 'syncMetadata.collections.interface.status': { $in: ['pending', 'failed', 'stale'] } },
       ],
     })
       .sort({ 'syncMetadata.updatedAt': 1 }) // Process oldest first

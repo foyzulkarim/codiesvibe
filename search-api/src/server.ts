@@ -13,6 +13,7 @@ import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware.js
 import { limiter, searchLimiter, toolsMutationLimiter } from "./middleware/rate-limiters.js";
 import { v4 as uuidv4 } from 'uuid';
 import { clerkMiddleware } from '@clerk/express';
+import { qdrantService } from "./services/qdrant.service.js";
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph.js";
@@ -857,6 +858,32 @@ async function startServer() {
     searchLogger.info('✅ Qdrant client registered with health check service', {
       service: 'search-api',
     });
+
+    // Ensure Qdrant collections exist (opt-in via ENSURE_QDRANT_COLLECTIONS=true)
+    const ensureCollections = process.env.ENSURE_QDRANT_COLLECTIONS === 'true';
+    if (ensureCollections) {
+      try {
+        searchLogger.info('🔧 Ensuring Qdrant collections exist...', {
+          service: 'search-api',
+        });
+        const results = await qdrantService.createMultiCollections();
+        const successCount = results.filter(r => r.success).length;
+        searchLogger.info(`✅ Qdrant collections ready: ${successCount}/4 collections available`, {
+          service: 'search-api',
+          results: results.map(r => ({ collection: r.collection, success: r.success, message: r.message })),
+        });
+      } catch (error) {
+        // Log error but don't crash the server
+        searchLogger.error('⚠️  Failed to ensure Qdrant collections (server will continue)', error as Error, {
+          service: 'search-api',
+        });
+      }
+    } else {
+      searchLogger.info('⚠️  Qdrant collection auto-creation disabled (set ENSURE_QDRANT_COLLECTIONS=true to enable)', {
+        service: 'search-api',
+        note: 'Run "npm run create-collections" manually if needed',
+      });
+    }
   } else {
     searchLogger.warn('⚠️  Qdrant client not available for health checks', {
       service: 'search-api',
@@ -900,7 +927,8 @@ async function startServer() {
   });
 
   // Start sync worker for background sync operations
-  const enableSyncWorker = process.env.ENABLE_SYNC_WORKER !== 'false';
+  // Default: DISABLED (opt-in via ENABLE_SYNC_WORKER=true)
+  const enableSyncWorker = process.env.ENABLE_SYNC_WORKER === 'true';
   if (enableSyncWorker) {
     syncWorkerService.start();
     searchLogger.info('✅ Sync worker started for background Qdrant synchronization', {
@@ -908,7 +936,7 @@ async function startServer() {
       workerStatus: syncWorkerService.getStatus(),
     });
   } else {
-    searchLogger.info('⚠️  Sync worker disabled (ENABLE_SYNC_WORKER=false)', {
+    searchLogger.info('⚠️  Sync worker disabled (set ENABLE_SYNC_WORKER=true to enable)', {
       service: 'search-api',
     });
   }

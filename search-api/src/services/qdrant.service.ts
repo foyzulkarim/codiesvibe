@@ -540,7 +540,7 @@ export class QdrantService {
     vectorType: string
   ): Promise<void> {
     if (!this.client) throw new Error("Qdrant client not connected");
-    console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
+    console.log(`[QdrantService] Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
       embedding,
       payload,
     });
@@ -550,7 +550,7 @@ export class QdrantService {
 
       const pointId = this.toPointId(toolId);
       const collectionName = getCollectionName(vectorType);
-      console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId} to collection ${collectionName}`);
+      console.log(`[QdrantService] Upserting tool vector for type ${vectorType} with ID ${toolId} to collection ${collectionName}`);
       await this.client.upsert(collectionName, {
         points: [
           {

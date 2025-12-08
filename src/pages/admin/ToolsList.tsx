@@ -214,8 +214,9 @@ export default function ToolsList() {
     }
   };
 
-  const handleRetrySync = async (toolId: string) => {
-    await retryToolSync.mutateAsync(toolId);
+  const handleRetrySync = async (tool: Tool) => {
+    console.log('Retrying sync for tool:', tool);
+    await retryToolSync.mutateAsync(tool._id);
   };
 
   // Check if user can edit a tool (owner of pending tool, or admin)
@@ -489,28 +490,38 @@ export default function ToolsList() {
                                   <Badge variant={getSyncBadgeVariant(tool.syncMetadata?.overallStatus)}>
                                     {tool.syncMetadata?.overallStatus || 'pending'}
                                   </Badge>
-                                  {tool.syncMetadata?.overallStatus === 'failed' && (
+                                  {/* Show sync button for failed, stale, or pending status */}
+                                  {(tool.syncMetadata?.overallStatus === 'failed' ||
+                                    tool.syncMetadata?.overallStatus === 'stale' ||
+                                    tool.syncMetadata?.overallStatus === 'pending' ||
+                                    !tool.syncMetadata?.overallStatus) && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="icon"
                                           className="h-6 w-6"
-                                          onClick={() => handleRetrySync(tool.id)}
+                                          onClick={() => handleRetrySync(tool)}
                                           disabled={retryToolSync.isPending}
                                         >
                                           <RefreshCw className={`h-3 w-3 ${retryToolSync.isPending ? 'animate-spin' : ''}`} />
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent className="max-w-[300px]">
-                                        <p className="font-medium">Click to retry sync</p>
+                                        <p className="font-medium">
+                                          {tool.syncMetadata?.overallStatus === 'failed' ? 'Retry failed sync' :
+                                           tool.syncMetadata?.overallStatus === 'stale' ? 'Sync stale data' :
+                                           'Trigger sync'}
+                                        </p>
                                         {tool.syncMetadata?.collections && (
                                           <div className="mt-1 text-xs">
                                             {Object.entries(tool.syncMetadata.collections)
-                                              .filter(([, status]) => status.status === 'failed')
+                                              .filter(([, status]) => status.status === 'failed' || status.status === 'stale')
                                               .map(([name, status]) => (
                                                 <p key={name}>
-                                                  {name}: {status.lastError?.substring(0, 50)}
+                                                  {name}: {status.status === 'failed'
+                                                    ? status.lastError?.substring(0, 50)
+                                                    : 'needs sync'}
                                                 </p>
                                               ))}
                                           </div>

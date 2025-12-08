@@ -240,13 +240,43 @@ class ToolCrudService {
     // Detect which fields changed
     const changedFields = contentHashService.detectChangedFields(existingTool, data);
 
-    // Track changed fields in sync metadata
-    const updateData = {
+    // Build base update data
+    const updateData: Record<string, any> = {
       ...data,
       lastUpdated: new Date(),
       'syncMetadata.lastModifiedFields': changedFields,
       'syncMetadata.updatedAt': new Date(),
     };
+
+    // ONLY mark as stale if:
+    // 1. Tool is approved (only approved tools sync to Qdrant)
+    // 2. Semantic fields changed (not just metadata like pricing/URLs)
+    if (existingTool.approvalStatus === 'approved' && changedFields.length > 0) {
+      const hasSemanticChanges = contentHashService.hasSemanticChanges(changedFields);
+
+      if (hasSemanticChanges) {
+        // Get affected collections
+        const affectedCollections = contentHashService.getAffectedCollections(changedFields);
+
+        // Mark overall status as stale
+        updateData['syncMetadata.overallStatus'] = 'stale';
+
+        // Mark ONLY affected collections as stale
+        for (const collection of affectedCollections) {
+          updateData[`syncMetadata.collections.${collection}.status`] = 'stale';
+          updateData[`syncMetadata.collections.${collection}.retryCount`] = 0;
+          updateData[`syncMetadata.collections.${collection}.lastError`] = null;
+          updateData[`syncMetadata.collections.${collection}.errorCode`] = null;
+        }
+
+        searchLogger.info('Tool marked as stale - semantic fields changed', {
+          service: 'tool-crud-service',
+          toolId: id,
+          changedFields,
+          affectedCollections,
+        });
+      }
+    }
 
     const tool = await Tool.findOneAndUpdate(
       { $or: [{ id: id }, { slug: id }] },
@@ -259,12 +289,10 @@ class ToolCrudService {
         service: 'tool-crud-service',
         toolId: id,
         changedFields,
+        newSyncStatus: tool.syncMetadata?.overallStatus,
       });
 
-      // Fire-and-forget: Sync to Qdrant only if tool is approved
-      if (tool.approvalStatus === 'approved' && changedFields.length > 0) {
-        this.triggerSyncWithChanges(tool, changedFields);
-      }
+      // Manual sync only via UI button - automatic sync removed
     }
 
     return tool;

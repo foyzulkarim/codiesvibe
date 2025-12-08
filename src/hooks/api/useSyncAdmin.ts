@@ -229,11 +229,19 @@ export function useTriggerSweep() {
 
   return useMutation({
     mutationFn: async (): Promise<{ message: string; result: SweepResult }> => {
-      const response = await searchClient.post<{ message: string; result: SweepResult }>('/sync/sweep');
+      const response = await searchClient.post<{ message: string; result: SweepResult }>(
+        '/sync/sweep',
+        {},
+        {
+          timeout: 600000, // 10 minutes timeout for sweep operations (processes multiple tools)
+        }
+      );
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       const { result } = data;
       toast.success(
         `Sync sweep completed: ${result.succeeded} synced, ${result.failed} failed, ${result.skipped} skipped`
@@ -254,12 +262,18 @@ export function useRetryToolSync() {
   return useMutation({
     mutationFn: async (toolId: string): Promise<{ message: string; toolId: string; success: boolean }> => {
       const response = await searchClient.post<{ message: string; toolId: string; success: boolean }>(
-        `/sync/retry/${toolId}`
+        `/sync/retry/${toolId}`,
+        {},
+        {
+          timeout: 300000, // 5 minutes timeout for sync operations
+        }
       );
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.success(`Sync retry completed for tool: ${data.toolId}`);
     },
     onError: (error: Error) => {
@@ -276,11 +290,19 @@ export function useRetryAllFailed() {
 
   return useMutation({
     mutationFn: async (): Promise<{ message: string; result: RetryAllResult }> => {
-      const response = await searchClient.post<{ message: string; result: RetryAllResult }>('/sync/retry-all');
+      const response = await searchClient.post<{ message: string; result: RetryAllResult }>(
+        '/sync/retry-all',
+        {},
+        {
+          timeout: 600000, // 10 minutes timeout for retry-all operations
+        }
+      );
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       const { result } = data;
       toast.success(
         `Retry all completed: ${result.succeeded} succeeded, ${result.failed} failed`
@@ -306,7 +328,9 @@ export function useResetRetryCount() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.tool(data.toolId) });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.success(`Retry count reset for tool: ${data.toolId}`);
     },
     onError: (error: Error) => {
@@ -329,7 +353,9 @@ export function useMarkToolAsStale() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.success(`Tool marked as stale: ${data.toolId}`);
     },
     onError: (error: Error) => {
@@ -353,7 +379,9 @@ export function useBatchMarkAsStale() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.success(
         `Batch stale operation: ${data.successCount}/${data.totalTools} tools marked as stale`
       );
@@ -380,12 +408,17 @@ export function useBatchSync() {
     }): Promise<{ message: string } & BatchSyncResult> => {
       const response = await searchClient.post<{ message: string } & BatchSyncResult>(
         '/sync/batch/sync',
-        { toolIds, collections }
+        { toolIds, collections },
+        {
+          timeout: 600000, // 10 minutes timeout for batch sync operations
+        }
       );
       return response.data;
     },
     onSuccess: (data) => {
+      // Invalidate sync queries AND tools queries to update sync status in tools list
       queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.success(
         `Batch sync completed: ${data.successCount}/${data.totalTools} tools synced`
       );
