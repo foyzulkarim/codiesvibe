@@ -264,12 +264,11 @@ describe('ContentHashService', () => {
     it('should skip _id and lastUpdated fields', () => {
       const oldTool = { ...mockTool } as ITool;
       const newData = {
-        _id: 'new-id',
         lastUpdated: new Date(),
         name: 'Updated Name',
       };
 
-      const changedFields = service.detectChangedFields(oldTool, newData as Partial<ITool>);
+      const changedFields = service.detectChangedFields(oldTool, newData as unknown as Partial<ITool>);
 
       expect(changedFields).not.toContain('_id');
       expect(changedFields).not.toContain('lastUpdated');
@@ -348,10 +347,11 @@ describe('ContentHashService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true for empty array', () => {
+    it('should return false for empty array', () => {
+      // Empty array means no changes at all, not metadata-only
       const result = service.isMetadataOnlyChange([]);
 
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
   });
 

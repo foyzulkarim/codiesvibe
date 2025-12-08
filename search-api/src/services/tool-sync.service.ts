@@ -402,9 +402,12 @@ export class ToolSyncService {
    * @param toolId - MongoDB _id or tool slug
    */
   async retryFailedSync(toolId: string): Promise<ToolSyncResult> {
-    // Find the tool
+    // Find the tool - support both _id and id/slug
     const tool = await Tool.findOne({
-      _id: toolId,
+      $or: [{ _id: toolId }, { id: toolId }, { slug: toolId }],
+    }).catch(() => {
+      // If _id cast fails, try by id/slug only
+      return Tool.findOne({ $or: [{ id: toolId }, { slug: toolId }] });
     });
 
     if (!tool) {

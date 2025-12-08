@@ -245,9 +245,12 @@ describe('ToolSyncService', () => {
     it('should handle embedding service failure', async () => {
       const tool = await Tool.create(mockToolData);
 
-      (embeddingService.generateEmbedding as jest.Mock).mockRejectedValueOnce(
-        new Error('Embedding generation failed')
-      );
+      // Mock to reject for all 4 collection attempts
+      (embeddingService.generateEmbedding as jest.Mock)
+        .mockRejectedValueOnce(new Error('Embedding generation failed'))
+        .mockRejectedValueOnce(new Error('Embedding generation failed'))
+        .mockRejectedValueOnce(new Error('Embedding generation failed'))
+        .mockRejectedValueOnce(new Error('Embedding generation failed'));
 
       const result = await service.syncTool(tool, { force: true });
 
@@ -257,9 +260,12 @@ describe('ToolSyncService', () => {
     it('should handle qdrant upsert failure', async () => {
       const tool = await Tool.create(mockToolData);
 
-      (qdrantService.upsertToolVector as jest.Mock).mockRejectedValueOnce(
-        new Error('Qdrant upsert failed')
-      );
+      // Mock to reject for all 4 collection attempts
+      (qdrantService.upsertToolVector as jest.Mock)
+        .mockRejectedValueOnce(new Error('Qdrant upsert failed'))
+        .mockRejectedValueOnce(new Error('Qdrant upsert failed'))
+        .mockRejectedValueOnce(new Error('Qdrant upsert failed'))
+        .mockRejectedValueOnce(new Error('Qdrant upsert failed'));
 
       const result = await service.syncTool(tool, { force: true });
 
@@ -302,19 +308,23 @@ describe('ToolSyncService', () => {
     it('should skip sync when only metadata fields changed', async () => {
       const tool = await Tool.create(mockToolData);
 
-      // pricing is metadata-only
+      // pricing is metadata-only - should do payload update (not full resync)
       const result = await service.syncAffectedCollections(tool, ['pricing', 'website']);
 
-      expect(result.skippedCount).toBe(4);
+      // Payload update is performed for all 4 collections (without embedding regeneration)
+      expect(result.syncedCount).toBe(4);
+      expect(embeddingService.generateEmbedding).not.toHaveBeenCalled();
     });
 
     it('should skip all when no semantic fields changed', async () => {
       const tool = await Tool.create(mockToolData);
 
+      // Empty changed fields means no semantic changes - should skip entirely
       const result = await service.syncAffectedCollections(tool, []);
 
       expect(result.skippedCount).toBe(4);
       expect(result.syncedCount).toBe(0);
+      expect(embeddingService.generateEmbedding).not.toHaveBeenCalled();
     });
   });
 

@@ -200,6 +200,10 @@ export class ContentHashService {
    * @returns True if all changes are metadata-only
    */
   isMetadataOnlyChange(changedFields: string[]): boolean {
+    // Empty array means no changes, not metadata-only
+    if (changedFields.length === 0) {
+      return false;
+    }
     return changedFields.every((field) => METADATA_ONLY_FIELDS.includes(field));
   }
 
