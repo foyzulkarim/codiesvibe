@@ -48,9 +48,9 @@ export const apiConfig = {
 
   /**
    * Global API timeout in milliseconds
-   * Default: 10000 (10 seconds)
+   * Default: 300000 (5 minutes) - increased for AI operations
    */
-  timeout: getEnvNumber('VITE_API_TIMEOUT', 10000),
+  timeout: getEnvNumber('VITE_API_TIMEOUT', 300000),
 
   /**
    * Search-specific configuration
@@ -76,9 +76,9 @@ export const apiConfig = {
 
     /**
      * Search request timeout in milliseconds
-     * Default: 60000 (60 seconds) - longer for AI-powered search
+     * Default: 600000 (10 minutes) - longer for AI-powered search with LLM calls
      */
-    timeout: getEnvNumber('VITE_SEARCH_TIMEOUT', 60000),
+    timeout: getEnvNumber('VITE_SEARCH_TIMEOUT', 600000),
   },
 
   /**

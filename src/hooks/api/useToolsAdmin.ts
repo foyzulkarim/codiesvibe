@@ -26,6 +26,37 @@ export interface PaginatedToolsResponse {
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
+// ============================================
+// SYNC METADATA TYPES
+// ============================================
+
+export type SyncStatus = 'synced' | 'pending' | 'failed' | 'stale';
+export type SyncCollectionName = 'tools' | 'functionality' | 'usecases' | 'interface';
+
+export interface CollectionSyncStatus {
+  status: SyncStatus;
+  lastSyncedAt: string | null;
+  lastSyncAttemptAt: string | null;
+  lastError: string | null;
+  errorCode: string | null;
+  retryCount: number;
+  contentHash: string;
+  vectorVersion: number;
+}
+
+export interface SyncMetadata {
+  overallStatus: SyncStatus;
+  collections: {
+    tools: CollectionSyncStatus;
+    functionality: CollectionSyncStatus;
+    usecases: CollectionSyncStatus;
+    interface: CollectionSyncStatus;
+  };
+  lastModifiedFields: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Tool {
   _id?: string;
   id: string;
@@ -57,6 +88,8 @@ export interface Tool {
   reviewedBy?: string;
   reviewedAt?: string;
   rejectionReason?: string;
+  // Sync metadata
+  syncMetadata?: SyncMetadata;
 }
 
 export interface ToolsQueryParams {
@@ -194,7 +227,8 @@ export function useCreateTool() {
       return response.data;
     },
     onSuccess: (newTool) => {
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      // Invalidate all tools-admin queries (lists, admin, my-tools, details)
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       const statusMessage =
         newTool.approvalStatus === 'approved'
           ? 'and approved'
@@ -225,10 +259,8 @@ export function useUpdateTool() {
       return response.data;
     },
     onSuccess: (updatedTool) => {
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: toolsAdminKeys.detail(updatedTool.id),
-      });
+      // Invalidate all tools-admin queries (lists, admin, my-tools, details)
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       toast.success(`Tool "${updatedTool.name}" updated successfully`);
     },
     onError: (error: Error) => {
@@ -248,7 +280,8 @@ export function useDeleteTool() {
       await searchClient.delete(`/tools/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.lists() });
+      // Invalidate all tools-admin queries (lists, admin, my-tools, details)
+      queryClient.invalidateQueries({ queryKey: toolsAdminKeys.all });
       toast.success('Tool deleted successfully');
     },
     onError: (error: Error) => {

@@ -1,6 +1,7 @@
 #!/usr/bin/env ts-node
 
 import 'dotenv/config';
+import { fileURLToPath } from 'url';
 import { connectToQdrant } from '#config/database';
 import { CollectionConfigService } from '#services/collection-config.service';
 
@@ -72,7 +73,11 @@ async function createCollections() {
 }
 
 // Run the script
-if (require.main === module) {
+// ES module equivalent of: if (require.main === module)
+const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
+                     import.meta.url.endsWith(process.argv[1]);
+
+if (isMainModule) {
   createCollections().catch(console.error);
 }
 

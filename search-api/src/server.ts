@@ -13,16 +13,19 @@ import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware.js
 import { limiter, searchLimiter, toolsMutationLimiter } from "./middleware/rate-limiters.js";
 import { v4 as uuidv4 } from 'uuid';
 import { clerkMiddleware } from '@clerk/express';
+import { qdrantService } from "./services/qdrant.service.js";
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
 import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph.js";
 
 // Import tools routes for CRUD operations
 import toolsRoutes from "./routes/tools.routes.js";
+import syncRoutes from "./routes/sync.routes.js";
 
 // Import health check and graceful shutdown services
 import { healthCheckService } from "./services/health-check.service.js";
 import { gracefulShutdown } from "./services/graceful-shutdown.service.js";
+import { syncWorkerService } from "./services/sync-worker.service.js";
 import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database.js";
 import { metricsService } from "./services/metrics.service.js";
 import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor.js";
@@ -608,6 +611,22 @@ searchLogger.info('Tools CRUD routes mounted at /api/tools', {
   endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools (protected)', 'PATCH /api/tools/:id (protected)', 'DELETE /api/tools/:id (protected)', 'GET /api/tools/vocabularies'],
 });
 
+// Mount sync routes (admin only)
+app.use('/api/sync', syncRoutes);
+searchLogger.info('Sync admin routes mounted at /api/sync', {
+  service: 'search-api',
+  endpoints: [
+    'GET /api/sync/status (admin)',
+    'GET /api/sync/stats (admin)',
+    'GET /api/sync/worker (admin)',
+    'POST /api/sync/sweep (admin)',
+    'POST /api/sync/retry/:toolId (admin)',
+    'POST /api/sync/retry-all (admin)',
+    'GET /api/sync/failed (admin)',
+    'GET /api/sync/pending (admin)',
+  ],
+});
+
 // Enhanced query sanitization function
 function sanitizeQuery(query: string): string {
   return query
@@ -839,6 +858,32 @@ async function startServer() {
     searchLogger.info('✅ Qdrant client registered with health check service', {
       service: 'search-api',
     });
+
+    // Ensure Qdrant collections exist (opt-in via ENSURE_QDRANT_COLLECTIONS=true)
+    const ensureCollections = process.env.ENSURE_QDRANT_COLLECTIONS === 'true';
+    if (ensureCollections) {
+      try {
+        searchLogger.info('🔧 Ensuring Qdrant collections exist...', {
+          service: 'search-api',
+        });
+        const results = await qdrantService.createMultiCollections();
+        const successCount = results.filter(r => r.success).length;
+        searchLogger.info(`✅ Qdrant collections ready: ${successCount}/4 collections available`, {
+          service: 'search-api',
+          results: results.map(r => ({ collection: r.collection, success: r.success, message: r.message })),
+        });
+      } catch (error) {
+        // Log error but don't crash the server
+        searchLogger.error('⚠️  Failed to ensure Qdrant collections (server will continue)', error as Error, {
+          service: 'search-api',
+        });
+      }
+    } else {
+      searchLogger.info('⚠️  Qdrant collection auto-creation disabled (set ENSURE_QDRANT_COLLECTIONS=true to enable)', {
+        service: 'search-api',
+        note: 'Run "npm run create-collections" manually if needed',
+      });
+    }
   } else {
     searchLogger.warn('⚠️  Qdrant client not available for health checks', {
       service: 'search-api',
@@ -858,6 +903,11 @@ async function startServer() {
       searchLogger.info('🔄 Executing beforeShutdown tasks', {
         service: 'search-api',
       });
+      // Stop sync worker first to prevent new operations
+      syncWorkerService.stop();
+      searchLogger.info('🛑 Sync worker stopped', {
+        service: 'search-api',
+      });
       // Shutdown circuit breakers
       await circuitBreakerManager.shutdown();
     },
@@ -875,6 +925,21 @@ async function startServer() {
     timeout: '30s',
     signals: ['SIGTERM', 'SIGINT'],
   });
+
+  // Start sync worker for background sync operations
+  // Default: DISABLED (opt-in via ENABLE_SYNC_WORKER=true)
+  const enableSyncWorker = process.env.ENABLE_SYNC_WORKER === 'true';
+  if (enableSyncWorker) {
+    syncWorkerService.start();
+    searchLogger.info('✅ Sync worker started for background Qdrant synchronization', {
+      service: 'search-api',
+      workerStatus: syncWorkerService.getStatus(),
+    });
+  } else {
+    searchLogger.info('⚠️  Sync worker disabled (set ENABLE_SYNC_WORKER=true to enable)', {
+      service: 'search-api',
+    });
+  }
 }
 
 // Start the server

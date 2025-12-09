@@ -128,11 +128,18 @@ const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => 
     console.log('[AI Search] Query:', searchQueryStr);
   }
 
-  const response = await searchClient.post<AiSearchResponse>('/search', {
-    query: searchQueryStr,
-    limit: apiConfig.search.defaultLimit,
-    debug: apiConfig.features.debug,
-  });
+  const response = await searchClient.post<AiSearchResponse>(
+    '/search',
+    {
+      query: searchQueryStr,
+      limit: apiConfig.search.defaultLimit,
+      debug: apiConfig.features.debug,
+    },
+    {
+      // Use search-specific timeout (10 minutes) for AI operations
+      timeout: apiConfig.search.timeout,
+    }
+  );
 
   return response.data;
 };

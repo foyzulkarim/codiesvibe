@@ -540,7 +540,7 @@ export class QdrantService {
     vectorType: string
   ): Promise<void> {
     if (!this.client) throw new Error("Qdrant client not connected");
-    console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
+    console.log(`[QdrantService] Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
       embedding,
       payload,
     });
@@ -550,7 +550,7 @@ export class QdrantService {
 
       const pointId = this.toPointId(toolId);
       const collectionName = getCollectionName(vectorType);
-      console.log(`Upserting tool vector for type ${vectorType} with ID ${toolId} to collection ${collectionName}`);
+      console.log(`[QdrantService] Upserting tool vector for type ${vectorType} with ID ${toolId} to collection ${collectionName}`);
       await this.client.upsert(collectionName, {
         points: [
           {
@@ -1668,6 +1668,245 @@ export class QdrantService {
    */
   getEnabledCollections(): string[] {
     return this.collectionConfig.getEnabledCollectionNames();
+  }
+
+  // ========================================
+  // PAYLOAD-ONLY UPDATE METHODS
+  // ========================================
+
+  /**
+   * Update only the payload for a tool in a specific collection (no embedding regeneration)
+   *
+   * This uses Qdrant's set_payload operation to update metadata without
+   * affecting the vector embedding. Useful for metadata-only changes.
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param payload - New payload data to set
+   * @param collectionName - Target collection name
+   * @returns Success status
+   */
+  async updatePayloadOnly(
+    toolId: string,
+    payload: Record<string, unknown>,
+    collectionName: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const pointId = this.toPointId(toolId);
+
+      // Add timestamp to payload
+      const payloadWithTimestamp = {
+        ...payload,
+        lastPayloadUpdate: new Date().toISOString(),
+      };
+
+      // Type assertion needed as setPayload exists at runtime but not in TS definitions
+      await (this.client as any).setPayload(collectionName, {
+        points: [pointId],
+        payload: payloadWithTimestamp,
+      });
+
+      console.log(`✅ Updated payload for tool ${toolId} in collection ${collectionName}`);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to update payload for ${toolId} in ${collectionName}:`, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Update payload for a tool across all multi-collection architecture collections
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param payload - New payload data to set
+   * @param collections - Optional specific collections (defaults to all enabled)
+   * @returns Results for each collection
+   */
+  async updatePayloadOnlyMultiCollection(
+    toolId: string,
+    payload: Record<string, unknown>,
+    collections?: string[]
+  ): Promise<{
+    success: boolean;
+    results: Record<string, { success: boolean; error?: string }>;
+    successCount: number;
+    failedCount: number;
+  }> {
+    const targetCollections = collections || this.collectionConfig.getEnabledCollectionNames();
+    const results: Record<string, { success: boolean; error?: string }> = {};
+    let successCount = 0;
+    let failedCount = 0;
+
+    console.log(`📝 Updating payload for tool ${toolId} across ${targetCollections.length} collections...`);
+
+    for (const collectionName of targetCollections) {
+      const result = await this.updatePayloadOnly(toolId, payload, collectionName);
+      results[collectionName] = result;
+
+      if (result.success) {
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    console.log(`✅ Payload update completed: ${successCount} successful, ${failedCount} failed`);
+
+    return {
+      success: failedCount === 0,
+      results,
+      successCount,
+      failedCount,
+    };
+  }
+
+  /**
+   * Overwrite entire payload for a tool in a specific collection
+   *
+   * Unlike updatePayloadOnly which merges, this replaces the entire payload.
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param payload - Complete new payload
+   * @param collectionName - Target collection name
+   */
+  async overwritePayload(
+    toolId: string,
+    payload: Record<string, unknown>,
+    collectionName: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const pointId = this.toPointId(toolId);
+
+      // Type assertion needed as overwritePayload exists at runtime but not in TS definitions
+      await (this.client as any).overwritePayload(collectionName, {
+        points: [pointId],
+        payload: {
+          ...payload,
+          lastPayloadOverwrite: new Date().toISOString(),
+        },
+      });
+
+      console.log(`✅ Overwrote payload for tool ${toolId} in collection ${collectionName}`);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to overwrite payload for ${toolId} in ${collectionName}:`, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Delete specific payload fields for a tool
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param fields - Array of field names to delete
+   * @param collectionName - Target collection name
+   */
+  async deletePayloadFields(
+    toolId: string,
+    fields: string[],
+    collectionName: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const pointId = this.toPointId(toolId);
+
+      // Type assertion needed as deletePayload exists at runtime but not in TS definitions
+      await (this.client as any).deletePayload(collectionName, {
+        points: [pointId],
+        keys: fields,
+      });
+
+      console.log(`✅ Deleted ${fields.length} payload fields for tool ${toolId} in collection ${collectionName}`);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to delete payload fields for ${toolId} in ${collectionName}:`, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Get the current payload for a tool from a specific collection
+   *
+   * Useful for checking current state before updates.
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param collectionName - Target collection name
+   */
+  async getToolPayload(
+    toolId: string,
+    collectionName: string
+  ): Promise<{ success: boolean; payload?: Record<string, unknown>; error?: string }> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const pointId = this.toPointId(toolId);
+
+      const result = await this.client.retrieve(collectionName, {
+        ids: [pointId],
+        with_payload: true,
+        with_vector: false,
+      });
+
+      if (result.length === 0) {
+        return { success: false, error: 'Point not found' };
+      }
+
+      return {
+        success: true,
+        payload: result[0].payload as Record<string, unknown>,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to get payload for ${toolId} in ${collectionName}:`, errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Check if a tool exists in a collection
+   *
+   * @param toolId - Tool ID (slug-based)
+   * @param collectionName - Target collection name
+   */
+  async toolExistsInCollection(toolId: string, collectionName: string): Promise<boolean> {
+    if (!this.client) throw new Error("Qdrant client not connected");
+
+    try {
+      const pointId = this.toPointId(toolId);
+
+      const result = await this.client.retrieve(collectionName, {
+        ids: [pointId],
+        with_payload: false,
+        with_vector: false,
+      });
+
+      return result.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get tool existence status across all collections
+   *
+   * @param toolId - Tool ID (slug-based)
+   */
+  async getToolSyncStatus(toolId: string): Promise<Record<string, boolean>> {
+    const collections = this.collectionConfig.getEnabledCollectionNames();
+    const status: Record<string, boolean> = {};
+
+    for (const collectionName of collections) {
+      status[collectionName] = await this.toolExistsInCollection(toolId, collectionName);
+    }
+
+    return status;
   }
 }
 

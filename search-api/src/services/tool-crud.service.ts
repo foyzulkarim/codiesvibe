@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Tool, ITool, ApprovalStatus } from '../models/tool.model.js';
+import { Tool, ITool, ApprovalStatus, createDefaultSyncMetadata } from '../models/tool.model.js';
 import {
   CreateToolInput,
   UpdateToolInput,
@@ -8,6 +8,8 @@ import {
   GetMyToolsQuery,
 } from '../schemas/tool.schema.js';
 import { searchLogger } from '../config/logger.js';
+import { toolSyncService } from './tool-sync.service.js';
+import { contentHashService } from './content-hash.service.js';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -91,6 +93,9 @@ class ToolCrudService {
     // Admin-created tools are auto-approved
     const approvalStatus: ApprovalStatus = isAdmin ? 'approved' : 'pending';
 
+    // Initialize sync metadata with default state
+    const syncMetadata = createDefaultSyncMetadata();
+
     const toolData = {
       ...data,
       slug: data.slug || data.id,
@@ -98,6 +103,7 @@ class ToolCrudService {
       dateAdded: new Date(),
       lastUpdated: new Date(),
       approvalStatus,
+      syncMetadata,
       // If admin created and approved, set review info
       ...(isAdmin && {
         reviewedBy: clerkUserId,
@@ -115,6 +121,11 @@ class ToolCrudService {
       createdBy: clerkUserId,
       approvalStatus,
     });
+
+    // Fire-and-forget: Sync to Qdrant only if tool is approved
+    if (approvalStatus === 'approved') {
+      this.triggerSync(savedTool, 'create');
+    }
 
     return savedTool;
   }
@@ -215,36 +226,89 @@ class ToolCrudService {
 
   /**
    * Update a tool by ID
+   * Uses field-specific change detection to optimize Qdrant sync
    */
   async updateTool(id: string, data: UpdateToolInput): Promise<ITool | null> {
     await this.ensureConnection();
 
-    const updateData = {
+    // First, get the existing tool to detect changes
+    const existingTool = await Tool.findOne({ $or: [{ id: id }, { slug: id }] });
+    if (!existingTool) {
+      return null;
+    }
+
+    // Detect which fields changed
+    // Type assertion needed because UpdateToolInput from Zod may have slightly different type inference
+    const changedFields = contentHashService.detectChangedFields(existingTool, data as Partial<ITool>);
+
+    // Build base update data
+    const updateData: Record<string, any> = {
       ...data,
       lastUpdated: new Date(),
+      'syncMetadata.lastModifiedFields': changedFields,
+      'syncMetadata.updatedAt': new Date(),
     };
+
+    // ONLY mark as stale if:
+    // 1. Tool is approved (only approved tools sync to Qdrant)
+    // 2. Semantic fields changed (not just metadata like pricing/URLs)
+    if (existingTool.approvalStatus === 'approved' && changedFields.length > 0) {
+      const hasSemanticChanges = contentHashService.hasSemanticChanges(changedFields);
+
+      if (hasSemanticChanges) {
+        // Get affected collections
+        const affectedCollections = contentHashService.getAffectedCollections(changedFields);
+
+        // Mark overall status as stale
+        updateData['syncMetadata.overallStatus'] = 'stale';
+
+        // Mark ONLY affected collections as stale
+        for (const collection of affectedCollections) {
+          updateData[`syncMetadata.collections.${collection}.status`] = 'stale';
+          updateData[`syncMetadata.collections.${collection}.retryCount`] = 0;
+          updateData[`syncMetadata.collections.${collection}.lastError`] = null;
+          updateData[`syncMetadata.collections.${collection}.errorCode`] = null;
+        }
+
+        searchLogger.info('Tool marked as stale - semantic fields changed', {
+          service: 'tool-crud-service',
+          toolId: id,
+          changedFields,
+          affectedCollections,
+        });
+      }
+    }
 
     const tool = await Tool.findOneAndUpdate(
       { $or: [{ id: id }, { slug: id }] },
       { $set: updateData },
       { new: true, runValidators: true }
-    ).lean();
+    );
 
     if (tool) {
       searchLogger.info('Tool updated successfully', {
         service: 'tool-crud-service',
         toolId: id,
+        changedFields,
+        newSyncStatus: tool.syncMetadata?.overallStatus,
       });
+
+      // Manual sync only via UI button - automatic sync removed
     }
 
-    return tool as unknown as ITool | null;
+    return tool;
   }
 
   /**
    * Delete a tool by ID
+   * Also removes from all Qdrant collections
    */
   async deleteTool(id: string): Promise<boolean> {
     await this.ensureConnection();
+
+    // Get the tool ID before deleting (needed for Qdrant cleanup)
+    const existingTool = await Tool.findOne({ $or: [{ id: id }, { slug: id }] });
+    const toolSlugId = existingTool?.id || id;
 
     const result = await Tool.findOneAndDelete({
       $or: [{ id: id }, { slug: id }],
@@ -255,6 +319,10 @@ class ToolCrudService {
         service: 'tool-crud-service',
         toolId: id,
       });
+
+      // Fire-and-forget: Delete from Qdrant
+      this.triggerDelete(toolSlugId);
+
       return true;
     }
 
@@ -413,6 +481,7 @@ class ToolCrudService {
 
   /**
    * Approve a tool (admin only)
+   * Triggers sync to Qdrant since the tool becomes visible
    */
   async approveTool(id: string, adminUserId: string): Promise<ITool | null> {
     await this.ensureConnection();
@@ -427,10 +496,12 @@ class ToolCrudService {
           lastUpdated: new Date(),
           // Clear rejection reason if previously rejected
           rejectionReason: undefined,
+          // Reset sync status since this is a new approval
+          'syncMetadata.overallStatus': 'pending',
         },
       },
       { new: true, runValidators: true }
-    ).lean();
+    );
 
     if (tool) {
       searchLogger.info('Tool approved', {
@@ -438,16 +509,24 @@ class ToolCrudService {
         toolId: id,
         approvedBy: adminUserId,
       });
+
+      // Fire-and-forget: Sync to Qdrant since tool is now approved
+      this.triggerSync(tool, 'approve');
     }
 
-    return tool as unknown as ITool | null;
+    return tool;
   }
 
   /**
    * Reject a tool (admin only)
+   * Removes from Qdrant if previously synced
    */
   async rejectTool(id: string, adminUserId: string, reason: string): Promise<ITool | null> {
     await this.ensureConnection();
+
+    // Get the existing tool to check if it was previously approved
+    const existingTool = await Tool.findOne({ $or: [{ id: id }, { slug: id }] });
+    const wasApproved = existingTool?.approvalStatus === 'approved';
 
     const tool = await Tool.findOneAndUpdate(
       { $or: [{ id: id }, { slug: id }] },
@@ -458,10 +537,12 @@ class ToolCrudService {
           reviewedAt: new Date(),
           rejectionReason: reason,
           lastUpdated: new Date(),
+          // Reset sync status
+          'syncMetadata.overallStatus': 'pending',
         },
       },
       { new: true, runValidators: true }
-    ).lean();
+    );
 
     if (tool) {
       searchLogger.info('Tool rejected', {
@@ -470,9 +551,90 @@ class ToolCrudService {
         rejectedBy: adminUserId,
         reason,
       });
+
+      // Fire-and-forget: Remove from Qdrant if it was previously approved
+      if (wasApproved) {
+        this.triggerDelete(tool.id);
+      }
     }
 
-    return tool as unknown as ITool | null;
+    return tool;
+  }
+
+  // ============================================
+  // PRIVATE SYNC HELPER METHODS
+  // ============================================
+
+  /**
+   * Fire-and-forget sync trigger for create/approve operations
+   */
+  private triggerSync(tool: ITool, operation: 'create' | 'approve'): void {
+    toolSyncService
+      .syncTool(tool, { force: true })
+      .then((result) => {
+        searchLogger.info(`[${operation}] Qdrant sync completed`, {
+          service: 'tool-crud-service',
+          toolId: tool.id,
+          success: result.success,
+          synced: result.syncedCount,
+          failed: result.failedCount,
+        });
+      })
+      .catch((error) => {
+        searchLogger.error(`[${operation}] Qdrant sync failed`, error, {
+          service: 'tool-crud-service',
+          toolId: tool.id,
+        });
+      });
+  }
+
+  /**
+   * Fire-and-forget sync trigger for update operations with field detection
+   */
+  private triggerSyncWithChanges(tool: ITool, changedFields: string[]): void {
+    toolSyncService
+      .syncAffectedCollections(tool, changedFields)
+      .then((result) => {
+        searchLogger.info('[update] Qdrant sync completed', {
+          service: 'tool-crud-service',
+          toolId: tool.id,
+          changedFields,
+          success: result.success,
+          synced: result.syncedCount,
+          failed: result.failedCount,
+          skipped: result.skippedCount,
+        });
+      })
+      .catch((error) => {
+        searchLogger.error('[update] Qdrant sync failed', error, {
+          service: 'tool-crud-service',
+          toolId: tool.id,
+          changedFields,
+        });
+      });
+  }
+
+  /**
+   * Fire-and-forget delete trigger
+   */
+  private triggerDelete(toolId: string): void {
+    toolSyncService
+      .deleteToolFromQdrant(toolId)
+      .then((result) => {
+        searchLogger.info('[delete] Qdrant cleanup completed', {
+          service: 'tool-crud-service',
+          toolId,
+          success: result.success,
+          deleted: result.syncedCount,
+          failed: result.failedCount,
+        });
+      })
+      .catch((error) => {
+        searchLogger.error('[delete] Qdrant cleanup failed', error, {
+          service: 'tool-crud-service',
+          toolId,
+        });
+      });
   }
 }
 
