@@ -248,6 +248,9 @@ export function useTriggerSweep() {
       );
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - some tools may have been processed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to trigger sync sweep');
     },
   });
@@ -277,6 +280,9 @@ export function useRetryToolSync() {
       toast.success(`Sync retry completed for tool: ${data.toolId}`);
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - the sync status was updated in MongoDB
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to retry sync');
     },
   });
@@ -309,6 +315,9 @@ export function useRetryAllFailed() {
       );
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - some tools may have been processed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to retry all failed syncs');
     },
   });
@@ -334,6 +343,9 @@ export function useResetRetryCount() {
       toast.success(`Retry count reset for tool: ${data.toolId}`);
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - the database state may have changed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to reset retry count');
     },
   });
@@ -359,6 +371,9 @@ export function useMarkToolAsStale() {
       toast.success(`Tool marked as stale: ${data.toolId}`);
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - the database state may have changed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to mark tool as stale');
     },
   });
@@ -387,6 +402,9 @@ export function useBatchMarkAsStale() {
       );
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - some tools may have been processed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to batch mark tools as stale');
     },
   });
@@ -424,6 +442,9 @@ export function useBatchSync() {
       );
     },
     onError: (error: Error) => {
+      // Still invalidate queries on error - some tools may have been processed
+      queryClient.invalidateQueries({ queryKey: syncAdminKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['tools-admin'] });
       toast.error(error.message || 'Failed to batch sync tools');
     },
   });

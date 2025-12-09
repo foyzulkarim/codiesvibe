@@ -12,6 +12,7 @@ import {
   SyncStatus,
 } from '@/hooks/api/useToolsAdmin';
 import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
+import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
 import { useClerk } from '@clerk/clerk-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
@@ -297,6 +298,9 @@ export default function ToolsList() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Sync health widget - admin only */}
+          {isAdmin && <SyncStatusWidget />}
+
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <form onSubmit={handleSearch} className="flex gap-2 flex-1">

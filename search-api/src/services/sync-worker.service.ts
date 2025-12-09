@@ -7,6 +7,7 @@
 
 import { Tool, ITool, SyncCollectionName, SyncStatus } from '../models/tool.model.js';
 import { toolSyncService } from './tool-sync.service.js';
+import { toolCrudService } from './tool-crud.service.js';
 import { searchLogger } from '../config/logger.js';
 
 // ============================================
@@ -203,6 +204,9 @@ export class SyncWorkerService {
     };
 
     try {
+      // Ensure Mongoose connection is established before database operations
+      await toolCrudService.ensureConnection();
+
       searchLogger.info('[SyncWorker] Starting sweep', { service: 'sync-worker' });
 
       // Find tools that need sync (approved tools with failed/pending status)
@@ -375,7 +379,7 @@ export class SyncWorkerService {
 
     for (const collection of collections) {
       const status = tool.syncMetadata?.collections?.[collection]?.status;
-      if (status === 'pending' || status === 'failed') {
+      if (status === 'pending' || status === 'failed' || status === 'stale') {
         needsSync.push(collection);
       }
     }
@@ -412,6 +416,9 @@ export class SyncWorkerService {
     failed: number;
     errors: Array<{ toolId: string; error: string }>;
   }> {
+    // Ensure Mongoose connection is established
+    await toolCrudService.ensureConnection();
+
     const tools = await Tool.find({
       approvalStatus: 'approved',
       'syncMetadata.overallStatus': 'failed',
@@ -451,6 +458,9 @@ export class SyncWorkerService {
     failed: number;
     byCollection: Record<SyncCollectionName, { synced: number; pending: number; failed: number }>;
   }> {
+    // Ensure Mongoose connection is established
+    await toolCrudService.ensureConnection();
+
     const [total, synced, pending, failed] = await Promise.all([
       Tool.countDocuments({ approvalStatus: 'approved' }),
       Tool.countDocuments({
@@ -507,6 +517,9 @@ export class SyncWorkerService {
    * Reset retry count for a tool (allows immediate retry)
    */
   async resetRetryCount(toolId: string): Promise<boolean> {
+    // Ensure Mongoose connection is established
+    await toolCrudService.ensureConnection();
+
     const result = await Tool.updateOne(
       { $or: [{ id: toolId }, { slug: toolId }] },
       {
@@ -526,6 +539,9 @@ export class SyncWorkerService {
    * Mark a tool as stale (needs re-sync)
    */
   async markToolAsStale(toolId: string): Promise<boolean> {
+    // Ensure Mongoose connection is established
+    await toolCrudService.ensureConnection();
+
     const result = await Tool.updateOne(
       { $or: [{ id: toolId }, { slug: toolId }] },
       {

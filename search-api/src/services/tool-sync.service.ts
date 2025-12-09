@@ -21,6 +21,7 @@ import {
   SyncStatus,
   ICollectionSyncStatus,
 } from '../models/tool.model.js';
+import { toolCrudService } from './tool-crud.service.js';
 import { ToolData, ToolDataValidator } from '../types/tool.types.js';
 
 // ============================================
@@ -114,6 +115,9 @@ export class ToolSyncService {
     tool: ITool,
     options: SyncOptions = {}
   ): Promise<ToolSyncResult> {
+    // Ensure Mongoose connection is established for sync metadata updates
+    await toolCrudService.ensureConnection();
+
     const startTime = Date.now();
     const toolId = this.deriveToolId(tool);
     const collections = options.collections || this.getAllCollectionNames();
@@ -402,6 +406,9 @@ export class ToolSyncService {
    * @param toolId - MongoDB _id or tool slug
    */
   async retryFailedSync(toolId: string): Promise<ToolSyncResult> {
+    // Ensure Mongoose connection is established
+    await toolCrudService.ensureConnection();
+
     // Find the tool - support both _id and id/slug
     const tool = await Tool.findOne({
       $or: [{ _id: toolId }, { id: toolId }, { slug: toolId }],
@@ -546,9 +553,11 @@ export class ToolSyncService {
     results: CollectionSyncResult[]
   ): Promise<void> {
     try {
-      const updateData: Record<string, unknown> = {
+      // Separate $set and $inc operations - MongoDB requires $inc at top level
+      const setData: Record<string, unknown> = {
         'syncMetadata.updatedAt': new Date(),
       };
+      const incData: Record<string, number> = {};
 
       let hasFailures = false;
       let allSynced = true;
@@ -557,39 +566,46 @@ export class ToolSyncService {
         const prefix = `syncMetadata.collections.${result.collection}`;
 
         if (result.success) {
-          updateData[`${prefix}.status`] = 'synced';
-          updateData[`${prefix}.lastSyncedAt`] = new Date();
-          updateData[`${prefix}.lastError`] = null;
-          updateData[`${prefix}.errorCode`] = null;
-          updateData[`${prefix}.retryCount`] = 0;
+          setData[`${prefix}.status`] = 'synced';
+          setData[`${prefix}.lastSyncedAt`] = new Date();
+          setData[`${prefix}.lastError`] = null;
+          setData[`${prefix}.errorCode`] = null;
+          setData[`${prefix}.retryCount`] = 0;
 
           if (result.newContentHash) {
-            updateData[`${prefix}.contentHash`] = result.newContentHash;
+            setData[`${prefix}.contentHash`] = result.newContentHash;
           }
         } else {
           hasFailures = true;
           allSynced = false;
-          updateData[`${prefix}.status`] = 'failed';
-          updateData[`${prefix}.lastSyncAttemptAt`] = new Date();
-          updateData[`${prefix}.lastError`] = result.error?.substring(0, 1000);
-          updateData[`${prefix}.errorCode`] = result.errorCode;
-          updateData[`${prefix}.retryCount`] = { $inc: 1 };
+          setData[`${prefix}.status`] = 'failed';
+          setData[`${prefix}.lastSyncAttemptAt`] = new Date();
+          setData[`${prefix}.lastError`] = result.error?.substring(0, 1000);
+          setData[`${prefix}.errorCode`] = result.errorCode;
+          // Use $inc operator for retryCount increment
+          incData[`${prefix}.retryCount`] = 1;
         }
       }
 
       // Update overall status
       if (hasFailures) {
-        updateData['syncMetadata.overallStatus'] = 'failed';
+        setData['syncMetadata.overallStatus'] = 'failed';
       } else if (allSynced) {
-        updateData['syncMetadata.overallStatus'] = 'synced';
+        setData['syncMetadata.overallStatus'] = 'synced';
       } else {
-        updateData['syncMetadata.overallStatus'] = 'pending';
+        setData['syncMetadata.overallStatus'] = 'pending';
+      }
+
+      // Build update object with both operators
+      const updateOps: Record<string, unknown> = { $set: setData };
+      if (Object.keys(incData).length > 0) {
+        updateOps.$inc = incData;
       }
 
       // Perform the update
       await Tool.updateOne(
         { $or: [{ id: toolId }, { slug: toolId }] },
-        { $set: updateData }
+        updateOps
       );
     } catch (error) {
       console.error(
