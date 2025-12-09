@@ -1,5 +1,5 @@
 import { Db, ObjectId } from "mongodb";
-import { connectToMongoDB, disconnectFromMongoDB } from "../config/database";
+import { connectToMongoDB, disconnectFromMongoDB } from "../config/database.js";
 
 export class MongoDBService {
   private db: Db | null = null;
@@ -39,14 +39,15 @@ export class MongoDBService {
 
   /**
    * Get tools by IDs
+   * Only returns approved tools by default to prevent leaking unapproved tools in search results
    */
-  async getToolsByIds(ids: string[]): Promise<any[]> {
+  async getToolsByIds(ids: string[], includeUnapproved: boolean = false): Promise<any[]> {
     const db = await this.ensureConnected();
 
     try {
       const collection = db.collection("tools");
       console.log(`🗄️ MongoDB getToolsByIds called with ${ids.length} IDs:`);
-      
+
       // Split into valid ObjectId strings and non-ObjectId strings
       const validObjectIdStrings = ids.filter(id => ObjectId.isValid(id));
       const stringIds = ids.filter(id => !ObjectId.isValid(id));
@@ -70,10 +71,15 @@ export class MongoDBService {
         return [];
       }
 
+      // Only return approved tools unless explicitly requested
+      if (!includeUnapproved) {
+        query = { ...query, approvalStatus: 'approved' };
+      }
+
       console.log(`🗄️ MongoDB query:`);
       const results = await collection.find(query).toArray();
       console.log(`🗄️ MongoDB returned ${results.length} tools`);
-      
+
       // Let's also check if any tools exist with similar IDs
       if (results.length === 0 && ids.length > 0) {
         const sampleId = ids[0];
@@ -81,7 +87,7 @@ export class MongoDBService {
         const sampleTools = await collection.find({}).limit(3).toArray();
         console.log(`🗄️ Sample tools from DB:`, sampleTools.map(t => ({ id: t._id, name: t.name })));
       }
-      
+
       return results;
     } catch (error) {
       console.error("Error getting tools by IDs:", error);
@@ -154,13 +160,20 @@ export class MongoDBService {
 
   /**
    * Search tools with criteria (alias for filterTools)
+   * Only returns approved tools by default for public search results
    */
-  async searchTools(criteria: Record<string, any>, limit?: number): Promise<any[]> {
+  async searchTools(criteria: Record<string, any>, limit?: number, includeUnapproved: boolean = false): Promise<any[]> {
     const db = await this.ensureConnected();
 
     try {
       const collection = db.collection("tools");
-      let query = collection.find(criteria);
+
+      // Only return approved tools unless explicitly requested
+      const searchCriteria = includeUnapproved
+        ? criteria
+        : { ...criteria, approvalStatus: 'approved' };
+
+      let query = collection.find(searchCriteria);
 
       if (limit) {
         query = query.limit(limit);

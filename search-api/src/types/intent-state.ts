@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTROLLED_VOCABULARIES, OPERATORS } from "@/shared/constants/controlled-vocabularies";
+import { CONTROLLED_VOCABULARIES, OPERATORS } from "#shared/constants/controlled-vocabularies";
 
 /**
  * Structured representation of a user's search or discovery intent for AI tools and technologies

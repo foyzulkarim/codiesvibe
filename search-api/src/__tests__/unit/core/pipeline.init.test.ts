@@ -4,10 +4,10 @@
  * Tests the pipeline initialization logic that validates schema and wires domain handlers
  */
 
-import { initializePipeline } from '../../../core/pipeline.init';
-import { toolsSchema } from '../../../domains/tools/tools.schema';
-import { buildToolsFilters } from '../../../domains/tools/tools.filters';
-import { validateToolsQueryPlan } from '../../../domains/tools/tools.validators';
+import { initializePipeline } from '../../../core/pipeline.init.js';
+import { toolsSchema } from '../../../domains/tools/tools.schema.js';
+import { buildToolsFilters } from '../../../domains/tools/tools.filters.js';
+import { validateToolsQueryPlan } from '../../../domains/tools/tools.validators.js';
 
 // Mock console methods to suppress logs during testing
 const originalConsoleLog = console.log;

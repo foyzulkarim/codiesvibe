@@ -41,22 +41,16 @@ const getEnvString = (key: string, defaultValue: string): string => {
  */
 export const apiConfig = {
   /**
-   * Base API URL
-   * Default: https://api.codiesvibe.com/api
+   * Search API URL
+   * Default: http://localhost:4003/api
    */
-  baseUrl: getEnvString('VITE_API_URL', 'https://api.codiesvibe.com/api'),
+  searchApiUrl: getEnvString('VITE_SEARCH_API_URL', 'http://localhost:4003/api'),
 
   /**
    * Global API timeout in milliseconds
-   * Default: 10000 (10 seconds)
+   * Default: 300000 (5 minutes) - increased for AI operations
    */
-  timeout: getEnvNumber('VITE_API_TIMEOUT', 10000),
-
-  /**
-   * Enable credentials (cookies) in requests
-   * Default: false
-   */
-  enableCredentials: getEnvBoolean('VITE_ENABLE_CREDENTIALS', false),
+  timeout: getEnvNumber('VITE_API_TIMEOUT', 300000),
 
   /**
    * Search-specific configuration
@@ -82,9 +76,9 @@ export const apiConfig = {
 
     /**
      * Search request timeout in milliseconds
-     * Default: 60000 (60 seconds) - longer for AI-powered search
+     * Default: 600000 (10 minutes) - longer for AI-powered search with LLM calls
      */
-    timeout: getEnvNumber('VITE_SEARCH_TIMEOUT', 60000),
+    timeout: getEnvNumber('VITE_SEARCH_TIMEOUT', 600000),
   },
 
   /**
@@ -162,8 +156,8 @@ export const apiConfig = {
  */
 if (import.meta.env.DEV || apiConfig.features.debug) {
   console.log('🔍 API Configuration Debug:');
-  console.log('  VITE_API_URL from env:', import.meta.env.VITE_API_URL);
-  console.log('  Final baseUrl:', apiConfig.baseUrl);
+  console.log('  VITE_SEARCH_API_URL from env:', import.meta.env.VITE_SEARCH_API_URL);
+  console.log('  Final searchApiUrl:', apiConfig.searchApiUrl);
   console.log('  NODE_ENV:', import.meta.env.NODE_ENV);
   console.log('  DEV mode:', import.meta.env.DEV);
 }
@@ -175,9 +169,9 @@ if (import.meta.env.DEV || apiConfig.features.debug) {
 export const validateApiConfig = (): void => {
   const warnings: string[] = [];
 
-  // Check for default API URL in production
-  if (!import.meta.env.DEV && apiConfig.baseUrl === 'https://api.codiesvibe.com/api') {
-    warnings.push('Using default API URL in production. Set VITE_API_URL environment variable.');
+  // Check for default Search API URL in production
+  if (!import.meta.env.DEV && apiConfig.searchApiUrl === 'http://localhost:4003/api') {
+    warnings.push('Using default Search API URL in production. Set VITE_SEARCH_API_URL environment variable.');
   }
 
   // Check for very short timeout
@@ -199,9 +193,8 @@ export const validateApiConfig = (): void => {
   // Log configuration in development
   if (import.meta.env.DEV) {
     console.log('🔧 API Configuration:', {
-      baseUrl: apiConfig.baseUrl,
+      searchApiUrl: apiConfig.searchApiUrl,
       timeout: `${apiConfig.timeout}ms`,
-      credentials: apiConfig.enableCredentials,
       search: {
         debounce: `${apiConfig.search.debounceDelay}ms`,
         minLength: apiConfig.search.minLength,

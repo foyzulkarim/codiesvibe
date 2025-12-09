@@ -13,7 +13,7 @@
  * @module domains/tools
  */
 
-import { DomainSchema } from '@/core/types/schema.types';
+import { DomainSchema } from '#core/types/schema.types';
 
 /**
  * Tools Domain Schema
@@ -174,7 +174,7 @@ export const toolsSchema: DomainSchema = {
     /**
      * Pricing models
      */
-    pricingModels: ['Free', 'Freemium', 'Paid'],
+    pricingModels: ['Free', 'Paid'],
 
     /**
      * Billing periods
@@ -215,9 +215,9 @@ export const toolsSchema: DomainSchema = {
     },
     {
       name: 'pricingModel',
-      type: 'string',
+      type: 'array',
       required: false,
-      description: 'Pricing model constraint (Free, Freemium, Paid)',
+      description: 'Pricing model constraint array (Free, Paid). Tools can have multiple pricing models.',
     },
     {
       name: 'billingPeriod',

@@ -7,10 +7,10 @@
  * @module core/pipeline.init
  */
 
-import { validateSchema, assertValidSchema } from './validators/schema.validator';
-import { toolsSchema, buildToolsFilters, validateToolsQueryPlan } from '../domains/tools';
-import { DomainSchema } from './types/schema.types';
-import { StateAnnotation } from '../types/state';
+import { validateSchema, assertValidSchema } from './validators/schema.validator.js';
+import { toolsSchema, buildToolsFilters, validateToolsQueryPlan } from '../domains/tools/index.js';
+import { DomainSchema } from './types/schema.types.js';
+import { StateAnnotation } from '../types/state.js';
 
 /**
  * Initialize pipeline configuration with schema and domain handlers

@@ -5,9 +5,9 @@
  * These fixtures allow tests to run without requiring actual domain imports.
  */
 
-import { DomainSchema } from '../../core/types/schema.types';
-import { IntentState } from '../../types/intent-state';
-import { QueryPlan } from '../../types/query-plan';
+import { DomainSchema } from '../../core/types/schema.types.js';
+import { IntentState } from '../../types/intent-state.js';
+import { QueryPlan } from '../../types/query-plan.js';
 
 /**
  * Mock Tools Domain Schema
@@ -24,7 +24,7 @@ export const mockToolsSchema: DomainSchema = {
     interface: ['Web', 'CLI', 'Desktop', 'API'],
     deployment: ['Cloud', 'Local', 'Self-Hosted'],
     industries: ['Technology', 'Software Development'],
-    pricingModels: ['Free', 'Freemium', 'Paid'],
+    pricingModels: ['Free', 'Paid'],
     billingPeriods: ['Monthly', 'Yearly'],
   },
 

@@ -125,9 +125,11 @@ export const PRICE_EXTRACTION_RULES = `
 /**
  * Example queries for intent extraction
  * TODO: Make these domain-specific or schema-driven in future
+ *
+ * Note: pricingModel is now an array of values: ["Free"], ["Paid"], or ["Free", "Paid"] for tools with both options
  */
 export const INTENT_EXTRACTION_EXAMPLES = `
-Query: "free cli" → {"primaryGoal": "find", "pricingModel": "Free", "interface": "CLI", "priceRange": null, "priceComparison": null, "referenceTool": null, "comparisonMode": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
+Query: "free cli" → {"primaryGoal": "find", "pricingModel": ["Free"], "interface": "CLI", "priceRange": null, "priceComparison": null, "referenceTool": null, "comparisonMode": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
 
 Query: "AI tools under $50 per month" → {"primaryGoal": "find", "pricingModel": null, "priceComparison": {"operator": "less_than", "value": 50, "currency": "USD", "billingPeriod": "Monthly"}, "priceRange": null, "functionality": ["AI Integration"], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.9}
 
@@ -135,7 +137,7 @@ Query: "code editor between $20-100 monthly" → {"primaryGoal": "find", "catego
 
 Query: "Cursor alternative but cheaper" → {"primaryGoal": "find", "referenceTool": "Cursor IDE", "comparisonMode": "alternative_to", "constraints": ["cheaper"], "priceComparison": {"operator": "less_than", "value": 20, "currency": "USD", "billingPeriod": "Monthly"}, "pricingModel": null, "category": "Code Editor", "functionality": ["Code Generation"], "filters": [], "semanticVariants": [], "confidence": 0.8}
 
-Query: "free offline AI code generator" → {"primaryGoal": "find", "pricingModel": "Free", "priceRange": null, "priceComparison": null, "interface": null, "referenceTool": null, "comparisonMode": null, "functionality": ["Code Generation", "Local Inference"], "filters": [], "semanticVariants": [], "constraints": ["offline"], "confidence": 0.9}
+Query: "free offline AI code generator" → {"primaryGoal": "find", "pricingModel": ["Free"], "priceRange": null, "priceComparison": null, "interface": null, "referenceTool": null, "comparisonMode": null, "functionality": ["Code Generation", "Local Inference"], "filters": [], "semanticVariants": [], "constraints": ["offline"], "confidence": 0.9}
 
 Query: "API tools around $30 per month" → {"primaryGoal": "find", "category": "API", "priceComparison": {"operator": "around", "value": 30, "currency": "USD", "billingPeriod": "Monthly"}, "priceRange": null, "functionality": [], "filters": [], "semanticVariants": [], "constraints": [], "confidence": 0.85}
 `;

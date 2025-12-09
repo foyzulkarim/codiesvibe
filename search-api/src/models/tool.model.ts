@@ -1,11 +1,58 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
 
 // Pricing subdocument interface
 export interface IPricing {
   tier: string;
   billingPeriod: string;
   price: number;
+}
+
+// Approval status type
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+// ============================================
+// SYNC STATUS TYPES
+// ============================================
+
+/**
+ * Possible sync statuses for vector database synchronization
+ */
+export type SyncStatus = 'synced' | 'pending' | 'failed' | 'stale';
+
+/**
+ * Collection names that are synced to Qdrant
+ */
+export type SyncCollectionName = 'tools' | 'functionality' | 'usecases' | 'interface';
+
+/**
+ * Sync status for a single Qdrant collection
+ */
+export interface ICollectionSyncStatus {
+  status: SyncStatus;
+  lastSyncedAt: Date | null;
+  lastSyncAttemptAt: Date | null;
+  lastError: string | null;
+  errorCode: string | null;
+  retryCount: number;
+  contentHash: string;
+  vectorVersion: number;
+}
+
+/**
+ * Overall sync metadata for a tool across all collections
+ */
+export interface ISyncMetadata {
+  overallStatus: SyncStatus;
+  collections: {
+    tools: ICollectionSyncStatus;
+    functionality: ICollectionSyncStatus;
+    usecases: ICollectionSyncStatus;
+    interface: ICollectionSyncStatus;
+  };
+  lastModifiedFields: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Tool document interface
@@ -20,7 +67,7 @@ export interface ITool extends Document {
   industries: string[];
   userTypes: string[];
   pricing: IPricing[];
-  pricingModel: 'Free' | 'Freemium' | 'Paid';
+  pricingModel: string[];
   pricingUrl?: string;
   interface: string[];
   functionality: string[];
@@ -34,6 +81,13 @@ export interface ITool extends Document {
   lastUpdated?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  // RBAC fields
+  approvalStatus: ApprovalStatus;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  // Sync metadata for Qdrant synchronization
+  syncMetadata?: ISyncMetadata;
 }
 
 // Pricing subdocument schema
@@ -56,6 +110,130 @@ const PricingSchema = new Schema<IPricing>(
   },
   { _id: false }
 );
+
+// ============================================
+// SYNC METADATA SCHEMAS
+// ============================================
+
+/**
+ * Schema for per-collection sync status
+ */
+const CollectionSyncStatusSchema = new Schema<ICollectionSyncStatus>(
+  {
+    status: {
+      type: String,
+      enum: ['synced', 'pending', 'failed', 'stale'],
+      default: 'pending',
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: null,
+    },
+    lastSyncAttemptAt: {
+      type: Date,
+      default: null,
+    },
+    lastError: {
+      type: String,
+      default: null,
+      maxlength: 1000,
+    },
+    errorCode: {
+      type: String,
+      default: null,
+      maxlength: 100,
+    },
+    retryCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    contentHash: {
+      type: String,
+      default: '',
+    },
+    vectorVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Default collection sync status for new tools
+ */
+const defaultCollectionSyncStatus = (): ICollectionSyncStatus => ({
+  status: 'pending',
+  lastSyncedAt: null,
+  lastSyncAttemptAt: null,
+  lastError: null,
+  errorCode: null,
+  retryCount: 0,
+  contentHash: '',
+  vectorVersion: 0,
+});
+
+/**
+ * Schema for overall sync metadata
+ */
+const SyncMetadataSchema = new Schema<ISyncMetadata>(
+  {
+    overallStatus: {
+      type: String,
+      enum: ['synced', 'pending', 'failed', 'stale'],
+      default: 'pending',
+    },
+    collections: {
+      tools: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      functionality: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      usecases: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+      interface: {
+        type: CollectionSyncStatusSchema,
+        default: defaultCollectionSyncStatus,
+      },
+    },
+    lastModifiedFields: {
+      type: [String],
+      default: [],
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Create default sync metadata for new tools
+ */
+export const createDefaultSyncMetadata = (): ISyncMetadata => ({
+  overallStatus: 'pending',
+  collections: {
+    tools: defaultCollectionSyncStatus(),
+    functionality: defaultCollectionSyncStatus(),
+    usecases: defaultCollectionSyncStatus(),
+    interface: defaultCollectionSyncStatus(),
+  },
+  lastModifiedFields: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
 
 // Tool schema
 const ToolSchema = new Schema<ITool>(
@@ -142,9 +320,14 @@ const ToolSchema = new Schema<ITool>(
       },
     },
     pricingModel: {
-      type: String,
+      type: [String],
       required: true,
       enum: CONTROLLED_VOCABULARIES.pricingModels,
+      validate: {
+        validator: (v: string[]) =>
+          v.length >= 1 && v.every((item) => CONTROLLED_VOCABULARIES.pricingModels.includes(item)),
+        message: 'pricingModel must have at least 1 entry from the valid pricing models list',
+      },
     },
     pricingUrl: {
       type: String,
@@ -224,6 +407,29 @@ const ToolSchema = new Schema<ITool>(
       type: Date,
       default: Date.now,
     },
+    // RBAC fields
+    approvalStatus: {
+      type: String,
+      required: true,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    reviewedBy: {
+      type: String,
+    },
+    reviewedAt: {
+      type: Date,
+    },
+    rejectionReason: {
+      type: String,
+      maxlength: 500,
+      trim: true,
+    },
+    // Sync metadata for Qdrant synchronization
+    syncMetadata: {
+      type: SyncMetadataSchema,
+      default: createDefaultSyncMetadata,
+    },
   },
   {
     timestamps: true,
@@ -268,6 +474,54 @@ ToolSchema.index(
 ToolSchema.index({ dateAdded: -1 }, { name: 'tool_date_added_index' });
 ToolSchema.index({ functionality: 1 }, { name: 'tool_functionality_index' });
 ToolSchema.index({ deployment: 1 }, { name: 'tool_deployment_index' });
+// RBAC indexes
+ToolSchema.index({ approvalStatus: 1 }, { name: 'tool_approval_status_index' });
+ToolSchema.index({ contributor: 1 }, { name: 'tool_contributor_index' });
+ToolSchema.index({ approvalStatus: 1, contributor: 1 }, { name: 'tool_approval_contributor_index' });
+
+// ============================================
+// SYNC INDEXES
+// ============================================
+
+// Overall sync status for quick filtering
+ToolSchema.index(
+  { 'syncMetadata.overallStatus': 1 },
+  { name: 'tool_sync_overall_status_index' }
+);
+
+// Per-collection sync status for targeted queries
+ToolSchema.index(
+  { 'syncMetadata.collections.tools.status': 1 },
+  { name: 'tool_sync_tools_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.functionality.status': 1 },
+  { name: 'tool_sync_functionality_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.usecases.status': 1 },
+  { name: 'tool_sync_usecases_status_index' }
+);
+ToolSchema.index(
+  { 'syncMetadata.collections.interface.status': 1 },
+  { name: 'tool_sync_interface_status_index' }
+);
+
+// Compound index for worker queries (find failed/pending with retry count)
+ToolSchema.index(
+  {
+    'syncMetadata.overallStatus': 1,
+    'syncMetadata.collections.tools.retryCount': 1,
+    'syncMetadata.collections.tools.lastSyncAttemptAt': 1,
+  },
+  { name: 'tool_sync_worker_query_index' }
+);
+
+// Last sync attempt for rate limiting / backoff calculations
+ToolSchema.index(
+  { 'syncMetadata.collections.tools.lastSyncAttemptAt': 1 },
+  { name: 'tool_sync_last_attempt_index' }
+);
 
 // Export the model
 export const Tool = mongoose.model<ITool>('Tool', ToolSchema);

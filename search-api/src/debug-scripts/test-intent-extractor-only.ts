@@ -12,11 +12,11 @@
  */
 
 import dotenv from 'dotenv';
-import { intentExtractorNode } from '../graphs/nodes/intent-extractor.node';
-import { StateAnnotation } from '../types/state';
-import { toolsSchema } from '../domains/tools/tools.schema';
-import { buildToolsFilters } from '../domains/tools/tools.filters';
-import { validateToolsQueryPlan } from '../domains/tools/tools.validators';
+import { intentExtractorNode } from '../graphs/nodes/intent-extractor.node.js';
+import { StateAnnotation } from '../types/state.js';
+import { toolsSchema } from '../domains/tools/tools.schema.js';
+import { buildToolsFilters } from '../domains/tools/tools.filters.js';
+import { validateToolsQueryPlan } from '../domains/tools/tools.validators.js';
 
 // Load environment variables
 dotenv.config();

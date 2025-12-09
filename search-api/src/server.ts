@@ -1,39 +1,36 @@
-import 'module-alias/register';
 import express from 'express';
-import axios from 'axios';
-import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { body, validationResult } from 'express-validator';
 import Joi from 'joi';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import cors from 'cors';
-import winston from 'winston';
-import { StateAnnotation } from "./types/state";
-import { vectorIndexingService, HealthReport } from "./services";
-import { searchLogger, SearchLogContext } from "./config/logger";
-import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware";
-import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware";
+import { vectorIndexingService, HealthReport } from "./services/index.js";
+import { searchLogger } from "./config/logger.js";
+import { correlationMiddleware, SearchRequest } from "./middleware/correlation.middleware.js";
+import { globalTimeout, searchTimeout } from "./middleware/timeout.middleware.js";
+import { limiter, searchLimiter, toolsMutationLimiter } from "./middleware/rate-limiters.js";
 import { v4 as uuidv4 } from 'uuid';
 import { clerkMiddleware } from '@clerk/express';
+import { qdrantService } from "./services/qdrant.service.js";
 
 // Import LangGraph orchestration - NEW 3-Node Pipeline
-import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph";
-import { threadManager } from "./utils/thread-manager";
+import { searchWithAgenticPipeline } from "./graphs/agentic-search.graph.js";
 
 // Import tools routes for CRUD operations
-import toolsRoutes from "./routes/tools.routes";
+import toolsRoutes from "./routes/tools.routes.js";
+import syncRoutes from "./routes/sync.routes.js";
 
 // Import health check and graceful shutdown services
-import { healthCheckService } from "./services/health-check.service";
-import { gracefulShutdown } from "./services/graceful-shutdown.service";
-import { getMongoClient, getQdrantClient } from "./config/database";
-import { metricsService } from "./services/metrics.service";
-import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor";
-import { circuitBreakerManager } from "./services/circuit-breaker.service";
-import { configureHttpClient, destroyHttpAgents } from "./config/http-client";
+import { healthCheckService } from "./services/health-check.service.js";
+import { gracefulShutdown } from "./services/graceful-shutdown.service.js";
+import { syncWorkerService } from "./services/sync-worker.service.js";
+import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from "./config/database.js";
+import { metricsService } from "./services/metrics.service.js";
+import { setupAxiosCorrelationInterceptor } from "./utils/axios-correlation-interceptor.js";
+import { circuitBreakerManager } from "./services/circuit-breaker.service.js";
+import { configureHttpClient, destroyHttpAgents } from "./config/http-client.js";
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
@@ -100,71 +97,12 @@ validateEnvironment();
 const app = express();
 
 // Create logs directory if it doesn't exist
-import { writeFileSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 try {
   mkdirSync('logs');
 } catch (error) {
   // Directory already exists
 }
-
-// Advanced rate limiting configuration
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP',
-    code: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  handler: (req, res) => {
-    const searchReq = req as SearchRequest;
-    searchLogger.logSecurityEvent('Rate limit exceeded', {
-      correlationId: searchReq.correlationId,
-      service: 'search-api',
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      path: req.path,
-      method: req.method,
-      timestamp: new Date().toISOString()
-    }, 'warn');
-    res.status(429).json({
-      error: 'Too many requests from this IP',
-      code: 'RATE_LIMIT_EXCEEDED',
-      retryAfter: '15 minutes'
-    });
-  }
-});
-
-// Stricter rate limiting for search endpoint
-const searchLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // limit each IP to 30 search requests per minute
-  message: {
-    error: 'Too many search requests',
-    code: 'SEARCH_RATE_LIMIT_EXCEEDED',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    const searchReq = req as SearchRequest;
-    searchLogger.logSecurityEvent('Search rate limit exceeded', {
-      correlationId: searchReq.correlationId,
-      service: 'search-api',
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      query: req.body?.query,
-      timestamp: new Date().toISOString()
-    }, 'warn');
-    res.status(429).json({
-      error: 'Too many search requests',
-      code: 'SEARCH_RATE_LIMIT_EXCEEDED',
-      retryAfter: '1 minute'
-    });
-  }
-});
 
 // Security middleware stack (conditional)
 if (process.env.ENABLE_SECURITY_HEADERS !== 'false') {
@@ -673,13 +611,29 @@ searchLogger.info('Tools CRUD routes mounted at /api/tools', {
   endpoints: ['GET /api/tools', 'GET /api/tools/:id', 'POST /api/tools (protected)', 'PATCH /api/tools/:id (protected)', 'DELETE /api/tools/:id (protected)', 'GET /api/tools/vocabularies'],
 });
 
+// Mount sync routes (admin only)
+app.use('/api/sync', syncRoutes);
+searchLogger.info('Sync admin routes mounted at /api/sync', {
+  service: 'search-api',
+  endpoints: [
+    'GET /api/sync/status (admin)',
+    'GET /api/sync/stats (admin)',
+    'GET /api/sync/worker (admin)',
+    'POST /api/sync/sweep (admin)',
+    'POST /api/sync/retry/:toolId (admin)',
+    'POST /api/sync/retry-all (admin)',
+    'GET /api/sync/failed (admin)',
+    'GET /api/sync/pending (admin)',
+  ],
+});
+
 // Enhanced query sanitization function
 function sanitizeQuery(query: string): string {
   return query
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
-    .replace(/[<>{}[\]\\]/g, ''); // Remove potentially dangerous characters
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F<>{}[\]\\]/g, '') // Remove control characters and potentially dangerous characters
 }
 
 // Enhanced search endpoint with comprehensive security
@@ -830,6 +784,28 @@ app.post('/api/search', searchLimiter, searchTimeout, validateSearchRequest, asy
 
 // Start server with vector index validation
 async function startServer() {
+  // Connect to MongoDB before starting the server
+  searchLogger.info('🔄 Connecting to MongoDB...', {
+    service: 'search-api',
+    database: mongoConfig.dbName,
+    uri: mongoConfig.uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')
+  });
+  
+  try {
+    await connectToMongoDB();
+    searchLogger.info('✅ Connected to MongoDB database', {
+      service: 'search-api',
+      database: mongoConfig.dbName,
+      uri: mongoConfig.uri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')
+    });
+  } catch (error) {
+    searchLogger.error('❌ Failed to connect to MongoDB', error instanceof Error ? error : new Error('Unknown error'), {
+      service: 'search-api',
+      database: mongoConfig.dbName,
+    });
+    throw error;
+  }
+
   // Perform vector index validation before starting the server
   // await validateVectorIndexOnStartup();
 
@@ -868,6 +844,8 @@ async function startServer() {
     healthCheckService.setMongoClient(mongoClient);
     searchLogger.info('✅ MongoDB client registered with health check service', {
       service: 'search-api',
+      database: process.env.MONGODB_DB_NAME || 'toolsearch',
+      uri: process.env.MONGODB_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@') || 'mongodb://localhost:27017'
     });
   } else {
     searchLogger.warn('⚠️  MongoDB client not available for health checks', {
@@ -880,6 +858,32 @@ async function startServer() {
     searchLogger.info('✅ Qdrant client registered with health check service', {
       service: 'search-api',
     });
+
+    // Ensure Qdrant collections exist (opt-in via ENSURE_QDRANT_COLLECTIONS=true)
+    const ensureCollections = process.env.ENSURE_QDRANT_COLLECTIONS === 'true';
+    if (ensureCollections) {
+      try {
+        searchLogger.info('🔧 Ensuring Qdrant collections exist...', {
+          service: 'search-api',
+        });
+        const results = await qdrantService.createMultiCollections();
+        const successCount = results.filter(r => r.success).length;
+        searchLogger.info(`✅ Qdrant collections ready: ${successCount}/4 collections available`, {
+          service: 'search-api',
+          results: results.map(r => ({ collection: r.collection, success: r.success, message: r.message })),
+        });
+      } catch (error) {
+        // Log error but don't crash the server
+        searchLogger.error('⚠️  Failed to ensure Qdrant collections (server will continue)', error as Error, {
+          service: 'search-api',
+        });
+      }
+    } else {
+      searchLogger.info('⚠️  Qdrant collection auto-creation disabled (set ENSURE_QDRANT_COLLECTIONS=true to enable)', {
+        service: 'search-api',
+        note: 'Run "npm run create-collections" manually if needed',
+      });
+    }
   } else {
     searchLogger.warn('⚠️  Qdrant client not available for health checks', {
       service: 'search-api',
@@ -899,6 +903,11 @@ async function startServer() {
       searchLogger.info('🔄 Executing beforeShutdown tasks', {
         service: 'search-api',
       });
+      // Stop sync worker first to prevent new operations
+      syncWorkerService.stop();
+      searchLogger.info('🛑 Sync worker stopped', {
+        service: 'search-api',
+      });
       // Shutdown circuit breakers
       await circuitBreakerManager.shutdown();
     },
@@ -916,6 +925,21 @@ async function startServer() {
     timeout: '30s',
     signals: ['SIGTERM', 'SIGINT'],
   });
+
+  // Start sync worker for background sync operations
+  // Default: DISABLED (opt-in via ENABLE_SYNC_WORKER=true)
+  const enableSyncWorker = process.env.ENABLE_SYNC_WORKER === 'true';
+  if (enableSyncWorker) {
+    syncWorkerService.start();
+    searchLogger.info('✅ Sync worker started for background Qdrant synchronization', {
+      service: 'search-api',
+      workerStatus: syncWorkerService.getStatus(),
+    });
+  } else {
+    searchLogger.info('⚠️  Sync worker disabled (set ENABLE_SYNC_WORKER=true to enable)', {
+      service: 'search-api',
+    });
+  }
 }
 
 // Start the server

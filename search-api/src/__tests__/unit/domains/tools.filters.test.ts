@@ -4,8 +4,8 @@
  * Tests the domain-specific filter building logic for MongoDB queries
  */
 
-import { buildToolsFilters } from '../../../domains/tools/tools.filters';
-import { TOOLS_PRICE_OPERATORS } from '../../../domains/tools/tools.schema';
+import { buildToolsFilters } from '../../../domains/tools/tools.filters.js';
+import { TOOLS_PRICE_OPERATORS } from '../../../domains/tools/tools.schema.js';
 
 describe('Tools Filters - Unit Tests', () => {
   describe('1. Price Range Filters', () => {

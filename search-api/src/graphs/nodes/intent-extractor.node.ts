@@ -1,7 +1,7 @@
-import { StateAnnotation } from '../../types/state';
-import { llmService } from '../../services/llm.service';
+import { StateAnnotation } from '../../types/state.js';
+import { llmService } from '../../services/llm.service.js';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
-import { generateIntentExtractionPrompt } from '../../core/prompts/prompt.generator';
+import { generateIntentExtractionPrompt } from '../../core/prompts/prompt.generator.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

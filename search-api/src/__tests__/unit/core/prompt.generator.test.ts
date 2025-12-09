@@ -4,9 +4,9 @@
  * Tests the dynamic prompt generation from schema definitions
  */
 
-import { generateIntentExtractionPrompt, generateQueryPlanningPrompt } from '../../../core/prompts/prompt.generator';
-import { toolsSchema } from '../../../domains/tools/tools.schema';
-import { DomainSchema } from '../../../core/types/schema.types';
+import { generateIntentExtractionPrompt, generateQueryPlanningPrompt } from '../../../core/prompts/prompt.generator.js';
+import { toolsSchema } from '../../../domains/tools/tools.schema.js';
+import { DomainSchema } from '../../../core/types/schema.types.js';
 
 describe('Prompt Generator - Unit Tests', () => {
   describe('1. Intent Extraction Prompt Generation', () => {

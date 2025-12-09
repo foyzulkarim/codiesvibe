@@ -1,11 +1,11 @@
-import { vectorIndexingService } from "./vector-indexing.service";
-import { mongoDBService } from "./mongodb.service";
-import { qdrantService } from "./qdrant.service";
-import { embeddingService } from "./embedding.service";
-import { CollectionConfigService } from "./collection-config.service";
-import { ContentGeneratorFactory } from "./content-generator-factory.service";
-import { MultiCollectionOrchestrator } from "./multi-collection-orchestrator.service";
-import { VectorTypeRegistryService } from "./vector-type-registry.service";
+import { vectorIndexingService } from "./vector-indexing.service.js";
+import { mongoDBService } from "./mongodb.service.js";
+import { qdrantService } from "./qdrant.service.js";
+import { embeddingService } from "./embedding.service.js";
+import { CollectionConfigService } from "./collection-config.service.js";
+import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
+import { MultiCollectionOrchestrator } from "./multi-collection-orchestrator.service.js";
+import { VectorTypeRegistryService } from "./vector-type-registry.service.js";
 
 // Types for seeding progress and statistics
 export interface CollectionSeedingProgress {

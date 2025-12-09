@@ -12,7 +12,7 @@ import {
   SchemaValidationResult,
   IntentFieldDefinition,
   VectorCollectionDefinition,
-} from '../types/schema.types';
+} from '../types/schema.types.js';
 
 /**
  * Validates a domain schema

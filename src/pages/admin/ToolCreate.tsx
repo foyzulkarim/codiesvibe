@@ -1,14 +1,16 @@
+import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { ToolFormSchema, ToolFormValues, defaultToolFormValues, CONTROLLED_VOCABULARIES } from '@/schemas/tool-form.schema';
-import { useCreateTool, useVocabularies } from '@/hooks/api/useToolsAdmin';
+import { useCreateTool, useUpdateTool, useToolAdmin, useVocabularies } from '@/hooks/api/useToolsAdmin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
 
@@ -17,7 +19,12 @@ type ArrayFieldKeys = 'categories' | 'industries' | 'userTypes' | 'interface' | 
 
 export default function ToolCreate() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = !!id;
+
   const createTool = useCreateTool();
+  const updateTool = useUpdateTool();
+  const { data: existingTool, isLoading: isLoadingTool } = useToolAdmin(id || '');
   const { data: vocabularies } = useVocabularies();
 
   // Use vocabularies from API or fallback to local
@@ -33,6 +40,33 @@ export default function ToolCreate() {
     defaultValues: defaultToolFormValues,
   });
 
+  // Populate form with existing tool data when editing
+  useEffect(() => {
+    if (isEditMode && existingTool) {
+      form.reset({
+        id: existingTool.id,
+        name: existingTool.name,
+        description: existingTool.description,
+        tagline: existingTool.tagline || '',
+        longDescription: existingTool.longDescription || '',
+        categories: existingTool.categories || [],
+        industries: existingTool.industries || [],
+        userTypes: existingTool.userTypes || [],
+        pricing: existingTool.pricing || [{ tier: 'Free', billingPeriod: 'Monthly', price: 0 }],
+        pricingModel: existingTool.pricingModel || [],
+        pricingUrl: existingTool.pricingUrl || '',
+        interface: existingTool.interface || [],
+        functionality: existingTool.functionality || [],
+        deployment: existingTool.deployment || [],
+        logoUrl: existingTool.logoUrl || '',
+        website: existingTool.website || '',
+        documentation: existingTool.documentation || '',
+        status: existingTool.status || 'active',
+        contributor: existingTool.contributor || '',
+      });
+    }
+  }, [isEditMode, existingTool, form]);
+
   const { fields: pricingFields, append: appendPricing, remove: removePricing } = useFieldArray({
     control: form.control,
     name: 'pricing',
@@ -40,15 +74,22 @@ export default function ToolCreate() {
 
   const onSubmit = async (data: ToolFormValues) => {
     try {
-      await createTool.mutateAsync(data);
+      if (isEditMode && id) {
+        await updateTool.mutateAsync({ id, data });
+      } else {
+        await createTool.mutateAsync(data);
+      }
       navigate('/admin/tools');
     } catch (error) {
       // Error is handled by the mutation
     }
   };
 
-  // Auto-generate ID from name
+  const isSubmitting = createTool.isPending || updateTool.isPending;
+
+  // Auto-generate ID from name (only in create mode)
   const handleNameChange = (name: string) => {
+    if (isEditMode) return; // Don't auto-generate ID when editing
     const currentId = form.getValues('id');
     if (!currentId || currentId === '') {
       const generatedId = name
@@ -79,10 +120,19 @@ export default function ToolCreate() {
         </Link>
       </div>
 
+      {isEditMode && isLoadingTool ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader>
-          <CardTitle>Create New Tool</CardTitle>
-          <CardDescription>Add a new AI tool to the directory</CardDescription>
+          <CardTitle>{isEditMode ? 'Edit Tool' : 'Create New Tool'}</CardTitle>
+          <CardDescription>
+            {isEditMode ? `Editing: ${existingTool?.name || id}` : 'Add a new AI tool to the directory'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -119,10 +169,12 @@ export default function ToolCreate() {
                     <FormItem>
                       <FormLabel>ID *</FormLabel>
                       <FormControl>
-                        <Input placeholder="tool-id" {...field} />
+                        <Input placeholder="tool-id" {...field} disabled={isEditMode} />
                       </FormControl>
                       <FormDescription>
-                        Unique identifier (lowercase letters, numbers, hyphens only)
+                        {isEditMode
+                          ? 'ID cannot be changed after creation'
+                          : 'Unique identifier (lowercase letters, numbers, hyphens only)'}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -346,23 +398,43 @@ export default function ToolCreate() {
                 <FormField
                   control={form.control}
                   name="pricingModel"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
-                      <FormLabel>Pricing Model *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pricing model" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {CONTROLLED_VOCABULARIES.pricingModels.map((model) => (
-                            <SelectItem key={model} value={model}>
-                              {model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="mb-4">
+                        <FormLabel>Pricing Model *</FormLabel>
+                        <FormDescription>Select all that apply</FormDescription>
+                      </div>
+                      <div className="space-y-2">
+                        {CONTROLLED_VOCABULARIES.pricingModels.map((model) => (
+                          <FormField
+                            key={model}
+                            control={form.control}
+                            name="pricingModel"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={model}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(model)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...field.value, model])
+                                          : field.onChange(
+                                              field.value?.filter((value: string) => value !== model)
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">{model}</FormLabel>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -560,9 +632,9 @@ export default function ToolCreate() {
 
               {/* Submit */}
               <div className="flex gap-4">
-                <Button type="submit" disabled={createTool.isPending}>
-                  {createTool.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Tool
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isEditMode ? 'Update Tool' : 'Create Tool'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => navigate('/admin/tools')}>
                   Cancel
@@ -572,6 +644,7 @@ export default function ToolCreate() {
           </Form>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

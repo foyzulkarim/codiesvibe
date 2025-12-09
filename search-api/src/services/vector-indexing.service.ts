@@ -1,9 +1,9 @@
-import { mongoDBService } from "./mongodb.service";
-import { qdrantService } from "./qdrant.service";
-import { embeddingService } from "./embedding.service";
-import { ToolData, ToolDataValidator } from "../types/tool.types";
-import { CollectionConfigService } from "./collection-config.service";
-import { ContentGeneratorFactory } from "./content-generator-factory.service";
+import { mongoDBService } from "./mongodb.service.js";
+import { qdrantService } from "./qdrant.service.js";
+import { embeddingService } from "./embedding.service.js";
+import { ToolData, ToolDataValidator } from "../types/tool.types.js";
+import { CollectionConfigService } from "./collection-config.service.js";
+import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 
 export interface IndexingProgress {
   total: number;

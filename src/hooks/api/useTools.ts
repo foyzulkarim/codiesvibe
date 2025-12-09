@@ -1,26 +1,14 @@
+/**
+ * AI Search Hook
+ *
+ * Hook for performing AI-powered semantic search on tools.
+ */
+
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { searchClient } from '@/api/search-client';
 import { apiConfig } from '@/config/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import {
-  UseToolsReturn,
-  AiSearchReasoning,
-} from '@/api/types';
-
-// Get search API base URL (different from main API)
-const getSearchApiUrl = () => {
-  // Use environment variable or default to localhost for development
-  return import.meta.env.VITE_SEARCH_API_URL || 'http://localhost:4003/api';
-};
-
-// Create axios instance for search API
-const searchApiClient = axios.create({
-  baseURL: getSearchApiUrl(),
-  timeout: apiConfig.search.timeout,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import { UseToolsReturn, AiSearchReasoning } from '@/api/types';
 
 // Types for AI search API response
 interface AiSearchResponse {
@@ -133,42 +121,45 @@ interface SearchResult {
 }
 
 const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => {
-  try {
-    if (apiConfig.features.debug) {
-      console.log('aiSearchTools searchQuery:', searchQuery);
-      console.log('typeof searchQuery:', typeof searchQuery);
-      console.log('Search API URL:', getSearchApiUrl());
-    }
+  const searchQueryStr =
+    typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
 
-    // Ensure searchQuery is a string
-    const searchQueryStr = typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
+  if (apiConfig.features.debug) {
+    console.log('[AI Search] Query:', searchQueryStr);
+  }
 
-    const response = await searchApiClient.post<AiSearchResponse>('/search', {
+  const response = await searchClient.post<AiSearchResponse>(
+    '/search',
+    {
       query: searchQueryStr,
       limit: apiConfig.search.defaultLimit,
       debug: apiConfig.features.debug,
-    });
-
-    if (apiConfig.features.debug) {
-      console.log('aiSearchTools response.data:', response.data);
+    },
+    {
+      // Use search-specific timeout (10 minutes) for AI operations
+      timeout: apiConfig.search.timeout,
     }
+  );
 
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching tools:', error);
-    throw error;
-  }
+  return response.data;
 };
 
-// Main hook for fetching tools
+/**
+ * Hook for AI-powered semantic search
+ *
+ * @param params - Search query string
+ * @returns Search results with AI reasoning data
+ */
 export const useTools = (params: string): UseToolsReturn => {
-  // Debounce search query to reduce API calls
   const debouncedParams = useDebounce(params, apiConfig.search.debounceDelay);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['tools', debouncedParams],
     queryFn: async () => {
-      const response = {
+      const response: {
+        data: SearchResult[];
+        reasoning: AiSearchReasoning;
+      } = {
         data: [],
         reasoning: {
           query: '',
@@ -179,11 +170,11 @@ export const useTools = (params: string): UseToolsReturn => {
           executionTime: '',
           phase: '',
           strategy: '',
-          explanation: ''
-        }
+          explanation: '',
+        },
       };
+
       if (debouncedParams) {
-        // Trigger API call for debugging only
         const apiResponse = await aiSearchTools(debouncedParams);
         response.data = apiResponse.results;
         response.reasoning = {
@@ -195,14 +186,14 @@ export const useTools = (params: string): UseToolsReturn => {
           executionTime: apiResponse.executionTime,
           phase: apiResponse.phase,
           strategy: apiResponse.strategy,
-          explanation: apiResponse.explanation
+          explanation: apiResponse.explanation,
         };
       }
 
       return response;
     },
-    // Only run query when debounced params meets minimum length
-    enabled: !debouncedParams || debouncedParams.length >= apiConfig.search.minLength,
+    enabled:
+      !debouncedParams || debouncedParams.length >= apiConfig.search.minLength,
   });
 
   return {

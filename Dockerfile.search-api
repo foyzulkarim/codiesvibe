@@ -7,7 +7,7 @@ ARG GIT_COMMIT=unknown
 ARG VERSION=latest
 
 # Dependencies stage - Install all dependencies for caching
-FROM node:24-alpine AS dependencies
+FROM node:24-slim AS dependencies
 
 # Set working directory
 WORKDIR /app
@@ -37,7 +37,7 @@ RUN npm install -g nodemon ts-node-dev
 COPY search-api/ ./
 
 # Create non-root user for security (even in development)
-RUN addgroup -g 1001 nodejs && adduser -S nodejs -u 1001
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nodejs
 RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
@@ -49,8 +49,6 @@ EXPOSE 4003 9229
 # Add image metadata
 LABEL org.opencontainers.image.title="CodiesVibe Search-API (Development)"
 LABEL org.opencontainers.image.description="Node.js search service development environment with hot reload"
-LABEL org.opencontainers.image.version="${VERSION:-dev}"
-LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
 
 # Set environment variables for development
@@ -65,18 +63,17 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 CMD ["npm", "run", "dev"]
 
 # Production stage - Optimized production image with health checks and security
-FROM node:24-alpine AS production
+FROM node:24-slim AS production
 
-# Install security updates, ca-certificates, and dumb-init
-RUN apk update && apk upgrade && \
-    apk add --no-cache ca-certificates curl dumb-init && \
-    rm -rf /var/cache/apk/*
+# Install curl and dumb-init for health checks and signal handling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user with secure home directory
-RUN addgroup -g 1001 nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs -h /home/nodejs -s /bin/ash && \
-    mkdir -p /home/nodejs && \
-    chown -R nodejs:nodejs /home/nodejs
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs -m -s /bin/bash nodejs
 
 # Set working directory
 WORKDIR /app
@@ -104,11 +101,14 @@ USER nodejs
 EXPOSE 4003
 
 # Add comprehensive image metadata
+ARG BUILD_DATE=unknown
+ARG GIT_COMMIT=unknown
+ARG VERSION=latest
 LABEL org.opencontainers.image.title="CodiesVibe Search-API (Production)"
 LABEL org.opencontainers.image.description="Node.js search service with AI-powered search capabilities"
-LABEL org.opencontainers.image.version="${VERSION:-latest}"
-LABEL org.opencontainers.image.created="${BUILD_DATE:-unknown}"
-LABEL org.opencontainers.image.revision="${GIT_COMMIT:-unknown}"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/foyzulkarim/codiesvibe"
 LABEL org.opencontainers.image.vendor="CodiesVibe"
 LABEL org.opencontainers.image.licenses="MIT"
@@ -116,8 +116,8 @@ LABEL org.opencontainers.image.licenses="MIT"
 # Set optimized environment variables for production
 ENV NODE_ENV=production
 ENV PORT=4003
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-ENV UV_THREADPOOL_SIZE=8
+ENV NODE_OPTIONS="--max-old-space-size=512"
+ENV UV_THREADPOOL_SIZE=4
 
 # Health check for production environment
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \

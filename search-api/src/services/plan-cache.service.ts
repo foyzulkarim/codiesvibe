@@ -1,10 +1,10 @@
 import { Db, ObjectId } from "mongodb";
-import { connectToMongoDB, disconnectFromMongoDB } from "@/config/database";
-import { productionEmbeddingService } from "./production-embedding.service";
-import { embeddingConfig } from "@/config/constants";
-import { IntentState } from "@/types/intent-state";
-import { QueryPlan } from "@/types/query-plan";
-import { Candidate } from "@/types/candidate";
+import { connectToMongoDB, disconnectFromMongoDB } from "#config/database";
+import { productionEmbeddingService } from "./production-embedding.service.js";
+import { embeddingConfig } from "#config/constants";
+import { IntentState } from "#types/intent-state";
+import { QueryPlan } from "#types/query-plan";
+import { Candidate } from "#types/candidate";
 import crypto from "crypto";
 
 /**

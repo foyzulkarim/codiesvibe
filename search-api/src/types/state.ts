@@ -1,10 +1,10 @@
 import { Annotation, StateGraph } from "@langchain/langgraph";
 import { any, z } from "zod";
-import { IntentState, IntentStateSchema } from "./intent-state";
-import { QueryPlan, QueryPlanSchema } from "./query-plan";
-import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate";
-import { ToolData } from "./tool.types";
-import { DomainSchema } from "../core/types/schema.types";
+import { IntentState, IntentStateSchema } from "./intent-state.js";
+import { QueryPlan, QueryPlanSchema } from "./query-plan.js";
+import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate.js";
+import { ToolData } from "./tool.types.js";
+import { DomainSchema } from "../core/types/schema.types.js";
 
 // New Simplified State Schema using LangGraph's Annotation
 export const StateAnnotation = Annotation.Root({

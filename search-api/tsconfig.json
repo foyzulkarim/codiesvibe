@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2022"],
+    "target": "ES2022",
+    "module": "NodeNext",
+    "lib": ["ES2023"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": false,
@@ -15,15 +15,22 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["*"],
-      "@/config/*": ["config/*"],
-      "@/types/*": ["types/*"],
-      "@/services/*": ["services/*"],
-      "@/utils/*": ["utils/*"]
+      "#config/*": ["./config/*"],
+      "#types/*": ["./types/*"],
+      "#services/*": ["./services/*"],
+      "#utils/*": ["./utils/*"],
+      "#middleware/*": ["./middleware/*"],
+      "#models/*": ["./models/*"],
+      "#routes/*": ["./routes/*"],
+      "#graphs/*": ["./graphs/*"],
+      "#nodes/*": ["./nodes/*"],
+      "#core/*": ["./core/*"],
+      "#shared/*": ["./shared/*"],
+      "#domains/*": ["./domains/*"]
     }
   },
   "include": ["src/**/*"],

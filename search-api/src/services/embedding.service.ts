@@ -1,6 +1,6 @@
 import { Together } from 'together-ai';
-import { embeddingConfig as embeddingConstants } from "@/config/constants";
-import { connectToQdrant } from "@/config/database";
+import { embeddingConfig as embeddingConstants } from "#config/constants";
+import { connectToQdrant } from "#config/database";
 import { QdrantClient } from "@qdrant/js-client-rest";
 
 // Simple in-memory cache for embeddings
@@ -27,6 +27,7 @@ export class EmbeddingService {
    * Generate embedding for a single text
    */
   async generateEmbedding(text: string): Promise<number[]> {
+    console.log('[EmbeddingService] Generating embedding for text:', text);
     // Check cache first
     if (embeddingConstants.cacheEnabled && embeddingCache.has(text)) {
       return embeddingCache.get(text)!;
@@ -85,7 +86,7 @@ export class EmbeddingService {
       throw new Error("Qdrant client not initialized");
     }
 
-    const { enumValues } = await import("@/config/constants");
+    const { enumValues } = await import("#config/constants");
     const allEnumValues = [
       ...enumValues.categories,
       ...enumValues.functionality,
@@ -132,7 +133,7 @@ export class EmbeddingService {
       throw new Error("Qdrant client not initialized");
     }
 
-    const { enumValues } = await import("@/config/constants");
+    const { enumValues } = await import("#config/constants");
     const validEnumValues = enumValues[enumType as keyof typeof enumValues];
 
     if (!validEnumValues) {

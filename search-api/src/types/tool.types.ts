@@ -9,7 +9,6 @@ export interface PricingTier {
 
 export enum PricingModelEnum {
   Free = 'Free',
-  Freemium = 'Freemium',
   Paid = 'Paid'
 }
 
@@ -40,7 +39,7 @@ export interface ToolData {
 
   // Pricing (exact match with backend schema)
   pricing: PricingTier[];
-  pricingModel: PricingModelEnum;
+  pricingModel: PricingModelEnum[];
   pricingUrl?: string;
 
   // Technical specifications - all required arrays (exact match with backend)
@@ -106,7 +105,9 @@ export class ToolDataValidator {
     if (!toolData.pricing || !Array.isArray(toolData.pricing) || toolData.pricing.length === 0) {
       errors.push('pricing must be a non-empty array');
     }
-    if (!toolData.pricingModel) errors.push('pricingModel is required');
+    if (!toolData.pricingModel || !Array.isArray(toolData.pricingModel) || toolData.pricingModel.length === 0) {
+      errors.push('pricingModel must be a non-empty array');
+    }
 
     // Required metadata
     if (!toolData.status) errors.push('status is required');

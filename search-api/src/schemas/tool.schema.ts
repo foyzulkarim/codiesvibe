@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies';
+import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
+
+// Approval status enum
+export const ApprovalStatusEnum = z.enum(['pending', 'approved', 'rejected']);
+export type ApprovalStatus = z.infer<typeof ApprovalStatusEnum>;
 
 // Pricing tier schema
 export const PricingSchema = z.object({
@@ -70,9 +74,9 @@ export const CreateToolSchema = z.object({
     .array(PricingSchema)
     .min(1, 'At least one pricing tier is required'),
 
-  pricingModel: z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]], {
-    errorMap: () => ({ message: `pricingModel must be one of: ${CONTROLLED_VOCABULARIES.pricingModels.join(', ')}` }),
-  }),
+  pricingModel: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .min(1, 'At least one pricing model is required'),
 
   pricingUrl: z
     .string()
@@ -115,17 +119,128 @@ export const CreateToolSchema = z.object({
   status: z
     .enum(['active', 'beta', 'deprecated', 'discontinued'])
     .default('active'),
-
-  contributor: z
-    .string()
-    .min(1, 'Contributor is required')
-    .default('system'),
+  // Note: contributor and approvalStatus are set by the server based on auth
 });
 
-// Update tool schema (all fields optional)
-export const UpdateToolSchema = CreateToolSchema.partial();
+// Update tool schema (all fields optional, but arrays like pricing must have complete objects if provided)
+export const UpdateToolSchema = z.object({
+  // Identity fields
+  id: z
+    .string()
+    .min(1, 'ID is required')
+    .max(100, 'ID must be at most 100 characters')
+    .regex(/^[a-z0-9-]+$/, 'ID must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
 
-// Query parameters schema for listing tools
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be at most 100 characters')
+    .optional(),
+
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .max(100, 'Slug must be at most 100 characters')
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
+
+  description: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(200, 'Description must be at most 200 characters')
+    .optional(),
+
+  longDescription: z
+    .string()
+    .min(50, 'Long description must be at least 50 characters')
+    .max(2000, 'Long description must be at most 2000 characters')
+    .optional()
+    .or(z.literal('')),
+
+  tagline: z
+    .string()
+    .max(100, 'Tagline must be at most 100 characters')
+    .optional()
+    .or(z.literal('')),
+
+  // Categorization
+  categories: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]))
+    .min(1, 'At least one category is required')
+    .max(5, 'At most 5 categories allowed')
+    .optional(),
+
+  industries: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]))
+    .min(1, 'At least one industry is required')
+    .max(10, 'At most 10 industries allowed')
+    .optional(),
+
+  userTypes: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]))
+    .min(1, 'At least one user type is required')
+    .max(10, 'At most 10 user types allowed')
+    .optional(),
+
+  // Pricing - if provided, must have complete pricing tiers
+  pricing: z
+    .array(PricingSchema)
+    .min(1, 'At least one pricing tier is required')
+    .optional(),
+
+  pricingModel: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .min(1, 'At least one pricing model is required')
+    .optional(),
+
+  pricingUrl: z
+    .string()
+    .url('Pricing URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  // Technical specifications
+  interface: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]))
+    .min(1, 'At least one interface is required')
+    .optional(),
+
+  functionality: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]))
+    .min(1, 'At least one functionality is required')
+    .optional(),
+
+  deployment: z
+    .array(z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]))
+    .min(1, 'At least one deployment option is required')
+    .optional(),
+
+  // Metadata
+  logoUrl: z
+    .string()
+    .url('Logo URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  website: z
+    .string()
+    .url('Website must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  documentation: z
+    .string()
+    .url('Documentation URL must be a valid URL')
+    .optional()
+    .or(z.literal('')),
+
+  status: z
+    .enum(['active', 'beta', 'deprecated', 'discontinued'])
+    .optional(),
+});
+
+// Query parameters schema for listing tools (public - only approved)
 export const GetToolsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -135,10 +250,41 @@ export const GetToolsQuerySchema = z.object({
   status: z.enum(['active', 'beta', 'deprecated', 'discontinued']).optional(),
   category: z.string().optional(),
   industry: z.string().optional(),
-  pricingModel: z.enum(['Free', 'Freemium', 'Paid']).optional(),
+  pricingModel: z
+    .union([
+      z.string(), // Accept comma-separated values
+      z.array(z.enum(['Free', 'Paid'])), // Accept array
+    ])
+    .optional(),
+});
+
+// Query parameters schema for admin tools listing (can filter by approvalStatus)
+export const GetAdminToolsQuerySchema = GetToolsQuerySchema.extend({
+  approvalStatus: ApprovalStatusEnum.optional(),
+  contributor: z.string().optional(), // Filter by specific contributor
+});
+
+// Query parameters schema for user's own tools
+export const GetMyToolsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  approvalStatus: ApprovalStatusEnum.optional(),
+  sortBy: z.enum(['name', 'dateAdded', 'status', 'approvalStatus']).default('dateAdded'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// Schema for rejecting a tool
+export const RejectToolSchema = z.object({
+  reason: z
+    .string()
+    .min(10, 'Rejection reason must be at least 10 characters')
+    .max(500, 'Rejection reason must be at most 500 characters'),
 });
 
 // Type exports
 export type CreateToolInput = z.infer<typeof CreateToolSchema>;
 export type UpdateToolInput = z.infer<typeof UpdateToolSchema>;
 export type GetToolsQuery = z.infer<typeof GetToolsQuerySchema>;
+export type GetAdminToolsQuery = z.infer<typeof GetAdminToolsQuerySchema>;
+export type GetMyToolsQuery = z.infer<typeof GetMyToolsQuerySchema>;
+export type RejectToolInput = z.infer<typeof RejectToolSchema>;

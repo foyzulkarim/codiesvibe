@@ -7,7 +7,19 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model';
+import { Tool } from '../../../models/tool.model.js';
+
+// Mock the rate limiters module to avoid using the actual rate limiter in tests
+// This provides a mock for the toolsMutationLimiter used in routes
+jest.mock('../../../middleware/rate-limiters', () => ({
+  toolsMutationLimiter: (req: any, res: any, next: any) => {
+    // Simple mock that just passes through
+    res.setHeader('RateLimit-Limit', '10');
+    res.setHeader('RateLimit-Remaining', '9');
+    res.setHeader('RateLimit-Reset', Math.floor(Date.now() / 1000 + 300).toString());
+    next();
+  },
+}));
 
 // Mock Clerk authentication middleware BEFORE importing routes
 jest.mock('../../../middleware/clerk-auth.middleware', () => ({
@@ -31,7 +43,32 @@ jest.mock('../../../middleware/clerk-auth.middleware', () => ({
   ClerkAuthenticatedRequest: {},
 }));
 
-import toolsRoutes from '../../../routes/tools.routes';
+// Mock role middleware
+jest.mock('../../../middleware/role.middleware', () => {
+  const originalModule = jest.requireActual('../../../middleware/role.middleware');
+  return {
+    ...originalModule,
+    attachUserRole: (req: any, res: any, next: any) => {
+      // Default to admin role for these tests
+      req.userRole = 'admin';
+      next();
+    },
+    requireAdmin: (req: any, res: any, next: any) => {
+      if (req.userRole !== 'admin') {
+        return res.status(403).json({
+          error: 'Admin access required',
+          code: 'FORBIDDEN',
+        });
+      }
+      next();
+    },
+    isAdmin: (req: any): boolean => req.userRole === 'admin',
+    isOwner: (req: any, contributorId: string): boolean => req.auth?.userId === contributorId,
+    hasRole: (req: any): boolean => 'auth' in req && 'userRole' in req,
+  };
+});
+
+import toolsRoutes from '../../../routes/tools.routes.js';
 
 describe('Tools Routes Integration Tests', () => {
   let app: Express;
@@ -49,7 +86,7 @@ describe('Tools Routes Integration Tests', () => {
       { tier: 'Free', billingPeriod: 'Monthly', price: 0 },
       { tier: 'Pro', billingPeriod: 'Monthly', price: 29 },
     ],
-    pricingModel: 'Freemium',
+    pricingModel: ['Free', 'Paid'],
     interface: ['Web', 'API'],
     functionality: ['AI Chat', 'Code Generation'],
     deployment: ['Cloud'],
@@ -173,7 +210,7 @@ describe('Tools Routes Integration Tests', () => {
 
   describe('GET /api/tools', () => {
     beforeEach(async () => {
-      // Create test tools
+      // Create test tools with approvalStatus: 'approved' (required for getTools)
       for (let i = 1; i <= 15; i++) {
         await Tool.create({
           ...validTool,
@@ -181,8 +218,9 @@ describe('Tools Routes Integration Tests', () => {
           slug: `tool-${i.toString().padStart(2, '0')}`,
           name: `Test Tool ${i}`,
           status: i <= 10 ? 'active' : 'beta',
-          pricingModel: i <= 5 ? 'Free' : 'Freemium',
+          pricingModel: i <= 5 ? ['Free'] : ['Free', 'Paid'],
           dateAdded: new Date(),
+          approvalStatus: 'approved',
         });
       }
     });
@@ -229,9 +267,10 @@ describe('Tools Routes Integration Tests', () => {
         .query({ pricingModel: 'Free' })
         .expect(200);
 
-      expect(response.body.data).toHaveLength(5);
+      // Tools 1-5 have ['Free'], tools 6-15 have ['Free', 'Paid'] - all contain 'Free'
+      expect(response.body.data).toHaveLength(15);
       response.body.data.forEach((tool: any) => {
-        expect(tool.pricingModel).toBe('Free');
+        expect(tool.pricingModel).toContain('Free');
       });
     });
 
@@ -278,6 +317,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should return controlled vocabularies', async () => {
       const response = await request(app)
         .get('/api/tools/vocabularies')
+        .set('Authorization', `Bearer ${mockAuthToken}`)
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -299,12 +339,14 @@ describe('Tools Routes Integration Tests', () => {
         ...validTool,
         slug: validTool.id,
         dateAdded: new Date(),
+        approvalStatus: 'approved',
       });
     });
 
     it('should return tool by id', async () => {
       const response = await request(app)
         .get('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${mockAuthToken}`)
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -315,6 +357,7 @@ describe('Tools Routes Integration Tests', () => {
     it('should return 404 for non-existent tool', async () => {
       const response = await request(app)
         .get('/api/tools/non-existent')
+        .set('Authorization', `Bearer ${mockAuthToken}`)
         .expect(404);
 
       expect(response.body.error).toBe('Tool not found');
@@ -405,6 +448,7 @@ describe('Tools Routes Integration Tests', () => {
       // Verify tool is deleted
       const response = await request(app)
         .get('/api/tools/test-tool')
+        .set('Authorization', `Bearer ${mockAuthToken}`)
         .expect(404);
 
       expect(response.body.error).toBe('Tool not found');

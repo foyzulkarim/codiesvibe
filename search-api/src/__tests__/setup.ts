@@ -22,6 +22,39 @@ process.env.ENABLE_VECTOR_VALIDATION = 'false';
 process.env.ENABLE_RATE_LIMITING = 'false';
 process.env.ENABLE_SECURITY_HEADERS = 'false';
 
+// ==============================================================================
+// GLOBAL MOCKS - Database Connections
+// ==============================================================================
+// Mock Qdrant connection to prevent tests from trying to connect to real Qdrant
+// This is critical for CI/CD where Qdrant may not be available
+jest.mock('../config/database', () => {
+  const mockQdrantClient = {
+    getCollections: jest.fn().mockResolvedValue({ collections: [] }),
+    createCollection: jest.fn().mockResolvedValue(undefined),
+    upsert: jest.fn().mockResolvedValue(undefined),
+    search: jest.fn().mockResolvedValue([]),
+    retrieve: jest.fn().mockResolvedValue([]),
+    delete: jest.fn().mockResolvedValue(undefined),
+    deleteCollection: jest.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    connectToQdrant: jest.fn().mockResolvedValue(mockQdrantClient),
+    connectToMongo: jest.fn().mockResolvedValue(undefined),
+    qdrantConfig: {
+      host: 'localhost',
+      port: 6333,
+      collectionName: 'test-collection',
+    },
+    getCollectionName: jest.fn().mockImplementation((type: string) => `test-${type}`),
+    isSupportedVectorType: jest.fn().mockReturnValue(true),
+    getSupportedVectorTypes: jest.fn().mockReturnValue(['detailed', 'functionality', 'usecases', 'interface']),
+    getEnhancedCollectionName: jest.fn().mockReturnValue('test-enhanced'),
+    shouldUseEnhancedCollection: jest.fn().mockReturnValue(false),
+    getCollectionNameForVectorType: jest.fn().mockImplementation((type: string) => `test-${type}`),
+  };
+});
+
 // Increase timeout for integration tests
 jest.setTimeout(30000);
 
