@@ -444,7 +444,12 @@ Bottleneck: LLM calls (87% of time)
 │     Practice: Semantic cache with vector similarity     │
 │     Lesson: "Production systems need speed AND quality" │
 │                                                         │
-│  5️⃣  INTERPRETABILITY > BLACK BOX                      │
+│  5️⃣  DATA SYNC IS HARDER THAN IT LOOKS                 │
+│     Research: "Just index your vectors"                 │
+│     Practice: MongoDB→Qdrant smart sync + retry logic   │
+│     Lesson: "Two databases = synchronization problem"   │
+│                                                         │
+│  6️⃣  INTERPRETABILITY > BLACK BOX                      │
 │     Research: Explainable AI, model transparency        │
 │     Practice: 3-node pipeline with visible outputs      │
 │     Lesson: "Debugging requires observability"          │
@@ -559,7 +564,56 @@ Latency:
 
 ---
 
-### Lesson 5: Interpretability (1.5 min)
+### Lesson 5: Data Synchronization (1.5 min)
+
+"Research papers say 'build a vector index' - but production means keeping TWO databases in sync..."
+
+**The Problem**:
+```
+User creates tool in Admin UI
+  ↓
+MongoDB updated ✅
+  ↓
+Qdrant vector index... 🤔
+  ↓
+Is it updated? Which collections? What if it fails?
+```
+
+**Our Solution: Smart Sync System**:
+```typescript
+// When tool is created/updated
+1. Save to MongoDB (ALWAYS succeeds)
+2. Calculate content hash per collection
+3. Async sync to Qdrant (4 collections)
+4. Track status per collection
+5. Background worker retries failures
+
+// Each collection tracks its own sync state
+syncMetadata: {
+  collections: {
+    tools: { status: "synced", hash: "abc123" },
+    functionality: { status: "pending", retryCount: 2 },
+    usecases: { status: "failed", error: "timeout" },
+    interface: { status: "synced", hash: "def456" }
+  }
+}
+```
+
+**Key Features**:
+- **Change detection**: Only sync collections with changed fields
+- **Failure isolation**: MongoDB succeeds even if Qdrant fails
+- **Background worker**: Auto-retry with exponential backoff (1 min → 1 hour)
+- **Observability**: Admin dashboard shows sync health per tool
+
+**Why this matters**:
+- Research: "Just index your vectors" ✨
+- Production: Sync failures, retries, monitoring, debugging 😅
+- Two databases = twice the complexity
+- This is why we need sync metrics, status tracking, and admin tools
+
+---
+
+### Lesson 6: Interpretability (1.5 min)
 
 **Show debugging example**:
 ```
@@ -608,6 +662,10 @@ Our 3-Node System:
 │                                                         │
 │  Slow Cold Starts           →    Warm cache on deploy  │
 │                                  + async embedding      │
+│                                                         │
+│  MongoDB-Qdrant Sync        →    Smart sync service +  │
+│  (Two databases drift)           background worker +    │
+│                                  per-collection status  │
 │                                                         │
 │  How to Evaluate?           →    User clicks +         │
 │  (No Ground Truth)               diversity metrics +    │
@@ -849,8 +907,8 @@ Our 3-Node System:
                ├ 07:00-10:00  Query Planning
                ├ 10:00-12:00  Execution
                └ 12:00-13:00  Cache Demo
-13:00 - 21:00  Research → Implementation Lessons (5 lessons)
-21:00 - 24:00  Challenges & Open Questions
+13:00 - 21:30  Research → Implementation Lessons (6 lessons)
+21:30 - 24:00  Challenges & Open Questions
 24:00 - 26:00  Key Takeaways
 26:00 - 27:00  Resources
 27:00 - 30:00  Buffer / Early Q&A
@@ -910,6 +968,18 @@ For example, 'AI tools' and 'AI tols' have similar embeddings. The cache will li
 3. Translation at the boundary
 
 The schema-driven design actually makes this easier - we could define language-specific vocabularies."
+
+## Q: How do you keep MongoDB and Qdrant in sync?
+
+**A**: "Great question - this is one of those production problems research papers don't talk about! We built a Smart Sync system with several key features:
+
+1. **Async fire-and-forget**: When a tool is created/updated, MongoDB saves immediately, then we trigger async sync to Qdrant - so users don't wait
+2. **Per-collection tracking**: Each of our 4 Qdrant collections tracks its own sync status (synced, pending, failed)
+3. **Change detection**: We calculate content hashes per collection and only sync what changed. For example, updating pricing doesn't re-embed the functionality collection
+4. **Background worker**: Runs every 60 seconds, retries failed syncs with exponential backoff (1 min → 1 hour), max 5 retries
+5. **Failure isolation**: MongoDB writes always succeed even if Qdrant fails - we don't want to lose data
+
+The admin dashboard shows sync health per tool, and we have API endpoints to manually trigger retries. This adds complexity, but it's essential for production reliability."
 
 ## Q: How do you validate that the LLM extracted intent correctly?
 
