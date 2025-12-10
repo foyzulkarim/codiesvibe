@@ -124,10 +124,6 @@ const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => 
   const searchQueryStr =
     typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
 
-  if (apiConfig.features.debug) {
-    console.log('[AI Search] Query:', searchQueryStr);
-  }
-
   const response = await searchClient.post<AiSearchResponse>(
     '/search',
     {

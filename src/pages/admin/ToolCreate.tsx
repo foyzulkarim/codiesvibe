@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ToolFormSchema, ToolFormValues, defaultToolFormValues, CONTROLLED_VOCABULARIES } from '@/schemas/tool-form.schema';
 import { useCreateTool, useUpdateTool, useToolAdmin, useVocabularies } from '@/hooks/api/useToolsAdmin';
+import { Layout } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,12 +13,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 
 // Type for array fields that can be toggled
 type ArrayFieldKeys = 'categories' | 'industries' | 'userTypes' | 'interface' | 'functionality' | 'deployment';
 
-export default function ToolCreate() {
+export function ToolCreate() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
@@ -112,15 +113,13 @@ export default function ToolCreate() {
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      <div className="mb-6">
-        <Link to="/admin/tools" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Tools
-        </Link>
-      </div>
-
-      {isEditMode && isLoadingTool ? (
+    <Layout
+      header="admin"
+      adminBackTo="/admin/tools"
+      adminBackLabel="Back to Tools"
+    >
+      <div className="max-w-4xl">
+        {isEditMode && isLoadingTool ? (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -643,8 +642,9 @@ export default function ToolCreate() {
             </form>
           </Form>
         </CardContent>
-      </Card>
-      )}
-    </div>
+        </Card>
+        )}
+      </div>
+    </Layout>
   );
 }

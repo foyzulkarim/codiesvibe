@@ -63,8 +63,6 @@ export class ErrorBoundary extends Component<Props, State> {
    * Log the error to an error reporting service
    */
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-
     // Store error info for display
     this.setState({ errorInfo });
 
@@ -189,22 +187,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-/**
- * Functional wrapper for ErrorBoundary with hooks support
- */
-export const ErrorBoundaryWrapper: React.FC<{
-  children: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-}> = ({ children, onError }) => {
-  const handleReset = () => {
-    // Clear any error-related state
-    console.log('ErrorBoundary reset');
-  };
-
-  return (
-    <ErrorBoundary onReset={handleReset}>
-      {children}
-    </ErrorBoundary>
-  );
-};

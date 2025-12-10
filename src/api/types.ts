@@ -1,27 +1,36 @@
-import { AITool } from '@/data/tools';
-import { SortOption as SortOptionType } from '@/lib/config';
+/**
+ * API Types
+ *
+ * Types specific to API responses and UI hooks.
+ * Core types like Tool, ApiResponse are imported from @/types.
+ */
 
-// Import v2.0 shared types
-import { BaseTool } from '@shared/types';
+import type { SortOption as SortOptionType } from '@/lib/config';
+import type { AITool, BaseTool, SortDirection } from '@/types';
 
 // Re-export shared types for backward compatibility
-export type { ApiResponse, PaginatedResponse } from '@shared/types';
+export type { ApiResponse, PaginatedResponse, ApiError, SortDirection } from '@/types';
 
-// Tool API Types (v2.0)
-// Use shared interface for consistency
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+// ============================================
+// TOOL RESPONSE TYPES
+// ============================================
+
+/**
+ * Tool response DTO from API
+ */
 export interface ToolResponseDto extends BaseTool {
-  // Backend-specific fields (already included in BaseTool v2.0)
   createdBy: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Query Parameters Types - Enhanced for v2.0
-export interface ToolsQueryParams {
-  search?: string;
-}
+// ============================================
+// FILTER TYPES
+// ============================================
 
+/**
+ * UI filter state for search/filtering
+ */
 export interface FilterState {
   pricing: string[];
   interface: string[];
@@ -44,7 +53,13 @@ export interface FilterState {
   pricingModels: string[];
 }
 
-// AI Search Reasoning Types
+// ============================================
+// AI SEARCH TYPES
+// ============================================
+
+/**
+ * AI search reasoning metadata
+ */
 export interface AiSearchReasoning {
   query: string;
   intentState: Record<string, unknown>;
@@ -57,7 +72,10 @@ export interface AiSearchReasoning {
   explanation: string;
 }
 
-// Hook Return Types
+// ============================================
+// HOOK RETURN TYPES
+// ============================================
+
 export interface UseToolsReturn {
   data: AITool[];
   reasoning?: AiSearchReasoning;
@@ -73,16 +91,9 @@ export interface UseToolReturn {
   error: Error | null;
 }
 
-// Error Types
-export interface ApiError {
-  message: string;
-  code?: string;
-  status?: number;
-  details?: unknown;
-}
-
-// Utility Types
-export type SortDirection = 'asc' | 'desc';
+// ============================================
+// SORT UI TYPES
+// ============================================
 
 export interface SortOptionUI {
   value: SortOptionType;
@@ -90,7 +101,9 @@ export interface SortOptionUI {
   direction: SortDirection;
 }
 
-// Available sort options for UI - Updated for v2.0
+/**
+ * Available sort options for UI
+ */
 export const SORT_OPTIONS_UI: SortOptionUI[] = [
   { value: 'popularity', label: 'Most Popular', direction: 'desc' },
   { value: 'rating', label: 'Highest Rated', direction: 'desc' },

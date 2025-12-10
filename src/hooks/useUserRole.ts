@@ -24,8 +24,6 @@ export function useUserRole(): UseUserRoleResult {
   const role: UserRole =
     (user?.publicMetadata?.role as string) === 'admin' ? 'admin' : 'maintainer';
 
-  console.log('User Role:', role);
-
   return {
     userId: user?.id ?? null,
     role,

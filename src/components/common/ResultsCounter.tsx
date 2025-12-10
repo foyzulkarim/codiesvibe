@@ -4,7 +4,7 @@ interface ResultsCounterProps {
   totalCount: number;
 }
 
-export default function ResultsCounter({ isLoading, searchTerm, totalCount }: ResultsCounterProps) {
+export function ResultsCounter({ isLoading, searchTerm, totalCount }: ResultsCounterProps) {
   if (isLoading) {
     return (
       <div className="text-sm text-muted-foreground">

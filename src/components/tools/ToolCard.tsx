@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Star, TrendingUp, Plus, GitCompare, Heart, ExternalLink, Calendar } from "lucide-react";
-import { AITool } from "@shared/types";
+import type { AITool } from "@/types";
 
 interface ToolCardProps {
   tool: AITool;  
@@ -11,8 +11,6 @@ interface ToolCardProps {
 
 export const ToolCard = ({ tool, isExpanded, onToggleExpanded, searchTerm = '' }: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
-
-  console.log('ToolCard(): tool', tool);
 
   // Memoized highlight function for performance
   const highlightText = useMemo(() => {

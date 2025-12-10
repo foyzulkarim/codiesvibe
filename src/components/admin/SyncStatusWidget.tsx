@@ -310,5 +310,3 @@ export function SyncStatusBadge() {
     </TooltipProvider>
   );
 }
-
-export default SyncStatusWidget;

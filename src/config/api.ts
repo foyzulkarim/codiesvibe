@@ -105,6 +105,29 @@ export const apiConfig = {
   },
 
   /**
+   * Request timeout configurations (in milliseconds)
+   */
+  timeouts: {
+    /** Default API timeout (5 minutes) */
+    default: getEnvNumber('VITE_API_TIMEOUT', 300000),
+
+    /** Search API timeout (10 minutes) - for AI operations */
+    search: getEnvNumber('VITE_SEARCH_TIMEOUT', 600000),
+
+    /** Sync operation timeouts */
+    sync: {
+      /** Sweep operations - processes multiple tools (10 minutes) */
+      sweep: 600000,
+      /** Single tool sync retry (5 minutes) */
+      retry: 300000,
+      /** Retry all failed syncs (10 minutes) */
+      retryAll: 600000,
+      /** Batch sync operations (10 minutes) */
+      batch: 600000,
+    },
+  },
+
+  /**
    * Feature flags and development tools
    */
   features: {
@@ -154,13 +177,6 @@ export const apiConfig = {
 /**
  * Debug logging to verify configuration
  */
-if (import.meta.env.DEV || apiConfig.features.debug) {
-  console.log('🔍 API Configuration Debug:');
-  console.log('  VITE_SEARCH_API_URL from env:', import.meta.env.VITE_SEARCH_API_URL);
-  console.log('  Final searchApiUrl:', apiConfig.searchApiUrl);
-  console.log('  NODE_ENV:', import.meta.env.NODE_ENV);
-  console.log('  DEV mode:', import.meta.env.DEV);
-}
 
 /**
  * Validate configuration on app startup
@@ -185,29 +201,6 @@ export const validateApiConfig = (): void => {
   }
 
   // Log warnings
-  if (warnings.length > 0) {
-    console.warn('⚠️  API Configuration Warnings:');
-    warnings.forEach((warning) => console.warn(`   - ${warning}`));
-  }
-
-  // Log configuration in development
-  if (import.meta.env.DEV) {
-    console.log('🔧 API Configuration:', {
-      searchApiUrl: apiConfig.searchApiUrl,
-      timeout: `${apiConfig.timeout}ms`,
-      search: {
-        debounce: `${apiConfig.search.debounceDelay}ms`,
-        minLength: apiConfig.search.minLength,
-        limit: apiConfig.search.defaultLimit,
-      },
-      query: {
-        staleTime: `${apiConfig.query.staleTime}ms`,
-        cacheTime: `${apiConfig.query.cacheTime}ms`,
-        retries: apiConfig.query.retryCount,
-      },
-      features: apiConfig.features,
-    });
-  }
 };
 
 /**

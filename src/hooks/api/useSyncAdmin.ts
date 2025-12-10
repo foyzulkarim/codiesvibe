@@ -7,8 +7,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { searchClient } from '@/api/search-client';
+import { apiConfig } from '@/config/api';
 import { toast } from 'sonner';
-import type { SyncStatus, SyncCollectionName, SyncMetadata, Tool } from './useToolsAdmin';
+import type { SyncStatus, SyncCollectionName, SyncMetadata, Tool } from '@/types';
 
 // ============================================
 // TYPES
@@ -233,7 +234,7 @@ export function useTriggerSweep() {
         '/sync/sweep',
         {},
         {
-          timeout: 600000, // 10 minutes timeout for sweep operations (processes multiple tools)
+          timeout: apiConfig.timeouts.sync.sweep,
         }
       );
       return response.data;
@@ -268,7 +269,7 @@ export function useRetryToolSync() {
         `/sync/retry/${toolId}`,
         {},
         {
-          timeout: 300000, // 5 minutes timeout for sync operations
+          timeout: apiConfig.timeouts.sync.retry,
         }
       );
       return response.data;
@@ -300,7 +301,7 @@ export function useRetryAllFailed() {
         '/sync/retry-all',
         {},
         {
-          timeout: 600000, // 10 minutes timeout for retry-all operations
+          timeout: apiConfig.timeouts.sync.retryAll,
         }
       );
       return response.data;
@@ -428,7 +429,7 @@ export function useBatchSync() {
         '/sync/batch/sync',
         { toolIds, collections },
         {
-          timeout: 600000, // 10 minutes timeout for batch sync operations
+          timeout: apiConfig.timeouts.sync.batch,
         }
       );
       return response.data;

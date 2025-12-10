@@ -1,4 +1,4 @@
-import { BaseTool } from '@shared/types';
+import type { BaseTool } from '@/types';
 
 // Legacy v1.x data structure for transformation
 interface LegacyTool {

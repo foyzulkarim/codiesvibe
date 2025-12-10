@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   requiredRole?: UserRole | UserRole[];
 }
 
-export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { isLoading, isAuthenticated, role } = useUserRole();
 
   // Show loading state while auth/role is being determined

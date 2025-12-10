@@ -43,16 +43,10 @@ searchClient.interceptors.request.use(
     }
 
     // Development logging
-    if (apiConfig.features.enableRequestLogging) {
-      console.log(`[Search API] ${config.method?.toUpperCase()} ${config.url}`);
-    }
 
     return config;
   },
   (error: AxiosError) => {
-    if (apiConfig.features.enableRequestLogging) {
-      console.error('[Search API] Request Error:', error);
-    }
     return Promise.reject(error);
   }
 );
@@ -66,16 +60,9 @@ searchClient.interceptors.request.use(
  */
 searchClient.interceptors.response.use(
   (response) => {
-    if (apiConfig.features.enableRequestLogging) {
-      console.log(`[Search API] ${response.status} ${response.config.url}`);
-    }
     return response;
   },
   async (error: AxiosError<ApiErrorData>) => {
-    if (apiConfig.features.enableRequestLogging) {
-      console.error(`[Search API] Error ${error.response?.status}:`, error.message);
-    }
-
     // Determine user-friendly error message without mutating original error
     let userMessage = error.message;
 
@@ -132,5 +119,3 @@ searchClient.interceptors.response.use(
     return Promise.reject(enhancedError);
   }
 );
-
-export default searchClient;
