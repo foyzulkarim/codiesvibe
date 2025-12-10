@@ -1,234 +1,139 @@
-# CodiesVibe Search API
+<div align="center">
 
-A sophisticated LangGraph-based AI search service that provides intelligent tool discovery using multi-vector search, semantic understanding, and agentic query planning.
+# 🔍 CodiesVibe Search API
 
-## 🚀 Features
+**AI-Powered Semantic Search Engine with LangGraph Orchestration**
 
-- **🎯 Schema-Driven Architecture (v3.0)**: Decoupled design with domain separation for maximum maintainability
-- **🧠 LangGraph 3-Node Pipeline**: Intent extraction → Query planning → Query execution
-- **🔍 Multi-Vector Search**: Semantic, categorical, functional, and alias-based embeddings
-- **⚡ Real-Time AI**: Integration with vLLM for high-performance AI model serving
-- **📊 Vector Database**: Qdrant-powered high-performance similarity search
-- **🔄 Reciprocal Rank Fusion**: Intelligent result merging from multiple sources
-- **🛡️ Production Ready**: Health checks, monitoring, security hardening
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-24.x-green.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-0.2-purple.svg)](https://github.com/langchain-ai/langgraph)
+
+A production-ready, schema-driven AI search service powered by LangGraph for intelligent tool discovery using multi-vector similarity, agentic query planning, and LLM-based intent extraction.
+
+[Quick Start](#-quick-start) • [Documentation](#-documentation) • [API Reference](docs/API.md) • [Contributing](docs/CONTRIBUTING.md)
+
+</div>
+
+---
+
+## ✨ Features
+
+### 🎯 Core Capabilities
+- **Agentic Search Pipeline**: 5-node LangGraph orchestration with intelligent caching
+- **Multi-Vector Semantic Search**: Search across semantic, categorical, functional, and interface dimensions
+- **LLM-Powered Intelligence**: Intent extraction and dynamic query planning using Together AI
+- **Schema-Driven Design**: Domain-agnostic core with pluggable domain configurations
+
+### 🛡️ Production Ready
+- **Enterprise Security**: Comprehensive input validation, rate limiting, malicious pattern detection
+- **Observability**: Prometheus metrics, Winston logging, health checks (liveness/readiness)
+- **Resilience**: Circuit breakers, graceful shutdown, timeout protection
+- **Performance**: Response compression, request caching, optimized vector queries
+
+### 🏗️ Developer Experience
+- **Full TypeScript**: Strict type safety across the codebase
+- **Testing**: Jest unit tests with MongoDB Memory Server
+- **API Docs**: Interactive OpenAPI/Swagger UI at `/api-docs`
+- **Docker Ready**: Multi-stage builds with health checks
+
+---
+
+## 🏛️ Architecture
+
+### Pipeline Flow
+
+```mermaid
+graph LR
+    A[Search Request] --> B[Cache Check]
+    B -->|Cache Hit| F[Return Results]
+    B -->|Cache Miss| C[Intent Extractor]
+    C --> D[Query Planner]
+    D --> E[Query Executor]
+    E --> G[Cache Store]
+    G --> F
+```
+
+**5-Node LangGraph Pipeline:**
+1. **CacheCheckNode** - Vector-based cache lookup
+2. **IntentExtractorNode** - LLM-powered intent extraction
+3. **QueryPlannerNode** - Dynamic execution strategy
+4. **QueryExecutorNode** - Multi-source query execution (Qdrant + MongoDB)
+5. **CacheStoreNode** - Result persistence
+
+> 📖 **Learn more**: [Architecture Documentation](docs/ARCHITECTURE.md)
+
+---
 
 ## 📋 Prerequisites
 
-- Docker & Docker Compose
-- MongoDB (included in infrastructure)
-- Qdrant Vector Database (included in infrastructure)
-- vLLM server running on host (recommended) or external LLM service
+- **Node.js** >= 24.x
+- **Docker** >= 20.x & **Docker Compose** >= 2.x
+- **Together AI API Key** ([Get one here](https://api.together.xyz/))
+- **Clerk Account** ([Sign up](https://clerk.com/))
 
-## 🏗️ Architecture
+**Optional**: MongoDB Atlas, Qdrant Cloud (for production)
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Intent Node   │───▶│  Query Planner   │───▶│ Query Executor  │
-│                 │    │                  │    │                 │
-│ • LLM Analysis  │    │ • Strategy       │    │ • Vector Search │
-│ • Understanding │    │ • Planning       │    │ • MongoDB Query │
-│ • Classification│    │ • Optimization   │    │ • Result Merge  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│     vLLM        │    │     Qdrant       │    │    MongoDB      │
-│   Host API      │    │  Vector DB       │    │  Document DB    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
-
-### Schema-Driven Architecture (v3.0)
-
-The search API uses a **schema-driven architecture** for maximum decoupling and maintainability:
-
-#### Core Principles
-- **Domain Separation**: Core framework code is separate from domain-specific logic
-- **Schema Configuration**: All domain knowledge defined in `DomainSchema` interface
-- **Type Safety**: Full TypeScript type checking across schema definitions
-- **Validation**: Schema validation at startup catches configuration errors early
-
-#### Architecture Layers
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Schema-Driven Pipeline                    │
-├─────────────────────────────────────────────────────────────┤
-│  Core Framework (Domain-Agnostic)                           │
-│  • schema.types.ts - DomainSchema interface                 │
-│  • schema.validator.ts - Schema validation                  │
-│  • templates.ts - Prompt templates with placeholders        │
-│  • prompt.generator.ts - Dynamic prompt generation          │
-│  • pipeline.init.ts - Schema validation & wiring            │
-├─────────────────────────────────────────────────────────────┤
-│  Domain Layer (Tools-Specific)                              │
-│  • tools.schema.ts - toolsSchema definition                 │
-│  • tools.filters.ts - buildToolsFilters() logic            │
-│  • tools.validators.ts - validateToolsQueryPlan() logic    │
-├─────────────────────────────────────────────────────────────┤
-│  LangGraph Nodes (Schema-Powered)                          │
-│  • intent-extractor.node.ts - Uses schema prompts          │
-│  • query-planner.node.ts - Uses domain handlers            │
-│  • query-executor.node.ts - Executes with schema config    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### Key Components
-
-**1. Domain Schema** (`src/core/types/schema.types.ts`)
-```typescript
-interface DomainSchema {
-  name: string;                              // Domain identifier
-  version: string;                           // Schema version
-  vocabularies: DomainVocabularies;         // Controlled vocabularies
-  intentFields: IntentFieldDefinition[];    // LLM extraction schema
-  vectorCollections: VectorCollectionDefinition[]; // Vector DB config
-  structuredDatabase: StructuredDatabaseDefinition; // MongoDB config
-}
-```
-
-**2. Schema Validator** (`src/core/validators/schema.validator.ts`)
-- Validates schema structure at startup
-- Catches configuration errors before runtime
-- Provides detailed validation messages
-
-**3. Prompt Generator** (`src/core/prompts/prompt.generator.ts`)
-- Generates LLM prompts dynamically from schema
-- Replaces hardcoded prompts with template-based system
-- Supports `{{PLACEHOLDER}}` syntax for dynamic content
-
-**4. Domain Handlers** (`src/domains/tools/`)
-- `tools.schema.ts` - Complete tools domain schema definition
-- `tools.filters.ts` - MongoDB filter mapping logic
-- `tools.validators.ts` - Query plan validation and recommendations
-
-**5. Pipeline Initialization** (`src/core/pipeline.init.ts`)
-```typescript
-const pipelineConfig = initializePipeline();
-// Returns: { schema, domainHandlers }
-// - schema: Validated domain schema
-// - domainHandlers: { buildFilters, validateQueryPlan }
-```
-
-#### Migration Benefits
-
-**Before (v2.x)**: Hardcoded domain knowledge in every node
-- ❌ 200+ lines of hardcoded prompts per node
-- ❌ 150+ lines of inline filter logic
-- ❌ Domain knowledge scattered across files
-- ❌ Difficult to maintain and extend
-
-**After (v3.0)**: Schema-driven configuration
-- ✅ Prompts generated dynamically from schema
-- ✅ Domain logic extracted to dedicated files
-- ✅ Single source of truth for vocabularies
-- ✅ Easy to add new domains or modify existing ones
-
-#### Adding a New Domain
-
-To add a new domain (e.g., "recipes"):
-
-1. **Define Schema** (`src/domains/recipes/recipes.schema.ts`)
-```typescript
-export const recipesSchema: DomainSchema = {
-  name: 'recipes',
-  version: '1.0.0',
-  vocabularies: { cuisines: [...], dietTypes: [...] },
-  intentFields: [...],
-  vectorCollections: [...],
-  structuredDatabase: {...}
-};
-```
-
-2. **Implement Handlers** (`src/domains/recipes/recipes.filters.ts`)
-```typescript
-export function buildRecipesFilters(intentState: any): any[] {
-  // Domain-specific filter mapping logic
-}
-```
-
-3. **Wire Pipeline** (`src/core/pipeline.init.ts`)
-```typescript
-export function initializeRecipesPipeline() {
-  return {
-    schema: recipesSchema,
-    domainHandlers: {
-      buildFilters: buildRecipesFilters,
-      validateQueryPlan: validateRecipesQueryPlan
-    }
-  };
-}
-```
-
-**No changes needed** to core framework or LangGraph nodes!
+---
 
 ## 🚀 Quick Start
 
-### 1. Start Infrastructure Services
+### 1. Clone and Configure
 
 ```bash
-# Start all required services (MongoDB, Qdrant)
-docker-compose -f docker-compose.infra.yml up -d
+# Clone the repository
+git clone https://github.com/yourusername/codiesvibe.git
+cd codiesvibe/search-api
 
-# Check services are healthy
-docker-compose -f docker-compose.infra.yml ps
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env and add your TOGETHER_API_KEY and CLERK_SECRET_KEY
 ```
 
-### 2. Start Search API
+### 2. Start Services
 
-#### Development Mode (with hot reload):
 ```bash
-docker-compose -f docker-compose.search-api.dev.yml up --build
+# Start MongoDB, Qdrant, and Search API
+docker-compose up -d --build
+
+# Verify services are healthy
+docker-compose ps
 ```
 
-#### Production Mode:
+### 3. Initialize Vector Database
+
 ```bash
-docker-compose -f docker-compose.production.yml up search-api --build
+# Create Qdrant collections and seed data
+docker exec -it search-api npm run create-collections
+docker exec -it search-api npm run seed-vectors
 ```
 
-### 3. Verify vLLM Setup
-
-Make sure your vLLM server is running on the host:
+### 4. Test the API
 
 ```bash
-# Test vLLM connection (adjust port/model as needed)
-curl http://localhost:8000/v1/models
-
-# Should return your available models
-curl http://localhost:8000/v1/chat/completions \
+# Search request
+curl -X POST http://localhost:4003/api/search \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "Qwen/Qwen3-0.6B",
-    "messages": [{"role": "user", "content": "Hello"}],
-    "max_tokens": 10
+    "query": "AI code completion tools",
+    "limit": 10
   }'
 ```
 
-### 4. Seed Vector Database
+**Access API Documentation**: [http://localhost:4003/api-docs](http://localhost:4003/api-docs)
 
+> 📖 **Detailed setup**: [Installation Guide](docs/INSTALLATION.md)
+
+---
+
+## 📡 Basic API Usage
+
+### Search Endpoint
+
+**Request:**
 ```bash
-# Enter search-api container
-docker exec -it codiesvibe-search-api bash
-
-# Create Qdrant collections
-npm run create-collections
-
-# Seed vectors from MongoDB data
-npm run seed-vectors
-
-# Force re-seed (clears existing data)
-npm run seed-vectors -- --force
-```
-
-## 📡 API Endpoints
-
-### Health Check
-```bash
-GET http://localhost:4003/health
-```
-
-### Search
-```bash
-POST http://localhost:4003/search
+POST /api/search
 Content-Type: application/json
 
 {
@@ -238,294 +143,156 @@ Content-Type: application/json
 }
 ```
 
-#### Response Format
+**Response:**
 ```json
 {
   "query": "AI code completion tools",
   "intentState": {
     "primaryIntent": "code_completion",
     "confidence": 0.95,
-    "entities": [...]
-  },
-  "executionPlan": {
-    "strategy": "semantic_hybrid",
-    "explanation": "Using semantic search with categorical filtering",
-    "vectorTypes": ["semantic", "entities.categories"]
+    "entities": {
+      "categories": ["AI", "Developer Tools"]
+    }
   },
   "results": [...],
-  "candidates": [...],
-  "executionStats": {
-    "totalTimeMs": 245,
-    "nodeTimings": {...},
-    "vectorQueriesExecuted": 3,
-    "structuredQueriesExecuted": 1
-  },
-  "executionTime": "245ms",
-  "phase": "3-Node LLM-First Pipeline",
-  "strategy": "semantic_hybrid"
+  "executionTime": "245ms"
 }
 ```
 
-## ⚙️ Configuration
+### Health Check
 
-### Environment Variables
+```bash
+# Basic health
+curl http://localhost:4003/health
 
-#### Database Configuration
-```env
-MONGODB_URI=mongodb://admin:password123@mongodb:27017/codiesvibe?authSource=admin
-QDRANT_HOST=qdrant
-QDRANT_PORT=6333
-QDRANT_COLLECTION_NAME=tools
+# Readiness probe (checks MongoDB + Qdrant)
+curl http://localhost:4003/health/ready
 ```
 
-#### AI Model Configuration
-```env
-# vLLM (recommended - running on host)
-VLLM_BASE_URL=http://host.docker.internal:8000
-VLLM_MODEL=Qwen/Qwen3-0.6B
+> 📖 **Complete API reference**: [API Documentation](docs/API.md)
 
-# External LLM services (alternative)
-VLLM_BASE_URL=https://api.openai.com/v1
-VLLM_MODEL=gpt-4
-```
+---
 
-#### Search Configuration
-```env
-# Multi-vector search
-SEARCH_USE_MULTIVECTOR=true
-MULTIVECTOR_MAX_RESULTS=20
-VECTOR_TYPES=semantic,entities.categories,entities.functionality,entities.aliases,composites.toolType
+## 📚 Documentation
 
-# RRF configuration
-SEARCH_RRF_K=60
-SEARCH_SOURCE_WEIGHTS={"mongodb": 0.3, "qdrant": 0.7}
-DEDUPE_THRESHOLD=0.8
+| Document | Description |
+|----------|-------------|
+| [Installation](docs/INSTALLATION.md) | Docker & local setup, environment configuration |
+| [Architecture](docs/ARCHITECTURE.md) | Schema-driven design, LangGraph pipeline, multi-vector search |
+| [API Reference](docs/API.md) | Complete endpoint reference with examples |
+| [Configuration](docs/CONFIGURATION.md) | Environment variables, vector types, search tuning |
+| [Development](docs/DEVELOPMENT.md) | Local development workflow, scripts, project structure |
+| [Testing](docs/TESTING.md) | Unit, E2E, integration, and security tests |
+| [Deployment](docs/DEPLOYMENT.md) | Production deployment, Docker, PM2, scaling |
+| [Monitoring](docs/MONITORING.md) | Health checks, Prometheus metrics, logging |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
+| [FAQ](docs/FAQ.md) | Frequently asked questions |
+| [Contributing](docs/CONTRIBUTING.md) | Contribution guidelines and code standards |
+| [Security](SECURITY.md) | Security features and best practices |
 
-# Performance
-ENABLE_CACHE=true
-CACHE_TTL=3600
-```
+---
 
 ## 🛠️ Development
 
-### Local Development
-
 ```bash
 # Install dependencies
-cd search-api
 npm install
 
-# Start with ts-node-dev (hot reload)
-npm run dev
+# Start infrastructure (MongoDB + Qdrant)
+docker-compose -f docker-compose.infra.yml up -d
 
-# Build for production
-npm run build
+# Start dev server with hot reload
+npm run dev
 
 # Run tests
 npm test
 
 # Type checking
-npm run type-check
+npm run typecheck
 ```
 
-### Docker Development
+> 📖 **Full development guide**: [Development Documentation](docs/DEVELOPMENT.md)
+
+---
+
+## 🚀 Deployment
+
+### Docker (Recommended)
 
 ```bash
-# Build only the search-api image
-docker build -f Dockerfile.search-api -t codiesvibe-search-api .
-
-# Run with development configuration
-docker run -p 4003:4003 --network codiesvibe-network codiesvibe-search-api:dev
-
-# Interactive development with volume mounts
-docker run -it -p 4003:4003 \
-  -v $(pwd)/search-api/src:/app/src \
-  --network codiesvibe-network \
-  codiesvibe-search-api:dev npm run dev
+docker build -t search-api:latest .
+docker-compose -f docker-compose.production.yml up -d
 ```
 
-## 📊 Monitoring & Debugging
-
-### Health Monitoring
-- **Health Endpoint**: `/health` - Checks MongoDB, Qdrant, and vLLM connectivity
-- **Container Health**: Docker health checks every 30s
-- **Resource Monitoring**: Memory/CPU limits with Grafana dashboards
-
-### Debug Mode
-Enable debug logging and detailed execution traces:
+### PM2
 
 ```bash
-POST http://localhost:4003/search
-{
-  "query": "your query",
-  "debug": true
-}
+npm run build
+npm run start:prod:pm2
 ```
 
-Response includes:
-- Node execution times
-- Vector query details
-- Execution path
-- Error traces
+> 📖 **Production setup**: [Deployment Guide](docs/DEPLOYMENT.md)
 
-### Log Analysis
+---
+
+## 🔒 Security
+
+The API implements comprehensive security measures including:
+
+✅ Dual-layer input validation (express-validator + Joi)
+✅ Malicious pattern detection (XSS, SQL injection, command injection)
+✅ Multi-tier rate limiting
+✅ Security headers (Helmet with CSP)
+✅ NoSQL injection protection
+✅ HTTP Parameter Pollution prevention
+✅ CORS with origin validation
+✅ Clerk-based authentication
+
+**Security Test:**
 ```bash
-# View search-api logs
-docker-compose -f docker-compose.production.yml logs -f search-api
-
-# View all service logs
-docker-compose -f docker-compose.infra.yml logs -f
+npx tsx test-security-validation.ts
+# Expected: 16/16 malicious patterns blocked, 8/8 legitimate queries allowed
 ```
 
-## 🔧 Advanced Configuration
+> 📖 **Security details**: [SECURITY.md](SECURITY.md)
 
-### Custom Vector Types
-Add new vector types by extending the configuration:
-
-```env
-VECTOR_TYPES=semantic,entities.categories,entities.functionality,entities.aliases,composites.toolType,custom.my-vector
-```
-
-### Performance Tuning
-```env
-# Increase vector search results
-MULTIVECTOR_MAX_RESULTS=50
-
-# Adjust RRF weighting
-SEARCH_SOURCE_WEIGHTS={"mongodb": 0.2, "qdrant": 0.8}
-
-# Optimize cache
-CACHE_TTL=7200
-ENABLE_CACHE=true
-```
-
-### External LLM Services
-Use external LLM providers instead of local vLLM:
-
-```env
-# OpenAI (requires API key)
-VLLM_BASE_URL=https://api.openai.com/v1
-VLLM_MODEL=gpt-4
-
-# Anthropic Claude
-VLLM_BASE_URL=https://api.anthropic.com
-VLLM_MODEL=claude-3-sonnet
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-#### 1. Vector Index Validation Failed
-```bash
-# Re-seed vectors
-docker exec -it codiesvibe-search-api npm run seed-vectors -- --force
-
-# Check Qdrant collection
-curl http://localhost:6333/collections/tools
-```
-
-#### 2. vLLM Connection Issues
-```bash
-# Check vLLM server is running on host
-curl http://localhost:8000/v1/models
-
-# Test vLLM API connectivity from container
-docker exec -it codiesvibe-search-api curl http://host.docker.internal:8000/v1/models
-
-# Check vLLM server logs
-# Check your vLLM server process on the host
-```
-
-#### 3. MongoDB Connection Issues
-```bash
-# Test MongoDB connectivity
-docker exec -it codiesvibe-search-api npm run setup
-
-# Check MongoDB container
-docker-compose -f docker-compose.infra.yml logs mongodb
-```
-
-#### 4. Search Performance Issues
-- Enable caching: `ENABLE_CACHE=true`
-- Increase memory limits in docker-compose
-- Optimize vector types: Use only essential `VECTOR_TYPES`
-- Monitor resource usage in Grafana
-
-### Health Check Failures
-```bash
-# Detailed health check
-curl -v http://localhost:4003/health
-
-# Check individual service health
-docker-compose -f docker-compose.infra.yml ps
-docker exec -it codiesvibe-search-api curl -f http://mongodb:27017
-docker exec -it codiesvibe-search-api curl -f http://qdrant:6333/health
-docker exec -it codiesvibe-search-api curl -f http://host.docker.internal:8000/v1/models
-```
-
-## 📈 Production Deployment
-
-### Resource Requirements
-- **Minimum**: 2GB RAM, 1 CPU core
-- **Recommended**: 4GB RAM, 2 CPU cores
-- **With vLLM**: Depends on model size (typically 4-16GB RAM for host)
-
-### Security Features
-- Non-root containers
-- Read-only filesystem
-- Resource limits
-- Health checks
-- Signal handling with dumb-init
-
-### Scaling
-```bash
-# Scale search-api horizontally
-docker-compose -f docker-compose.production.yml up --scale search-api=3
-
-# Load balance with nginx (configure upstream block)
-```
-
-## 📚 API Reference
-
-### Search Endpoint Details
-
-#### Request Body
-```typescript
-interface SearchRequest {
-  query: string;           // Search query (required)
-  limit?: number;          // Max results (default: 10)
-  debug?: boolean;         // Enable debug mode (default: false)
-}
-```
-
-#### Response Body
-```typescript
-interface SearchResponse {
-  query: string;
-  intentState?: IntentState;
-  executionPlan?: ExecutionPlan;
-  results: SearchResult[];
-  candidates: Candidate[];
-  executionStats: ExecutionStats;
-  executionTime: string;
-  phase: string;
-  strategy: string;
-  explanation: string;
-  debug?: DebugInfo;
-}
-```
-
-For complete API documentation and examples, see the main [CodiesVibe README](../README.md).
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+We welcome contributions! Please read our [Contributing Guide](docs/CONTRIBUTING.md) for:
+
+- Getting started with development
+- Code standards and guidelines
+- Commit message format
+- Pull request process
+
+---
 
 ## 📄 License
 
-MIT License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](../LICENSE) file for details.
+
+---
+
+## 💬 Support
+
+- **Documentation**: Browse the [docs](docs/) directory
+- **Issues**: [GitHub Issues](https://github.com/yourusername/codiesvibe/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/codiesvibe/discussions)
+
+---
+
+## 🙏 Acknowledgments
+
+Built with [LangGraph](https://github.com/langchain-ai/langgraph), [Qdrant](https://qdrant.tech/), [MongoDB](https://www.mongodb.com/), [Together AI](https://together.ai/), and [TypeScript](https://www.typescriptlang.org/).
+
+---
+
+<div align="center">
+
+**[⬆ Back to Top](#-codiesvibe-search-api)**
+
+Made with ❤️ by the CodiesVibe Team
+
+</div>

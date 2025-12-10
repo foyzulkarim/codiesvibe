@@ -235,8 +235,11 @@ app.use(configureCORS());
 // NoSQL injection protection
 app.use(mongoSanitize());
 
-// HTTP Parameter Pollution protection
-app.use(hpp());
+// HTTP Parameter Pollution protection with whitelist
+// Only allow specific parameters to have multiple values
+app.use(hpp({
+  whitelist: ['query', 'limit', 'debug', 'tags', 'categories'] // Allowed parameters for array values
+}));
 
 // Apply global timeout middleware (30 seconds)
 // This prevents requests from hanging indefinitely
@@ -263,18 +266,76 @@ if (process.env.ENABLE_RATE_LIMITING !== 'false') {
 app.use(express.json({ limit: '10mb' })); // Limit request body size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Enhanced malicious pattern detection
+const MALICIOUS_PATTERNS = [
+  // XSS attempts
+  /<script\b[^>]*>[\s\S]*?<\/script>/gi,
+  /javascript:/gi,
+  /on\w+\s*=/gi, // Event handlers like onclick=, onerror=
+  /<iframe/gi,
+  /<embed/gi,
+  /<object/gi,
+
+  // Code execution attempts
+  /eval\s*\(/gi,
+  /exec\s*\(/gi,
+  /system\s*\(/gi,
+  /setTimeout\s*\(/gi,
+  /setInterval\s*\(/gi,
+  /Function\s*\(/gi,
+
+  // Command substitution
+  /`[\s\S]*`/g, // Backticks
+  /\$\([^)]*\)/g, // $(command)
+
+  // Escape sequences
+  /\\x[0-9a-fA-F]{2}/g, // Hex escape
+  /\\u[0-9a-fA-F]{4}/g, // Unicode escape
+  /&#x?[0-9a-fA-F]+;/g, // HTML entities
+
+  // SQL/NoSQL injection patterns
+  /\b(DROP|DELETE|TRUNCATE)\s+(TABLE|FROM|DATABASE)/gi,
+  /\b(INSERT|UPDATE)\s+(INTO|TABLE|FROM)/gi,
+  /UNION\s+SELECT/gi,
+  /--\s*$/gm, // SQL comments
+  /\/\*[\s\S]*?\*\//g, // Multi-line comments
+];
+
+/**
+ * Check if query contains malicious patterns
+ */
+function containsMaliciousPattern(query: string): boolean {
+  return MALICIOUS_PATTERNS.some(pattern => {
+    // Reset regex lastIndex to avoid state issues with global flag
+    pattern.lastIndex = 0;
+    return pattern.test(query);
+  });
+}
+
+/**
+ * Custom Joi validator for malicious content
+ */
+const maliciousContentValidator = (value: string, helpers: any) => {
+  if (containsMaliciousPattern(value)) {
+    return helpers.error('string.malicious');
+  }
+  return value;
+};
+
 // Input validation schemas
 const searchQuerySchema = Joi.object({
   query: Joi.string()
     .min(1)
     .max(1000)
     .pattern(/^[^<>{}[\]\\]*$/) // No HTML brackets or common injection chars
+    .custom(maliciousContentValidator, 'malicious content validation')
     .required()
     .messages({
       'string.empty': 'Query cannot be empty',
       'string.min': 'Query cannot be empty',
       'string.max': 'Query too long (max 1000 characters)',
       'string.pattern.base': 'Query contains invalid characters',
+      'string.malicious': 'Query contains potentially malicious content',
       'any.required': 'Query is required'
     }),
   limit: Joi.number()
@@ -302,6 +363,12 @@ const validateSearchRequest = [
     .withMessage('Query must be between 1 and 1000 characters')
     .matches(/^[^<>{}[\]\\]*$/)
     .withMessage('Query contains invalid characters')
+    .custom((value) => {
+      if (containsMaliciousPattern(value)) {
+        throw new Error('Query contains potentially malicious content');
+      }
+      return true;
+    })
     .trim()
     .escape(),
   body('limit')
