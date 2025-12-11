@@ -2,37 +2,12 @@
  * API Configuration
  *
  * Centralized configuration for all API-related settings.
- * All values come from environment variables with sensible defaults.
+ * All values come from validated environment variables with sensible defaults.
  *
- * Environment variables are prefixed with VITE_ for Vite to include them in the build.
+ * Environment variables are validated using Zod for type safety.
  */
 
-/**
- * Parse environment variable as number with fallback
- */
-const getEnvNumber = (key: string, defaultValue: number): number => {
-  const value = import.meta.env[key];
-  if (value === undefined || value === '') return defaultValue;
-  const parsed = Number(value);
-  return isNaN(parsed) ? defaultValue : parsed;
-};
-
-/**
- * Parse environment variable as boolean with fallback
- */
-const getEnvBoolean = (key: string, defaultValue: boolean): boolean => {
-  const value = import.meta.env[key];
-  if (value === undefined || value === '') return defaultValue;
-  return value === 'true' || value === '1';
-};
-
-/**
- * Parse environment variable as string with fallback
- */
-const getEnvString = (key: string, defaultValue: string): string => {
-  const value = import.meta.env[key];
-  return value !== undefined && value !== '' ? value : defaultValue;
-};
+import { env, isDevelopment } from './env';
 
 /**
  * API Configuration Object
@@ -44,13 +19,13 @@ export const apiConfig = {
    * Search API URL
    * Default: http://localhost:4003/api
    */
-  searchApiUrl: getEnvString('VITE_SEARCH_API_URL', 'http://localhost:4003/api'),
+  searchApiUrl: env.VITE_SEARCH_API_URL ?? 'http://localhost:4003/api',
 
   /**
    * Global API timeout in milliseconds
    * Default: 300000 (5 minutes) - increased for AI operations
    */
-  timeout: getEnvNumber('VITE_API_TIMEOUT', 300000),
+  timeout: env.VITE_API_TIMEOUT ?? 300000,
 
   /**
    * Search-specific configuration
@@ -60,25 +35,25 @@ export const apiConfig = {
      * Debounce delay for search input in milliseconds
      * Default: 300 (0.3 seconds)
      */
-    debounceDelay: getEnvNumber('VITE_SEARCH_DEBOUNCE_DELAY', 300),
+    debounceDelay: env.VITE_SEARCH_DEBOUNCE_DELAY ?? 300,
 
     /**
      * Minimum query length to trigger search
      * Default: 2 characters
      */
-    minLength: getEnvNumber('VITE_SEARCH_MIN_LENGTH', 2),
+    minLength: env.VITE_SEARCH_MIN_LENGTH ?? 2,
 
     /**
      * Default number of results to fetch
      * Default: 20
      */
-    defaultLimit: getEnvNumber('VITE_SEARCH_DEFAULT_LIMIT', 20),
+    defaultLimit: env.VITE_SEARCH_DEFAULT_LIMIT ?? 20,
 
     /**
      * Search request timeout in milliseconds
      * Default: 600000 (10 minutes) - longer for AI-powered search with LLM calls
      */
-    timeout: getEnvNumber('VITE_SEARCH_TIMEOUT', 600000),
+    timeout: env.VITE_SEARCH_TIMEOUT ?? 600000,
   },
 
   /**
@@ -89,19 +64,42 @@ export const apiConfig = {
      * How long data stays fresh before refetching (milliseconds)
      * Default: 300000 (5 minutes)
      */
-    staleTime: getEnvNumber('VITE_QUERY_STALE_TIME', 5 * 60 * 1000),
+    staleTime: env.VITE_QUERY_STALE_TIME ?? 5 * 60 * 1000,
 
     /**
      * How long inactive data stays in cache (milliseconds)
      * Default: 600000 (10 minutes)
      */
-    cacheTime: getEnvNumber('VITE_QUERY_CACHE_TIME', 10 * 60 * 1000),
+    cacheTime: env.VITE_QUERY_CACHE_TIME ?? 10 * 60 * 1000,
 
     /**
      * Number of retry attempts for failed queries
      * Default: 3
      */
-    retryCount: getEnvNumber('VITE_QUERY_RETRY_COUNT', 3),
+    retryCount: env.VITE_QUERY_RETRY_COUNT ?? 3,
+  },
+
+  /**
+   * Request timeout configurations (in milliseconds)
+   */
+  timeouts: {
+    /** Default API timeout (5 minutes) */
+    default: env.VITE_API_TIMEOUT ?? 300000,
+
+    /** Search API timeout (10 minutes) - for AI operations */
+    search: env.VITE_SEARCH_TIMEOUT ?? 600000,
+
+    /** Sync operation timeouts */
+    sync: {
+      /** Sweep operations - processes multiple tools (10 minutes) */
+      sweep: 600000,
+      /** Single tool sync retry (5 minutes) */
+      retry: 300000,
+      /** Retry all failed syncs (10 minutes) */
+      retryAll: 600000,
+      /** Batch sync operations (10 minutes) */
+      batch: 600000,
+    },
   },
 
   /**
@@ -112,19 +110,19 @@ export const apiConfig = {
      * Enable React Query DevTools
      * Default: true in development, false in production
      */
-    enableDevtools: getEnvBoolean('VITE_ENABLE_DEVTOOLS', import.meta.env.DEV),
+    enableDevtools: env.VITE_ENABLE_DEVTOOLS ?? isDevelopment,
 
     /**
      * Enable request/response logging in console
      * Default: true in development, false in production
      */
-    enableRequestLogging: getEnvBoolean('VITE_ENABLE_REQUEST_LOGGING', import.meta.env.DEV),
+    enableRequestLogging: env.VITE_ENABLE_REQUEST_LOGGING ?? isDevelopment,
 
     /**
      * Enable debug mode
      * Default: true in development, false in production
      */
-    debug: getEnvBoolean('VITE_DEBUG', import.meta.env.DEV),
+    debug: env.VITE_DEBUG ?? isDevelopment,
   },
 
   /**
@@ -135,32 +133,25 @@ export const apiConfig = {
      * Application name
      * Default: CodiesVibe
      */
-    name: getEnvString('VITE_APP_NAME', 'CodiesVibe'),
+    name: env.VITE_APP_NAME ?? 'CodiesVibe',
 
     /**
      * Environment name
      * Default: development
      */
-    environment: getEnvString('VITE_ENVIRONMENT', 'development'),
+    environment: env.VITE_ENVIRONMENT ?? 'development',
 
     /**
      * Application version
      * Default: local-dev
      */
-    version: getEnvString('VITE_APP_VERSION', 'local-dev'),
+    version: env.VITE_APP_VERSION ?? 'local-dev',
   },
 } as const;
 
 /**
  * Debug logging to verify configuration
  */
-if (import.meta.env.DEV || apiConfig.features.debug) {
-  console.log('🔍 API Configuration Debug:');
-  console.log('  VITE_SEARCH_API_URL from env:', import.meta.env.VITE_SEARCH_API_URL);
-  console.log('  Final searchApiUrl:', apiConfig.searchApiUrl);
-  console.log('  NODE_ENV:', import.meta.env.NODE_ENV);
-  console.log('  DEV mode:', import.meta.env.DEV);
-}
 
 /**
  * Validate configuration on app startup
@@ -170,7 +161,7 @@ export const validateApiConfig = (): void => {
   const warnings: string[] = [];
 
   // Check for default Search API URL in production
-  if (!import.meta.env.DEV && apiConfig.searchApiUrl === 'http://localhost:4003/api') {
+  if (!isDevelopment && apiConfig.searchApiUrl === 'http://localhost:4003/api') {
     warnings.push('Using default Search API URL in production. Set VITE_SEARCH_API_URL environment variable.');
   }
 
@@ -184,29 +175,9 @@ export const validateApiConfig = (): void => {
     warnings.push('Search minimum length is less than 1. This may cause performance issues.');
   }
 
-  // Log warnings
+  // Log warnings if any
   if (warnings.length > 0) {
-    console.warn('⚠️  API Configuration Warnings:');
-    warnings.forEach((warning) => console.warn(`   - ${warning}`));
-  }
-
-  // Log configuration in development
-  if (import.meta.env.DEV) {
-    console.log('🔧 API Configuration:', {
-      searchApiUrl: apiConfig.searchApiUrl,
-      timeout: `${apiConfig.timeout}ms`,
-      search: {
-        debounce: `${apiConfig.search.debounceDelay}ms`,
-        minLength: apiConfig.search.minLength,
-        limit: apiConfig.search.defaultLimit,
-      },
-      query: {
-        staleTime: `${apiConfig.query.staleTime}ms`,
-        cacheTime: `${apiConfig.query.cacheTime}ms`,
-        retries: apiConfig.query.retryCount,
-      },
-      features: apiConfig.features,
-    });
+    console.warn('API Configuration Warnings:', warnings);
   }
 };
 

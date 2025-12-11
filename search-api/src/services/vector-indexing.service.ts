@@ -2,6 +2,7 @@ import { mongoDBService } from "./mongodb.service.js";
 import { qdrantService } from "./qdrant.service.js";
 import { embeddingService } from "./embedding.service.js";
 import { ToolData, ToolDataValidator } from "../types/tool.types.js";
+import { ITool } from "../types/tool.interfaces.js";
 import { CollectionConfigService } from "./collection-config.service.js";
 import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 
@@ -81,18 +82,20 @@ export class VectorIndexingService {
     return validator.generateToolId(tool);
   }
 
-  private async processTool(tool: ToolData, retryCount = 0): Promise<boolean> {
+  private async processTool(tool: ITool, retryCount = 0): Promise<boolean> {
     try {
-      const content = this.generateWeightedContent(tool);
+      // Cast ITool to ToolData for methods that require ToolData
+      const toolData = tool as unknown as ToolData;
+      const content = this.generateWeightedContent(toolData);
       if (!content.trim()) {
         console.warn(`Skipping tool ${tool.name} due to empty generated content`);
         return false;
       }
 
       const embedding = await embeddingService.generateEmbedding(content);
-      const payload = this.generateCollectionPayload(tool, 'tools');
+      const payload = this.generateCollectionPayload(toolData, 'tools');
 
-      await qdrantService.upsertTool(this.deriveToolId(tool), embedding, payload);
+      await qdrantService.upsertTool(this.deriveToolId(toolData), embedding, payload);
       return true;
     } catch (error) {
       if (this.isTransientError(error) && retryCount < this.MAX_RETRIES) {
@@ -104,18 +107,20 @@ export class VectorIndexingService {
     }
   }
 
-  private async processToolMultiCollection(tool: ToolData, retryCount = 0): Promise<Record<string, boolean>> {
+  private async processToolMultiCollection(tool: ITool, retryCount = 0): Promise<Record<string, boolean>> {
     const results: Record<string, boolean> = {};
     const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
 
     try {
-      const toolId = this.deriveToolId(tool);
+      // Cast ITool to ToolData for methods that require ToolData
+      const toolData = tool as unknown as ToolData;
+      const toolId = this.deriveToolId(toolData);
 
       // Single pass: generate content, embedding, payload, and upsert for each collection
       for (const collectionName of enabledCollections) {
         try {
           // Generate content for this collection
-          const content = this.generateCollectionContent(tool, collectionName);
+          const content = this.generateCollectionContent(toolData, collectionName);
           if (!content.trim()) {
             results[collectionName] = false;
             continue;
@@ -125,7 +130,7 @@ export class VectorIndexingService {
           const embedding = await embeddingService.generateEmbedding(content);
 
           // Generate payload for this collection
-          const payload = this.generateCollectionPayload(tool, collectionName);
+          const payload = this.generateCollectionPayload(toolData, collectionName);
 
           // Get vector type and upsert immediately
           const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
@@ -150,8 +155,8 @@ export class VectorIndexingService {
     }
   }
 
-  private generateCollectionPayload(tool: ToolData, collectionName: string): Record<string, any> {
-    const payload: Record<string, any> = {
+  private generateCollectionPayload(tool: ToolData, collectionName: string): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
       id: tool._id,
       toolId: this.deriveToolId(tool),
       name: tool.name,
@@ -178,9 +183,9 @@ export class VectorIndexingService {
     return payload;
   }
 
-  private isTransientError(error: any): boolean {
+  private isTransientError(error: unknown): boolean {
     if (!error) return false;
-    const message = typeof error === 'string' ? error : error.message || '';
+    const message = typeof error === 'string' ? error : (error as Error).message || '';
     return message.includes('timeout') || message.includes('Too Many Requests') || message.includes('ECONNRESET');
   }
 
@@ -189,7 +194,7 @@ export class VectorIndexingService {
   }
 
   private async processBatch(
-    tools: ToolData[],
+    tools: ITool[],
     batchIndex: number,
     batchSize: number,
     progress: IndexingProgress
@@ -223,7 +228,7 @@ export class VectorIndexingService {
   }
 
   private async processBatchMultiCollection(
-    tools: ToolData[],
+    tools: ITool[],
     batchIndex: number,
     batchSize: number,
     progress: IndexingProgress
@@ -243,7 +248,7 @@ export class VectorIndexingService {
     for (const tool of batchTools) {
       const result = await this.processToolMultiCollection(tool);
       const processed = result && Object.values(result).filter(v => v).length || 0;
-      const failures = result && Object.values(result).filter(v => !v).length || enabledCollections.length;
+      void (result && Object.values(result).filter(v => !v).length || enabledCollections.length);
 
       successful += processed > 0 ? 1 : 0;
       failed += processed === 0 ? 1 : 0;
@@ -384,7 +389,7 @@ export class VectorIndexingService {
 
       for (const result of batchResults) {
         const processed = Object.values(result).filter(v => v).length;
-        const failures = Object.values(result).filter(v => !v).length;
+        void Object.values(result).filter(v => !v).length;
         successful += processed > 0 ? 1 : 0;
         failed += processed === 0 ? 1 : 0;
       }
@@ -454,7 +459,8 @@ export class VectorIndexingService {
 
         for (const tool of sampleTools) {
           try {
-            const content = this.generateWeightedContent(tool);
+            const toolData = tool as unknown as ToolData;
+            const content = this.generateWeightedContent(toolData);
             if (!content.trim()) {
               console.warn(`Skipping validation for ${tool.name} due to empty content`);
               continue;
@@ -462,7 +468,7 @@ export class VectorIndexingService {
 
             const embedding = await embeddingService.generateEmbedding(content);
             const searchResult = await qdrantService.searchByEmbedding(embedding, 1);
-            const toolId = this.deriveToolId(tool);
+            const toolId = this.deriveToolId(toolData);
 
             if (searchResult.length === 0 || searchResult[0].payload.toolId !== toolId) {
               report.sampleValidationPassed = false;
@@ -520,7 +526,7 @@ export class VectorIndexingService {
 
       let totalVectorCount = 0;
       let totalMissingVectors = 0;
-      let totalOrphanedVectors = 0;
+      // const _totalOrphanedVectors = 0;
 
       // Validate each collection
       for (const collectionName of enabledCollections) {
@@ -588,12 +594,13 @@ export class VectorIndexingService {
 
         for (const tool of sampleTools) {
           try {
-            const toolId = this.deriveToolId(tool);
+            const toolData = tool as unknown as ToolData;
+            const toolId = this.deriveToolId(toolData);
             let foundInAllCollections = true;
 
             for (const collectionName of enabledCollections) {
               try {
-                const content = this.generateCollectionContent(tool, collectionName);
+                const content = this.generateCollectionContent(toolData, collectionName);
                 if (!content.trim()) continue;
 
                 const embedding = await embeddingService.generateEmbedding(content);
@@ -677,8 +684,9 @@ export class VectorIndexingService {
 
         if (collectionConfig) {
           // Add collection metadata as additional properties
-          (healthStatus[collectionName] as any).purpose = collectionConfig.purpose;
-          (healthStatus[collectionName] as any).weightings = collectionConfig.weightings;
+          const health = healthStatus[collectionName] as CollectionHealth & Record<string, unknown>;
+          health.purpose = collectionConfig.purpose;
+          health.weightings = collectionConfig.weightings;
         }
 
       } catch (error) {
@@ -760,7 +768,7 @@ export class VectorIndexingService {
       try {
         const generator = this.contentFactory.createGenerator(collectionName);
         validation[collectionName] = generator.validate(tool);
-      } catch (error) {
+      } catch {
         validation[collectionName] = {
           valid: false,
           missingFields: ['Generator not available']

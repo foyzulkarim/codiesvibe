@@ -1,10 +1,13 @@
-import { Annotation, StateGraph } from "@langchain/langgraph";
-import { any, z } from "zod";
-import { IntentState, IntentStateSchema } from "./intent-state.js";
-import { QueryPlan, QueryPlanSchema } from "./query-plan.js";
-import { Candidate, QueryExecutorOutput, QueryExecutorOutputSchema } from "./candidate.js";
+import { Annotation } from "@langchain/langgraph";
+
 import { ToolData } from "./tool.types.js";
 import { DomainSchema } from "../core/types/schema.types.js";
+import type { IntentState } from "./intent-state.js";
+import type { QueryPlan } from "./query-plan.js";
+import type { Candidate } from "./candidate.js";
+
+// Re-export types for convenience
+export type { IntentState, QueryPlan, Candidate };
 
 // New Simplified State Schema using LangGraph's Annotation
 export const StateAnnotation = Annotation.Root({
@@ -16,7 +19,7 @@ export const StateAnnotation = Annotation.Root({
 
   // Domain-specific handlers (NEW)
   domainHandlers: Annotation<{
-    buildFilters: (intentState: IntentState) => any[];
+    buildFilters: (intentState: IntentState) => Array<{ field: string; operator: string; value: unknown }>;
     validateQueryPlan: (plan: QueryPlan, intentState: IntentState) => {
       valid: boolean;
       errors: string[];
@@ -54,8 +57,8 @@ export const StateAnnotation = Annotation.Root({
 
   // Simplified metadata for observability
   metadata: Annotation<{
-    vectorFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
-    structuredFiltersAndQueries?: { filters: any; query: string; candidatesLength: number }[];
+    vectorFiltersAndQueries?: { filters: unknown; query: string; candidatesLength: number }[];
+    structuredFiltersAndQueries?: { filters: unknown; query: string; candidatesLength: number }[];
     startTime: Date;
     endTime?: Date;
     executionPath: string[];

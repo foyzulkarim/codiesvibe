@@ -1,5 +1,6 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { Together } from 'together-ai';
+import { CONFIG } from '#config/env.config';
 
 /**
  * Production embedding service using Together AI instead of local Ollama
@@ -12,14 +13,14 @@ export class ProductionEmbeddingService {
   constructor() {
     // Initialize Together AI client
     this.togetherClient = new Together({
-      apiKey: process.env.TOGETHER_API_KEY,
+      apiKey: CONFIG.ai.TOGETHER_API_KEY,
     });
 
     // Fallback using OpenAI client for LangChain compatibility
     this.fallbackClient = new ChatOpenAI({
       configuration: {
         baseURL: 'https://api.together.xyz/v1',
-        apiKey: process.env.TOGETHER_API_KEY,
+        apiKey: CONFIG.ai.TOGETHER_API_KEY,
       },
       modelName: 'togethercomputer/m2-bert-80M-32k-retrieval',
       temperature: 0,

@@ -1,31 +1,31 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  useMyTools,
-  useAdminTools,
-  useDeleteTool,
-  useApproveTool,
-  useRejectTool,
-  Tool,
-  ToolsQueryParams,
-  ApprovalStatus,
-  SyncStatus,
-} from '@/hooks/api/useToolsAdmin';
-import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
+import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, User, Check, X, AlertCircle, RefreshCw, Cloud } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
-import { useClerk } from '@clerk/clerk-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { Layout } from '@/components/layout';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Pagination,
   PaginationContent,
@@ -42,39 +42,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, ArrowLeft, LogOut, User, Check, X, AlertCircle, RefreshCw, Cloud, CloudOff } from 'lucide-react';
+import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
+import {
+  useMyTools,
+  useAdminTools,
+  useDeleteTool,
+  useApproveTool,
+  useRejectTool,
+  Tool,
+  ToolsQueryParams,
+  ApprovalStatus,
+  SyncStatus,
+} from '@/hooks/api/useToolsAdmin';
+import { useUserRole } from '@/hooks/useUserRole';
 
-export default function ToolsList() {
+export function ToolsList() {
   const navigate = useNavigate();
-  // const { role, isLoading: isRoleLoading, userId } = useUserRole();
-  const { signOut } = useClerk();
   const { isAdmin, role, isLoading: roleLoading, userId } = useUserRole();
   const [params, setParams] = useState<ToolsQueryParams>({
     page: 1,
@@ -216,7 +213,6 @@ export default function ToolsList() {
   };
 
   const handleRetrySync = async (tool: Tool) => {
-    console.log('Retrying sync for tool:', tool);
     await retryToolSync.mutateAsync(tool._id);
   };
 
@@ -248,30 +244,26 @@ export default function ToolsList() {
     return pages;
   };
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
-        </Link>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>{userId ? `User (${role || 'loading...'})` : 'Loading...'}</span>
-            {role && (
-              <Badge variant={role === 'admin' ? 'default' : 'secondary'} className="ml-1">
-                {role}
-              </Badge>
-            )}
-          </div>
-          <Button variant="outline" size="sm" onClick={() => signOut()}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      </div>
+  // User role badge for admin header
+  const userRoleBadge = (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <User className="h-4 w-4" />
+      <span>{userId ? `User (${role || 'loading...'})` : 'Loading...'}</span>
+      {role && (
+        <Badge variant={role === 'admin' ? 'default' : 'secondary'} className="ml-1">
+          {role}
+        </Badge>
+      )}
+    </div>
+  );
 
+  return (
+    <Layout
+      header="admin"
+      adminBackTo="/"
+      adminBackLabel="Back to Home"
+      adminHeaderChildren={userRoleBadge}
+    >
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -728,6 +720,6 @@ export default function ToolsList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

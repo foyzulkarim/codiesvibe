@@ -20,6 +20,7 @@ export {
   buildToolsFilters,
   hasFilterConstraints,
   sanitizePrice,
+  type FilterObject,
 } from './tools.filters.js';
 
 // Export validation functions

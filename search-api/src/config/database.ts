@@ -1,17 +1,18 @@
 import { MongoClient, Db } from "mongodb";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import dotenv from "dotenv";
+import { CONFIG } from './env.config.js';
 
 dotenv.config();
 
 // MongoDB Configuration
 export const mongoConfig = {
-  uri: process.env.MONGODB_URI || "mongodb://localhost:27017",
-  dbName: process.env.MONGODB_DB_NAME || "toolsearch",
+  uri: CONFIG.database.MONGODB_URI,
+  dbName: CONFIG.database.MONGODB_DB_NAME,
   options: {
     // Connection pool settings
-    maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || '10'), // Max connections in pool
-    minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '2'),  // Min connections in pool
+    maxPoolSize: CONFIG.database.MONGODB_MAX_POOL_SIZE, // Max connections in pool
+    minPoolSize: CONFIG.database.MONGODB_MIN_POOL_SIZE,  // Min connections in pool
     maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
 
     // Timeouts
@@ -32,7 +33,9 @@ export async function connectToMongoDB(): Promise<Db> {
   if (db) return db;
 
   try {
-    mongoClient = new MongoClient(mongoConfig.uri, mongoConfig.options);
+    // Use centralized CONFIG for MongoDB URI
+    const uri = CONFIG.database.MONGODB_URI;
+    mongoClient = new MongoClient(uri, mongoConfig.options);
     await mongoClient.connect();
     db = mongoClient.db(mongoConfig.dbName);
     console.log("Connected to MongoDB", mongoConfig.dbName);
@@ -122,15 +125,31 @@ export async function disconnectFromMongoDB(): Promise<void> {
   }
 }
 
+/**
+ * Reset MongoDB connection - for testing purposes only
+ * This allows tests to reconnect with a different URI (e.g., MongoMemoryServer)
+ */
+export async function resetMongoConnection(): Promise<void> {
+  // Disconnect if connected
+  if (mongoClient) {
+    await mongoClient.close();
+    mongoClient = null;
+    db = null;
+  }
+
+  // Update config with centralized CONFIG value
+  mongoConfig.uri = CONFIG.database.MONGODB_URI;
+}
+
 
 
 // Qdrant Configuration
 export const qdrantConfig = {
-  url: process.env.QDRANT_URL || null,
-  host: process.env.QDRANT_HOST || "localhost",
-  port: parseInt(process.env.QDRANT_PORT || "6333"),
-  apiKey: process.env.QDRANT_API_KEY || null,
-  collectionName: process.env.QDRANT_COLLECTION_NAME || "tools",
+  url: CONFIG.qdrant.QDRANT_URL,
+  host: CONFIG.qdrant.QDRANT_HOST,
+  port: CONFIG.qdrant.QDRANT_PORT,
+  apiKey: CONFIG.qdrant.QDRANT_API_KEY,
+  collectionName: CONFIG.qdrant.QDRANT_COLLECTION_NAME,
   // Enhanced multi-vector configuration
   vectorsConfig: {
     size: 768, // Size of the embedding model (togethercomputer/m2-bert-80M-32k-retrieval)
@@ -173,14 +192,14 @@ export const qdrantConfig = {
   },
   // Collection names for different vector types (legacy - for backward compatibility)
   collectionNames: {
-    semantic: process.env.QDRANT_COLLECTION_SEMANTIC || "tools_semantic",
-    "entities.categories": process.env.QDRANT_COLLECTION_CATEGORIES || "tools_categories",
-    "entities.functionality": process.env.QDRANT_COLLECTION_FUNCTIONALITY || "tools_functionality",
-    "entities.interface": process.env.QDRANT_COLLECTION_INTERFACE || "tools_interface",
-    "entities.industries": process.env.QDRANT_COLLECTION_INDUSTRIES || "tools_industries",
-    "entities.userTypes": process.env.QDRANT_COLLECTION_USER_TYPES || "tools_user_types",
-    "entities.aliases": process.env.QDRANT_COLLECTION_ALIASES || "tools_aliases",
-    "composites.toolType": process.env.QDRANT_COLLECTION_TOOL_TYPE || "tools_tool_type",
+    semantic: CONFIG.qdrant.collections.SEMANTIC,
+    "entities.categories": CONFIG.qdrant.collections.CATEGORIES,
+    "entities.functionality": CONFIG.qdrant.collections.FUNCTIONALITY,
+    "entities.interface": CONFIG.qdrant.collections.INTERFACE,
+    "entities.industries": CONFIG.qdrant.collections.INDUSTRIES,
+    "entities.userTypes": CONFIG.qdrant.collections.USER_TYPES,
+    "entities.aliases": CONFIG.qdrant.collections.ALIASES,
+    "composites.toolType": CONFIG.qdrant.collections.TOOL_TYPE,
   },
   // Enhanced collection configuration - hardcoded for now
   enhancedCollectionNames: {
@@ -191,7 +210,7 @@ export const qdrantConfig = {
 // Qdrant connection management
 let qdrantClient: QdrantClient | null = null;
 
-export async function connectToQdrant(): Promise<QdrantClient> {
+export async function connectToQdrant(): Promise<QdrantClient | null> {
   if (qdrantClient) return qdrantClient;
 
   try {
@@ -216,19 +235,23 @@ export async function connectToQdrant(): Promise<QdrantClient> {
     const collections = await qdrantClient.getCollections();
     const existingCollectionNames = collections.collections.map(c => c.name);
 
-    // Create legacy collection for backward compatibility
+    // Create legacy 'tools' collection for backward compatibility
+    // NOTE: All 4 collections will be created by server startup via qdrantService.createMultiCollections()
     if (!existingCollectionNames.includes(qdrantConfig.collectionName)) {
       await qdrantClient.createCollection(qdrantConfig.collectionName, {
         vectors: qdrantConfig.vectorsConfig,
       });
-      console.log(`Created Qdrant collection: ${qdrantConfig.collectionName}`);
+      console.log(`✅ Created legacy Qdrant collection: ${qdrantConfig.collectionName}`);
+    } else {
+      console.log(`✅ Legacy Qdrant collection already exists: ${qdrantConfig.collectionName}`);
     }
 
-    console.log("Connected to Qdrant with enhanced multi-vector support");
+    console.log("✅ Connected to Qdrant (multi-collection setup happens during server startup)");
     return qdrantClient;
   } catch (error) {
     console.error("Failed to connect to Qdrant:", error);
-    throw error;
+    // Don't throw error - return null and let the application continue without Qdrant
+    return null;
   }
 }
 
@@ -278,7 +301,7 @@ export function getEnhancedCollectionName(): string {
  * Check if enhanced collection should be used
  */
 export function shouldUseEnhancedCollection(): boolean {
-  return process.env.QDRANT_USE_ENHANCED_COLLECTION === 'true';
+  return CONFIG.qdrant.QDRANT_USE_ENHANCED_COLLECTION;
 }
 
 /**

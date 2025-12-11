@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { searchLogger } from '../config/logger.js';
 import { SearchRequest } from './correlation.middleware.js';
 
-export interface TimeoutOptions {
+interface TimeoutOptions {
   timeout: number; // Timeout in milliseconds
   onTimeout?: (req: Request, res: Response) => void;
 }
@@ -15,15 +15,15 @@ export interface TimeoutOptions {
 /**
  * Create a timeout middleware with configurable timeout duration
  */
-export function createTimeoutMiddleware(options: TimeoutOptions) {
+export function createTimeoutMiddleware(options: TimeoutOptions): (req: Request, res: Response, next: NextFunction) => void {
   const { timeout, onTimeout } = options;
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const searchReq = req as SearchRequest;
     let timeoutTriggered = false;
 
     // Set up timeout
-    const timeoutId = setTimeout(() => {
+    const timeoutId: NodeJS.Timeout = setTimeout(() => {
       if (res.headersSent) {
         // Response already sent, nothing to do
         return;
@@ -47,8 +47,9 @@ export function createTimeoutMiddleware(options: TimeoutOptions) {
       });
 
       // Track timeout as error in metrics
-      if (typeof (global as any).metricsService !== 'undefined') {
-        (global as any).metricsService.trackError('request_timeout', 'medium');
+      const globalWithMetrics = global as typeof global & { metricsService?: { trackError: (error: string, severity: string) => void } };
+      if (typeof globalWithMetrics.metricsService !== 'undefined') {
+        globalWithMetrics.metricsService.trackError('request_timeout', 'medium');
       }
 
       // Call custom timeout handler if provided
@@ -67,7 +68,7 @@ export function createTimeoutMiddleware(options: TimeoutOptions) {
 
     // Clean up timeout when response finishes
     const originalEnd = res.end;
-    res.end = function (this: Response, ...args: any[]): Response {
+    res.end = function (this: Response, chunk?: unknown, encodingOrCb?: unknown, cb?: () => void): Response {
       clearTimeout(timeoutId);
 
       // Log if request completed just before timeout
@@ -89,8 +90,12 @@ export function createTimeoutMiddleware(options: TimeoutOptions) {
         }
       }
 
-      return originalEnd.apply(this, args);
-    } as any;
+      // Call original with proper argument handling
+      if (typeof encodingOrCb === 'function') {
+        return originalEnd.call(this, chunk, encodingOrCb);
+      }
+      return originalEnd.call(this, chunk, encodingOrCb as BufferEncoding | undefined, cb);
+    };
 
     // Prevent further processing if timeout was triggered
     res.on('finish', () => {
@@ -115,10 +120,11 @@ export const searchTimeout = createTimeoutMiddleware({
   timeout: 60000, // 60 seconds
   onTimeout: (req, res) => {
     const searchReq = req as SearchRequest;
+    const requestBody = req.body as { query?: string } | undefined;
     searchLogger.error('Search request timeout', new Error('Search timeout'), {
       correlationId: searchReq.correlationId,
       service: 'search-api',
-      query: (req.body as any)?.query || 'unknown',
+      query: requestBody?.query || 'unknown',
       timeout: '60s',
     }, {
       function: 'searchTimeout',

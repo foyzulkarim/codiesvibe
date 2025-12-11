@@ -6,7 +6,7 @@
  */
 
 import crypto from 'crypto';
-import { ITool, SyncCollectionName } from '../models/tool.model.js';
+import { ITool, SyncCollectionName } from '../types/tool.interfaces.js';
 
 // ============================================
 // FIELD-TO-COLLECTION MAPPINGS
@@ -172,8 +172,8 @@ export class ContentHashService {
     };
 
     // Merge old and new data for hash calculation
-    const oldToolObj = oldTool.toObject?.() ?? oldTool;
-    const mergedTool = { ...oldToolObj, ...newData };
+    // Documents are already plain objects with native driver (no Mongoose)
+    const mergedTool = { ...oldTool, ...newData };
 
     for (const collection of Object.keys(COLLECTION_FIELDS) as SyncCollectionName[]) {
       // Get stored hash (or calculate from old data if not stored)

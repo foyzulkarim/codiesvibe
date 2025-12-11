@@ -3,17 +3,53 @@
  * Tests for MongoDB-Qdrant synchronization operations
  */
 
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  ToolSyncService,
-  toolSyncService,
-  SYNC_ERROR_CODES,
-  ToolSyncResult,
-  CollectionSyncResult,
-} from '../../../services/tool-sync.service.js';
-import { Tool, ITool, SyncCollectionName } from '../../../models/tool.model.js';
+  setupTestDatabase,
+  teardownTestDatabase,
+  clearToolsCollection,
+  createTestTool,
+  getTestDb,
+} from '../../test-utils/db-setup.js';
+import { ITool, SyncCollectionName } from '../../../types/tool.interfaces.js';
 import { contentHashService } from '../../../services/content-hash.service.js';
+
+// Store reference to test database for the mock
+let testDbReference: ReturnType<typeof getTestDb> | null = null;
+
+// Mock the database module to use test database
+jest.mock('../../../config/database', () => ({
+  connectToMongoDB: jest.fn(async () => {
+    if (!testDbReference) {
+      throw new Error('Test database not initialized. Call setupTestDatabase first.');
+    }
+    return testDbReference;
+  }),
+  disconnectFromMongoDB: jest.fn(async () => {}),
+  connectToQdrant: jest.fn(async () => null),
+  mongoConfig: {
+    uri: 'mongodb://localhost:27017',
+    dbName: 'test',
+    options: {},
+  },
+  qdrantConfig: {
+    url: null,
+    host: 'localhost',
+    port: 6333,
+    apiKey: null,
+    collectionName: 'tools',
+  },
+}));
+
+// Mock Together AI to prevent real API initialization
+jest.mock('together-ai', () => ({
+  Together: jest.fn().mockImplementation(() => ({
+    embeddings: {
+      create: jest.fn().mockResolvedValue({
+        data: [{ embedding: [0.1, 0.2, 0.3] }],
+      }),
+    },
+  })),
+}));
 
 // Mock external services
 jest.mock('../../../services/qdrant.service.js', () => ({
@@ -24,11 +60,25 @@ jest.mock('../../../services/qdrant.service.js', () => ({
   },
 }));
 
-jest.mock('../../../services/embedding.service.js', () => ({
-  embeddingService: {
-    generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-  },
-}));
+// Mock the embedding service to avoid real API calls
+jest.mock('../../../services/embedding.service.js', () => {
+  const mockGenerateEmbedding = jest.fn().mockResolvedValue([0.1, 0.2, 0.3]);
+
+  return {
+    EmbeddingService: jest.fn().mockImplementation(() => ({
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: jest.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+    })),
+    embeddingService: {
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: jest.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+    },
+  };
+});
 
 jest.mock('../../../services/collection-config.service.js', () => ({
   CollectionConfigService: jest.fn().mockImplementation(() => ({
@@ -71,8 +121,16 @@ jest.mock('../../../types/tool.types.js', () => ({
 import { qdrantService } from '../../../services/qdrant.service.js';
 import { embeddingService } from '../../../services/embedding.service.js';
 
+// Import the service after mocking
+import {
+  ToolSyncService,
+  toolSyncService,
+  SYNC_ERROR_CODES,
+  ToolSyncResult,
+  CollectionSyncResult,
+} from '../../../services/tool-sync.service.js';
+
 describe('ToolSyncService', () => {
-  let mongoServer: MongoMemoryServer;
   let service: ToolSyncService;
 
   const mockToolData = {
@@ -95,26 +153,24 @@ describe('ToolSyncService', () => {
   };
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    process.env.MONGODB_URI = mongoUri;
-    await mongoose.connect(mongoUri);
+    await setupTestDatabase();
+    testDbReference = getTestDb();
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    testDbReference = null;
+    await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    await Tool.deleteMany({});
+    await clearToolsCollection();
     service = new ToolSyncService();
     jest.clearAllMocks();
   });
 
   describe('syncTool', () => {
     it('should sync tool to all collections successfully', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       const result = await service.syncTool(tool);
 
@@ -126,7 +182,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should call embedding service for each collection', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       await service.syncTool(tool);
 
@@ -135,7 +191,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should call qdrant upsert for each collection', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       await service.syncTool(tool);
 
@@ -144,7 +200,7 @@ describe('ToolSyncService', () => {
 
     it('should skip collections when content unchanged (unless forced)', async () => {
       // Create tool with existing sync metadata
-      const tool = await Tool.create({
+      const tool = await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'synced',
@@ -187,7 +243,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should force sync all collections when force option is true', async () => {
-      const tool = await Tool.create({
+      const tool = await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'synced',
@@ -229,7 +285,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should sync only specified collections', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       const result = await service.syncTool(tool, {
         collections: ['tools', 'functionality'],
@@ -243,7 +299,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should handle embedding service failure', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       // Mock to reject for all 4 collection attempts
       (embeddingService.generateEmbedding as jest.Mock)
@@ -258,7 +314,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should handle qdrant upsert failure', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       // Mock to reject for all 4 collection attempts
       (qdrantService.upsertToolVector as jest.Mock)
@@ -275,7 +331,7 @@ describe('ToolSyncService', () => {
 
   describe('syncToolToCollections', () => {
     it('should sync only to specified collections', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       const result = await service.syncToolToCollections(tool, ['tools', 'interface']);
 
@@ -284,7 +340,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should pass options correctly', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       const result = await service.syncToolToCollections(tool, ['tools'], {
         force: true,
@@ -296,7 +352,7 @@ describe('ToolSyncService', () => {
 
   describe('syncAffectedCollections', () => {
     it('should sync only collections affected by changed fields', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       // name affects 'tools' collection
       const result = await service.syncAffectedCollections(tool, ['name']);
@@ -306,7 +362,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should skip sync when only metadata fields changed', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       // pricing is metadata-only - should do payload update (not full resync)
       const result = await service.syncAffectedCollections(tool, ['pricing', 'website']);
@@ -317,7 +373,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should skip all when no semantic fields changed', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       // Empty changed fields means no semantic changes - should skip entirely
       const result = await service.syncAffectedCollections(tool, []);
@@ -362,7 +418,7 @@ describe('ToolSyncService', () => {
 
   describe('updatePayloadOnly', () => {
     it('should update payload in all collections', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       const result = await service.updatePayloadOnly(tool);
 
@@ -371,7 +427,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should not call embedding service', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       await service.updatePayloadOnly(tool);
 
@@ -379,7 +435,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should handle payload update failure', async () => {
-      const tool = await Tool.create(mockToolData);
+      const tool = await createTestTool(mockToolData);
 
       (qdrantService.updatePayloadOnly as jest.Mock).mockResolvedValueOnce({
         success: false,
@@ -394,7 +450,7 @@ describe('ToolSyncService', () => {
 
   describe('retryFailedSync', () => {
     it('should retry failed collections', async () => {
-      const tool = await Tool.create({
+      const tool = await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -416,7 +472,7 @@ describe('ToolSyncService', () => {
     });
 
     it('should skip if no failed collections', async () => {
-      const tool = await Tool.create({
+      const tool = await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'synced',

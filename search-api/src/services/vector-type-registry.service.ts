@@ -262,8 +262,8 @@ export class VectorTypeRegistryService {
 
     // Check for compatibility issues
     const semanticTypes = types.filter(t => t.startsWith('semantic'));
-    const entityTypes = types.filter(t => t.startsWith('entities.'));
-    const compositeTypes = types.filter(t => t.startsWith('composites.'));
+    // const entityTypes = types.filter(t => t.startsWith('entities.'));
+    // const compositeTypes = types.filter(t => t.startsWith('composites.'));
 
     // Semantic should generally be included
     if (semanticTypes.length === 0 && types.length > 1) {

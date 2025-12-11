@@ -198,18 +198,20 @@ export class MetricsService {
    * Express middleware to track HTTP metrics
    */
   trackHttpMetrics() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
     return (req: Request, res: Response, next: NextFunction) => {
       const start = Date.now();
 
       // Increment in-flight requests
-      this.httpRequestsInFlight.inc();
+      self.httpRequestsInFlight.inc();
 
       // Store original end function
       const originalEnd = res.end;
-      const self = this;
+
 
       // Override end function to capture metrics
-      res.end = function (this: Response, ...args: any[]) {
+      res.end = function (this: Response, ...args: unknown[]) {
         // Calculate duration
         const duration = (Date.now() - start) / 1000;
 
@@ -230,7 +232,7 @@ export class MetricsService {
         }
 
         // Call original end function
-        return originalEnd.apply(this, args as any);
+        return originalEnd.apply(this, args as []);
       };
 
       next();

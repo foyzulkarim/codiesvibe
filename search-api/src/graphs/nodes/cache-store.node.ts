@@ -1,20 +1,22 @@
 import { StateAnnotation } from '../../types/state.js';
 import { planCacheService } from '../../services/plan-cache.service.js';
+import { CONFIG } from '#config/env.config';
+import type { LogMetadata } from '#types/logger.types.js';
 
 // Configuration for logging
 const LOG_CONFIG = {
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '💾 Cache Store:',
 };
 
 // Helper function for conditional logging
-const log = (message: string, data?: any) => {
+const log = (message: string, data?: LogMetadata) => {
   if (LOG_CONFIG.enabled) {
     console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
 };
 
-const logError = (message: string, error?: any) => {
+const logError = (message: string, error?: LogMetadata) => {
   console.error(`${LOG_CONFIG.prefix} ERROR: ${message}`, error ? error : '');
 };
 

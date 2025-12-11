@@ -1,5 +1,5 @@
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 /**
  * Configured QueryClient with global defaults for queries and mutations
@@ -54,9 +54,7 @@ export const queryClient = new QueryClient({
         const apiError = error as { message?: string; response?: { data?: { message?: string } } };
         const errorMessage = apiError.response?.data?.message || apiError.message || 'Something went wrong. Please try again.';
 
-        toast({
-          variant: 'destructive',
-          title: 'Error',
+        toast.error('Error', {
           description: errorMessage,
         });
       },
@@ -70,19 +68,14 @@ export const queryClient = new QueryClient({
       // This allows queries to opt-in to global error toasts
       if (query.meta?.errorMessage) {
         const apiError = error as { message?: string };
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: query.meta.errorMessage as string || apiError.message,
+        toast.error('Error', {
+          description: (query.meta.errorMessage as string) || apiError.message,
         });
       }
     },
 
     onSuccess: (data, query) => {
       // Optional: Log successful queries in development
-      if (import.meta.env.DEV && query.meta?.logSuccess) {
-        console.log('✅ Query success:', query.queryKey, data);
-      }
     },
   }),
 
@@ -91,23 +84,16 @@ export const queryClient = new QueryClient({
     onSuccess: (data, variables, context, mutation) => {
       // Show success toast if mutation has successMessage in meta
       if (mutation.meta?.successMessage) {
-        toast({
-          title: 'Success',
+        toast.success('Success', {
           description: mutation.meta.successMessage as string,
         });
       }
 
       // Optional: Log successful mutations in development
-      if (import.meta.env.DEV) {
-        console.log('✅ Mutation success:', mutation.options.mutationKey, data);
-      }
     },
 
     onError: (error, variables, context, mutation) => {
       // Optional: Log failed mutations in development
-      if (import.meta.env.DEV) {
-        console.error('❌ Mutation error:', mutation.options.mutationKey, error);
-      }
     },
   }),
 });

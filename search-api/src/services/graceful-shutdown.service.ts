@@ -4,6 +4,7 @@
  */
 
 import { Server } from 'http';
+import { Socket } from 'net';
 import { MongoClient } from 'mongodb';
 import { searchLogger } from '../config/logger.js';
 
@@ -29,7 +30,7 @@ export class GracefulShutdownService {
   private server: Server | null = null;
   private mongoClient: MongoClient | null = null;
   private isShuttingDown = false;
-  private activeConnections = new Set<any>();
+  private activeConnections = new Set<Socket>();
   private shutdownTimeout: number = 30000; // 30 seconds default
 
   /**
@@ -98,7 +99,7 @@ export class GracefulShutdownService {
     });
 
     // Handle unhandled promise rejections
-    process.on('unhandledRejection', async (reason, promise) => {
+    process.on('unhandledRejection', async (reason, _promise) => {
       searchLogger.error('💥 Unhandled promise rejection - forcing shutdown', new Error(String(reason)), {
         service: 'search-api',
         reason: String(reason),
@@ -239,7 +240,7 @@ export class GracefulShutdownService {
           this.activeConnections.forEach((connection) => {
             try {
               connection.destroy();
-            } catch (error) {
+            } catch {
               // Ignore errors during forced closure
             }
           });

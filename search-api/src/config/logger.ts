@@ -1,6 +1,7 @@
 import winston from 'winston';
 import * as Loggly from 'winston-loggly-bulk';
-import { v4 as uuidv4 } from 'uuid';
+import { CONFIG } from './env.config.js'; // RELATIVE import to avoid circular dependency
+import type { LogMetadataValue } from '#types/logger.types.js';
 
 export interface SearchLogContext {
   correlationId?: string;
@@ -15,7 +16,7 @@ export interface SearchLogContext {
   resultCount?: number;
   executionTimeMs?: number;
   timestamp?: string;
-  [key: string]: any;
+  [key: string]: LogMetadataValue;
 }
 
 export interface SearchLogMetadata {
@@ -23,7 +24,7 @@ export interface SearchLogMetadata {
   module?: string;
   phase?: string;
   version?: string;
-  [key: string]: any;
+  [key: string]: LogMetadataValue;
 }
 
 /**
@@ -35,12 +36,13 @@ export class SearchLoggerService {
 
   constructor() {
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: CONFIG.logging.LOG_LEVEL,
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
         winston.format.json(),
-        winston.format.printf((info: any) => {
+        winston.format.printf((info: { level: string; message: string; [key: string]: unknown }) => {
+          const error = info.error as Error | undefined;
           const logEntry = {
             timestamp: info.timestamp,
             level: info.level,
@@ -57,24 +59,24 @@ export class SearchLoggerService {
               limit: info.limit,
               resultCount: info.resultCount,
               executionTimeMs: info.executionTimeMs,
-              ...(info.context || {})
+              ...(typeof info.context === 'object' && info.context !== null ? info.context : {})
             },
-            error: info.error ? {
-              stack: (info.error as Error).stack,
-              code: (info.error as any).code,
-              message: (info.error as Error).message
+            error: error ? {
+              stack: error.stack,
+              code: typeof error === 'object' && error !== null && 'code' in error ? (error as { code?: string | number }).code : undefined,
+              message: error.message
             } : undefined,
             metadata: {
               function: info.function,
               module: info.module,
               phase: info.phase,
-              version: process.env.npm_package_version || '1.0.0',
-              ...(info.metadata || {})
+              version: CONFIG.logging.npm_package_version,
+              ...(typeof info.metadata === 'object' && info.metadata !== null ? info.metadata : {})
             }
           };
 
           // Clean up undefined values
-          return JSON.stringify(logEntry, (key, value) => 
+          return JSON.stringify(logEntry, (key, value) =>
             value === undefined ? null : value
           );
         })
@@ -88,7 +90,7 @@ export class SearchLoggerService {
           format: winston.format.combine(
             winston.format.colorize(),
             winston.format.timestamp(),
-            winston.format.printf((info: any) => {
+            winston.format.printf((info: { level: string; message: string; [key: string]: unknown }) => {
               const { timestamp, level, message, ...rest } = info;
               const correlationId = info.correlationId ? `[${info.correlationId}] ` : '';
               const meta = Object.keys(rest).length ? ` ${JSON.stringify(rest)}` : '';
@@ -113,10 +115,10 @@ export class SearchLoggerService {
     });
 
     // Add Loggly transport if enabled and token is provided
-    if (process.env.LOGGLY_ENABLED === 'true' && process.env.LOGGLY_TOKEN) {
+    if (CONFIG.logging.LOGGLY_ENABLED && CONFIG.logging.LOGGLY_TOKEN) {
       this.logger.add(new Loggly.Loggly({
-        token: process.env.LOGGLY_TOKEN,
-        subdomain: process.env.LOGGLY_SUBDOMAIN || 'self18',
+        token: CONFIG.logging.LOGGLY_TOKEN,
+        subdomain: CONFIG.logging.LOGGLY_SUBDOMAIN,
         tags: ['search-api', 'express', 'security'],
         json: true,
         timestamp: true
@@ -133,14 +135,14 @@ export class SearchLoggerService {
   }
 
   error(message: string, error?: Error, context?: SearchLogContext, metadata?: SearchLogMetadata): void {
-    this.logger.error(message, { 
+    this.logger.error(message, {
       error: error ? {
         stack: error.stack,
-        code: (error as any).code,
+        code: typeof error === 'object' && error !== null && 'code' in error ? (error as { code?: string | number }).code : undefined,
         message: error.message
       } : undefined,
-      ...context, 
-      ...metadata 
+      ...context,
+      ...metadata
     });
   }
 

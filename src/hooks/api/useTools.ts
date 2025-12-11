@@ -6,9 +6,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { searchClient } from '@/api/search-client';
+import { UseToolsReturn, AiSearchReasoning } from '@/api/types';
 import { apiConfig } from '@/config/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import { UseToolsReturn, AiSearchReasoning } from '@/api/types';
 
 // Types for AI search API response
 interface AiSearchResponse {
@@ -123,10 +123,6 @@ interface SearchResult {
 const aiSearchTools = async (searchQuery: string): Promise<AiSearchResponse> => {
   const searchQueryStr =
     typeof searchQuery === 'string' ? searchQuery : String(searchQuery || '');
-
-  if (apiConfig.features.debug) {
-    console.log('[AI Search] Query:', searchQueryStr);
-  }
 
   const response = await searchClient.post<AiSearchResponse>(
     '/search',

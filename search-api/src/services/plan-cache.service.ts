@@ -11,7 +11,7 @@ import crypto from "crypto";
  * Plan document interface for MongoDB
  */
 export interface PlanDocument {
-  _id: ObjectId;
+  _id?: ObjectId;
   originalQuery: string;
   queryEmbedding: number[];
   intentState: IntentState;
@@ -57,7 +57,6 @@ export interface CacheStats {
 export class PlanCacheService {
   private db: Db | null = null;
   private dbPromise: Promise<Db> | null = null;
-  private readonly SIMILARITY_THRESHOLD = 0.90;
   private readonly CACHE_TTL_DAYS = 90;
 
   constructor() {}
@@ -87,7 +86,11 @@ export class PlanCacheService {
     executionPlan: QueryPlan,
     candidates: Candidate[],
     executionTime: number,
-    metadata: any
+    metadata: {
+      executionPath?: string[];
+      totalNodesExecuted?: number;
+      pipelineVersion?: string;
+    }
   ): Promise<ObjectId> {
     const db = await this.ensureConnected();
     const startTime = Date.now();
@@ -118,8 +121,8 @@ export class PlanCacheService {
         }
       };
 
-      const collection = db.collection("plans");
-      const result = await collection.insertOne(planDocument as any);
+      const collection = db.collection<PlanDocument>("plans");
+      const result = await collection.insertOne(planDocument);
 
       console.log(`💾 Cached plan for query: "${query}" (ID: ${result.insertedId})`);
 
@@ -137,7 +140,11 @@ export class PlanCacheService {
   }
 
   /**
-   * Lookup plan in cache using exact match first, then vector similarity
+   * Lookup plan in cache using exact hash match only.
+   * We intentionally avoid vector similarity matching because:
+   * 1. MongoDB Atlas vector search ($search with knn) doesn't work with local MongoDB
+   * 2. Semantically similar queries may require different execution plans
+   *    (e.g., "free code editors" vs "paid code editors" have similar embeddings but need opposite filters)
    */
   async lookupPlan(query: string): Promise<CacheLookupResult> {
     const db = await this.ensureConnected();
@@ -145,9 +152,8 @@ export class PlanCacheService {
 
     try {
       const queryHash = this.generateQueryHash(query);
-      const collection = db.collection("plans");
+      const collection = db.collection<PlanDocument>("plans");
 
-      // Step 1: Try exact hash match first
       const exactMatch = await collection.findOne({ queryHash });
       if (exactMatch) {
         // Update usage statistics
@@ -159,8 +165,7 @@ export class PlanCacheService {
           }
         );
 
-        console.log(`🎯 Exact cache hit for query: "${query}" (used ${exactMatch.usageCount + 1} times)`);
-
+        console.log(`🎯 Cache hit for query: "${query}" (used ${exactMatch.usageCount + 1} times)`);
         await this.updateCacheStats('exact_hit');
 
         return {
@@ -171,80 +176,6 @@ export class PlanCacheService {
         };
       }
 
-      // Step 2: Try vector similarity search
-      const queryEmbedding = await productionEmbeddingService.generateEmbedding(query);
-
-      // MongoDB Atlas vector search pipeline
-      const vectorSearchPipeline = [
-        {
-          $search: {
-            index: "plans_vector_index", // This index needs to be created in MongoDB Atlas
-            knn: {
-              queryVector: queryEmbedding,
-              path: "queryEmbedding",
-              k: 5,
-              filter: {
-                // Optional: Filter by minimum confidence
-                confidence: { $gte: 0.6 }
-              }
-            }
-          }
-        },
-        {
-          $project: {
-            _id: 1,
-            originalQuery: 1,
-            intentState: 1,
-            executionPlan: 1,
-            candidates: 1,
-            executionTime: 1,
-            usageCount: 1,
-            lastUsed: 1,
-            createdAt: 1,
-            queryHash: 1,
-            confidence: 1,
-            metadata: 1,
-            score: { $meta: "searchScore" }
-          }
-        },
-        {
-          $match: {
-            score: { $gte: this.SIMILARITY_THRESHOLD }
-          }
-        },
-        {
-          $limit: 1
-        }
-      ];
-
-      const similarResults = await collection.aggregate(vectorSearchPipeline).toArray();
-
-      if (similarResults.length > 0) {
-        const similarPlan = similarResults[0] as any;
-        const similarity = similarPlan.score;
-
-        // Update usage statistics
-        await collection.updateOne(
-          { _id: similarPlan._id },
-          {
-            $inc: { usageCount: 1 },
-            $set: { lastUsed: new Date() }
-          }
-        );
-
-        console.log(`🔍 Similar cache hit for query: "${query}" (similarity: ${similarity.toFixed(3)}, original: "${similarPlan.originalQuery}")`);
-
-        await this.updateCacheStats('similar_hit');
-
-        return {
-          found: true,
-          plan: similarPlan as PlanDocument,
-          similarity,
-          cacheType: 'similar'
-        };
-      }
-
-      // No cache hit found
       console.log(`❌ Cache miss for query: "${query}"`);
       await this.updateCacheStats('miss');
 
@@ -255,8 +186,6 @@ export class PlanCacheService {
 
     } catch (error) {
       console.error("Error looking up plan in cache:", error);
-
-      // If vector search fails, fall back to miss
       await this.updateCacheStats('miss');
 
       return {
@@ -265,14 +194,14 @@ export class PlanCacheService {
       };
     } finally {
       const lookupTime = Date.now() - startTime;
-      console.log(`⏱️ Cache lookup operation took ${lookupTime}ms`);
+      console.log(`⏱️ Cache lookup took ${lookupTime}ms`);
     }
   }
 
   /**
    * Update cache statistics for monitoring
    */
-  private async updateCacheStats(operation: 'store' | 'exact_hit' | 'similar_hit' | 'miss'): Promise<void> {
+  private async updateCacheStats(operation: 'store' | 'exact_hit' | 'miss'): Promise<void> {
     const db = await this.ensureConnected();
 
     try {
@@ -280,11 +209,11 @@ export class PlanCacheService {
       const now = new Date();
       const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      const updateFields: any = {
+      const updateFields: Record<string, unknown> = {
         $set: { lastUpdated: now }
       };
 
-      const incFields: any = {};
+      const incFields: Record<string, number> = {};
       switch (operation) {
         case 'store':
           incFields.totalPlans = 1;
@@ -292,11 +221,6 @@ export class PlanCacheService {
         case 'exact_hit':
           incFields.cacheHits = 1;
           incFields.exactMatches = 1;
-          incFields.totalLookups = 1;
-          break;
-        case 'similar_hit':
-          incFields.cacheHits = 1;
-          incFields.similarMatches = 1;
           incFields.totalLookups = 1;
           break;
         case 'miss':
@@ -329,7 +253,15 @@ export class PlanCacheService {
     const db = await this.ensureConnected();
 
     try {
-      const statsCollection = db.collection("cache_stats");
+      interface StatsDoc {
+        cacheHits?: number;
+        cacheMisses?: number;
+        exactMatches?: number;
+        similarMatches?: number;
+        totalLookups?: number;
+      }
+
+      const statsCollection = db.collection<StatsDoc>("cache_stats");
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
@@ -339,7 +271,7 @@ export class PlanCacheService {
 
       const totalPlans = await db.collection("plans").countDocuments();
 
-      const aggregatedStats = stats.reduce((acc: any, stat: any) => {
+      const aggregatedStats = stats.reduce((acc, stat) => {
         acc.cacheHits += stat.cacheHits || 0;
         acc.cacheMisses += stat.cacheMisses || 0;
         acc.exactMatches += stat.exactMatches || 0;
@@ -455,7 +387,7 @@ export class PlanCacheService {
    */
   async initialize(): Promise<void> {
     try {
-      const db = await this.ensureConnected();
+      await this.ensureConnected();
 
       // Test embedding generation with Together AI
       await productionEmbeddingService.initialize();

@@ -3,27 +3,47 @@
  */
 
 /**
+ * Content block interface for structured LLM responses
+ */
+interface ContentBlock {
+  type: string;
+  text?: string;
+}
+
+/**
+ * LLM response interface for structured responses
+ */
+interface LLMResponse {
+  content?: string | ContentBlock[];
+}
+
+/**
  * Extract clean content from LLM responses by removing thinking blocks
  * Handles both string responses with thinking blocks and array responses
  */
-export function extractCleanContent(response: any): string {
+export function extractCleanContent(response: unknown): string {
   if (!response) return '';
-  
+
   // Convert response to string if it's not already
   let content: string;
-  
+
   if (typeof response === 'string') {
     console.log('extractCleanContent(): String response');
     content = response;
-  } else if (response && typeof response.content === 'string') {
-    console.log('extractCleanContent(): String content response');
-    content = response.content;
-  } else if (response && Array.isArray(response.content)) {
-    // For array responses, concatenate all text blocks
-    const textBlocks = response.content
-      .filter((block: any) => block.type === 'text' && typeof block.text === 'string')
-      .map((block: any) => block.text);
-    content = textBlocks.join(' ');
+  } else if (response && typeof response === 'object' && 'content' in response) {
+    const llmResponse = response as LLMResponse;
+    if (typeof llmResponse.content === 'string') {
+      console.log('extractCleanContent(): String content response');
+      content = llmResponse.content;
+    } else if (Array.isArray(llmResponse.content)) {
+      // For array responses, concatenate all text blocks
+      const textBlocks = llmResponse.content
+        .filter((block): block is ContentBlock => block.type === 'text' && typeof block.text === 'string')
+        .map((block) => block.text as string);
+      content = textBlocks.join(' ');
+    } else {
+      content = JSON.stringify(response);
+    }
   } else {
     // Handle other content types by converting to string
     content = JSON.stringify(response);
@@ -78,7 +98,7 @@ export function extractCleanContent(response: any): string {
 /**
  * Extract JSON content from LLM responses after removing thinking blocks
  */
-export function extractJsonFromResponse(response: any): string {
+export function extractJsonFromResponse(response: unknown): string {
   const cleanContent = extractCleanContent(response);
   
   // Look for JSON in code blocks
@@ -98,7 +118,7 @@ export function extractJsonFromResponse(response: any): string {
   }
   
   // Clean up excessive newlines and whitespace
-  let processedContent = cleanContent
+  const processedContent = cleanContent
     .replace(/\n\s*\n/g, '\n')  // Remove multiple consecutive newlines
     .replace(/\s+/g, ' ')       // Replace multiple spaces with single space
     .trim();
@@ -121,7 +141,7 @@ export function extractJsonFromResponse(response: any): string {
     try {
       JSON.parse(jsonCandidate);
       return jsonCandidate;
-    } catch (e) {
+    } catch {
       // If parsing fails, try to fix common issues
       
       // Fix malformed structure like "[]," followed by object properties
@@ -142,7 +162,7 @@ export function extractJsonFromResponse(response: any): string {
       try {
         JSON.parse(jsonCandidate);
         return jsonCandidate;
-      } catch (e2) {
+      } catch {
         // If still fails, fall through to array extraction
       }
     }
@@ -164,7 +184,7 @@ export function extractJsonFromResponse(response: any): string {
     try {
       JSON.parse(jsonCandidate);
       return jsonCandidate;
-    } catch (e) {
+    } catch {
       // If parsing fails, return the processed content
     }
   }

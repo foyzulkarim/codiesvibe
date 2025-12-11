@@ -1,13 +1,14 @@
 import { Candidate } from '../types/candidate.js';
+import { CONFIG } from '#config/env.config';
 
 // Configuration for logging
 const LOG_CONFIG = {
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '🔀 Fusion:',
 };
 
 // Helper function for conditional logging
-const log = (message: string, data?: any) => {
+const log = (message: string, data?: unknown) => {
   if (LOG_CONFIG.enabled) {
     console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
@@ -255,13 +256,14 @@ export function fuseResults(
     case 'concat':
       return concatFusion(candidatesBySource);
 
-    case 'none':
+    case 'none': {
       // Return all candidates concatenated without any fusion
       const allCandidates: Candidate[] = [];
       for (const candidates of candidatesBySource.values()) {
         allCandidates.push(...candidates);
       }
       return normalizeScores(allCandidates);
+    }
 
     default:
       logError('Unknown fusion method', { method });
@@ -288,6 +290,6 @@ export function groupCandidatesBySource(candidates: Candidate[]): Map<string, Ca
 }
 
 // Helper function for error logging
-const logError = (message: string, error?: any) => {
+const logError = (message: string, error?: unknown) => {
   console.error(`${LOG_CONFIG.prefix} ERROR: ${message}`, error ? error : '');
 };

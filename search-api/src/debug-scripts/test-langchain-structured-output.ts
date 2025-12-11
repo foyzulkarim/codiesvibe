@@ -13,14 +13,14 @@
 
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
-import { z } from 'zod';
-import { IntentStateSchema, IntentState } from '../types/intent-state.js';
+import { IntentStateSchema } from '../types/intent-state.js';
+import { CONFIG } from '../config/env.config.js';
 
 // Load environment variables
 dotenv.config();
 
-const VLLM_BASE_URL = process.env.VLLM_BASE_URL || "http://192.168.4.28:8000";
-const VLLM_MODEL = process.env.VLLM_MODEL || "Qwen/Qwen3-0.6B";
+const VLLM_BASE_URL = CONFIG.ai.VLLM_BASE_URL || "http://192.168.4.28:8000";
+const VLLM_MODEL = CONFIG.ai.VLLM_MODEL;
 
 console.log('🧪 Testing LangChain Structured Output with VLLM');
 console.log('='.repeat(60));
@@ -128,7 +128,8 @@ async function testWithStructuredOutput() {
     }
 }
 
-async function testJSONMode() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function _testJSONMode() {
     console.log('\n🔬 Testing JSON mode (fallback)');
 
     try {

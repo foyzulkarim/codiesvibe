@@ -20,8 +20,8 @@ export enum ToolStatus {
 }
 
 export interface ToolData {
-  // MongoDB document ID
-  _id: { $oid: string } | string;
+  // MongoDB document ID - compatible with ITool._id (ObjectId | string | { $oid: string })
+  _id?: unknown;
 
   // Identity fields (required in backend)
   id: string;
@@ -30,7 +30,7 @@ export interface ToolData {
   description: string;
   longDescription?: string;
   tagline?: string;
-  createdBy: string; // ObjectId as string
+  createdBy?: string; // ObjectId as string (optional for compatibility with ITool)
 
   // Flattened categorization (v2.0) - all required arrays
   categories: string[];
@@ -39,7 +39,7 @@ export interface ToolData {
 
   // Pricing (exact match with backend schema)
   pricing: PricingTier[];
-  pricingModel: PricingModelEnum[];
+  pricingModel: string[];  // string[] for compatibility with ITool
   pricingUrl?: string;
 
   // Technical specifications - all required arrays (exact match with backend)
@@ -60,8 +60,14 @@ export interface ToolData {
   createdAt?: Date | string;
   updatedAt?: Date | string;
 
+  // RBAC fields (for compatibility with ITool)
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string;
+  reviewedAt?: Date | string;
+  rejectionReason?: string;
+
   // Allow additional fields for flexibility
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Validation utilities for ToolData
@@ -174,9 +180,9 @@ export class ToolDataValidator {
   /**
    * Extract collection-specific content from tool data
    */
-  static extractCollectionContent(toolData: ToolData, collectionName: string): Record<string, any> {
+  static extractCollectionContent(toolData: ToolData, collectionName: string): Record<string, unknown> {
     const fields = this.getFieldsForCollection(collectionName);
-    const content: Record<string, any> = {};
+    const content: Record<string, unknown> = {};
 
     for (const field of fields) {
       if (toolData[field as keyof ToolData] !== undefined) {
@@ -194,7 +200,7 @@ export class ToolDataValidator {
     // Prefer MongoDB _id if present
     const mongoId = typeof toolData._id === 'string'
       ? toolData._id
-      : (toolData._id && typeof toolData._id === 'object' && (toolData._id as any).$oid) || undefined;
+      : (toolData._id && typeof toolData._id === 'object' && (toolData._id as { $oid?: string }).$oid) || undefined;
 
     let id = (mongoId || toolData.id || toolData.slug || toolData.name || '').toString().trim();
 
@@ -205,7 +211,7 @@ export class ToolDataValidator {
 
     // Slugify for safety in downstream systems
     id = id.toLowerCase()
-      .replace(/[^a-z0-9\-]+/g, '-')
+      .replace(/[^a-z0-9-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
     // Limit length to avoid oversized IDs

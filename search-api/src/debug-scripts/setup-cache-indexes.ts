@@ -1,4 +1,3 @@
-import { Db, MongoClient } from "mongodb";
 import { connectToMongoDB } from "#config/database";
 import { embeddingConfig } from "#config/constants";
 
@@ -8,7 +7,7 @@ import { embeddingConfig } from "#config/constants";
  */
 
 async function setupCacheIndexes(): Promise<void> {
-  let client: MongoClient | null = null;
+
 
   try {
     console.log("🔧 Setting up cache database indexes...");
@@ -220,11 +219,12 @@ async function setupCacheIndexes(): Promise<void> {
     try {
       await plansCollection.insertOne(samplePlan);
       console.log("✅ Sample cache data inserted successfully!");
-    } catch (error: any) {
-      if (error.code === 11000) {
+    } catch (error: unknown) {
+      const mongoError = error as { code?: number; message?: string };
+      if (mongoError.code === 11000) {
         console.log("ℹ️ Sample data already exists (duplicate key error)");
       } else {
-        console.log("⚠️ Error inserting sample data:", error.message);
+        console.log("⚠️ Error inserting sample data:", mongoError.message);
       }
     }
 

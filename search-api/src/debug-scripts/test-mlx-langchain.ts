@@ -14,8 +14,7 @@
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { z } from 'zod';
-import { IntentStateSchema, IntentState } from '../types/intent-state.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +22,7 @@ dotenv.config();
 import { BaseOutputParser } from "@langchain/core/output_parsers";
 
 // Custom parser to handle MLX's <think> tags and extract JSON
-class MLXJsonOutputParser<T = any> extends BaseOutputParser<T> {
+class MLXJsonOutputParser<T = unknown> extends BaseOutputParser<T> {
     lc_namespace = ["langchain", "output_parsers"];
 
     async parse(text: string): Promise<T> {

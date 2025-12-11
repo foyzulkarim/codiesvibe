@@ -49,7 +49,12 @@ export function extractPriceConstraints(text: string): {
   minPrice?: number;
   pricingModel?: string[];
 } {
-  const result: any = {};
+  const result: {
+    hasFreeTier?: boolean;
+    maxPrice?: number;
+    minPrice?: number;
+    pricingModel?: string[];
+  } = {};
   const pricingModels: string[] = [];
 
   // Check for free tier

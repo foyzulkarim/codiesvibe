@@ -266,7 +266,7 @@ export class VectorSeedingService {
     this.resetProgress();
     this.isSeeding = true;
 
-    const startTime = Date.now();
+    // const startTime = Date.now();
     const enabledCollections = options.collections;
 
     try {
@@ -594,14 +594,14 @@ export class VectorSeedingService {
   /**
    * Add error to statistics
    */
-  private addErrorToStats(message: string, error: any): void {
+  private addErrorToStats(message: string, error: unknown): void {
     const errorEntry = {
       timestamp: new Date(),
       message,
       error: String(error)
     };
 
-    this.stats.recentErrors.push(errorEntry as any);
+    this.stats.recentErrors.push(errorEntry as { timestamp: Date; message: string; error: string });
 
     // Keep only the last 10 errors
     if (this.stats.recentErrors.length > 10) {
@@ -736,7 +736,7 @@ export class VectorSeedingService {
    * Monitor multi-collection indexing progress with parallel processing
    */
   private async monitorMultiCollectionIndexingProgressParallel(
-    tools: any[],
+    _tools: unknown[],
     options: Required<SeedingOptions>
   ): Promise<void> {
     // Set up progress monitoring interval
@@ -771,7 +771,7 @@ export class VectorSeedingService {
    * Monitor multi-collection indexing progress with sequential processing
    */
   private async monitorMultiCollectionIndexingProgressSequential(
-    tools: any[],
+    _tools: unknown[],
     options: Required<SeedingOptions>
   ): Promise<void> {
     // Set up progress monitoring interval
@@ -914,7 +914,7 @@ export class VectorSeedingService {
   async getHealthReport(): Promise<{
     seeding: SeedingStats;
     progress: SeedingProgress;
-    vectorIndex: any;
+    vectorIndex: unknown;
     recommendations: string[];
   }> {
     // Get vector index health report

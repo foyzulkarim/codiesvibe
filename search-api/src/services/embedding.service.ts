@@ -2,6 +2,7 @@ import { Together } from 'together-ai';
 import { embeddingConfig as embeddingConstants } from "#config/constants";
 import { connectToQdrant } from "#config/database";
 import { QdrantClient } from "@qdrant/js-client-rest";
+import { CONFIG } from '#config/env.config';
 
 // Simple in-memory cache for embeddings
 const embeddingCache = new Map<string, number[]>();
@@ -11,9 +12,19 @@ export class EmbeddingService {
   private togetherClient: Together;
 
   constructor() {
+    // Debug: Log API key status at construction time
+    const apiKey = CONFIG.ai.TOGETHER_API_KEY;
+    console.log('[EmbeddingService] Constructor called, API key status:',
+      apiKey ? `present (length: ${apiKey.length})` : 'MISSING!'
+    );
+
+    if (!apiKey) {
+      console.error('[EmbeddingService] WARNING: TOGETHER_API_KEY is not set! Embedding generation will fail.');
+    }
+
     // Initialize Together AI client
     this.togetherClient = new Together({
-      apiKey: process.env.TOGETHER_API_KEY,
+      apiKey: apiKey,
     });
 
     this.initQdrant();

@@ -5,21 +5,26 @@ import { QdrantService } from '../../services/qdrant.service.js';
 import { MongoDBService } from '../../services/mongodb.service.js';
 import { EmbeddingService } from '../../services/embedding.service.js';
 import { fuseResults, groupCandidatesBySource } from '../../utils/fusion.js';
+import { CONFIG } from '#config/env.config';
+import type { LogMetadata } from '#types/logger.types.js';
+import type { IntentState } from '../../types/intent-state.js';
+import type { ToolData } from '../../types/tool.types.js';
+import type { ITool } from '../../types/tool.interfaces.js';
 
 // Configuration for logging
 const LOG_CONFIG = {
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '⚡ Query Executor:',
 };
 
 // Helper function for conditional logging
-const log = (message: string, data?: any) => {
+const log = (message: string, data?: LogMetadata) => {
   if (LOG_CONFIG.enabled) {
     console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
 };
 
-const logError = (message: string, error?: any) => {
+const logError = (message: string, error?: LogMetadata) => {
   console.error(`${LOG_CONFIG.prefix} ERROR: ${message}`, error ? error : '');
 };
 
@@ -125,8 +130,8 @@ export async function queryExecutorNode(
     // Determine adaptive score threshold based on structured results
     const hasStructuredResults = structuredResultsCount > 0;
     const adaptiveThreshold = hasStructuredResults
-      ? parseFloat(process.env.QUERY_EXECUTOR_HIGH_THRESHOLD || '0.7')
-      : parseFloat(process.env.QUERY_EXECUTOR_SCORE_THRESHOLD || '0.5');
+      ? CONFIG.search.QUERY_EXECUTOR_HIGH_THRESHOLD
+      : CONFIG.search.QUERY_EXECUTOR_SCORE_THRESHOLD;
 
     log('Adaptive threshold determined', {
       hasStructuredResults,
@@ -240,7 +245,7 @@ export async function queryExecutorNode(
 
     return {
       candidates: finalCandidates,
-      results: results.map((x) => x),
+      results: results as ToolData[],
       executionStats,
       metadata: {
         ...state.metadata,
@@ -310,13 +315,13 @@ export async function queryExecutorNode(
  * Execute vector search against Qdrant
  */
 async function executeVectorSearch(
-  vectorSource: any,
+  vectorSource: QueryPlan['vectorSources'][number],
   query: string,
-  intentState: any,
+  intentState: IntentState | null,
   qdrantService: QdrantService,
   embeddingService: EmbeddingService,
   scoreThreshold?: number
-): Promise<{ candidates: Candidate[]; filters: any[]; query: any }> {
+): Promise<{ candidates: Candidate[]; filters: Record<string, unknown>[]; query: Record<string, unknown> }> {
   try {
     // Generate query vector based on source
     let queryVector: number[];
@@ -334,7 +339,9 @@ async function executeVectorSearch(
         );
         break;
       case 'semantic_variant':
-        const variants = intentState?.semanticVariants || [];
+        // Note: semanticVariants is defined in schema but not in IntentState type
+        // This is a fallback for future implementation
+        const variants = (intentState as Record<string, unknown>)?.semanticVariants as string[] || [];
         if (variants.length === 0) {
           throw new Error(
             'Semantic variant specified but none found in intent'
@@ -347,22 +354,23 @@ async function executeVectorSearch(
     }
 
     // Build filter if specified
-    let filter: any = undefined;
-    if (vectorSource.filter) {
+    // Note: filter property is not in QueryPlan type but may be added in future
+    const vectorSourceFilter = (vectorSource as Record<string, unknown>).filter as Record<string, unknown> | undefined;
+    let filter: { must?: Array<{ key: string; match: { value: unknown } }> } | undefined = undefined;
+    if (vectorSourceFilter) {
       // Convert vectorSource filter to Qdrant filter format
-      filter = { must: [] };
-      for (const [field, condition] of Object.entries(vectorSource.filter)) {
-        filter.must.push({
+      const must: Array<{ key: string; match: { value: unknown } }> = [];
+      for (const [field, condition] of Object.entries(vectorSourceFilter)) {
+        must.push({
           key: field,
           match: { value: condition },
         });
       }
+      filter = { must };
     }
 
     // Execute search with score threshold to filter out low-quality results
-    const threshold =
-      scoreThreshold ||
-      parseFloat(process.env.QUERY_EXECUTOR_SCORE_THRESHOLD || '0.5');
+    const threshold = scoreThreshold ?? CONFIG.search.QUERY_EXECUTOR_SCORE_THRESHOLD;
     const searchResults = await qdrantService.searchByEmbedding(
       queryVector,
       vectorSource.topK,
@@ -374,21 +382,21 @@ async function executeVectorSearch(
 
     // Convert to Candidate format
     const candidates: Candidate[] = searchResults.map(
-      (result: any, index: number) => ({
-        id: result.id || result.payload?.id || `unknown_${index}`,
-        source: 'qdrant',
-        score: result.score || 0,
+      (result: Record<string, unknown>, index: number) => ({
+        id: (result.id as string) || (result.payload as Record<string, unknown>)?.id as string || `unknown_${index}`,
+        source: 'qdrant' as const,
+        score: (result.score as number) || 0,
         metadata: {
-          name: result.payload?.name || 'Unknown Tool',
-          category: result.payload?.category,
-          pricing: Array.isArray(result.payload?.pricingModel)
-            ? result.payload.pricingModel.join(', ')
-            : result.payload?.pricingModel,
-          platform: result.payload?.interface?.[0],
-          features: result.payload?.features || [],
-          description: result.payload?.description,
+          name: (result.payload as Record<string, unknown>)?.name as string || 'Unknown Tool',
+          category: (result.payload as Record<string, unknown>)?.category as string | undefined,
+          pricing: Array.isArray((result.payload as Record<string, unknown>)?.pricingModel)
+            ? ((result.payload as Record<string, unknown>).pricingModel as string[]).join(', ')
+            : (result.payload as Record<string, unknown>)?.pricingModel as string | undefined,
+          platform: ((result.payload as Record<string, unknown>)?.interface as string[])?.[0],
+          features: ((result.payload as Record<string, unknown>)?.features as string[]) || [],
+          description: (result.payload as Record<string, unknown>)?.description as string | undefined,
         },
-        embeddingVector: result.vector || null,
+        embeddingVector: (result.vector as number[]) || null,
         provenance: {
           collection: vectorSource.collection,
           queryVectorSource: vectorSource.queryVectorSource,
@@ -397,7 +405,7 @@ async function executeVectorSearch(
       })
     );
 
-    return { candidates, filters: [filter], query: {} };
+    return { candidates, filters: filter ? [filter] : [], query: {} };
   } catch (error) {
     logError('Vector search execution failed', {
       collection: vectorSource.collection,
@@ -411,12 +419,12 @@ async function executeVectorSearch(
  * Execute structured search against MongoDB
  */
 async function executeStructuredSearch(
-  structuredSource: any,
+  structuredSource: QueryPlan['structuredSources'][number],
   mongoService: MongoDBService
-): Promise<{ filters: any[]; query: any; candidates: Candidate[] }> {
+): Promise<{ filters: Record<string, unknown>[]; query: Record<string, unknown>; candidates: Candidate[] }> {
   try {
     // Build MongoDB query from filters
-    let query: any = {};
+    let query: Record<string, unknown> = {};
 
     log('Structured search query:', structuredSource);
 
@@ -498,18 +506,18 @@ async function executeStructuredSearch(
     );
 
     // Convert to Candidate format
-    const candidates: Candidate[] = results.map((tool: any, index: number) => ({
+    const candidates: Candidate[] = results.map((tool: ITool, index: number) => ({
       id: tool._id?.toString() || tool.id || `mongo_${index}`,
-      source: 'mongodb',
+      source: 'mongodb' as const,
       score: 0.5, // Default score for structured results (will be normalized later)
       metadata: {
         name: tool.name || 'Unknown Tool',
-        category: tool.categories?.primary?.[0] || tool.categories?.[0],
+        category: tool.categories?.[0],
         pricing: Array.isArray(tool.pricingModel)
           ? tool.pricingModel.join(', ')
           : tool.pricingModel,
         platform: tool.interface?.[0],
-        features: tool.capabilities?.core || tool.functionality || [],
+        features: tool.functionality || [],
         description: tool.description || tool.tagline,
       },
       provenance: {
@@ -517,12 +525,12 @@ async function executeStructuredSearch(
         queryVectorSource: 'structured_search',
         filtersApplied:
           structuredSource.filters?.map(
-            (f: any) => `${f.field}_${f.operator}_${f.value}`
+            (f) => `${f.field}_${f.operator}_${String(f.value)}`
           ) || [],
       },
     }));
 
-    return { filters: structuredSource.filters || [], query, candidates };
+    return { filters: (structuredSource.filters || []) as Record<string, unknown>[], query, candidates };
   } catch (error) {
     logError('Structured search execution failed', {
       source: structuredSource.source,
@@ -535,7 +543,7 @@ async function executeStructuredSearch(
 /**
  * Helper function for warning logging
  */
-const logWarning = (message: string, data?: any) => {
+const logWarning = (message: string, data?: LogMetadata) => {
   if (LOG_CONFIG.enabled) {
     console.warn(`${LOG_CONFIG.prefix} WARNING: ${message}`, data ? data : '');
   }
@@ -548,7 +556,7 @@ const logWarning = (message: string, data?: any) => {
 async function enrichCandidatesWithFullData(
   candidates: Candidate[],
   mongoService: MongoDBService
-): Promise<any[]> {
+): Promise<ToolData[]> {
   if (candidates.length === 0) {
     return [];
   }
@@ -572,12 +580,13 @@ async function enrichCandidatesWithFullData(
     });
 
     // Create a map for quick lookup by ID (handle both ObjectId and string formats)
-    const documentMap = new Map<string, any>();
+    const documentMap = new Map<string, ToolData>();
     fullDocuments.forEach((doc) => {
       // Store by both string representation and ObjectId string
-      const idStr = doc._id.toString();
-      documentMap.set(idStr, doc);
-      documentMap.set(doc._id, doc);
+      const idStr = (doc._id as { toString: () => string }).toString();
+      const toolData = doc as unknown as ToolData;
+      documentMap.set(idStr, toolData);
+      documentMap.set(doc._id as string, toolData);
     });
 
     console.log('enrichCandidatesWithFullData(): documentMap', {
@@ -604,7 +613,7 @@ async function enrichCandidatesWithFullData(
       results,
     });
 
-    return results;
+    return results as ToolData[];
   } catch (error) {
     logError('Failed to enrich candidates with full data', {
       error: error instanceof Error ? error.message : String(error),
@@ -612,6 +621,6 @@ async function enrichCandidatesWithFullData(
     });
 
     // Return array of nulls to maintain order if enrichment fails
-    return new Array(candidates.length).fill(null);
+    return new Array(candidates.length).fill(null) as ToolData[];
   }
 }
