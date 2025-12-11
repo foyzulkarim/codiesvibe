@@ -318,7 +318,7 @@ export class MongoDBService {
     const collection = db.collection<ITool>("tools");
 
     let query: Filter<ITool> = {
-      $or: [{ id: idOrSlug }, { slug: idOrSlug }],
+      $or: [{ id: idOrSlug }, { slug: idOrSlug }, { _id: new ObjectId(idOrSlug) }],
     } as Filter<ITool>;
 
     if (options?.publicOnly) {

@@ -186,6 +186,14 @@ router.post('/retry/:toolId', async (req: Request, res: Response) => {
         success: true,
       });
     } else {
+      // Log the actual error so it's visible in logs
+      searchLogger.error('Sync retry failed', new Error(result.error || 'Unknown error'), {
+        service: 'sync-api',
+        correlationId: authReq.correlationId,
+        toolId,
+        errorMessage: result.error,
+      });
+
       res.status(500).json({
         error: result.error || 'Sync retry failed',
         code: 'SYNC_RETRY_FAILED',

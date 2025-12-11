@@ -4,9 +4,13 @@
  * Single source of truth for all environment variables.
  * Validates and exposes environment variables through a type-safe CONFIG object.
  *
- * IMPORTANT: This file should be imported BEFORE logger initialization
- * to avoid circular dependencies.
+ * IMPORTANT: This module loads dotenv automatically when imported to ensure
+ * environment variables are available before CONFIG is built.
  */
+
+// Load dotenv FIRST before any other code runs
+// This ensures process.env is populated regardless of import order
+import 'dotenv/config';
 
 // =============================================================================
 // Type-Safe Parsing Utilities

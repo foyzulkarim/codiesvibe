@@ -12,9 +12,19 @@ export class EmbeddingService {
   private togetherClient: Together;
 
   constructor() {
+    // Debug: Log API key status at construction time
+    const apiKey = CONFIG.ai.TOGETHER_API_KEY;
+    console.log('[EmbeddingService] Constructor called, API key status:',
+      apiKey ? `present (length: ${apiKey.length})` : 'MISSING!'
+    );
+
+    if (!apiKey) {
+      console.error('[EmbeddingService] WARNING: TOGETHER_API_KEY is not set! Embedding generation will fail.');
+    }
+
     // Initialize Together AI client
     this.togetherClient = new Together({
-      apiKey: CONFIG.ai.TOGETHER_API_KEY,
+      apiKey: apiKey,
     });
 
     this.initQdrant();

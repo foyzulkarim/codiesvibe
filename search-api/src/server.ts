@@ -5,8 +5,10 @@
  * Refactored for better maintainability and separation of concerns
  */
 
+// Note: dotenv is loaded automatically by env.config.ts when CONFIG is first imported
+// This ensures env vars are available regardless of import order
+
 import express from 'express';
-import dotenv from 'dotenv';
 import { mkdirSync } from 'fs';
 import { validateEnvironment } from './utils/env-validator.js';
 import {
@@ -27,9 +29,6 @@ import searchRoutes from './routes/search.routes.js';
 import toolsRoutes from './routes/tools.routes.js';
 import syncRoutes from './routes/sync.routes.js';
 import healthRoutes from './routes/health.routes.js';
-
-// Load environment variables
-dotenv.config();
 
 // Validate critical environment variables
 validateEnvironment();
