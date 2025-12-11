@@ -19,7 +19,7 @@ import { CONFIG } from '#config/env.config';
 /**
  * Connect to MongoDB database
  */
-async function connectDatabase(): Promise<void> {
+async function connectMongoDB(): Promise<void> {
   searchLogger.info('🔄 Connecting to MongoDB...', {
     service: 'search-api',
     database: mongoConfig.dbName,
@@ -43,62 +43,61 @@ async function connectDatabase(): Promise<void> {
 }
 
 /**
- * Register database clients with health check service
+ * Initialize Qdrant vector database connection
  */
-async function registerHealthChecks(): Promise<void> {
-  const mongoClient = getMongoClient();
+async function connectQdrant(): Promise<void> {
+  searchLogger.info('🔄 Connecting to Qdrant...', {
+    service: 'search-api',
+  });
 
-  if (mongoClient) {
-    healthCheckService.setMongoClient(mongoClient);
-    searchLogger.info('✅ MongoDB client registered with health check service', {
-      service: 'search-api',
-      database: CONFIG.database.MONGODB_DB_NAME,
-      uri: CONFIG.database.MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')
-    });
-  } else {
-    searchLogger.warn('⚠️  MongoDB client not available for health checks', {
-      service: 'search-api',
-    });
-  }
-
-  // Try to initialize Qdrant client
   try {
-    searchLogger.info('🔄 Initializing Qdrant client...', {
-      service: 'search-api',
-    });
-
-    // STEP 1: Explicitly initialize the qdrantService singleton
     await qdrantService.initialize();
 
-    // STEP 2: Verify initialization succeeded
     if (!qdrantService.isReady()) {
       throw new Error('Qdrant service initialization failed: client not ready');
     }
 
-    // STEP 3: Get client for health check registration
     const qdrantClient = getQdrantClient();
-
     if (!qdrantClient) {
       throw new Error('Qdrant client is null after initialization');
     }
 
-    // STEP 4: Register client with health check service
-    healthCheckService.setQdrantClient(qdrantClient);
-    searchLogger.info('✅ Qdrant client initialized and registered', {
+    searchLogger.info('✅ Connected to Qdrant database', {
       service: 'search-api',
     });
+  } catch (error) {
+    searchLogger.error(
+      '❌ Failed to connect to Qdrant',
+      error instanceof Error ? error : new Error('Unknown error'),
+      {
+        service: 'search-api',
+        troubleshooting: [
+          'Check QDRANT_URL/QDRANT_HOST/QDRANT_PORT environment variables',
+          'Verify Qdrant server is running and accessible',
+          'Check Qdrant server logs for errors',
+        ],
+      }
+    );
+    throw error;
+  }
+}
 
-    // STEP 5: Create all 4 collections (idempotent)
-    searchLogger.info('🔧 Ensuring Qdrant collections exist...', {
-      service: 'search-api',
-      requiredCollections: ['tools', 'functionality', 'usecases', 'interface'],
-    });
+/**
+ * Ensure all required Qdrant collections exist
+ */
+async function ensureQdrantCollections(): Promise<void> {
+  const requiredCollections = ['tools', 'functionality', 'usecases', 'interface'];
 
+  searchLogger.info('🔧 Ensuring Qdrant collections exist...', {
+    service: 'search-api',
+    requiredCollections,
+  });
+
+  try {
     const results = await qdrantService.createMultiCollections();
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.length - successCount;
 
-    // STEP 6: Fail-fast if any collections failed to create
     if (failedCount > 0) {
       const failedCollections = results
         .filter(r => !r.success)
@@ -109,7 +108,6 @@ async function registerHealthChecks(): Promise<void> {
       );
     }
 
-    // STEP 7: Log success with details
     const createdCollections = results
       .filter(r => r.message?.includes('created'))
       .map(r => r.collection);
@@ -117,31 +115,54 @@ async function registerHealthChecks(): Promise<void> {
       .filter(r => r.message?.includes('exists'))
       .map(r => r.collection);
 
-    searchLogger.info(`✅ Qdrant collections ready: ${successCount}/4 initialized`, {
+    searchLogger.info(`✅ Qdrant collections ready: ${successCount}/${requiredCollections.length} initialized`, {
       service: 'search-api',
       created: createdCollections.length > 0 ? createdCollections : undefined,
       existing: existingCollections.length > 0 ? existingCollections : undefined,
     });
-
   } catch (error) {
-    // Log detailed error
     searchLogger.error(
-      '❌ Failed to initialize Qdrant (server startup aborted)',
-      error as Error,
+      '❌ Failed to ensure Qdrant collections',
+      error instanceof Error ? error : new Error('Unknown error'),
       {
         service: 'search-api',
-        phase: 'qdrant-initialization',
-        note: 'Qdrant collections are required for search functionality',
-        troubleshooting: [
-          'Check QDRANT_URL/QDRANT_HOST/QDRANT_PORT environment variables',
-          'Verify Qdrant server is running and accessible',
-          'Check Qdrant server logs for errors',
-        ],
+        requiredCollections,
       }
     );
-
-    // Fail-fast: abort server startup
     throw error;
+  }
+}
+
+/**
+ * Register database clients with health check service
+ */
+async function registerHealthChecks(): Promise<void> {
+  const mongoClient = getMongoClient();
+  const qdrantClient = getQdrantClient();
+
+  // Register MongoDB client
+  if (mongoClient) {
+    healthCheckService.setMongoClient(mongoClient);
+    searchLogger.info('✅ MongoDB client registered with health check service', {
+      service: 'search-api',
+      database: CONFIG.database.MONGODB_DB_NAME,
+    });
+  } else {
+    searchLogger.warn('⚠️  MongoDB client not available for health checks', {
+      service: 'search-api',
+    });
+  }
+
+  // Register Qdrant client
+  if (qdrantClient) {
+    healthCheckService.setQdrantClient(qdrantClient);
+    searchLogger.info('✅ Qdrant client registered with health check service', {
+      service: 'search-api',
+    });
+  } else {
+    searchLogger.warn('⚠️  Qdrant client not available for health checks', {
+      service: 'search-api',
+    });
   }
 }
 
@@ -210,8 +231,19 @@ async function initializeSyncWorker(): Promise<void> {
  * @param server - HTTP server instance
  */
 export async function initializeServer(server: Server): Promise<void> {
-  await connectDatabase();
+  // 1. Connect to databases
+  await connectMongoDB();
+  await connectQdrant();
+
+  // 2. Setup infrastructure
+  await ensureQdrantCollections();
+
+  // 3. Register health monitoring
   await registerHealthChecks();
+
+  // 4. Setup shutdown handlers
   await setupGracefulShutdown(server);
+
+  // 5. Start background workers
   await initializeSyncWorker();
 }
