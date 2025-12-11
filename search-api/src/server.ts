@@ -20,8 +20,6 @@ import {
 import { setupSwaggerDocs } from './docs/swagger.setup.js';
 import { initializeServer } from './startup/server.startup.js';
 import { searchLogger } from './config/logger.js';
-import { configureHttpClient } from './config/http-client.js';
-import { setupAxiosCorrelationInterceptor } from './utils/axios-correlation-interceptor.js';
 import { CONFIG } from '#config/env.config';
 
 // Route imports
@@ -32,12 +30,6 @@ import healthRoutes from './routes/health.routes.js';
 
 // Validate critical environment variables
 validateEnvironment();
-
-// Configure HTTP client with connection pooling
-configureHttpClient();
-
-// Setup Axios correlation interceptor early
-setupAxiosCorrelationInterceptor();
 
 // Create Express application
 const app = express();

@@ -13,7 +13,6 @@ import { syncWorkerService } from '../services/sync-worker.service.js';
 import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
 import { qdrantService } from '../services/qdrant.service.js';
 import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from '../config/database.js';
-import { destroyHttpAgents } from '../config/http-client.js';
 import { CONFIG } from '#config/env.config';
 
 /**
@@ -197,8 +196,6 @@ async function setupGracefulShutdown(server: Server): Promise<void> {
       searchLogger.info('🔄 Executing afterShutdown tasks', {
         service: 'search-api',
       });
-      // Destroy HTTP connection pool agents
-      destroyHttpAgents();
     },
   });
 
