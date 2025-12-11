@@ -10,6 +10,7 @@ import {
 
 // Import existing types from centralized location
 import { ToolData } from "../types/tool.types.js";
+import { ITool } from "../types/tool.interfaces.js";
 import { IndexingProgress, HealthReport } from "./vector-indexing.service.js";
 
 // Enhanced types for multi-vector indexing
@@ -25,6 +26,8 @@ export interface MultiVectorPayload {
   deployment: string[];
   lastIndexed: string;
   vectorType: string;
+  // Index signature for QdrantPayload compatibility
+  [key: string]: unknown;
 }
 
 export interface MultiVectorData {
@@ -182,14 +185,14 @@ export class EnhancedVectorIndexingService {
   /**
    * Derive a consistent tool ID string for Qdrant from MongoDB document
    */
-  private deriveToolId(tool: ToolData): string {
+  private deriveToolId(tool: ITool | ToolData): string {
     // Prefer MongoDB _id (ObjectId) for cross-service consistency
-    const objId = (tool as any)._id;
+    const objId = tool._id;
     const mongoId = objId && typeof objId === 'object' && typeof objId.toString === 'function'
       ? objId.toString()
       : (typeof tool._id === 'string')
         ? tool._id
-        : tool._id?.$oid;
+        : (typeof objId === 'object' && objId !== null && '$oid' in objId) ? (objId as { $oid: string }).$oid : undefined;
     return mongoId || tool.id || '';
   }
 
@@ -203,7 +206,7 @@ export class EnhancedVectorIndexingService {
     }
 
     const contentParts: string[] = [];
-    const weights = config.weight as any; // Use type assertion to avoid strict type checking
+    const weights = config.weight as Record<string, number>;
 
     // Add weighted content based on configuration
     if (weights.name && tool.name) {
@@ -214,8 +217,8 @@ export class EnhancedVectorIndexingService {
       this.addWeighted([tool.description], weights.description, contentParts);
     }
 
-    if (weights.useCases && tool.useCases) {
-      this.addWeighted(tool.useCases, weights.useCases, contentParts);
+    if (weights.useCases && Array.isArray(tool.useCases)) {
+      this.addWeighted(tool.useCases as string[], weights.useCases, contentParts);
     }
 
     if (weights.categories && tool.categories) {
@@ -226,8 +229,8 @@ export class EnhancedVectorIndexingService {
       this.addWeighted(tool.functionality, weights.functionality, contentParts);
     }
 
-    if (weights.searchKeywords && tool.searchKeywords) {
-      this.addWeighted(tool.searchKeywords, weights.searchKeywords, contentParts);
+    if (weights.searchKeywords && Array.isArray(tool.searchKeywords)) {
+      this.addWeighted(tool.searchKeywords as string[], weights.searchKeywords, contentParts);
     }
 
     if (weights.interface && tool.interface) {
@@ -238,16 +241,19 @@ export class EnhancedVectorIndexingService {
       this.addWeighted(tool.deployment, weights.deployment, contentParts);
     }
 
-    if (weights.technical && tool.technical?.languages) {
-      this.addWeighted(tool.technical.languages, weights.technical, contentParts);
+    if (weights.technical && tool.technical && typeof tool.technical === 'object' && 'languages' in tool.technical) {
+      const technical = tool.technical as { languages?: unknown };
+      if (Array.isArray(technical.languages)) {
+        this.addWeighted(technical.languages as string[], weights.technical, contentParts);
+      }
     }
 
-    if (weights.integrations && tool.integrations) {
-      this.addWeighted(tool.integrations, weights.integrations, contentParts);
+    if (weights.integrations && Array.isArray(tool.integrations)) {
+      this.addWeighted(tool.integrations as string[], weights.integrations, contentParts);
     }
 
-    if (weights.semanticTags && tool.semanticTags) {
-      this.addWeighted(tool.semanticTags, weights.semanticTags, contentParts);
+    if (weights.semanticTags && Array.isArray(tool.semanticTags)) {
+      this.addWeighted(tool.semanticTags as string[], weights.semanticTags, contentParts);
     }
 
     return contentParts.join(' ');
@@ -256,66 +262,77 @@ export class EnhancedVectorIndexingService {
   /**
    * Generate semantic vector (existing approach)
    */
-  private async generateSemanticVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'semantic');
+  private async generateSemanticVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'semantic');
     return embeddingService.generateEmbedding(content);
   }
 
   /**
    * Generate entity-specific vectors
    */
-  private async generateCategoriesVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.categories');
+  private async generateCategoriesVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.categories');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateFunctionalityVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.functionality');
+  private async generateFunctionalityVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.functionality');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateInterfaceVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.interface');
+  private async generateInterfaceVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.interface');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateUseCasesVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.usecases');
+  private async generateUseCasesVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.usecases');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateKeywordsVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.keywords');
+  private async generateKeywordsVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.keywords');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateAliasesVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'entities.aliases');
+  private async generateAliasesVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'entities.aliases');
     return embeddingService.generateEmbedding(content);
   }
 
   /**
    * Generate composite vectors
    */
-  private async generateToolTypeVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'composites.toolType');
+  private async generateToolTypeVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'composites.toolType');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateDomainVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'composites.domain');
+  private async generateDomainVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'composites.domain');
     return embeddingService.generateEmbedding(content);
   }
 
-  private async generateCapabilityVector(tool: ToolData): Promise<number[]> {
-    const content = this.generateVectorContent(tool, 'composites.capability');
+  private async generateCapabilityVector(tool: ITool | ToolData): Promise<number[]> {
+    const toolData = tool as ToolData;
+    const content = this.generateVectorContent(toolData, 'composites.capability');
     return embeddingService.generateEmbedding(content);
   }
 
   /**
    * Generate multiple vectors for a tool
+   * Accepts either ITool or ToolData for flexibility
    */
-  async generateMultipleVectors(tool: ToolData): Promise<MultiVectorData> {
+  async generateMultipleVectors(tool: ITool | ToolData): Promise<MultiVectorData> {
     const vectors: MultiVectorData = {};
     const supportedTypes = this.getSupportedVectorTypes();
 
@@ -341,19 +358,21 @@ export class EnhancedVectorIndexingService {
 
   /**
    * Generate multiple vectors for multiple tools (batch processing)
+   * Accepts either ITool[] or ToolData[] for flexibility
    */
-  async generateMultipleVectorsBatch(tools: ToolData[]): Promise<{ toolId: string; vectors: MultiVectorData }[]> {
+  async generateMultipleVectorsBatch(tools: (ITool | ToolData)[]): Promise<{ toolId: string; vectors: MultiVectorData }[]> {
     const results: { toolId: string; vectors: MultiVectorData }[] = [];
-    
+
     console.log(`🔄 Generating vectors for ${tools.length} tools in batch...`);
-    
+
     // Process tools in parallel with concurrency limit
     for (let i = 0; i < tools.length; i += this.CONCURRENT_LIMIT) {
       const batch = tools.slice(i, i + this.CONCURRENT_LIMIT);
-      
+
       const promises = batch.map(async (tool) => {
         try {
-          const toolId = this.deriveToolId(tool);
+          const toolData = tool as unknown as ToolData;
+          const toolId = this.deriveToolId(toolData);
           const vectors = await this.generateMultipleVectors(tool);
           return { toolId, vectors };
         } catch (error) {
@@ -377,8 +396,9 @@ export class EnhancedVectorIndexingService {
 
   /**
    * Generate a specific vector type for a tool
+   * Accepts either ITool or ToolData for flexibility
    */
-  private async generateVectorForType(tool: ToolData, vectorType: string): Promise<number[]> {
+  private async generateVectorForType(tool: ITool | ToolData, vectorType: string): Promise<number[]> {
     switch (vectorType) {
       case 'semantic':
         return this.generateSemanticVector(tool);
@@ -408,17 +428,19 @@ export class EnhancedVectorIndexingService {
   /**
    * Create payload for multi-vector storage (legacy)
    */
-  private createMultiVectorPayload(tool: ToolData, vectorType: string): MultiVectorPayload {
+  private createMultiVectorPayload(tool: ITool | ToolData, vectorType: string): MultiVectorPayload {
     const toolId = this.deriveToolId(tool);
-    
+    // Access optional fields safely using type assertion
+    const toolRecord = tool as Record<string, unknown>;
+
     return {
       id: toolId,
       name: tool.name || '',
       description: tool.description || '',
       categories: tool.categories || [],
       functionality: tool.functionality || [],
-      searchKeywords: tool.searchKeywords || [],
-      useCases: tool.useCases || [],
+      searchKeywords: (Array.isArray(toolRecord.searchKeywords) ? toolRecord.searchKeywords : []) as string[],
+      useCases: (Array.isArray(toolRecord.useCases) ? toolRecord.useCases : []) as string[],
       interface: tool.interface || [],
       deployment: tool.deployment || [],
       lastIndexed: new Date().toISOString(),
@@ -429,23 +451,28 @@ export class EnhancedVectorIndexingService {
   /**
    * Create enhanced payload for multi-vector storage in enhanced collection
    */
-  private createEnhancedPayload(tool: ToolData): Record<string, any> {
+  private createEnhancedPayload(tool: ITool | ToolData): Record<string, unknown> {
     const toolId = this.deriveToolId(tool);
-    
+    // Access optional fields safely using type assertion
+    const toolRecord = tool as Record<string, unknown>;
+    const technical = toolRecord.technical && typeof toolRecord.technical === 'object' && 'languages' in (toolRecord.technical as object)
+      ? toolRecord.technical as { languages?: unknown }
+      : null;
+
     return {
       id: toolId,
       name: tool.name || '',
       description: tool.description || '',
       categories: tool.categories || [],
       functionality: tool.functionality || [],
-      searchKeywords: tool.searchKeywords || [],
-      useCases: tool.useCases || [],
+      searchKeywords: (Array.isArray(toolRecord.searchKeywords) ? toolRecord.searchKeywords : []) as string[],
+      useCases: (Array.isArray(toolRecord.useCases) ? toolRecord.useCases : []) as string[],
       interface: tool.interface || [],
       deployment: tool.deployment || [],
       // Include technical information if available
-      ...(tool.technical?.languages ? { languages: tool.technical.languages } : {}),
-      ...(tool.integrations ? { integrations: tool.integrations } : {}),
-      ...(tool.semanticTags ? { semanticTags: tool.semanticTags } : {}),
+      ...(technical?.languages && Array.isArray(technical.languages) ? { languages: technical.languages } : {}),
+      ...(Array.isArray(toolRecord.integrations) ? { integrations: toolRecord.integrations } : {}),
+      ...(Array.isArray(toolRecord.semanticTags) ? { semanticTags: toolRecord.semanticTags } : {}),
       lastIndexed: new Date().toISOString(),
       // Enhanced collection doesn't need vectorType in payload since it's in the named vectors
     };
@@ -455,7 +482,7 @@ export class EnhancedVectorIndexingService {
    * Process a single tool with multiple vectors using enhanced collection
    */
   private async processToolMultiVector(
-    tool: ToolData,
+    tool: ITool | ToolData,
     vectorTypes: string[],
     retryCount = 0
   ): Promise<{ successful: string[]; failed: string[] }> {
@@ -463,13 +490,15 @@ export class EnhancedVectorIndexingService {
     const failed: string[] = [];
 
     try {
-      const toolId = this.deriveToolId(tool);
+      // Cast ITool to ToolData for methods that require ToolData
+      const toolData = tool as unknown as ToolData;
+      const toolId = this.deriveToolId(toolData);
       if (!toolId) {
         throw new Error(`Missing tool id for document: ${tool?.name || '[Unnamed tool]'}`);
       }
 
       // Generate all vectors for the tool
-      const vectors = await this.generateMultipleVectors(tool);
+      const vectors = await this.generateMultipleVectors(toolData);
 
       // Filter vectors to only include supported types
       const validVectors: { [vectorType: string]: number[] } = {};
@@ -495,7 +524,7 @@ export class EnhancedVectorIndexingService {
         validateEnhancedVectors(validVectors);
 
         // Create payload for enhanced collection
-        const payload = this.createEnhancedPayload(tool);
+        const payload = this.createEnhancedPayload(toolData);
 
         if (shouldUseEnhancedCollection()) {
           // Store all vectors in enhanced collection with named vectors
@@ -505,7 +534,7 @@ export class EnhancedVectorIndexingService {
           // Legacy approach: store each vector in separate collection
           for (const [vectorType, embedding] of Object.entries(validVectors)) {
             try {
-              const vectorPayload = this.createMultiVectorPayload(tool, vectorType);
+              const vectorPayload = this.createMultiVectorPayload(toolData, vectorType);
               await qdrantService.upsertToolVector(toolId, embedding, vectorPayload, vectorType);
               successful.push(vectorType);
             } catch (error) {
@@ -542,8 +571,10 @@ export class EnhancedVectorIndexingService {
   /**
    * Check if error is transient (network, rate limit, etc.)
    */
-  private isTransientError(error: any): boolean {
-    const errorMessage = error?.message?.toLowerCase() || '';
+  private isTransientError(error: unknown): boolean {
+    const errorMessage = (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string')
+      ? error.message.toLowerCase()
+      : '';
     return errorMessage.includes('timeout') ||
            errorMessage.includes('network') ||
            errorMessage.includes('rate limit') ||
@@ -633,7 +664,7 @@ export class EnhancedVectorIndexingService {
    * Batch upsert multiple tools with all their vectors to enhanced collection
    */
   private async batchUpsertToolsEnhanced(
-    toolsData: { toolId: string; vectors: MultiVectorData; tool: ToolData }[],
+    toolsData: { toolId: string; vectors: MultiVectorData; tool: ITool | ToolData }[],
     vectorTypes: string[]
   ): Promise<{ successful: { toolId: string; vectorTypes: string[] }[]; failed: { toolId: string; vectorTypes: string[] }[] }> {
     const successful: { toolId: string; vectorTypes: string[] }[] = [];
@@ -707,7 +738,7 @@ export class EnhancedVectorIndexingService {
    * Process tools in batches using enhanced batch operations for better performance
    */
   private async processBatchMultiVectorEnhanced(
-    tools: ToolData[],
+    tools: ITool[],
     vectorTypes: string[],
     batchIndex: number,
     batchSize: number,
@@ -745,7 +776,7 @@ export class EnhancedVectorIndexingService {
         const batchResult = await this.batchUpsertToolsEnhanced(toolsData, vectorTypes);
         
         // Update progress based on batch results
-        batchResult.successful.forEach(({ toolId, vectorTypes: successfulVectorTypes }) => {
+        batchResult.successful.forEach(({ vectorTypes: successfulVectorTypes }) => {
           successful++;
           progress.processed++;
           progress.successful++;
@@ -757,7 +788,7 @@ export class EnhancedVectorIndexingService {
           });
         });
         
-        batchResult.failed.forEach(({ toolId, vectorTypes: failedVectorTypes }) => {
+        batchResult.failed.forEach(({ vectorTypes: failedVectorTypes }) => {
           failed++;
           progress.processed++;
           progress.failed++;

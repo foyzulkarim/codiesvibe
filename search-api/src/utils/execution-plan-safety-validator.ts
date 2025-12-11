@@ -1,7 +1,12 @@
-import { Plan, MultiStrategyPlan, Function, PlanReasoning } from "../types/plan.js";
-import { StateAnnotation } from "../types/state.js";
-import { ExecutionPlanSchema, ExecutionStepSchema } from "../types/enhanced-state.js";
-import { defaultEnhancedSearchConfig } from "../config/enhanced-search-config.js";
+import { Plan, MultiStrategyPlan } from "#types/plan";
+import { StateAnnotation } from "#types/state";
+import { ExecutionPlanSchema, ExecutionStepSchema } from "#types/enhanced-state";
+import { defaultEnhancedSearchConfig } from "#config/enhanced-search-config";
+import type { z } from "zod";
+
+// Type aliases for better readability
+type ExecutionPlan = z.infer<typeof ExecutionPlanSchema>;
+type ExecutionStep = z.infer<typeof ExecutionStepSchema>;
 
 // Safety validation result interface
 export interface SafetyValidationResult {
@@ -206,7 +211,7 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Convert plan to execution plan format
    */
-  private convertToExecutionPlan(plan: Plan | MultiStrategyPlan): any {
+  private convertToExecutionPlan(plan: Plan | MultiStrategyPlan): ExecutionPlan {
     if ("strategies" in plan) {
       // Multi-strategy plan
       const multiStrategyPlan = plan as MultiStrategyPlan;
@@ -271,7 +276,7 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Validate basic plan structure
    */
-  private validatePlanStructure(executionPlan: any, result: SafetyValidationResult): void {
+  private validatePlanStructure(executionPlan: ExecutionPlan, result: SafetyValidationResult): void {
     if (!executionPlan) {
       result.criticalErrors.push("Execution plan is null or undefined");
       result.isValid = false;
@@ -296,7 +301,7 @@ export class ExecutionPlanSafetyValidator {
     }
 
     // Validate each step structure
-    executionPlan.execution_plan.forEach((step: any, index: number) => {
+    executionPlan.execution_plan.forEach((step, index) => {
       const stepValidation = ExecutionStepSchema.safeParse(step);
       if (!stepValidation.success) {
         result.errors.push(`Invalid step at index ${index}: ${stepValidation.error.issues.map(i => i.message).join(', ')}`);
@@ -308,7 +313,7 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Detect loops and circular dependencies
    */
-  private detectLoops(executionPlan: any, result: SafetyValidationResult): void {
+  private detectLoops(executionPlan: ExecutionPlan, result: SafetyValidationResult): void {
     const steps = executionPlan.execution_plan || [];
     const visited = new Set<string>();
     const recursionStack = new Set<string>();
@@ -316,17 +321,18 @@ export class ExecutionPlanSafetyValidator {
     const circularDependencies: string[] = [];
 
     // Build dependency graph
-    steps.forEach((step: any, index: number) => {
+    steps.forEach((step, index) => {
       const stepId = `${step.stage || `step-${index}`}`;
       const dependencies: string[] = [];
-      
-      if (step.inputFromStep !== undefined) {
-        const depStep = steps[step.inputFromStep];
+
+      const stepParams = step.params as Record<string, unknown>;
+      if (stepParams.inputFromStep !== undefined) {
+        const depStep = steps[stepParams.inputFromStep as number];
         if (depStep) {
-          dependencies.push(depStep.stage || `step-${step.inputFromStep}`);
+          dependencies.push(depStep.stage || `step-${stepParams.inputFromStep}`);
         }
       }
-      
+
       this.stepDependencies.set(stepId, dependencies);
     });
 
@@ -361,7 +367,7 @@ export class ExecutionPlanSafetyValidator {
     };
 
     // Check all steps for cycles
-    steps.forEach((step: any, index: number) => {
+    steps.forEach((step, index) => {
       const stepId = step.stage || `step-${index}`;
       if (!visited.has(stepId)) {
         detectCycle(stepId, []);
@@ -369,8 +375,9 @@ export class ExecutionPlanSafetyValidator {
     });
 
     // Check for self-references
-    steps.forEach((step: any, index: number) => {
-      if (step.inputFromStep === index) {
+    steps.forEach((step, index) => {
+      const stepParams = step.params as Record<string, unknown>;
+      if (stepParams.inputFromStep === index) {
         loopPaths.push(`Step ${index} references itself`);
         circularDependencies.push(`step-${index} -> step-${index}`);
       }
@@ -395,7 +402,7 @@ export class ExecutionPlanSafetyValidator {
    * Validate state requirements for each stage
    */
   private validateStateRequirements(
-    executionPlan: any,
+    executionPlan: ExecutionPlan,
     state: typeof StateAnnotation.State,
     result: SafetyValidationResult
   ): void {
@@ -403,13 +410,13 @@ export class ExecutionPlanSafetyValidator {
     const missingStates: string[] = [];
     const invalidStates: string[] = [];
 
-    steps.forEach((step: any, index: number) => {
+    steps.forEach((step, index) => {
       const stageName = step.tool;
       const requiredStates = STAGE_STATE_REQUIREMENTS[stageName as keyof typeof STAGE_STATE_REQUIREMENTS];
 
       if (requiredStates) {
         requiredStates.forEach(requiredState => {
-          const stateValue = (state as any)[requiredState];
+          const stateValue = (state as Record<string, unknown>)[requiredState];
           
           if (stateValue === undefined || stateValue === null) {
             missingStates.push(`Step ${index} (${stageName}): Missing required state '${requiredState}'`);
@@ -441,16 +448,16 @@ export class ExecutionPlanSafetyValidator {
    * Validate parameters and resource usage
    */
   private validateParametersAndResources(
-    executionPlan: any,
+    executionPlan: ExecutionPlan,
     result: SafetyValidationResult
   ): void {
     const steps = executionPlan.execution_plan || [];
     let totalEstimatedTime = 0;
     let totalMemoryUsage = 0;
 
-    steps.forEach((step: any, index: number) => {
+    steps.forEach((step, index) => {
       // Check for dangerous operations
-      if (DANGEROUS_OPERATIONS.includes(step.tool)) {
+      if (DANGEROUS_OPERATIONS.includes(step.tool as typeof DANGEROUS_OPERATIONS[number])) {
         result.criticalErrors.push(`Dangerous operation '${step.tool}' at step ${index}`);
         result.isValid = false;
       }
@@ -511,7 +518,7 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Validate parameter patterns for security
    */
-  private validateParameterPatterns(params: any, stepIndex: number, result: SafetyValidationResult): void {
+  private validateParameterPatterns(params: Record<string, unknown>, stepIndex: number, result: SafetyValidationResult): void {
     const paramStr = JSON.stringify(params).toLowerCase();
     
     // Check for code injection patterns
@@ -568,7 +575,7 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Estimate memory usage for a step
    */
-  private estimateStepMemoryUsage(step: any): number {
+  private estimateStepMemoryUsage(step: ExecutionStep): number {
     let baseMemory = 10; // Base 10MB per step
     
     // Add memory based on parameters
@@ -608,13 +615,13 @@ export class ExecutionPlanSafetyValidator {
    * Validate timeout and resource limits
    */
   private validateTimeoutAndResources(
-    executionPlan: any,
+    executionPlan: ExecutionPlan,
     result: SafetyValidationResult
   ): void {
     const steps = executionPlan.execution_plan || [];
-    
+
     // Check for critical timeout scenarios
-    const criticalSteps = steps.filter((step: any) => 
+    const criticalSteps = steps.filter((step) =>
       (step.estimatedTime || 100) > RESOURCE_LIMITS.CRITICAL_TIMEOUT / steps.length
     );
 
@@ -624,9 +631,10 @@ export class ExecutionPlanSafetyValidator {
     }
 
     // Check concurrent operations
-    const concurrentOps = steps.filter((step: any) => 
-      step.params?.concurrent || step.params?.parallel
-    ).length;
+    const concurrentOps = steps.filter((step) => {
+      const params = step.params as Record<string, unknown>;
+      return params?.concurrent || params?.parallel;
+    }).length;
 
     if (concurrentOps > RESOURCE_LIMITS.MAX_CONCURRENT_OPERATIONS) {
       result.errors.push(`Too many concurrent operations (${concurrentOps}). Max: ${RESOURCE_LIMITS.MAX_CONCURRENT_OPERATIONS}`);
@@ -634,9 +642,10 @@ export class ExecutionPlanSafetyValidator {
     }
 
     // Check for nested plans
-    const nestedPlans = steps.filter((step: any) => 
-      step.params?.subPlan || step.params?.nestedPlan
-    ).length;
+    const nestedPlans = steps.filter((step) => {
+      const params = step.params as Record<string, unknown>;
+      return params?.subPlan || params?.nestedPlan;
+    }).length;
 
     if (nestedPlans > RESOURCE_LIMITS.MAX_NESTED_PLANS) {
       result.errors.push(`Too many nested plans (${nestedPlans}). Max: ${RESOURCE_LIMITS.MAX_NESTED_PLANS}`);
@@ -647,14 +656,14 @@ export class ExecutionPlanSafetyValidator {
   /**
    * Sanitize plan for security
    */
-  private sanitizePlan(executionPlan: any, result: SafetyValidationResult): void {
+  private sanitizePlan(executionPlan: ExecutionPlan, result: SafetyValidationResult): void {
     const steps = executionPlan.execution_plan || [];
     const removedSteps: string[] = [];
     const modifiedParams: Array<{ step: string; param: string; reason: string }> = [];
 
-    const sanitizedSteps = steps.filter((step: any, index: number) => {
+    const sanitizedSteps = steps.filter((step, index) => {
       // Remove dangerous operations
-      if (DANGEROUS_OPERATIONS.includes(step.tool)) {
+      if (DANGEROUS_OPERATIONS.includes(step.tool as typeof DANGEROUS_OPERATIONS[number])) {
         removedSteps.push(`Step ${index}: ${step.tool} (dangerous operation)`);
         return false;
       }

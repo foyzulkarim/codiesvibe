@@ -8,7 +8,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 export interface CorrelationContext {
   correlationId: string;
   startTime: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -47,7 +47,7 @@ export class CorrelationContextManager {
   /**
    * Set metadata in current context
    */
-  setMetadata(key: string, value: any): void {
+  setMetadata(key: string, value: unknown): void {
     const context = this.asyncLocalStorage.getStore();
     if (context) {
       if (!context.metadata) {
@@ -60,7 +60,7 @@ export class CorrelationContextManager {
   /**
    * Get metadata from current context
    */
-  getMetadata(key: string): any {
+  getMetadata(key: string): unknown {
     const context = this.asyncLocalStorage.getStore();
     return context?.metadata?.[key];
   }

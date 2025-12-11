@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z, ZodError, ZodIssue } from 'zod';
 import { toolCrudService } from '../services/tool-crud.service.js';
 import {
   CreateToolSchema,
@@ -7,11 +8,14 @@ import {
   GetMyToolsQuerySchema,
   GetAdminToolsQuerySchema,
   RejectToolSchema,
+  type GetToolsQuery,
+  type GetMyToolsQuery,
+  type GetAdminToolsQuery,
 } from '../schemas/tool.schema.js';
 import { searchLogger } from '../config/logger.js';
 import { SearchRequest } from '../middleware/correlation.middleware.js';
 import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
-import { clerkRequireAuth, ClerkAuthenticatedRequest } from '../middleware/clerk-auth.middleware.js';
+import { clerkRequireAuth } from '../middleware/clerk-auth.middleware.js';
 import {
   attachUserRole,
   requireAdmin,
@@ -20,37 +24,47 @@ import {
   isOwner,
 } from '../middleware/role.middleware.js';
 import { toolsMutationLimiter } from '../middleware/rate-limiters.js';
+import { getErrorMessage } from '#utils/error-handling.js';
 
 const router = Router();
 
 /**
  * Middleware to validate request body with Zod schema
  */
-const validateBody = (schema: any) => {
+const validateBody = (schema: z.ZodSchema<unknown>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = schema.parse(req.body);
       req.body = validatedData;
       next();
-    } catch (error: any) {
+    } catch (error) {
       const searchReq = req as SearchRequest;
-      searchLogger.logSecurityEvent('Validation failed', {
-        correlationId: searchReq.correlationId,
-        service: 'tools-api',
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        errors: error.errors,
-        body: req.body,
-        timestamp: new Date().toISOString(),
-      }, 'warn');
+
+      if (error instanceof ZodError) {
+        searchLogger.logSecurityEvent('Validation failed', {
+          correlationId: searchReq.correlationId,
+          service: 'tools-api',
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          errors: error.errors,
+          body: req.body,
+          timestamp: new Date().toISOString(),
+        }, 'warn');
+
+        return res.status(400).json({
+          error: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: error.errors.map((err: ZodIssue) => ({
+            field: err.path?.join('.') || 'unknown',
+            message: err.message,
+          })),
+        });
+      }
 
       return res.status(400).json({
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
-        details: error.errors?.map((err: any) => ({
-          field: err.path?.join('.') || 'unknown',
-          message: err.message,
-        })) || [{ message: error.message }],
+        details: [{ message: getErrorMessage(error) }],
       });
     }
   };
@@ -59,20 +73,29 @@ const validateBody = (schema: any) => {
 /**
  * Middleware to validate query parameters with Zod schema
  */
-const validateQuery = (schema: any) => {
+const validateQuery = <T>(schema: z.ZodSchema<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedQuery = schema.parse(req.query);
-      req.query = validatedQuery;
+      // Store validated query in a custom property instead of overwriting req.query
+      (req as Request & { validatedQuery: T }).validatedQuery = validatedQuery;
       next();
-    } catch (error: any) {
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          error: 'Invalid query parameters',
+          code: 'VALIDATION_ERROR',
+          details: error.errors.map((err: ZodIssue) => ({
+            field: err.path?.join('.') || 'unknown',
+            message: err.message,
+          })),
+        });
+      }
+
       return res.status(400).json({
         error: 'Invalid query parameters',
         code: 'VALIDATION_ERROR',
-        details: error.errors?.map((err: any) => ({
-          field: err.path?.join('.') || 'unknown',
-          message: err.message,
-        })) || [{ message: error.message }],
+        details: [{ message: getErrorMessage(error) }],
       });
     }
   };
@@ -87,7 +110,7 @@ router.get('/', validateQuery(GetToolsQuerySchema), async (req: Request, res: Re
   const startTime = Date.now();
 
   try {
-    const query = req.query as any;
+    const query = (req as Request & { validatedQuery: GetToolsQuery }).validatedQuery;
     const result = await toolCrudService.getTools(query);
 
     searchLogger.info('Tools list retrieved', {
@@ -138,7 +161,7 @@ router.get('/my-tools', clerkRequireAuth, attachUserRole, validateQuery(GetMyToo
   const startTime = Date.now();
 
   try {
-    const query = req.query as any;
+    const query = (req as Request & { validatedQuery: GetMyToolsQuery }).validatedQuery;
     const result = await toolCrudService.getToolsByContributor(authReq.auth.userId, query);
 
     searchLogger.info('User tools retrieved', {
@@ -172,7 +195,7 @@ router.get('/admin', clerkRequireAuth, attachUserRole, requireAdmin, validateQue
   const startTime = Date.now();
 
   try {
-    const query = req.query as any;
+    const query = (req as Request & { validatedQuery: GetAdminToolsQuery }).validatedQuery;
     const result = await toolCrudService.getAdminTools(query);
 
     searchLogger.info('Admin tools list retrieved', {
@@ -285,30 +308,17 @@ router.post('/', clerkRequireAuth, attachUserRole, toolsMutationLimiter, validat
     });
 
     res.status(201).json(tool);
-  } catch (error: any) {
+  } catch (error) {
     searchLogger.error('Failed to create tool', error instanceof Error ? error : new Error('Unknown error'), {
       service: 'tools-api',
       correlationId: authReq.correlationId,
       body: req.body,
     });
 
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const details = Object.entries(error.errors || {}).map(([field, err]: [string, any]) => ({
-        field,
-        message: err.message,
-      }));
-
-      return res.status(400).json({
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-        details,
-      });
-    }
-
-    // Handle duplicate key errors
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0] || 'unknown';
+    // Handle MongoDB duplicate key errors
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      const mongoError = error as { keyPattern?: Record<string, unknown> };
+      const field = Object.keys(mongoError.keyPattern || {})[0] || 'unknown';
       return res.status(409).json({
         error: `Tool with this ${field} already exists`,
         code: 'CONFLICT',
@@ -386,26 +396,12 @@ router.patch('/:id', clerkRequireAuth, attachUserRole, toolsMutationLimiter, val
     });
 
     res.json(tool);
-  } catch (error: any) {
+  } catch (error) {
     searchLogger.error('Failed to update tool', error instanceof Error ? error : new Error('Unknown error'), {
       service: 'tools-api',
       correlationId: authReq.correlationId,
       toolId: id,
     });
-
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const details = Object.entries(error.errors || {}).map(([field, err]: [string, any]) => ({
-        field,
-        message: err.message,
-      }));
-
-      return res.status(400).json({
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-        details,
-      });
-    }
 
     res.status(500).json({
       error: 'Failed to update tool',

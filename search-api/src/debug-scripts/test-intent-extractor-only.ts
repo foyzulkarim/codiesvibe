@@ -73,7 +73,7 @@ const intentTestCases = [
 /**
  * Test only the IntentExtractorNode with a single query
  */
-async function testIntentExtraction(testCase: any) {
+async function testIntentExtraction(testCase: { name: string; query: string; expectedIntent?: Record<string, unknown> }) {
   console.log(`\n🧪 Testing IntentExtractorNode: ${testCase.name}`);
   console.log(`📝 Query: "${testCase.query}"`);
   console.log(`─`.repeat(50));

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { requireAuth, getAuth } from '@clerk/express';
 import { searchLogger } from '../config/logger.js';
+import { CONFIG } from '#config/env.config';
 
 /**
  * Extended Express Request with Clerk authentication
@@ -9,8 +10,7 @@ export interface ClerkAuthenticatedRequest extends Request {
   auth: {
     userId: string;
     sessionId: string;
-    [key: string]: any;
-  };
+  } & Record<string, unknown>;
 }
 
 /**
@@ -19,7 +19,7 @@ export interface ClerkAuthenticatedRequest extends Request {
  */
 export const debugAuthState = (req: Request, res: Response, next: NextFunction) => {
   // Only log in development environment with explicit debug flag
-  if (process.env.NODE_ENV !== 'development' || process.env.DEBUG_AUTH !== 'true') {
+  if (!CONFIG.env.IS_DEVELOPMENT || !CONFIG.auth.DEBUG_AUTH) {
     next();
     return;
   }
@@ -50,14 +50,16 @@ export const clerkRequireAuth = (req: Request, res: Response, next: NextFunction
   // Run debug logging first (only in dev with DEBUG_AUTH=true)
   debugAuthState(req, res, () => {
     // Then run the actual requireAuth
-    clerkRequireAuthBase(req, res, (err?: any) => {
+    clerkRequireAuthBase(req, res, (err?: unknown) => {
       if (err) {
         // Only log auth failures (not verbose success logging)
+        const errorCode = (err as { code?: string | number; status?: number }).code ||
+                         (err as { code?: string | number; status?: number }).status;
         searchLogger.warn('Authentication failed', {
           service: 'clerk-auth-middleware',
           path: req.path,
           method: req.method,
-          errorCode: err.code || err.status,
+          errorCode,
         });
       }
       next(err);

@@ -5,9 +5,10 @@
  * Runs periodic sweeps to retry failed syncs with exponential backoff.
  */
 
-import { Tool, ITool, SyncCollectionName, SyncStatus } from '../models/tool.model.js';
+import { Filter } from 'mongodb';
+import { ITool, SyncCollectionName } from '../types/tool.interfaces.js';
 import { toolSyncService } from './tool-sync.service.js';
-import { toolCrudService } from './tool-crud.service.js';
+import { mongoDBService } from './mongodb.service.js';
 import { searchLogger } from '../config/logger.js';
 
 // ============================================
@@ -204,8 +205,7 @@ export class SyncWorkerService {
     };
 
     try {
-      // Ensure Mongoose connection is established before database operations
-      await toolCrudService.ensureConnection();
+      // Native driver handles connection automatically via database.ts singleton
 
       searchLogger.info('[SyncWorker] Starting sweep', { service: 'sync-worker' });
 
@@ -268,8 +268,8 @@ export class SyncWorkerService {
    */
   private async findToolsNeedingSync(): Promise<ITool[]> {
     // Query for approved tools with pending, failed, or stale sync status
-    const tools = await Tool.find({
-      approvalStatus: 'approved',
+    const filter = {
+      approvalStatus: 'approved' as const,
       $or: [
         { 'syncMetadata.overallStatus': 'pending' },
         { 'syncMetadata.overallStatus': 'failed' },
@@ -279,11 +279,13 @@ export class SyncWorkerService {
         { 'syncMetadata.collections.usecases.status': { $in: ['pending', 'failed', 'stale'] } },
         { 'syncMetadata.collections.interface.status': { $in: ['pending', 'failed', 'stale'] } },
       ],
-    })
-      .sort({ 'syncMetadata.updatedAt': 1 }) // Process oldest first
-      .limit(this.config.batchSize);
+    };
 
-    return tools;
+    // Use native driver via mongoDBService
+    return mongoDBService.findTools(filter as Filter<ITool>, {
+      sort: { 'syncMetadata.updatedAt': 1 }, // Process oldest first
+      limit: this.config.batchSize,
+    });
   }
 
   /**
@@ -416,13 +418,15 @@ export class SyncWorkerService {
     failed: number;
     errors: Array<{ toolId: string; error: string }>;
   }> {
-    // Ensure Mongoose connection is established
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically
 
-    const tools = await Tool.find({
-      approvalStatus: 'approved',
-      'syncMetadata.overallStatus': 'failed',
-    }).limit(100);
+    const tools = await mongoDBService.findTools(
+      {
+        approvalStatus: 'approved',
+        'syncMetadata.overallStatus': 'failed',
+      },
+      { limit: 100 }
+    );
 
     const result = {
       processed: 0,
@@ -458,20 +462,19 @@ export class SyncWorkerService {
     failed: number;
     byCollection: Record<SyncCollectionName, { synced: number; pending: number; failed: number }>;
   }> {
-    // Ensure Mongoose connection is established
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically
 
     const [total, synced, pending, failed] = await Promise.all([
-      Tool.countDocuments({ approvalStatus: 'approved' }),
-      Tool.countDocuments({
+      mongoDBService.countToolsMatching({ approvalStatus: 'approved' }),
+      mongoDBService.countToolsMatching({
         approvalStatus: 'approved',
         'syncMetadata.overallStatus': 'synced',
       }),
-      Tool.countDocuments({
+      mongoDBService.countToolsMatching({
         approvalStatus: 'approved',
         'syncMetadata.overallStatus': 'pending',
       }),
-      Tool.countDocuments({
+      mongoDBService.countToolsMatching({
         approvalStatus: 'approved',
         'syncMetadata.overallStatus': 'failed',
       }),
@@ -483,15 +486,15 @@ export class SyncWorkerService {
 
     for (const collection of collections) {
       const [collSynced, collPending, collFailed] = await Promise.all([
-        Tool.countDocuments({
+        mongoDBService.countToolsMatching({
           approvalStatus: 'approved',
           [`syncMetadata.collections.${collection}.status`]: 'synced',
         }),
-        Tool.countDocuments({
+        mongoDBService.countToolsMatching({
           approvalStatus: 'approved',
           [`syncMetadata.collections.${collection}.status`]: 'pending',
         }),
-        Tool.countDocuments({
+        mongoDBService.countToolsMatching({
           approvalStatus: 'approved',
           [`syncMetadata.collections.${collection}.status`]: 'failed',
         }),
@@ -517,49 +520,37 @@ export class SyncWorkerService {
    * Reset retry count for a tool (allows immediate retry)
    */
   async resetRetryCount(toolId: string): Promise<boolean> {
-    // Ensure Mongoose connection is established
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically
 
-    const result = await Tool.updateOne(
-      { $or: [{ id: toolId }, { slug: toolId }] },
-      {
-        $set: {
-          'syncMetadata.collections.tools.retryCount': 0,
-          'syncMetadata.collections.functionality.retryCount': 0,
-          'syncMetadata.collections.usecases.retryCount': 0,
-          'syncMetadata.collections.interface.retryCount': 0,
-        },
-      }
-    );
-
-    return result.modifiedCount > 0;
+    return mongoDBService.updateToolSyncMetadata(toolId, {
+      $set: {
+        'syncMetadata.collections.tools.retryCount': 0,
+        'syncMetadata.collections.functionality.retryCount': 0,
+        'syncMetadata.collections.usecases.retryCount': 0,
+        'syncMetadata.collections.interface.retryCount': 0,
+      },
+    });
   }
 
   /**
    * Mark a tool as stale (needs re-sync)
    */
   async markToolAsStale(toolId: string): Promise<boolean> {
-    // Ensure Mongoose connection is established
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically
 
-    const result = await Tool.updateOne(
-      { $or: [{ id: toolId }, { slug: toolId }] },
-      {
-        $set: {
-          'syncMetadata.overallStatus': 'pending',
-          'syncMetadata.collections.tools.status': 'pending',
-          'syncMetadata.collections.functionality.status': 'pending',
-          'syncMetadata.collections.usecases.status': 'pending',
-          'syncMetadata.collections.interface.status': 'pending',
-          'syncMetadata.collections.tools.retryCount': 0,
-          'syncMetadata.collections.functionality.retryCount': 0,
-          'syncMetadata.collections.usecases.retryCount': 0,
-          'syncMetadata.collections.interface.retryCount': 0,
-        },
-      }
-    );
-
-    return result.modifiedCount > 0;
+    return mongoDBService.updateToolSyncMetadata(toolId, {
+      $set: {
+        'syncMetadata.overallStatus': 'pending',
+        'syncMetadata.collections.tools.status': 'pending',
+        'syncMetadata.collections.functionality.status': 'pending',
+        'syncMetadata.collections.usecases.status': 'pending',
+        'syncMetadata.collections.interface.status': 'pending',
+        'syncMetadata.collections.tools.retryCount': 0,
+        'syncMetadata.collections.functionality.retryCount': 0,
+        'syncMetadata.collections.usecases.retryCount': 0,
+        'syncMetadata.collections.interface.retryCount': 0,
+      },
+    });
   }
 }
 

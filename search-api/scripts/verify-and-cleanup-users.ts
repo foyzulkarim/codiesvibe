@@ -9,9 +9,8 @@
  *   npm run cleanup-users        # Drop the users collection (use with caution!)
  */
 
-import mongoose from 'mongoose';
+import { MongoClient, Db, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
-import { exit } from 'process';
 
 // Load environment variables
 dotenv.config();
@@ -24,14 +23,19 @@ if (!MONGODB_URI) {
 }
 
 interface UserDocument {
-  _id: mongoose.Types.ObjectId;
+  _id: ObjectId;
   email: string;
   createdAt: Date;
 }
 
+let client: MongoClient;
+let db: Db;
+
 async function connectToDatabase(): Promise<void> {
   try {
-    await mongoose.connect(MONGODB_URI as string);
+    client = new MongoClient(MONGODB_URI as string);
+    await client.connect();
+    db = client.db();
     console.log('✅ Connected to MongoDB');
   } catch (error) {
     console.error('❌ Failed to connect to MongoDB:', error);
@@ -39,13 +43,15 @@ async function connectToDatabase(): Promise<void> {
   }
 }
 
+async function disconnectFromDatabase(): Promise<void> {
+  if (client) {
+    await client.close();
+    console.log('🔌 Disconnected from MongoDB');
+  }
+}
+
 async function verifyUsersCollection(): Promise<boolean> {
   try {
-    const db = mongoose.connection.db;
-    if (!db) {
-      throw new Error('Database connection not established');
-    }
-
     // Check if users collection exists
     const collections = await db.listCollections({ name: 'users' }).toArray();
 
@@ -92,11 +98,6 @@ async function verifyUsersCollection(): Promise<boolean> {
 
 async function dropUsersCollection(): Promise<void> {
   try {
-    const db = mongoose.connection.db;
-    if (!db) {
-      throw new Error('Database connection not established');
-    }
-
     // Check if collection exists
     const collections = await db.listCollections({ name: 'users' }).toArray();
 
@@ -152,8 +153,7 @@ async function main() {
     console.error('❌ Migration script failed:', error);
     process.exit(1);
   } finally {
-    await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
+    await disconnectFromDatabase();
   }
 }
 

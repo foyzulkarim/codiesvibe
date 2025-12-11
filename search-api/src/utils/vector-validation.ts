@@ -104,7 +104,7 @@ export function validateSearchLimit(limit: number): void {
 /**
  * Validates payload structure
  */
-export function validatePayload(payload: Record<string, any>): void {
+export function validatePayload(payload: Record<string, unknown>): void {
   if (!payload || typeof payload !== 'object') {
     throw new VectorValidationError('Payload must be an object', 'INVALID_PAYLOAD_TYPE');
   }
@@ -127,7 +127,7 @@ export function validatePayload(payload: Record<string, any>): void {
 /**
  * Validates filter structure
  */
-export function validateFilter(filter?: Record<string, any>): void {
+export function validateFilter(filter?: Record<string, unknown>): void {
   if (!filter) return;
 
   if (typeof filter !== 'object') {
@@ -136,18 +136,18 @@ export function validateFilter(filter?: Record<string, any>): void {
 
   // Basic filter structure validation
   const allowedKeys = ['must', 'must_not', 'should', 'filter', 'key', 'match', 'range', 'is_null', 'is_empty'];
-  
-  const validateFilterObject = (obj: any, path: string = ''): void => {
+
+  const validateFilterObject = (obj: unknown, path: string = ''): void => {
     if (!obj || typeof obj !== 'object') return;
 
     for (const [key, value] of Object.entries(obj)) {
       const currentPath = path ? `${path}.${key}` : key;
-      
+
       if (!allowedKeys.includes(key) && !key.startsWith('payload.')) {
         throw new VectorValidationError(`Invalid filter key: ${currentPath}`, 'INVALID_FILTER_KEY');
       }
 
-      if (typeof value === 'object') {
+      if (typeof value === 'object' && value !== null) {
         validateFilterObject(value, currentPath);
       }
     }
@@ -164,7 +164,7 @@ export function validateSearchParams(params: {
   query?: string;
   vectorType?: string;
   limit?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
 }): void {
   const { embedding, query, vectorType, limit, filter } = params;
 
@@ -210,7 +210,7 @@ export function validateSearchParams(params: {
 export function validateUpsertParams(params: {
   toolId: string;
   vectors: { [vectorType: string]: number[] } | number[];
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   vectorType?: string;
 }): void {
   const { toolId, vectors, payload, vectorType } = params;
@@ -246,7 +246,7 @@ export function validateUpsertParams(params: {
 export function validateBatchOperations(operations: Array<{
   toolId: string;
   vectors: { [vectorType: string]: number[] } | number[];
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   vectorType?: string;
 }>): void {
   if (!Array.isArray(operations)) {
@@ -283,7 +283,7 @@ export function validateBatchOperations(operations: Array<{
 export function validateEnhancedVectorOperation(params: {
   toolId: string;
   vectors: { [vectorType: string]: number[] };
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   operation: 'upsert' | 'update' | 'delete';
 }): void {
   const { toolId, vectors, payload, operation } = params;
@@ -299,7 +299,7 @@ export function validateEnhancedVectorOperation(params: {
 
   // Additional operation-specific validation
   switch (operation) {
-    case 'upsert':
+    case 'upsert': {
       // Ensure all required vector types are present for upsert
       const requiredTypes = ['semantic']; // At minimum, semantic vector should be present
       for (const requiredType of requiredTypes) {
@@ -311,8 +311,9 @@ export function validateEnhancedVectorOperation(params: {
         }
       }
       break;
-    
-    case 'update':
+    }
+
+    case 'update': {
       // For updates, at least one vector type should be present
       if (Object.keys(vectors).length === 0) {
         throw new VectorValidationError(
@@ -321,7 +322,8 @@ export function validateEnhancedVectorOperation(params: {
         );
       }
       break;
-    
+    }
+
     case 'delete':
       // Delete operations don't need vector validation beyond basic checks
       break;
@@ -336,7 +338,7 @@ export function validateEnhancedSearchParams(params: {
   query?: string;
   vectorTypes?: string[];
   limit?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
   useEnhanced?: boolean;
 }): void {
   const { embedding, query, vectorTypes, limit, filter, useEnhanced } = params;

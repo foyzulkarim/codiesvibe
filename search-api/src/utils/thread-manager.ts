@@ -8,7 +8,7 @@ export interface ThreadInfo {
   createdAt: Date;
   lastAccessed: Date;
   expirationTime: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ThreadValidationResult {
@@ -45,7 +45,7 @@ export class ThreadManager {
   /**
    * Create and register a new thread
    */
-  public createThread(metadata?: Record<string, any>): string {
+  public createThread(metadata?: Record<string, unknown>): string {
     const threadId = this.generateThreadId();
     const now = new Date();
     
@@ -121,7 +121,7 @@ export class ThreadManager {
   /**
    * Update thread metadata
    */
-  public updateThreadMetadata(threadId: string, metadata: Record<string, any>): boolean {
+  public updateThreadMetadata(threadId: string, metadata: Record<string, unknown>): boolean {
     const threadInfo = this.activeThreads.get(threadId);
     if (!threadInfo) {
       return false;

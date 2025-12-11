@@ -93,7 +93,7 @@ docker exec -it search-api npm run create-collections
 docker exec -it search-api npm run seed-vectors
 ```
 
-**Tip**: Set `ENSURE_QDRANT_COLLECTIONS=true` in `.env` to automatically create collections on server startup.
+**Note**: Qdrant collections are automatically created when the server starts. The manual `npm run create-collections` command is still available for troubleshooting.
 
 ---
 
@@ -238,12 +238,14 @@ docker exec -it search-api npm run seed-vectors -- --force
 npm run seed-vectors -- --force
 ```
 
-### Auto-Creation (Optional)
+### Auto-Creation on Startup
 
-Set this in `.env` to auto-create collections on server startup:
-```env
-ENSURE_QDRANT_COLLECTIONS=true
-```
+Qdrant collections are automatically created when the server starts. This ensures:
+- Fresh deployments work immediately
+- Collection schema stays up-to-date
+- Dev and production environments behave consistently
+
+**Manual Creation**: Run `npm run create-collections` if you need to troubleshoot or recreate collections.
 
 ---
 

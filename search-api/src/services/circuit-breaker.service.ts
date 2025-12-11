@@ -5,6 +5,7 @@
 
 import CircuitBreaker from 'opossum';
 import { searchLogger } from '../config/logger.js';
+import type { CircuitBreakerFunction } from '#types/circuit-breaker.types.js';
 
 export interface CircuitBreakerConfig {
   timeout?: number; // Request timeout in ms (default: 3000)
@@ -17,6 +18,23 @@ export interface CircuitBreakerConfig {
 }
 
 /**
+ * Circuit breaker statistics interface
+ */
+export interface CircuitBreakerStats {
+  name: string;
+  state: 'open' | 'half-open' | 'closed';
+  stats: {
+    fires: number;
+    successes: number;
+    failures: number;
+    fallbacks: number;
+    semaphoreRejections: number;
+    shortCircuits: number;
+    timeouts: number;
+  };
+}
+
+/**
  * Circuit Breaker Manager
  * Centrally manages circuit breakers for all external services
  */
@@ -26,9 +44,9 @@ export class CircuitBreakerManager {
   /**
    * Create a circuit breaker for a service
    */
-  createBreaker<T extends any[], R>(
+  createBreaker<TArgs extends unknown[], TReturn>(
     name: string,
-    func: (...args: T) => Promise<R>,
+    func: CircuitBreakerFunction<TArgs, TReturn>,
     config: CircuitBreakerConfig = {}
   ): CircuitBreaker {
     const options = {
@@ -56,8 +74,9 @@ export class CircuitBreakerManager {
       });
 
       // Track circuit breaker state in metrics
-      if (typeof (global as any).metricsService !== 'undefined') {
-        (global as any).metricsService.trackError('circuit_breaker_open', 'high');
+      if (typeof (global as Record<string, unknown>).metricsService !== 'undefined') {
+        const metricsService = (global as Record<string, unknown>).metricsService as { trackError: (type: string, severity: string) => void };
+        metricsService.trackError('circuit_breaker_open', 'high');
       }
     });
 
@@ -88,7 +107,7 @@ export class CircuitBreakerManager {
     });
 
     // Event: Successful call
-    breaker.on('success', (result: any, latencyMs: number) => {
+    breaker.on('success', (_result: unknown, latencyMs: number) => {
       searchLogger.debug('Circuit breaker call succeeded', {
         service: 'search-api',
         circuitBreaker: name,
@@ -111,8 +130,9 @@ export class CircuitBreakerManager {
       });
 
       // Track individual failures
-      if (typeof (global as any).metricsService !== 'undefined') {
-        (global as any).metricsService.trackError('circuit_breaker_failure', 'medium');
+      if (typeof (global as Record<string, unknown>).metricsService !== 'undefined') {
+        const metricsService = (global as Record<string, unknown>).metricsService as { trackError: (type: string, severity: string) => void };
+        metricsService.trackError('circuit_breaker_failure', 'medium');
       }
     });
 
@@ -128,8 +148,9 @@ export class CircuitBreakerManager {
       });
 
       // Track rejections
-      if (typeof (global as any).metricsService !== 'undefined') {
-        (global as any).metricsService.trackError('circuit_breaker_reject', 'medium');
+      if (typeof (global as Record<string, unknown>).metricsService !== 'undefined') {
+        const metricsService = (global as Record<string, unknown>).metricsService as { trackError: (type: string, severity: string) => void };
+        metricsService.trackError('circuit_breaker_reject', 'medium');
       }
     });
 
@@ -145,13 +166,14 @@ export class CircuitBreakerManager {
       });
 
       // Track timeouts
-      if (typeof (global as any).metricsService !== 'undefined') {
-        (global as any).metricsService.trackError('circuit_breaker_timeout', 'medium');
+      if (typeof (global as Record<string, unknown>).metricsService !== 'undefined') {
+        const metricsService = (global as Record<string, unknown>).metricsService as { trackError: (type: string, severity: string) => void };
+        metricsService.trackError('circuit_breaker_timeout', 'medium');
       }
     });
 
     // Event: Fallback executed
-    breaker.on('fallback', (result: any) => {
+    breaker.on('fallback', (_result: unknown) => {
       searchLogger.info('Circuit breaker fallback executed', {
         service: 'search-api',
         circuitBreaker: name,
@@ -185,7 +207,7 @@ export class CircuitBreakerManager {
   /**
    * Get circuit breaker statistics
    */
-  getStats(name: string): any {
+  getStats(name: string): CircuitBreakerStats | null {
     const breaker = this.breakers.get(name);
     if (!breaker) {
       return null;
@@ -201,8 +223,8 @@ export class CircuitBreakerManager {
   /**
    * Get all circuit breaker statistics
    */
-  getAllStats(): any[] {
-    const stats: any[] = [];
+  getAllStats(): CircuitBreakerStats[] {
+    const stats: CircuitBreakerStats[] = [];
     this.breakers.forEach((breaker, name) => {
       stats.push({
         name: name,
@@ -242,8 +264,8 @@ export const circuitBreakerManager = new CircuitBreakerManager();
  */
 
 // MongoDB circuit breaker
-export const createMongoDBBreaker = <T extends any[], R>(
-  func: (...args: T) => Promise<R>,
+export const createMongoDBBreaker = <TArgs extends unknown[], TReturn>(
+  func: CircuitBreakerFunction<TArgs, TReturn>,
   name: string = 'mongodb'
 ): CircuitBreaker => {
   return circuitBreakerManager.createBreaker(name, func, {
@@ -255,8 +277,8 @@ export const createMongoDBBreaker = <T extends any[], R>(
 };
 
 // Qdrant circuit breaker
-export const createQdrantBreaker = <T extends any[], R>(
-  func: (...args: T) => Promise<R>,
+export const createQdrantBreaker = <TArgs extends unknown[], TReturn>(
+  func: CircuitBreakerFunction<TArgs, TReturn>,
   name: string = 'qdrant'
 ): CircuitBreaker => {
   return circuitBreakerManager.createBreaker(name, func, {
@@ -268,8 +290,8 @@ export const createQdrantBreaker = <T extends any[], R>(
 };
 
 // LLM service circuit breaker
-export const createLLMBreaker = <T extends any[], R>(
-  func: (...args: T) => Promise<R>,
+export const createLLMBreaker = <TArgs extends unknown[], TReturn>(
+  func: CircuitBreakerFunction<TArgs, TReturn>,
   name: string = 'llm'
 ): CircuitBreaker => {
   return circuitBreakerManager.createBreaker(name, func, {

@@ -3,7 +3,7 @@
  * Automatically adds correlation ID to all outgoing HTTP requests
  */
 
-import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { correlationContext } from './correlation-context.js';
 import { searchLogger } from '../config/logger.js';
 

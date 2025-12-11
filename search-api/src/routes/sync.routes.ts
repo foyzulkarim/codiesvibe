@@ -8,7 +8,8 @@
 import { Router, Request, Response } from 'express';
 import { syncWorkerService } from '../services/sync-worker.service.js';
 import { toolSyncService } from '../services/tool-sync.service.js';
-import { Tool, SyncCollectionName } from '../models/tool.model.js';
+import { mongoDBService } from '../services/mongodb.service.js';
+import { SyncCollectionName } from '../types/tool.interfaces.js';
 import { searchLogger } from '../config/logger.js';
 import { SearchRequest } from '../middleware/correlation.middleware.js';
 import { clerkRequireAuth } from '../middleware/clerk-auth.middleware.js';
@@ -422,7 +423,7 @@ router.post('/batch/sync', async (req: Request, res: Response) => {
     const results: Array<{ toolId: string; success: boolean; error?: string }> = [];
 
     for (const toolId of toolIds) {
-      const tool = await Tool.findOne({ $or: [{ id: toolId }, { slug: toolId }] });
+      const tool = await mongoDBService.findToolByIdOrSlug(toolId);
 
       if (!tool) {
         results.push({ toolId, success: false, error: 'Tool not found' });
@@ -481,7 +482,7 @@ router.get('/tool/:toolId', async (req: Request, res: Response) => {
   const { toolId } = req.params;
 
   try {
-    const tool = await Tool.findOne({ $or: [{ id: toolId }, { slug: toolId }] });
+    const tool = await mongoDBService.findToolByIdOrSlug(toolId);
 
     if (!tool) {
       return res.status(404).json({
@@ -520,26 +521,29 @@ router.get('/failed', async (req: Request, res: Response) => {
   const { limit = 50, page = 1 } = req.query;
 
   try {
-    const skip = (Number(page) - 1) * Number(limit);
+    const filter = {
+      approvalStatus: 'approved',
+      'syncMetadata.overallStatus': 'failed',
+    };
 
-    const [tools, total] = await Promise.all([
-      Tool.find({
-        approvalStatus: 'approved',
-        'syncMetadata.overallStatus': 'failed',
-      })
-        .select('id name slug syncMetadata approvalStatus')
-        .sort({ 'syncMetadata.updatedAt': -1 })
-        .skip(skip)
-        .limit(Number(limit))
-        .lean(),
-      Tool.countDocuments({
-        approvalStatus: 'approved',
-        'syncMetadata.overallStatus': 'failed',
-      }),
-    ]);
+    const { data: tools, total } = await mongoDBService.findToolsPaginated({
+      filter,
+      sort: { 'syncMetadata.updatedAt': -1 },
+      page: Number(page),
+      limit: Number(limit),
+    });
+
+    // Map to return only needed fields
+    const mappedTools = tools.map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      syncMetadata: t.syncMetadata,
+      approvalStatus: t.approvalStatus,
+    }));
 
     res.json({
-      data: tools,
+      data: mappedTools,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -568,26 +572,29 @@ router.get('/pending', async (req: Request, res: Response) => {
   const { limit = 50, page = 1 } = req.query;
 
   try {
-    const skip = (Number(page) - 1) * Number(limit);
+    const filter = {
+      approvalStatus: 'approved',
+      'syncMetadata.overallStatus': 'pending',
+    };
 
-    const [tools, total] = await Promise.all([
-      Tool.find({
-        approvalStatus: 'approved',
-        'syncMetadata.overallStatus': 'pending',
-      })
-        .select('id name slug syncMetadata approvalStatus')
-        .sort({ 'syncMetadata.updatedAt': -1 })
-        .skip(skip)
-        .limit(Number(limit))
-        .lean(),
-      Tool.countDocuments({
-        approvalStatus: 'approved',
-        'syncMetadata.overallStatus': 'pending',
-      }),
-    ]);
+    const { data: tools, total } = await mongoDBService.findToolsPaginated({
+      filter,
+      sort: { 'syncMetadata.updatedAt': -1 },
+      page: Number(page),
+      limit: Number(limit),
+    });
+
+    // Map to return only needed fields
+    const mappedTools = tools.map((t) => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      syncMetadata: t.syncMetadata,
+      approvalStatus: t.approvalStatus,
+    }));
 
     res.json({
-      data: tools,
+      data: mappedTools,
       pagination: {
         page: Number(page),
         limit: Number(limit),

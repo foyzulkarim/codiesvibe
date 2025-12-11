@@ -7,8 +7,15 @@
  * @module core/pipeline.init
  */
 
-import { validateSchema, assertValidSchema } from './validators/schema.validator.js';
-import { toolsSchema, buildToolsFilters, validateToolsQueryPlan } from '../domains/tools/index.js';
+import {
+  validateSchema,
+  assertValidSchema,
+} from './validators/schema.validator.js';
+import {
+  toolsSchema,
+  buildToolsFilters,
+  validateToolsQueryPlan,
+} from '../domains/tools/index.js';
 import { DomainSchema } from './types/schema.types.js';
 import { StateAnnotation } from '../types/state.js';
 
@@ -31,16 +38,29 @@ export function initializePipeline(): Partial<typeof StateAnnotation.State> {
   assertValidSchema(toolsSchema);
 
   console.log('✅ Schema validation passed');
-  console.log(`📊 Vocabularies: ${Object.keys(toolsSchema.vocabularies).length} categories`);
+  console.log(
+    `📊 Vocabularies: ${
+      Object.keys(toolsSchema.vocabularies).length
+    } categories`
+  );
   console.log(`🎯 Intent fields: ${toolsSchema.intentFields.length}`);
-  console.log(`📦 Vector collections: ${toolsSchema.vectorCollections.length} (${toolsSchema.vectorCollections.filter(c => c.enabled !== false).length} enabled)`);
+  console.log(
+    `📦 Vector collections: ${toolsSchema.vectorCollections.length} (${
+      toolsSchema.vectorCollections.filter((c) => c.enabled !== false).length
+    } enabled)`
+  );
 
   // Wire domain handlers
   const domainHandlers = {
     buildFilters: buildToolsFilters,
-    validateQueryPlan: (plan: any, intentState: any) => {
+    validateQueryPlan: (
+      plan: (typeof StateAnnotation.State)['executionPlan']
+    ) => {
       // Adapt the tools validator to match the expected signature
       // The tools validator expects (plan, schema) but the state type expects (plan, intentState)
+      if (!plan) {
+        return { valid: false, errors: ['No plan provided'], warnings: [] };
+      }
       return validateToolsQueryPlan(plan, toolsSchema);
     },
   };

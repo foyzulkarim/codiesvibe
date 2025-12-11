@@ -101,12 +101,14 @@ docker-compose up -d --build
 docker-compose ps
 ```
 
-### 3. Initialize Vector Database
+### 3. Seed Vector Database
 
 ```bash
-# Create Qdrant collections and seed data
-docker exec -it search-api npm run create-collections
+# Collections are auto-created on startup, just seed data
 docker exec -it search-api npm run seed-vectors
+
+# (Optional) Manually create collections for troubleshooting:
+# docker exec -it search-api npm run create-collections
 ```
 
 ### 4. Test the API

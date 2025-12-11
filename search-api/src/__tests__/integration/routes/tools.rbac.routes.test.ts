@@ -5,9 +5,41 @@
 
 import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model.js';
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  clearToolsCollection,
+  createTestTool,
+  findTestTool,
+  getTestDb,
+} from '../../test-utils/db-setup.js';
+
+// Store reference to test database for the mock
+let testDbReference: ReturnType<typeof getTestDb> | null = null;
+
+// Mock the database module to use test database
+jest.mock('../../../config/database', () => ({
+  connectToMongoDB: jest.fn(async () => {
+    if (!testDbReference) {
+      throw new Error('Test database not initialized. Call setupTestDatabase first.');
+    }
+    return testDbReference;
+  }),
+  disconnectFromMongoDB: jest.fn(async () => {}),
+  connectToQdrant: jest.fn(async () => null), // Return null to simulate no Qdrant connection in tests
+  mongoConfig: {
+    uri: 'mongodb://localhost:27017',
+    dbName: 'test',
+    options: {},
+  },
+  qdrantConfig: {
+    url: null,
+    host: 'localhost',
+    port: 6333,
+    apiKey: null,
+    collectionName: 'tools',
+  },
+}));
 
 // Test user IDs
 const ADMIN_USER_ID = 'user_admin123';
@@ -98,7 +130,6 @@ import toolsRoutes from '../../../routes/tools.routes.js';
 
 describe('Tools Routes RBAC Integration Tests', () => {
   let app: Express;
-  let mongoServer: MongoMemoryServer;
 
   const createValidTool = (overrides: Partial<any> = {}) => ({
     id: `tool-${Date.now()}`,
@@ -118,10 +149,10 @@ describe('Tools Routes RBAC Integration Tests', () => {
   });
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    process.env.MONGODB_URI = mongoUri;
-    await mongoose.connect(mongoUri);
+    await setupTestDatabase();
+
+    // Set the test database reference for the mock
+    testDbReference = getTestDb();
 
     app = express();
     app.use(express.json());
@@ -129,12 +160,12 @@ describe('Tools Routes RBAC Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    testDbReference = null;
+    await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    await Tool.deleteMany({});
+    await clearToolsCollection();
     // Reset rate limit counters between tests
     Object.keys(global).filter(key => key.startsWith('rate-limit-')).forEach(key => {
       delete (global as any)[key];
@@ -172,21 +203,21 @@ describe('Tools Routes RBAC Integration Tests', () => {
   describe('GET /api/tools/my-tools', () => {
     beforeEach(async () => {
       // Create tools for different users
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'my-tool-1', name: 'My Tool 1' }),
         slug: 'my-tool-1',
         contributor: MAINTAINER_USER_ID,
         approvalStatus: 'pending',
         dateAdded: new Date(),
       });
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'my-tool-2', name: 'My Tool 2' }),
         slug: 'my-tool-2',
         contributor: MAINTAINER_USER_ID,
         approvalStatus: 'approved',
         dateAdded: new Date(),
       });
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'other-tool', name: 'Other Tool' }),
         slug: 'other-tool',
         contributor: OTHER_MAINTAINER_ID,
@@ -227,14 +258,14 @@ describe('Tools Routes RBAC Integration Tests', () => {
 
   describe('GET /api/tools/admin', () => {
     beforeEach(async () => {
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'pending-tool' }),
         slug: 'pending-tool',
         contributor: MAINTAINER_USER_ID,
         approvalStatus: 'pending',
         dateAdded: new Date(),
       });
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'approved-tool' }),
         slug: 'approved-tool',
         contributor: OTHER_MAINTAINER_ID,
@@ -278,7 +309,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
 
     beforeEach(async () => {
       pendingToolId = 'pending-tool-approve';
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: pendingToolId }),
         slug: pendingToolId,
         contributor: MAINTAINER_USER_ID,
@@ -334,7 +365,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
 
     beforeEach(async () => {
       pendingToolId = 'pending-tool-reject';
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: pendingToolId }),
         slug: pendingToolId,
         contributor: MAINTAINER_USER_ID,
@@ -391,7 +422,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
       pendingToolId = 'pending-edit-tool';
       approvedToolId = 'approved-edit-tool';
 
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: pendingToolId }),
         slug: pendingToolId,
         contributor: MAINTAINER_USER_ID,
@@ -399,7 +430,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
         dateAdded: new Date(),
       });
 
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: approvedToolId }),
         slug: approvedToolId,
         contributor: MAINTAINER_USER_ID,
@@ -454,7 +485,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
 
     beforeEach(async () => {
       toolId = 'tool-to-delete';
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: toolId }),
         slug: toolId,
         contributor: MAINTAINER_USER_ID,
@@ -470,7 +501,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
         .expect(204);
 
       // Verify deletion
-      const tool = await Tool.findOne({ id: toolId });
+      const tool = await findTestTool(toolId);
       expect(tool).toBeNull();
     });
 
@@ -488,28 +519,28 @@ describe('Tools Routes RBAC Integration Tests', () => {
         .expect(403);
 
       // Tool should still exist
-      const tool = await Tool.findOne({ id: toolId });
+      const tool = await findTestTool(toolId);
       expect(tool).not.toBeNull();
     });
   });
 
   describe('GET /api/tools (Public listing)', () => {
     beforeEach(async () => {
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'approved-public' }),
         slug: 'approved-public',
         contributor: MAINTAINER_USER_ID,
         approvalStatus: 'approved',
         dateAdded: new Date(),
       });
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'pending-hidden' }),
         slug: 'pending-hidden',
         contributor: MAINTAINER_USER_ID,
         approvalStatus: 'pending',
         dateAdded: new Date(),
       });
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: 'rejected-hidden' }),
         slug: 'rejected-hidden',
         contributor: MAINTAINER_USER_ID,
@@ -558,7 +589,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
     it('should include rate limit headers on PATCH /api/tools/:id', async () => {
       // Create a tool first
       const toolId = 'rate-limit-patch-tool';
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: toolId }),
         slug: toolId,
         contributor: MAINTAINER_USER_ID,
@@ -604,7 +635,7 @@ describe('Tools Routes RBAC Integration Tests', () => {
     it('should return 429 when rate limit is exceeded on PATCH', async () => {
       // Create a tool to update
       const toolId = 'rate-patch-exhaust-tool';
-      await Tool.create({
+      await createTestTool({
         ...createValidTool({ id: toolId }),
         slug: toolId,
         contributor: MAINTAINER_USER_ID,

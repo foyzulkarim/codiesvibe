@@ -1,7 +1,8 @@
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 
 import { StateAnnotation } from '../../types/state.js';
-import { QueryPlanSchema } from '../../types/query-plan.js';
+import { QueryPlanSchema, QueryPlan } from '../../types/query-plan.js';
+import { IntentState } from '../../types/intent-state.js';
 import { llmService } from '../../services/llm.service.js';
 import { generateQueryPlanningPrompt } from '../../core/prompts/prompt.generator.js';
 import {
@@ -15,10 +16,22 @@ import { CollectionConfigService } from '../../services/collection-config.servic
 import { VectorTypeRegistryService } from '../../services/vector-type-registry.service.js';
 import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service.js';
 import { ContentGeneratorFactory } from '../../services/content-generator-factory.service.js';
+import { CONFIG } from '#config/env.config';
+import type { LogMetadata } from '#types/logger.types.js';
+import type { DomainSchema } from '#core/types/schema.types.js';
+
+// Local types for intent analysis
+interface IntentAnalysisResult {
+  recommendedStrategy: string;
+  primaryCollections: string[];
+  secondaryCollections: string[];
+  confidence: number;
+  reasoning: string;
+}
 
 // Configuration for logging
 const LOG_CONFIG = {
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '🗺️ Query Planner:',
 };
 
@@ -33,13 +46,13 @@ const multiCollectionOrchestrator = new MultiCollectionOrchestrator(
 );
 
 // Helper function for conditional logging
-const log = (message: string, data?: any) => {
+const log = (message: string, data?: LogMetadata) => {
   if (LOG_CONFIG.enabled) {
     console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
 };
 
-const logError = (message: string, error?: any) => {
+const logError = (message: string, error?: LogMetadata) => {
   console.error(`${LOG_CONFIG.prefix} ERROR: ${message}`, error ? error : '');
 };
 
@@ -71,7 +84,7 @@ function getMultiCollectionConfig() {
  * Generate schema-driven system prompt for query planning
  * Now uses generateQueryPlanningPrompt from prompt generator
  */
-function generateDynamicSystemPrompt(schema: any, enabledCollections?: string[]): string {
+function generateDynamicSystemPrompt(schema: DomainSchema, enabledCollections?: string[]): string {
   return generateQueryPlanningPrompt(schema, enabledCollections);
 }
 
@@ -80,12 +93,15 @@ function generateDynamicSystemPrompt(schema: any, enabledCollections?: string[])
  * Now uses domain-specific filter building from domainHandlers
  */
 async function validateAndEnhanceQueryPlan(
-  queryPlan: any,
-  intentAnalysis: any,
-  intentState: any,
-  schema: any,
-  domainHandlers: any
-): Promise<any> {
+  queryPlan: QueryPlan,
+  intentAnalysis: IntentAnalysisResult,
+  intentState: IntentState,
+  schema: DomainSchema,
+  domainHandlers: {
+    buildFilters: (intentState: IntentState) => Array<{ field: string; operator: string; value: unknown }>;
+    validateQueryPlan: (plan: QueryPlan, intentState: IntentState) => { valid: boolean; errors: string[]; warnings: string[] };
+  }
+): Promise<QueryPlan> {
   try {
     log('validating query plan received', {
       queryPlan: JSON.stringify(queryPlan),
@@ -94,7 +110,7 @@ async function validateAndEnhanceQueryPlan(
     // Validate collection availability using schema
     const enabledCollections = getEnabledCollections(schema);
     const validVectorSources =
-      queryPlan.vectorSources?.filter((vs: any) =>
+      queryPlan.vectorSources?.filter((vs) =>
         enabledCollections.includes(vs.collection)
       ) || [];
 
@@ -108,11 +124,11 @@ async function validateAndEnhanceQueryPlan(
     const collectionsToInclude = new Set([
       ...intentAnalysis.primaryCollections,
       ...intentAnalysis.secondaryCollections,
-      ...validVectorSources.map((vs: any) => vs.collection),
+      ...validVectorSources.map((vs) => vs.collection),
     ]);
 
     // Build enhanced vector sources with proper weights and topK values
-    const enhancedVectorSources: any[] = [];
+    const enhancedVectorSources: NonNullable<QueryPlan['vectorSources']> = [];
 
     for (const collectionName of Array.from(collectionsToInclude) as string[]) {
       if (!enabledCollections.includes(collectionName)) {
@@ -142,7 +158,7 @@ async function validateAndEnhanceQueryPlan(
     }
 
     // Enhance fusion method using domain validator
-    let fusionMethod = queryPlan.fusion || getRecommendedFusionMethod(enhancedVectorSources.length);
+    let fusionMethod: QueryPlan['fusion'] = queryPlan.fusion || (getRecommendedFusionMethod(enhancedVectorSources.length) as QueryPlan['fusion']);
 
     // Build enhanced structured sources using domain-specific filter builder
     let enhancedStructuredSources = queryPlan.structuredSources || [];
@@ -164,9 +180,10 @@ async function validateAndEnhanceQueryPlan(
     }
 
     // Determine appropriate strategy based on collections and sources
-    let strategy = queryPlan.strategy;
+    let strategy: QueryPlan['strategy'] = queryPlan.strategy;
     if (enhancedVectorSources.length > 2) {
-      strategy = 'multi-collection-hybrid';
+      // multi-collection-hybrid is not in the enum, fallback to multi-vector
+      strategy = 'multi-vector';
     } else if (
       enhancedVectorSources.length > 0 &&
       enhancedStructuredSources.length > 0
@@ -228,9 +245,9 @@ async function validateAndEnhanceQueryPlan(
  */
 function generateEnhancedExplanation(
   strategy: string,
-  vectorSources: any[],
-  structuredSources: any[],
-  intentAnalysis: any
+  vectorSources: NonNullable<QueryPlan['vectorSources']>,
+  structuredSources: NonNullable<QueryPlan['structuredSources']>,
+  intentAnalysis: IntentAnalysisResult
 ): string {
   const collections = vectorSources.map((vs) => vs.collection);
   const hasStructured = structuredSources.length > 0;
@@ -266,16 +283,11 @@ function generateEnhancedExplanation(
 /**
  * Analyze query intent and recommend collection strategy
  */
-function analyzeQueryIntent(intentState: any): {
-  recommendedStrategy: string;
-  primaryCollections: string[];
-  secondaryCollections: string[];
-  confidence: number;
-  reasoning: string;
-} {
+function analyzeQueryIntent(intentState: IntentState): IntentAnalysisResult {
   const primaryGoal = intentState.primaryGoal?.toLowerCase() || '';
-  const features = intentState.desiredFeatures || [];
-  const constraints = intentState.constraints || [];
+  // Note: desiredFeatures and constraints are in schema but not IntentState type
+  const features = (intentState as Record<string, unknown>).desiredFeatures as string[] || [];
+  const constraints = (intentState as Record<string, unknown>).constraints as string[] || [];
   const hasReferenceTool = !!intentState.referenceTool;
 
   // Identity-focused queries

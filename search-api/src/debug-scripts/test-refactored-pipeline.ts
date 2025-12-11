@@ -50,7 +50,7 @@ const testCases = [
 /**
  * Run a single test case (Graph Level)
  */
-async function runGraphTestCase(testCase: any) {
+async function runGraphTestCase(testCase: { name: string; query: string }) {
   console.log(`\n🎯 Testing: ${testCase.name} (Graph Level)`);
   console.log(`📝 Query: "${testCase.query}"`);
   console.log(`─`.repeat(50));

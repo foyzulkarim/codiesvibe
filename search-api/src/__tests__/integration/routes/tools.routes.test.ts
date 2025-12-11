@@ -5,9 +5,40 @@
 
 import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model.js';
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  clearToolsCollection,
+  createTestTool,
+  getTestDb,
+} from '../../test-utils/db-setup.js';
+
+// Store reference to test database for the mock
+let testDbReference: ReturnType<typeof getTestDb> | null = null;
+
+// Mock the database module to use test database
+jest.mock('../../../config/database', () => ({
+  connectToMongoDB: jest.fn(async () => {
+    if (!testDbReference) {
+      throw new Error('Test database not initialized. Call setupTestDatabase first.');
+    }
+    return testDbReference;
+  }),
+  disconnectFromMongoDB: jest.fn(async () => {}),
+  connectToQdrant: jest.fn(async () => null), // Return null to simulate no Qdrant connection in tests
+  mongoConfig: {
+    uri: 'mongodb://localhost:27017',
+    dbName: 'test',
+    options: {},
+  },
+  qdrantConfig: {
+    url: null,
+    host: 'localhost',
+    port: 6333,
+    apiKey: null,
+    collectionName: 'tools',
+  },
+}));
 
 // Mock the rate limiters module to avoid using the actual rate limiter in tests
 // This provides a mock for the toolsMutationLimiter used in routes
@@ -72,7 +103,6 @@ import toolsRoutes from '../../../routes/tools.routes.js';
 
 describe('Tools Routes Integration Tests', () => {
   let app: Express;
-  let mongoServer: MongoMemoryServer;
   const mockAuthToken = 'mock-clerk-token'; // Mock Clerk token
 
   const validTool = {
@@ -95,15 +125,11 @@ describe('Tools Routes Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    // Start MongoDB Memory Server
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
+    // Start MongoDB Memory Server and connect native driver
+    await setupTestDatabase();
 
-    // Set environment variable
-    process.env.MONGODB_URI = mongoUri;
-
-    // Connect mongoose
-    await mongoose.connect(mongoUri);
+    // Set the test database reference for the mock
+    testDbReference = getTestDb();
 
     // Create Express app
     app = express();
@@ -112,12 +138,12 @@ describe('Tools Routes Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    testDbReference = null;
+    await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    await Tool.deleteMany({});
+    await clearToolsCollection();
   });
 
   describe('POST /api/tools', () => {
@@ -212,7 +238,7 @@ describe('Tools Routes Integration Tests', () => {
     beforeEach(async () => {
       // Create test tools with approvalStatus: 'approved' (required for getTools)
       for (let i = 1; i <= 15; i++) {
-        await Tool.create({
+        await createTestTool({
           ...validTool,
           id: `tool-${i.toString().padStart(2, '0')}`,
           slug: `tool-${i.toString().padStart(2, '0')}`,
@@ -335,7 +361,7 @@ describe('Tools Routes Integration Tests', () => {
 
   describe('GET /api/tools/:id', () => {
     beforeEach(async () => {
-      await Tool.create({
+      await createTestTool({
         ...validTool,
         slug: validTool.id,
         dateAdded: new Date(),
@@ -367,7 +393,7 @@ describe('Tools Routes Integration Tests', () => {
 
   describe('PATCH /api/tools/:id', () => {
     beforeEach(async () => {
-      await Tool.create({
+      await createTestTool({
         ...validTool,
         slug: validTool.id,
         dateAdded: new Date(),
@@ -432,7 +458,7 @@ describe('Tools Routes Integration Tests', () => {
 
   describe('DELETE /api/tools/:id', () => {
     beforeEach(async () => {
-      await Tool.create({
+      await createTestTool({
         ...validTool,
         slug: validTool.id,
         dateAdded: new Date(),

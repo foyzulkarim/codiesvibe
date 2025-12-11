@@ -24,6 +24,8 @@ dotenv.config();
 // Test cases specifically for query planning
 const queryPlannerTestCases = [
   {
+    name: "Self-hosted CLI tools",
+    query: "self hosted cli",
     mockIntentState: {
       primaryGoal: 'find',
       referenceTool: null,
@@ -132,7 +134,7 @@ const queryPlannerTestCases = [
 /**
  * Test only the QueryPlannerNode with a single test case
  */
-async function testQueryPlanner(testCase: any) {
+async function testQueryPlanner(testCase: { name: string; query: string; mockIntentState: Record<string, unknown> }) {
   console.log(`\n🧪 Testing QueryPlannerNode: ${testCase.name}`);
   console.log(`📝 Query: "${testCase.query}"`);
   console.log(`─`.repeat(50));

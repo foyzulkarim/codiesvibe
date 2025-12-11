@@ -1,5 +1,5 @@
 import { PerformanceConfig } from "#config/enhanced-search-config";
-import { cosineSimilarity, findMostSimilar } from "./cosine-similarity.js";
+import { cosineSimilarity } from "./cosine-similarity.js";
 import { gzipSync, gunzipSync } from "zlib";
 
 /**
@@ -238,11 +238,12 @@ export class EnhancedEmbeddingCache {
           return entryA.accessCount - entryB.accessCount;
         case 'priority':
           return this.calculatePriority(entryA) - this.calculatePriority(entryB);
-        case 'adaptive':
+        case 'adaptive': {
           // Combine multiple factors for adaptive eviction
           const priorityA = this.calculatePriority(entryA);
           const priorityB = this.calculatePriority(entryB);
           return priorityA - priorityB;
+        }
         default:
           return entryA.lastAccessed - entryB.lastAccessed;
       }

@@ -136,16 +136,16 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 #### Feature Flags
 
 ```env
-ENSURE_QDRANT_COLLECTIONS=false
 ENABLE_VECTOR_VALIDATION=true
 ENABLE_SYNC_WORKER=false
 ```
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ENSURE_QDRANT_COLLECTIONS` | `false` | Auto-create Qdrant collections on startup |
 | `ENABLE_VECTOR_VALIDATION` | `true` | Validate vector index on startup |
 | `ENABLE_SYNC_WORKER` | `false` | Enable background MongoDB-Qdrant sync |
+
+**Note**: Qdrant collections are automatically created on server startup (no configuration needed).
 
 ---
 
@@ -293,22 +293,14 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 
 ## Feature Flags
 
-### ENSURE_QDRANT_COLLECTIONS
+### Qdrant Collection Auto-Creation
 
-Auto-create Qdrant collections on server startup:
+Qdrant collections are **automatically created** on server startup. This behavior:
+- Cannot be disabled (collections are required for core functionality)
+- Is idempotent (safe to run multiple times)
+- Fails fast if collections cannot be created
 
-```env
-ENSURE_QDRANT_COLLECTIONS=true
-```
-
-**Use when**:
-- First-time setup
-- Fresh deployments
-- Testing environments
-
-**Don't use when**:
-- Collections already exist
-- Production (create manually for control)
+**Manual alternative**: Run `npm run create-collections` without starting the server (useful for troubleshooting).
 
 ### ENABLE_SYNC_WORKER
 

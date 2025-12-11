@@ -37,10 +37,11 @@ dotenv.config();
 /**
  * Check if a service is running on the specified host and port
  */
-async function checkServiceConnection(
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function _checkServiceConnection(
   host: string,
   port: number,
-  serviceName: string
+  _serviceName: string
 ): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
@@ -131,7 +132,7 @@ const queryExecutorTestCases = [
 /**
  * Test only the QueryExecutorNode with a single test case
  */
-async function testQueryExecutor(testCase: any) {
+async function testQueryExecutor(testCase: { name: string; query: string; executionPlan: Record<string, unknown>; mockIntentState?: Record<string, unknown> }) {
   console.log(`\n⚡ Testing QueryExecutorNode: ${testCase.name}`);
   console.log(`📝 Query: "${testCase.query}"`);
   console.log(`🗺️ Strategy: ${testCase.executionPlan.strategy}`);
@@ -325,7 +326,7 @@ async function main() {
 
   // Show detailed results for each test
   console.log(`\n📋 Detailed Results:`);
-  results.forEach((result, index) => {
+  results.forEach((result) => {
     // const status = result.success ? '✅' : '❌';
     // console.log(`  ${index + 1}. ${status} ${result.name} (${result.executionTime}ms, ${result.candidateCount} candidates)`);
     if (result.error) {

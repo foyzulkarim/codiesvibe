@@ -2,6 +2,7 @@ import { Together } from 'together-ai';
 import { embeddingConfig as embeddingConstants } from "#config/constants";
 import { connectToQdrant } from "#config/database";
 import { QdrantClient } from "@qdrant/js-client-rest";
+import { CONFIG } from '#config/env.config';
 
 // Simple in-memory cache for embeddings
 const embeddingCache = new Map<string, number[]>();
@@ -13,7 +14,7 @@ export class EmbeddingService {
   constructor() {
     // Initialize Together AI client
     this.togetherClient = new Together({
-      apiKey: process.env.TOGETHER_API_KEY,
+      apiKey: CONFIG.ai.TOGETHER_API_KEY,
     });
 
     this.initQdrant();

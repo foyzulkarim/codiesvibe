@@ -11,7 +11,7 @@ import crypto from "crypto";
  * Plan document interface for MongoDB
  */
 export interface PlanDocument {
-  _id: ObjectId;
+  _id?: ObjectId;
   originalQuery: string;
   queryEmbedding: number[];
   intentState: IntentState;
@@ -87,7 +87,11 @@ export class PlanCacheService {
     executionPlan: QueryPlan,
     candidates: Candidate[],
     executionTime: number,
-    metadata: any
+    metadata: {
+      executionPath?: string[];
+      totalNodesExecuted?: number;
+      pipelineVersion?: string;
+    }
   ): Promise<ObjectId> {
     const db = await this.ensureConnected();
     const startTime = Date.now();
@@ -118,8 +122,8 @@ export class PlanCacheService {
         }
       };
 
-      const collection = db.collection("plans");
-      const result = await collection.insertOne(planDocument as any);
+      const collection = db.collection<PlanDocument>("plans");
+      const result = await collection.insertOne(planDocument);
 
       console.log(`💾 Cached plan for query: "${query}" (ID: ${result.insertedId})`);
 
@@ -145,7 +149,7 @@ export class PlanCacheService {
 
     try {
       const queryHash = this.generateQueryHash(query);
-      const collection = db.collection("plans");
+      const collection = db.collection<PlanDocument>("plans");
 
       // Step 1: Try exact hash match first
       const exactMatch = await collection.findOne({ queryHash });
@@ -220,7 +224,7 @@ export class PlanCacheService {
       const similarResults = await collection.aggregate(vectorSearchPipeline).toArray();
 
       if (similarResults.length > 0) {
-        const similarPlan = similarResults[0] as any;
+        const similarPlan = similarResults[0] as PlanDocument & { score: number };
         const similarity = similarPlan.score;
 
         // Update usage statistics
@@ -280,11 +284,11 @@ export class PlanCacheService {
       const now = new Date();
       const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      const updateFields: any = {
+      const updateFields: Record<string, unknown> = {
         $set: { lastUpdated: now }
       };
 
-      const incFields: any = {};
+      const incFields: Record<string, number> = {};
       switch (operation) {
         case 'store':
           incFields.totalPlans = 1;
@@ -329,7 +333,15 @@ export class PlanCacheService {
     const db = await this.ensureConnected();
 
     try {
-      const statsCollection = db.collection("cache_stats");
+      interface StatsDoc {
+        cacheHits?: number;
+        cacheMisses?: number;
+        exactMatches?: number;
+        similarMatches?: number;
+        totalLookups?: number;
+      }
+
+      const statsCollection = db.collection<StatsDoc>("cache_stats");
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
@@ -339,7 +351,7 @@ export class PlanCacheService {
 
       const totalPlans = await db.collection("plans").countDocuments();
 
-      const aggregatedStats = stats.reduce((acc: any, stat: any) => {
+      const aggregatedStats = stats.reduce((acc, stat) => {
         acc.cacheHits += stat.cacheHits || 0;
         acc.cacheMisses += stat.cacheMisses || 0;
         acc.exactMatches += stat.exactMatches || 0;
@@ -455,7 +467,7 @@ export class PlanCacheService {
    */
   async initialize(): Promise<void> {
     try {
-      const db = await this.ensureConnected();
+      await this.ensureConnected();
 
       // Test embedding generation with Together AI
       await productionEmbeddingService.initialize();

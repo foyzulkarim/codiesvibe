@@ -1,8 +1,8 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { PromptTemplate } from '@langchain/core/prompts';
-
 import { z } from 'zod';
+import { CONFIG } from '#config/env.config';
 
 interface LLMTaskConfig {
   model: string;
@@ -48,11 +48,11 @@ const taskConfigs: Record<string, LLMTaskConfig> = {
 };
 
 const LOG_CONFIG = {
-  enabled: process.env.NODE_ENV !== 'production',
+  enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '🎯 LLM service:',
 };
 
-const log = (message: string, data?: any) => {
+const log = (message: string, data?: unknown) => {
   if (LOG_CONFIG.enabled) {
     console.log(`${LOG_CONFIG.prefix} ${message}`, data ? data : '');
   }
@@ -62,7 +62,7 @@ export class LLMService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.VLLM_BASE_URL;
+    this.baseUrl = CONFIG.ai.VLLM_BASE_URL;
   }
 
   createStructuredClient<T>(taskType: string, schema: z.ZodSchema<T>) {
@@ -127,7 +127,7 @@ export class LLMService {
     const model = new ChatOpenAI({
       configuration: {
         baseURL: 'https://api.together.xyz/v1',
-        apiKey: process.env.TOGETHER_API_KEY,
+        apiKey: CONFIG.ai.TOGETHER_API_KEY,
       },
       modelName: 'openai/gpt-oss-20b',
     });
