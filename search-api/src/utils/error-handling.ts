@@ -2,7 +2,7 @@ import {
   ApplicationError,
   ErrorContext,
   SerializedError,
-} from '#types/error.types.js';
+} from '#types/error.types';
 
 /**
  * Type guard to check if value is an Error instance

@@ -19,6 +19,23 @@ export interface FilterObject {
 }
 
 /**
+ * Specific interface for pricing filters with proper typing
+ */
+export interface PricingFilterObject extends FilterObject {
+  field: 'pricing';
+  operator: 'elemMatch';
+  value: {
+    price?: {
+      $gte?: number;
+      $lte?: number;
+      $gt?: number;
+      $lt?: number;
+    };
+    billingPeriod?: string;
+  };
+}
+
+/**
  * Intent state fields used for filtering
  * All fields are optional to match the StateAnnotation.State type
  */
@@ -61,7 +78,7 @@ export function buildToolsFilters(intentState: IntentStateForFilters): FilterObj
     const { min, max, billingPeriod } = intentState.priceRange;
 
     // Create base filter for pricing array
-    const priceFilter: FilterObject & { value: Record<string, unknown> } = {
+    const priceFilter: PricingFilterObject = {
       field: 'pricing',
       operator: 'elemMatch',
       value: {},

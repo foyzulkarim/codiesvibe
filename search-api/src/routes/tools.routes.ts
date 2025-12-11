@@ -24,7 +24,7 @@ import {
   isOwner,
 } from '../middleware/role.middleware.js';
 import { toolsMutationLimiter } from '../middleware/rate-limiters.js';
-import { getErrorMessage } from '#utils/error-handling.js';
+import { getErrorMessage } from '#utils/error-handling';
 
 const router = Router();
 

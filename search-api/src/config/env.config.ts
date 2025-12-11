@@ -16,34 +16,34 @@ import 'dotenv/config';
 // Type-Safe Parsing Utilities
 // =============================================================================
 
-const parseBoolean = (value: string | undefined, defaultValue: boolean): boolean => {
+export const parseBoolean = (value: string | undefined, defaultValue: boolean): boolean => {
   if (value === undefined) return defaultValue;
   return value.toLowerCase() === 'true';
 };
 
-const parseBooleanInverse = (value: string | undefined, defaultValue: boolean): boolean => {
+export const parseBooleanInverse = (value: string | undefined, defaultValue: boolean): boolean => {
   if (value === undefined) return defaultValue;
   return value.toLowerCase() !== 'false';
 };
 
-const parseIntSafe = (value: string | undefined, defaultValue: number): number => {
+export const parseIntSafe = (value: string | undefined, defaultValue: number): number => {
   if (value === undefined) return defaultValue;
   const parsed = Number.parseInt(value, 10);
   return isNaN(parsed) ? defaultValue : parsed;
 };
 
-const parseFloatSafe = (value: string | undefined, defaultValue: number): number => {
+export const parseFloatSafe = (value: string | undefined, defaultValue: number): number => {
   if (value === undefined) return defaultValue;
   const parsed = Number.parseFloat(value);
   return isNaN(parsed) ? defaultValue : parsed;
 };
 
-const parseArray = (value: string | undefined, delimiter: string = ','): string[] => {
+export const parseArray = (value: string | undefined, delimiter: string = ','): string[] => {
   if (!value || value.trim() === '') return [];
   return value.split(delimiter).map(s => s.trim()).filter(Boolean);
 };
 
-const parseString = (value: string | undefined, defaultValue: string): string => {
+export const parseString = (value: string | undefined, defaultValue: string): string => {
   return value || defaultValue;
 };
 

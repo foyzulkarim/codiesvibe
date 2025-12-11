@@ -40,6 +40,17 @@ jest.mock('../../../config/database', () => ({
   },
 }));
 
+// Mock Together AI to prevent real API initialization
+jest.mock('together-ai', () => ({
+  Together: jest.fn().mockImplementation(() => ({
+    embeddings: {
+      create: jest.fn().mockResolvedValue({
+        data: [{ embedding: [0.1, 0.2, 0.3] }],
+      }),
+    },
+  })),
+}));
+
 // Mock external services
 jest.mock('../../../services/qdrant.service.js', () => ({
   qdrantService: {
@@ -49,11 +60,25 @@ jest.mock('../../../services/qdrant.service.js', () => ({
   },
 }));
 
-jest.mock('../../../services/embedding.service.js', () => ({
-  embeddingService: {
-    generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-  },
-}));
+// Mock the embedding service to avoid real API calls
+jest.mock('../../../services/embedding.service.js', () => {
+  const mockGenerateEmbedding = jest.fn().mockResolvedValue([0.1, 0.2, 0.3]);
+
+  return {
+    EmbeddingService: jest.fn().mockImplementation(() => ({
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: jest.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+    })),
+    embeddingService: {
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: jest.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+    },
+  };
+});
 
 jest.mock('../../../services/collection-config.service.js', () => ({
   CollectionConfigService: jest.fn().mockImplementation(() => ({

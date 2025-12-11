@@ -317,8 +317,19 @@ export class MongoDBService {
     const db = await this.ensureConnected();
     const collection = db.collection<ITool>("tools");
 
+    // Build the $or query conditionally based on what idOrSlug might be
+    const orConditions: Filter<ITool>[] = [
+      { id: idOrSlug },
+      { slug: idOrSlug }
+    ];
+
+    // Only try ObjectId lookup if the string is a valid ObjectId
+    if (ObjectId.isValid(idOrSlug)) {
+      orConditions.push({ _id: new ObjectId(idOrSlug) });
+    }
+
     let query: Filter<ITool> = {
-      $or: [{ id: idOrSlug }, { slug: idOrSlug }, { _id: new ObjectId(idOrSlug) }],
+      $or: orConditions,
     } as Filter<ITool>;
 
     if (options?.publicOnly) {

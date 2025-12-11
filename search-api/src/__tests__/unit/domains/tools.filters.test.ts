@@ -4,8 +4,11 @@
  * Tests the domain-specific filter building logic for MongoDB queries
  */
 
-import { buildToolsFilters } from '../../../domains/tools/tools.filters.js';
+import { buildToolsFilters, PricingFilterObject } from '../../../domains/tools/tools.filters.js';
 import { TOOLS_PRICE_OPERATORS } from '../../../domains/tools/tools.schema.js';
+
+// Helper type for pricing filter value
+type PricingValue = PricingFilterObject['value'];
 
 describe('Tools Filters - Unit Tests', () => {
   describe('1. Price Range Filters', () => {
@@ -19,13 +22,14 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
       expect(filters[0].field).toBe('pricing');
       expect(filters[0].operator).toBe('elemMatch');
-      expect(filters[0].value.price).toHaveProperty('$gte', 20);
-      expect(filters[0].value.price).toHaveProperty('$lte', 100);
-      expect(filters[0].value.billingPeriod).toBe('Monthly');
+      expect(value.price).toHaveProperty('$gte', 20);
+      expect(value.price).toHaveProperty('$lte', 100);
+      expect(value.billingPeriod).toBe('Monthly');
     });
 
     test('1.2 Price range with min only - should build $gte filter', () => {
@@ -38,10 +42,11 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$gte', 50);
-      expect(filters[0].value.price).not.toHaveProperty('$lte');
+      expect(value.price).toHaveProperty('$gte', 50);
+      expect(value.price).not.toHaveProperty('$lte');
     });
 
     test('1.3 Price range with max only - should build $lte filter', () => {
@@ -54,11 +59,12 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$lte', 200);
-      expect(filters[0].value.price).not.toHaveProperty('$gte');
-      expect(filters[0].value.billingPeriod).toBe('Yearly');
+      expect(value.price).toHaveProperty('$lte', 200);
+      expect(value.price).not.toHaveProperty('$gte');
+      expect(value.billingPeriod).toBe('Yearly');
     });
 
     test('1.4 Price range without billing period - should build filter without billingPeriod', () => {
@@ -70,11 +76,12 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$gte', 10);
-      expect(filters[0].value.price).toHaveProperty('$lte', 50);
-      expect(filters[0].value.billingPeriod).toBeUndefined();
+      expect(value.price).toHaveProperty('$gte', 10);
+      expect(value.price).toHaveProperty('$lte', 50);
+      expect(value.billingPeriod).toBeUndefined();
     });
   });
 
@@ -89,9 +96,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$lt', 50);
+      expect(value.price).toHaveProperty('$lt', 50);
     });
 
     test('2.2 GREATER_THAN operator - should build $gt filter', () => {
@@ -104,9 +112,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$gt', 100);
+      expect(value.price).toHaveProperty('$gt', 100);
     });
 
     test('2.3 EQUAL operator - should build exact match filter', () => {
@@ -119,9 +128,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toBe(99);
+      expect(value.price).toBe(99);
     });
 
     test('2.4 AROUND operator - should build range filter (±10%)', () => {
@@ -134,15 +144,16 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$gte');
-      expect(filters[0].value.price).toHaveProperty('$lte');
+      expect(value.price).toHaveProperty('$gte');
+      expect(value.price).toHaveProperty('$lte');
       // Around 30 should be roughly 27-33 (±10%)
-      expect(filters[0].value.price.$gte).toBeGreaterThanOrEqual(26);
-      expect(filters[0].value.price.$gte).toBeLessThanOrEqual(28);
-      expect(filters[0].value.price.$lte).toBeGreaterThanOrEqual(32);
-      expect(filters[0].value.price.$lte).toBeLessThanOrEqual(34);
+      expect(value.price!.$gte).toBeGreaterThanOrEqual(26);
+      expect(value.price!.$gte).toBeLessThanOrEqual(28);
+      expect(value.price!.$lte).toBeGreaterThanOrEqual(32);
+      expect(value.price!.$lte).toBeLessThanOrEqual(34);
     });
 
     test('2.5 LESS_THAN_OR_EQUAL operator - should build $lte filter', () => {
@@ -154,9 +165,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$lte', 75);
+      expect(value.price).toHaveProperty('$lte', 75);
     });
 
     test('2.6 GREATER_THAN_OR_EQUAL operator - should build $gte filter', () => {
@@ -168,9 +180,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toHaveProperty('$gte', 25);
+      expect(value.price).toHaveProperty('$gte', 25);
     });
   });
 
@@ -358,9 +371,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price.$gte).toBeGreaterThanOrEqual(0);
+      expect(value.price!.$gte).toBeGreaterThanOrEqual(0);
     });
 
     test('8.5 Very large price values - should accept them', () => {
@@ -372,9 +386,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price.$lt).toBe(999999);
+      expect(value.price!.$lt).toBe(999999);
     });
 
     test('8.6 Zero price - should build valid filter', () => {
@@ -386,9 +401,10 @@ describe('Tools Filters - Unit Tests', () => {
       };
 
       const filters = buildToolsFilters(intentState);
+      const value = filters[0].value as PricingValue;
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].value.price).toBe(0);
+      expect(value.price).toBe(0);
     });
 
     test('8.7 Empty array values - should skip filter', () => {
