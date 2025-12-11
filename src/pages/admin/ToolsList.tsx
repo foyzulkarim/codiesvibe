@@ -1,31 +1,31 @@
 import { useState } from 'react';
+import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, User, Check, X, AlertCircle, RefreshCw, Cloud } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {
-  useMyTools,
-  useAdminTools,
-  useDeleteTool,
-  useApproveTool,
-  useRejectTool,
-  Tool,
-  ToolsQueryParams,
-  ApprovalStatus,
-  SyncStatus,
-} from '@/hooks/api/useToolsAdmin';
-import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
 import { SyncStatusWidget } from '@/components/admin/SyncStatusWidget';
 import { Layout } from '@/components/layout';
-import { useUserRole } from '@/hooks/useUserRole';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Pagination,
   PaginationContent,
@@ -42,34 +42,33 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Plus, Search, Trash2, Edit, ExternalLink, Loader2, User, Check, X, AlertCircle, RefreshCw, Cloud } from 'lucide-react';
+import { useRetryToolSync } from '@/hooks/api/useSyncAdmin';
+import {
+  useMyTools,
+  useAdminTools,
+  useDeleteTool,
+  useApproveTool,
+  useRejectTool,
+  Tool,
+  ToolsQueryParams,
+  ApprovalStatus,
+  SyncStatus,
+} from '@/hooks/api/useToolsAdmin';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export function ToolsList() {
   const navigate = useNavigate();

@@ -1,6 +1,5 @@
 import * as React from "react";
 import * as RechartsPrimitive from "recharts";
-
 import { cn } from "@/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -126,6 +125,8 @@ const ChartTooltipContent = React.forwardRef<
       }
 
       const [item] = payload;
+      if (!item) return null;
+      
       const key = `${labelKey || item.dataKey || item.name || "value"}`;
       const itemConfig = getPayloadConfigFromPayload(config, item, key);
       const value =
@@ -163,7 +164,12 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const payloadFill =
+              item.payload && typeof item.payload === "object" && "fill" in item.payload
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Safe: checked that payload is object with fill property
+                ? (item.payload.fill as string | undefined)
+                : undefined;
+            const indicatorColor = color || payloadFill || item.color;
 
             return (
               <div
@@ -249,10 +255,11 @@ const ChartLegendContent = React.forwardRef<
       {payload.map((item) => {
         const key = `${nameKey || item.dataKey || "value"}`;
         const itemConfig = getPayloadConfigFromPayload(config, item, key);
+        const itemValue = typeof item.value === "string" ? item.value : String(item.value ?? "");
 
         return (
           <div
-            key={item.value}
+            key={itemValue}
             className={cn("flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground")}
           >
             {itemConfig?.icon && !hideIcon ? (
@@ -297,7 +304,15 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
     configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string;
   }
 
-  return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
+  // Use hasOwnProperty check to prevent prototype pollution
+  if (Object.prototype.hasOwnProperty.call(config, configLabelKey)) {
+    // eslint-disable-next-line security/detect-object-injection -- Safe: hasOwnProperty check performed
+    return config[configLabelKey];
+  }
+  if (Object.prototype.hasOwnProperty.call(config, key)) {
+    return config[key as keyof typeof config];
+  }
+  return undefined;
 }
 
 export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle };

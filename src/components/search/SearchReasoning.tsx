@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { AiSearchReasoning } from '@/api/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SearchReasoningProps {
   reasoning?: AiSearchReasoning;

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ToolCard } from "./ToolCard";
 import { Grid, List } from "lucide-react";
 import type { AITool } from "@/types";
+import { ToolCard } from "./ToolCard";
 
 interface ToolGridProps {
   tools: AITool[];

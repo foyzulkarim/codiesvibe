@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ToolFormSchema, ToolFormValues, defaultToolFormValues, CONTROLLED_VOCABULARIES } from '@/schemas/tool-form.schema';
-import { useCreateTool, useUpdateTool, useToolAdmin, useVocabularies } from '@/hooks/api/useToolsAdmin';
-import { Layout } from '@/components/layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Layout } from '@/components/layout';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useCreateTool, useUpdateTool, useToolAdmin, useVocabularies } from '@/hooks/api/useToolsAdmin';
+import { ToolFormSchema, ToolFormValues, defaultToolFormValues, CONTROLLED_VOCABULARIES } from '@/schemas/tool-form.schema';
 
 // Type for array fields that can be toggled
 type ArrayFieldKeys = 'categories' | 'industries' | 'userTypes' | 'interface' | 'functionality' | 'deployment';

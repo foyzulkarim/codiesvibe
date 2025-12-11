@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
 import { useAuth, useUser, useClerk } from '@clerk/clerk-react';
-import { Button } from '@/components/ui/button';
 import { LogIn, UserPlus, LogOut, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface AuthButtonsProps {
   /**

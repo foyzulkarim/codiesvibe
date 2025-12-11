@@ -1,5 +1,5 @@
-import { MainHeader } from './MainHeader';
 import { AdminHeader } from './AdminHeader';
+import { MainHeader } from './MainHeader';
 
 interface LayoutProps {
   children: React.ReactNode;

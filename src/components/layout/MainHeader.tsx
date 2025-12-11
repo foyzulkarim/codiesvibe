@@ -1,6 +1,6 @@
 import { Github } from 'lucide-react';
-import { Logo } from './Logo';
 import { AuthButtons } from './AuthButtons';
+import { Logo } from './Logo';
 
 export function MainHeader() {
   return (

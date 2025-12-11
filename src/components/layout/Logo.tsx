@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface LogoProps {
   linkTo?: string;

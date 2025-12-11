@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { SearchBar, SearchReasoning } from "@/components/search";
-import { ToolGrid } from "@/components/tools";
+import { Zap } from "lucide-react";
 import { ResultsCounter } from "@/components/common";
 import { Layout } from "@/components/layout";
-import { Zap } from "lucide-react";
+import { SearchBar, SearchReasoning } from "@/components/search";
+import { ToolGrid } from "@/components/tools";
 import { useTools } from "@/hooks/api/useTools";
 
 export function Index() {

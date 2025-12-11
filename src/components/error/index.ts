@@ -1,4 +1,4 @@
-export { ErrorBoundary } from './ErrorBoundary';
+export { ErrorBoundary, ErrorFallback } from './ErrorBoundary';
 export {
   RetryButton,
   ErrorWithRetry,

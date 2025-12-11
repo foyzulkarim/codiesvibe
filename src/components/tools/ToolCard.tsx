@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
-import { Star, TrendingUp, Plus, GitCompare, Heart, ExternalLink, Calendar } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink } from "lucide-react";
+import { highlightText } from "@/lib/sanitize";
 import type { AITool } from "@/types";
 
 interface ToolCardProps {
-  tool: AITool;  
+  tool: AITool;
   isExpanded?: boolean;
   onToggleExpanded?: (toolId: string) => void;
   searchTerm?: string;
@@ -11,16 +12,6 @@ interface ToolCardProps {
 
 export const ToolCard = ({ tool, isExpanded, onToggleExpanded, searchTerm = '' }: ToolCardProps) => {
   const [imageError, setImageError] = useState(false);
-
-  // Memoized highlight function for performance
-  const highlightText = useMemo(() => {
-    return (text: string, term?: string): string => {
-      if (!term || term.length < 2) return text;
-
-      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>');
-    };
-  }, []);
 
   const getPricingColor = (pricing: string[]) => {
     if (pricing.includes("Free")) return "text-success";
@@ -38,19 +29,6 @@ export const ToolCard = ({ tool, isExpanded, onToggleExpanded, searchTerm = '' }
     return [];
   };
 
-
-  const formatLastUpdated = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return `${Math.ceil(diffDays / 30)} months ago`;
-  };
-
   const handleCardClick = () => {
     if (onToggleExpanded) {
       onToggleExpanded(tool.id);
@@ -61,6 +39,14 @@ export const ToolCard = ({ tool, isExpanded, onToggleExpanded, searchTerm = '' }
     <div
       className={`tool-card ${isExpanded ? 'tool-card-expanded' : ''} group`}
       onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       {/* Quick Actions - Hidden until hover */}
       <div className="quick-actions">

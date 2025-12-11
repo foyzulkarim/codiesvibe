@@ -7,27 +7,6 @@
 
 import { useState } from 'react';
 import {
-  useSyncHealth,
-  useTriggerSweep,
-  useRetryAllFailed,
-} from '@/hooks/api/useSyncAdmin';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
-  RefreshCw,
   Cloud,
   CloudOff,
   AlertCircle,
@@ -38,6 +17,26 @@ import {
   PlayCircle,
   RotateCcw,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  useSyncHealth,
+  useTriggerSweep,
+  useRetryAllFailed,
+} from '@/hooks/api/useSyncAdmin';
 import type { SyncCollectionName } from '@/hooks/api/useToolsAdmin';
 
 interface SyncStatusWidgetProps {
@@ -158,6 +157,11 @@ export function SyncStatusWidget({ compact = false }: SyncStatusWidgetProps) {
               <h4 className="text-sm font-medium">Collections</h4>
               <div className="grid grid-cols-2 gap-2">
                 {collectionNames.map((collection) => {
+                  // Validate that byCollection exists and has the collection key
+                  if (!stats.byCollection || typeof stats.byCollection !== 'object') return null;
+                  if (!Object.prototype.hasOwnProperty.call(stats.byCollection, collection)) return null;
+
+                  // eslint-disable-next-line security/detect-object-injection -- Safe: collection is from known array and hasOwnProperty check performed
                   const collectionStats = stats.byCollection[collection];
                   const total = collectionStats.synced + collectionStats.pending + collectionStats.failed;
                   const syncedPct = total > 0 ? Math.round((collectionStats.synced / total) * 100) : 0;

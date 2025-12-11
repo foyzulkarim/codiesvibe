@@ -1,7 +1,6 @@
 import * as React from "react";
 import { OTPInput, OTPInputContext } from "input-otp";
 import { Dot } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
 const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(
@@ -26,7 +25,10 @@ const InputOTPSlot = React.forwardRef<
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
-  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
+  // Safely access slots array with bounds checking
+  // eslint-disable-next-line security/detect-object-injection -- Safe: array access with fallback default, index is validated prop
+  const slot = inputOTPContext.slots[index] || { char: '', hasFakeCaret: false, isActive: false };
+  const { char, hasFakeCaret, isActive } = slot;
 
   return (
     <div

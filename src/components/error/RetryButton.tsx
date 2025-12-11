@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle, WifiOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { isDevelopment } from '@/config/env';
 import { useIsOnline } from '@/hooks/useOnlineStatus';
 
 export interface RetryButtonProps {
@@ -241,7 +242,7 @@ export const QueryErrorBoundary: React.FC<{
               </div>
             )}
 
-            {import.meta.env.DEV && error && (
+            {isDevelopment && error && (
               <details className="text-xs">
                 <summary className="cursor-pointer font-medium">
                   Technical Details

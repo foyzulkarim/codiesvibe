@@ -8,8 +8,8 @@
  * any child components make API calls, preventing race conditions.
  */
 
-import { useAuth } from '@clerk/clerk-react';
 import { useLayoutEffect, useRef } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { setClerkTokenGetter } from '@/api/clerk-auth';
 
 export function ClerkAuthInitializer() {
