@@ -8,7 +8,7 @@ import { embeddingService } from './embedding.service.js';
 export interface MultiCollectionRequest {
   query: string;
   collections?: string[];
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   limit?: number;
   vectorTypes?: string[];
   useAllCollections?: boolean;
@@ -101,7 +101,8 @@ export class MultiCollectionOrchestrator {
       };
     } catch (error) {
       console.error('Error in multi-collection search:', error);
-      throw new Error(`Multi-collection search failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Multi-collection search failed: ${message}`);
     }
   }
 
@@ -183,9 +184,9 @@ export class MultiCollectionOrchestrator {
   /**
    * Get collection health status
    */
-  async getCollectionHealth(): Promise<Record<string, any>> {
+  async getCollectionHealth(): Promise<Record<string, unknown>> {
     const allCollections = this.collectionConfig.getEnabledCollectionNames();
-    const healthStatus: Record<string, any> = {};
+    const healthStatus: Record<string, unknown> = {};
 
     for (const collectionName of allCollections) {
       try {
@@ -204,9 +205,10 @@ export class MultiCollectionOrchestrator {
           lastChecked: new Date()
         };
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         healthStatus[collectionName] = {
           exists: false,
-          error: error.message,
+          error: message,
           healthy: false,
           lastChecked: new Date()
         };
@@ -250,7 +252,7 @@ export class MultiCollectionOrchestrator {
   /**
    * Route query to optimal collections
    */
-  private routeQuery(query: string, explicitCollections?: string[], analysis?: QueryAnalysis): RoutingInfo {
+  private routeQuery(query: string, explicitCollections?: string[], _analysis?: QueryAnalysis): RoutingInfo {
     if (explicitCollections && explicitCollections.length > 0) {
       // Manual routing - use explicitly specified collections
       const validatedCollections = this.validateCollections(explicitCollections);
@@ -345,7 +347,7 @@ export class MultiCollectionOrchestrator {
   /**
    * Route query by semantic analysis
    */
-  private routeBySemantic(query: string): { collections: string[]; confidence: number } {
+  private routeBySemantic(_query: string): { collections: string[]; confidence: number } {
     // Default semantic routing - include tools + functionality for general queries
     return {
       collections: ['tools', 'functionality'],
@@ -362,7 +364,7 @@ export class MultiCollectionOrchestrator {
     vectorTypes?: string[],
     options: ProcessingOptions = {}
   ): Promise<Array<{ collection: string; results: ToolData[]; latency: number }>> {
-    const { parallel = true, maxConcurrency = 4 } = options;
+    const { parallel = true } = options;
 
     if (parallel) {
       // Execute searches in parallel
@@ -388,7 +390,7 @@ export class MultiCollectionOrchestrator {
   private async searchSingleCollection(
     query: string,
     collection: string,
-    vectorTypes?: string[]
+    _vectorTypes?: string[]
   ): Promise<{ collection: string; results: ToolData[]; latency: number }> {
     const startTime = Date.now();
 
@@ -427,7 +429,7 @@ export class MultiCollectionOrchestrator {
     const seenIds = new Set<string>();
 
     // Add results with deduplication and scoring
-    for (const { collection, results } of searchResults) {
+    for (const { results } of searchResults) {
       for (const result of results) {
         if (!seenIds.has(result.id)) {
           seenIds.add(result.id);
@@ -461,11 +463,11 @@ export class MultiCollectionOrchestrator {
   /**
    * Generate collection-specific payload
    */
-  private generatePayload(tool: ToolData, collectionName: string): Record<string, any> {
+  private generatePayload(tool: ToolData, collectionName: string): Record<string, unknown> {
     const collectionConfig = this.collectionConfig.getCollectionByName(collectionName);
     const fields = this.contentFactory.createGenerator(collectionName).getFields();
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       toolId: tool.id,
       name: tool.name,
       collectionType: collectionName,
@@ -593,7 +595,7 @@ export class MultiCollectionOrchestrator {
   /**
    * Estimate likely collections based on intent
    */
-  private estimateCollections(intent: string, keywords: string[]): string[] {
+  private estimateCollections(intent: string, _keywords: string[]): string[] {
     const intentCollections: Record<string, string[]> = {
       'learning': ['tools', 'functionality'],
       'recommendation': ['tools', 'functionality', 'usecases'],
@@ -608,7 +610,7 @@ export class MultiCollectionOrchestrator {
   /**
    * Convert Qdrant result to ToolData
    */
-  private qdrantResultToToolData(result: any): ToolData {
+  private qdrantResultToToolData(result: { payload: unknown }): ToolData {
     // This is a simplified conversion
     // In a real implementation, you'd map from Qdrant payload to ToolData
     return result.payload as ToolData;

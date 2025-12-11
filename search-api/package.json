@@ -40,9 +40,12 @@
     "test:script:executor": "npx tsx src/debug-scripts/test-query-executor-only.ts",
     "test:script:pipeline": "npx tsx src/debug-scripts/test-refactored-pipeline.ts",
     "setup:cache-indexes": "npx tsx src/debug-scripts/setup-cache-indexes.ts",
+    "ensure-indexes": "npx tsx src/debug-scripts/ensure-tool-indexes.ts",
+    "ensure-indexes:list": "npx tsx src/debug-scripts/ensure-tool-indexes.ts list",
     "test:cache": "npx tsx src/debug-scripts/test-cache-implementation.ts",
     "verify-users": "tsx scripts/verify-and-cleanup-users.ts verify",
     "cleanup-users": "tsx scripts/verify-and-cleanup-users.ts cleanup",
+    "validate:env:sync": "tsx scripts/validate-env-sync.ts",
     "test:ci-integration": "./scripts/test-ci-integration.sh"
   },
   "dependencies": {
@@ -68,7 +71,6 @@
     "hpp": "^0.2.3",
     "joi": "^18.0.1",
     "mongodb": "^6.17.0",
-    "mongoose": "^8.20.1",
     "ollama": "^0.5.9",
     "opossum": "^9.0.0",
     "prom-client": "^15.1.3",

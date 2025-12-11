@@ -156,7 +156,7 @@ async function testCacheImplementation(): Promise<void> {
       const response = await fetch('http://localhost:4000/api/cache/health');
       const healthData = await response.json();
       console.log(`📊 Cache health: healthData`, healthData);
-    } catch (error) {
+    } catch {
       console.log(`⚠️ Health check endpoint not available (server may not be running)`);
     }
 

@@ -1,7 +1,5 @@
-import { Annotation, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
-import { Intent, IntentSchema } from "./intent.js";
-import { Plan, PlanSchema } from "./plan.js";
+import { Annotation } from "@langchain/langgraph";
 import { StateAnnotation } from "./state.js";
 
 // Enhanced State Schema for AI Search Enhancement v2.0
@@ -202,11 +200,11 @@ export const NLPResultsSchema = z.object({
 
 // Multi-Vector Search Types
 export const VectorSearchResultsSchema = z.object({
-  semantic: z.array(z.any()),
-  categories: z.array(z.any()),
-  functionality: z.array(z.any()),
-  aliases: z.array(z.any()),
-  composites: z.array(z.any())
+  semantic: z.array(z.unknown()),
+  categories: z.array(z.unknown()),
+  functionality: z.array(z.unknown()),
+  aliases: z.array(z.unknown()),
+  composites: z.array(z.unknown())
 });
 
 export const VectorSearchMetricsRecordSchema = z.record(z.object({
@@ -225,7 +223,7 @@ export const VectorSearchStateSchema = z.object({
 // Execution Plan Types
 export const SemanticUnderstandingSchema = z.object({
   intent: z.string(),
-  constraints: z.record(z.any()),
+  constraints: z.record(z.unknown()),
   comparisons: z.array(z.string()),
   price_sentiment: z.string(),
   domain: z.string(),
@@ -237,7 +235,7 @@ export const SemanticUnderstandingSchema = z.object({
 export const ExecutionStepSchema = z.object({
   stage: z.string(),
   tool: z.string(),
-  params: z.record(z.any()),
+  params: z.record(z.unknown()),
   reason: z.string(),
   optional: z.boolean(),
   estimatedTime: z.number()
@@ -280,7 +278,7 @@ export const MatchSignalsSchema = z.object({
 });
 
 export const EnhancedResultSchema = z.object({
-  tool: z.any(),
+  tool: z.unknown(),
   finalScore: z.number(),
   sourceScores: SourceScoresSchema,
   explanation: z.string(),
@@ -412,72 +410,81 @@ export const EnhancedStateAnnotation = Annotation.Root({
 export type EnhancedState = typeof EnhancedStateAnnotation.State;
 
 // Validation functions for enhanced state
-export const validateEnhancedState = (state: any): { isValid: boolean; errors: string[] } => {
+export const validateEnhancedState = (state: unknown): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
-  
+
+  // Type guard to check if state is an object
+  if (!state || typeof state !== 'object') {
+    errors.push('State must be an object');
+    return { isValid: false, errors };
+  }
+
+  const stateObj = state as Record<string, unknown>;
+
   try {
     // Validate new fields if present
-    if (state.entityStatistics && typeof state.entityStatistics === 'object' && Object.keys(state.entityStatistics).length > 0) {
+    if (stateObj.entityStatistics && typeof stateObj.entityStatistics === 'object' && stateObj.entityStatistics !== null) {
+      const entityStats = stateObj.entityStatistics as Record<string, unknown>;
       // Only validate if there are actual entity statistics
-      for (const [entityType, stats] of Object.entries(state.entityStatistics)) {
+      for (const [entityType, stats] of Object.entries(entityStats)) {
         const result = EntityStatisticsSchema.safeParse(stats);
         if (!result.success) {
           errors.push(`Invalid entityStatistics for ${entityType}: ${result.error.issues.map(i => i.message).join(', ')}`);
         }
       }
     }
-    
-    if (state.metadataContext) {
-      const result = MetadataContextSchema.safeParse(state.metadataContext);
+
+    if (stateObj.metadataContext) {
+      const result = MetadataContextSchema.safeParse(stateObj.metadataContext);
       if (!result.success) {
         errors.push(`Invalid metadataContext: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.nlpResults) {
-      const result = NLPResultsSchema.safeParse(state.nlpResults);
+
+    if (stateObj.nlpResults) {
+      const result = NLPResultsSchema.safeParse(stateObj.nlpResults);
       if (!result.success) {
         errors.push(`Invalid nlpResults: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.vectorSearchState) {
-      const result = VectorSearchStateSchema.safeParse(state.vectorSearchState);
+
+    if (stateObj.vectorSearchState) {
+      const result = VectorSearchStateSchema.safeParse(stateObj.vectorSearchState);
       if (!result.success) {
         errors.push(`Invalid vectorSearchState: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.executionPlan) {
-      const result = ExecutionPlanSchema.safeParse(state.executionPlan);
+
+    if (stateObj.executionPlan) {
+      const result = ExecutionPlanSchema.safeParse(stateObj.executionPlan);
       if (!result.success) {
         errors.push(`Invalid executionPlan: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.mergedResults) {
-      const result = MergedResultsSchema.safeParse(state.mergedResults);
+
+    if (stateObj.mergedResults) {
+      const result = MergedResultsSchema.safeParse(stateObj.mergedResults);
       if (!result.success) {
         errors.push(`Invalid mergedResults: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.performanceMetrics) {
-      const result = PerformanceMetricsSchema.safeParse(state.performanceMetrics);
+
+    if (stateObj.performanceMetrics) {
+      const result = PerformanceMetricsSchema.safeParse(stateObj.performanceMetrics);
       if (!result.success) {
         errors.push(`Invalid performanceMetrics: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.experimentalFeatures) {
-      const result = ExperimentalFeaturesSchema.safeParse(state.experimentalFeatures);
+
+    if (stateObj.experimentalFeatures) {
+      const result = ExperimentalFeaturesSchema.safeParse(stateObj.experimentalFeatures);
       if (!result.success) {
         errors.push(`Invalid experimentalFeatures: ${result.error.issues.map(i => i.message).join(', ')}`);
       }
     }
-    
-    if (state.metadata) {
-      const result = EnhancedMetadataSchema.safeParse(state.metadata);
+
+    if (stateObj.metadata) {
+      const result = EnhancedMetadataSchema.safeParse(stateObj.metadata);
       if (!result.success) {
         errors.push(`Invalid metadata: ${result.error.issues.map(i => i.message).join(', ')}`);
       }

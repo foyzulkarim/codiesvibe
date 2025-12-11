@@ -20,7 +20,7 @@ export interface HealthCheckResult {
       status: 'pass' | 'fail';
       latency?: string;
       message?: string;
-      details?: any;
+      details?: unknown;
     };
   };
   system?: {
@@ -64,11 +64,8 @@ export class HealthCheckService {
    * Should be fast (<100ms) and not check external dependencies
    */
   async checkLiveness(): Promise<HealthCheckResult> {
-    const startTime = Date.now();
-
     try {
       // Basic memory check
-      const memUsage = process.memoryUsage();
       const totalMem = os.totalmem();
       const freeMem = os.freemem();
       const usedMem = totalMem - freeMem;
@@ -116,7 +113,6 @@ export class HealthCheckService {
    * Checks all external dependencies (MongoDB, Qdrant)
    */
   async checkReadiness(): Promise<HealthCheckResult> {
-    const startTime = Date.now();
     const checks: HealthCheckResult['checks'] = {};
 
     try {
@@ -166,7 +162,7 @@ export class HealthCheckService {
     status: 'pass' | 'fail';
     latency?: string;
     message?: string;
-    details?: any;
+    details?: unknown;
   }> {
     if (!this.mongoClient) {
       return {
@@ -207,7 +203,7 @@ export class HealthCheckService {
     status: 'pass' | 'fail';
     latency?: string;
     message?: string;
-    details?: any;
+    details?: unknown;
   }> {
     if (!this.qdrantClient) {
       return {
@@ -245,7 +241,6 @@ export class HealthCheckService {
    * Get comprehensive system metrics
    */
   private async getSystemMetrics(): Promise<HealthCheckResult['system']> {
-    const memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
@@ -268,7 +263,7 @@ export class HealthCheckService {
       if (diskUsage) {
         metrics.disk = diskUsage;
       }
-    } catch (error) {
+    } catch {
       // Disk check failed, continue without it
     }
 
@@ -301,7 +296,7 @@ export class HealthCheckService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

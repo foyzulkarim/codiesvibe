@@ -6,6 +6,16 @@
  * Enhanced with RRF score merging, source attribution preservation, and performance optimizations.
  */
 
+// Generic search result interface
+export interface SearchResult<T = Record<string, unknown>> {
+  id: string;
+  score: number;
+  payload: T;
+  vectorType?: string;
+  rank?: number;
+  [key: string]: unknown;
+}
+
 // Source attribution for merged results
 export interface SourceAttribution {
   vectorType: string;
@@ -15,11 +25,11 @@ export interface SourceAttribution {
 }
 
 // Enhanced deduplication configuration
-export interface DeduplicationConfig {
+export interface DeduplicationConfig<T = Record<string, unknown>> {
   similarityThreshold: number;
   strategy: 'id_based' | 'content_based' | 'hybrid' | 'rrf_enhanced';
-  fields: string[];
-  weights: Record<string, number>;
+  fields: (keyof T)[] | string[];  // Allow both for flexibility
+  weights: Partial<Record<keyof T, number>> | Record<string, number>;
   // RRF configuration
   rrfKValue: number;
   enableScoreMergin: boolean;
@@ -32,8 +42,8 @@ export interface DeduplicationConfig {
 }
 
 // Enhanced deduplication result with attribution
-export interface DeduplicationResult {
-  uniqueResults: any[];
+export interface DeduplicationResult<T = Record<string, unknown>> {
+  uniqueResults: T[];
   duplicatesRemoved: number;
   deduplicationTime: number;
   similarityThreshold: number;
@@ -51,9 +61,9 @@ export interface SimilarityResult {
 }
 
 // RRF merge result with attribution
-export interface RRFMergeResult {
+export interface RRFMergeResult<T = Record<string, unknown>> {
   id: string;
-  result: any;
+  result: T;
   rrfScore: number;
   weightedScore: number;
   sources: SourceAttribution[];
@@ -73,10 +83,10 @@ export interface DeduplicationMetrics {
 /**
  * Main deduplication class with multiple strategies
  */
-export class ResultDeduplicator {
-  private config: DeduplicationConfig;
+export class ResultDeduplicator<T = Record<string, unknown>> {
+  private config: DeduplicationConfig<T>;
 
-  constructor(config: Partial<DeduplicationConfig> = {}) {
+  constructor(config: Partial<DeduplicationConfig<T>> = {}) {
     this.config = {
       similarityThreshold: 0.9,
       strategy: 'hybrid',
@@ -108,10 +118,10 @@ export class ResultDeduplicator {
   /**
    * Deduplicate results using the configured strategy
    */
-  deduplicate(results: any[]): DeduplicationResult {
+  deduplicate(results: T[]): DeduplicationResult<T> {
     const startTime = Date.now();
-    
-    let uniqueResults: any[];
+
+    let uniqueResults: T[];
     let duplicatesRemoved = 0;
 
     // Use batch processing for large result sets
@@ -158,14 +168,14 @@ export class ResultDeduplicator {
   /**
    * Batched deduplication for large result sets with performance optimization
    */
-  private deduplicateBatched(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
+  private deduplicateBatched(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
     const batches = this.createBatches(results, this.config.batchSize);
-    const allUniqueResults: any[] = [];
+    const allUniqueResults: T[] = [];
     let totalDuplicatesRemoved = 0;
 
     // Process batches sequentially for now (can be enhanced with parallel processing)
     for (const batch of batches) {
-      let batchUniqueResults: any[];
+      let batchUniqueResults: T[];
       let batchDuplicatesRemoved: number;
 
       switch (this.config.strategy) {
@@ -200,8 +210,8 @@ export class ResultDeduplicator {
   /**
    * Create batches from results for processing
    */
-  private createBatches(results: any[], batchSize: number): any[][] {
-    const batches: any[][] = [];
+  private createBatches(results: T[], batchSize: number): T[][] {
+    const batches: T[][] = [];
     for (let i = 0; i < results.length; i += batchSize) {
       batches.push(results.slice(i, i + batchSize));
     }
@@ -211,26 +221,26 @@ export class ResultDeduplicator {
   /**
    * Merge batch results with existing unique results
    */
-  private mergeBatchResults(existingResults: any[], newResults: any[]): { newResults: any[]; duplicatesRemoved: number } {
-    const finalNewResults: any[] = [];
+  private mergeBatchResults(existingResults: T[], newResults: T[]): { newResults: T[]; duplicatesRemoved: number } {
+    const finalNewResults: T[] = [];
     let duplicatesRemoved = 0;
 
     for (const newResult of newResults) {
       let isDuplicate = false;
-      
+
       for (const existingResult of existingResults) {
         const similarity = this.calculateContentSimilarity(newResult, existingResult);
-        
+
         if (similarity >= this.config.similarityThreshold) {
           isDuplicate = true;
           duplicatesRemoved++;
-          
+
           // Enhance existing result with new result's data if needed
           this.enhanceExistingResult(existingResult, newResult);
           break;
         }
       }
-      
+
       if (!isDuplicate) {
         finalNewResults.push(newResult);
       }
@@ -242,38 +252,41 @@ export class ResultDeduplicator {
   /**
    * Enhance existing result with data from duplicate result
    */
-  private enhanceExistingResult(existingResult: any, duplicateResult: any): void {
+  private enhanceExistingResult(existingResult: T, duplicateResult: T): void {
+    const existingRecord = existingResult as Record<string, unknown>;
+    const duplicateRecord = duplicateResult as Record<string, unknown>;
+
     // Merge scores if enabled
     if (this.config.enableScoreMergin) {
-      if (duplicateResult.rrfScore && existingResult.rrfScore) {
-        existingResult.rrfScore = Math.max(existingResult.rrfScore, duplicateResult.rrfScore);
+      if (duplicateRecord.rrfScore && existingRecord.rrfScore) {
+        existingRecord.rrfScore = Math.max(existingRecord.rrfScore as number, duplicateRecord.rrfScore as number);
       }
-      if (duplicateResult.weightedScore && existingResult.weightedScore) {
-        existingResult.weightedScore = Math.max(existingResult.weightedScore, duplicateResult.weightedScore);
+      if (duplicateRecord.weightedScore && existingRecord.weightedScore) {
+        existingRecord.weightedScore = Math.max(existingRecord.weightedScore as number, duplicateRecord.weightedScore as number);
       }
-      if (duplicateResult.finalScore && existingResult.finalScore) {
-        existingResult.finalScore = Math.max(existingResult.finalScore, duplicateResult.finalScore);
+      if (duplicateRecord.finalScore && existingRecord.finalScore) {
+        existingRecord.finalScore = Math.max(existingRecord.finalScore as number, duplicateRecord.finalScore as number);
       }
     }
-    
+
     // Merge source attribution
-    if (this.config.enableSourceAttribution && duplicateResult.sources) {
-      existingResult.sources = [...(existingResult.sources || []), ...duplicateResult.sources];
-      existingResult.mergedFromCount = (existingResult.mergedFromCount || 1) + (duplicateResult.mergedFromCount || 1);
+    if (this.config.enableSourceAttribution && duplicateRecord.sources) {
+      existingRecord.sources = [...(existingRecord.sources as SourceAttribution[] || []), ...(duplicateRecord.sources as SourceAttribution[])];
+      existingRecord.mergedFromCount = (existingRecord.mergedFromCount as number || 1) + (duplicateRecord.mergedFromCount as number || 1);
     }
   }
 
   /**
    * ID-based deduplication (fastest)
    */
-  private deduplicateById(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
-    const uniqueResults: any[] = [];
+  private deduplicateById(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
+    const uniqueResults: T[] = [];
     const seenIds = new Set<string>();
     let duplicatesRemoved = 0;
 
     for (const result of results) {
       const resultId = this.extractId(result);
-      
+
       if (resultId && !seenIds.has(resultId)) {
         seenIds.add(resultId);
         uniqueResults.push(result);
@@ -291,18 +304,18 @@ export class ResultDeduplicator {
   /**
    * Content-based deduplication using similarity analysis
    */
-  private deduplicateByContent(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
-    const uniqueResults: any[] = [];
-    const contentHashes = new Map<string, any>();
+  private deduplicateByContent(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
+    const uniqueResults: T[] = [];
+    const contentHashes = new Map<string, T>();
     let duplicatesRemoved = 0;
 
     for (const result of results) {
       const contentHash = this.generateContentHash(result);
-      
+
       if (contentHashes.has(contentHash)) {
         const existingResult = contentHashes.get(contentHash);
-        const similarity = this.calculateContentSimilarity(result, existingResult);
-        
+        const similarity = this.calculateContentSimilarity(result, existingResult!);
+
         if (similarity < this.config.similarityThreshold) {
           uniqueResults.push(result);
           contentHashes.set(contentHash, result);
@@ -321,18 +334,18 @@ export class ResultDeduplicator {
   /**
    * Hybrid deduplication combining ID and content-based approaches
    */
-  private deduplicateHybrid(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
-    const uniqueResults: any[] = [];
+  private deduplicateHybrid(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
+    const uniqueResults: T[] = [];
     const seenIds = new Set<string>();
-    const contentHashes = new Map<string, any>();
+    const contentHashes = new Map<string, T>();
     let duplicatesRemoved = 0;
 
     for (const result of results) {
       const resultId = this.extractId(result);
       const contentHash = this.generateContentHash(result);
-      
+
       let isDuplicate = false;
-      
+
       // Check ID-based duplication first
       if (resultId && seenIds.has(resultId)) {
         isDuplicate = true;
@@ -340,12 +353,12 @@ export class ResultDeduplicator {
       } else if (resultId) {
         seenIds.add(resultId);
       }
-      
+
       // Check content-based duplication
       if (!isDuplicate && contentHashes.has(contentHash)) {
         const existingResult = contentHashes.get(contentHash);
-        const similarity = this.calculateContentSimilarity(result, existingResult);
-        
+        const similarity = this.calculateContentSimilarity(result, existingResult!);
+
         if (similarity >= this.config.similarityThreshold) {
           isDuplicate = true;
           duplicatesRemoved++;
@@ -355,7 +368,7 @@ export class ResultDeduplicator {
       } else if (!isDuplicate) {
         contentHashes.set(contentHash, result);
       }
-      
+
       if (!isDuplicate) {
         uniqueResults.push(result);
       }
@@ -367,11 +380,11 @@ export class ResultDeduplicator {
   /**
    * RRF Enhanced deduplication with score merging and source attribution
    */
-  private deduplicateRRFEnhanced(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
-    const uniqueResults: any[] = [];
+  private deduplicateRRFEnhanced(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
+    const uniqueResults: T[] = [];
     const seenIds = new Set<string>();
-    const mergeMap: Record<string, RRFMergeResult> = {};
-    let duplicatesRemoved = 0;
+    const mergeMap: Record<string, RRFMergeResult<T>> = {};
+    const duplicatesRemoved = 0;
 
     // Group results by ID for RRF merging
     for (const result of results) {
@@ -399,19 +412,20 @@ export class ResultDeduplicator {
 
       // Update merge result with current result
       const mergeResult = mergeMap[resultId];
-      const vectorType = result.vectorType || 'unknown';
-      const rank = result.rank || 1;
-      const score = result.score || 0;
-      
+      const resultRecord = result as Record<string, unknown>;
+      const vectorType = resultRecord.vectorType as string || 'unknown';
+      const rank = resultRecord.rank as number || 1;
+      const score = resultRecord.score as number || 0;
+
       // Calculate RRF contribution
       const rrfContribution = 1 / (this.config.rrfKValue + rank);
       mergeResult.rrfScore += rrfContribution;
-      
+
       // Calculate weighted contribution
       const weight = this.getVectorTypeWeight(vectorType);
       const weightedContribution = rrfContribution * weight;
       mergeResult.weightedScore += weightedContribution;
-      
+
       // Add source attribution
       if (this.config.enableSourceAttribution) {
         mergeResult.sources.push({
@@ -421,11 +435,12 @@ export class ResultDeduplicator {
           weight
         });
       }
-      
+
       mergeResult.mergedFromCount++;
-      
+
       // Merge result data (prefer higher score)
-      if (score > (mergeResult.result.score || 0)) {
+      const mergeResultRecord = mergeResult.result as Record<string, unknown>;
+      if (score > (mergeResultRecord.score as number || 0)) {
         mergeResult.result = { ...result };
       }
     }
@@ -433,19 +448,20 @@ export class ResultDeduplicator {
     // Convert merge results to final results with enhanced attributes
     for (const mergeResult of Object.values(mergeMap)) {
       const finalResult = mergeResult.result;
-      
+      const finalResultRecord = finalResult as Record<string, unknown>;
+
       // Add merged scores and attribution
       if (this.config.enableScoreMergin) {
-        finalResult.rrfScore = mergeResult.rrfScore;
-        finalResult.weightedScore = mergeResult.weightedScore;
-        finalResult.finalScore = mergeResult.weightedScore;
+        finalResultRecord.rrfScore = mergeResult.rrfScore;
+        finalResultRecord.weightedScore = mergeResult.weightedScore;
+        finalResultRecord.finalScore = mergeResult.weightedScore;
       }
-      
+
       if (this.config.enableSourceAttribution) {
-        finalResult.sources = mergeResult.sources;
-        finalResult.mergedFromCount = mergeResult.mergedFromCount;
+        finalResultRecord.sources = mergeResult.sources;
+        finalResultRecord.mergedFromCount = mergeResult.mergedFromCount;
       }
-      
+
       uniqueResults.push(finalResult);
     }
 
@@ -460,41 +476,43 @@ export class ResultDeduplicator {
   /**
    * Apply content-based filtering to remove near-duplicates
    */
-  private applyContentBasedFiltering(results: any[]): { uniqueResults: any[]; duplicatesRemoved: number } {
-    const uniqueResults: any[] = [];
+  private applyContentBasedFiltering(results: T[]): { uniqueResults: T[]; duplicatesRemoved: number } {
+    const uniqueResults: T[] = [];
     let duplicatesRemoved = 0;
 
     for (const result of results) {
       let isDuplicate = false;
-      
+
       for (const existingResult of uniqueResults) {
         const similarity = this.calculateContentSimilarity(result, existingResult);
-        
+
         // Use vector type specific threshold if available
-        const vectorType = result.vectorType || 'default';
+        const vectorType = (result as Record<string, unknown>).vectorType as string || 'default';
         const threshold = this.config.vectorTypeThresholds[vectorType] || this.config.similarityThreshold;
-        
+
         if (similarity >= threshold) {
           isDuplicate = true;
           duplicatesRemoved++;
-          
+
           // Merge scores if enabled
-          if (this.config.enableScoreMergin && existingResult.rrfScore && result.rrfScore) {
-            existingResult.rrfScore = Math.max(existingResult.rrfScore, result.rrfScore);
-            existingResult.weightedScore = Math.max(existingResult.weightedScore, result.weightedScore);
-            existingResult.finalScore = Math.max(existingResult.finalScore, result.finalScore);
+          const resultRecord = result as Record<string, unknown>;
+          const existingRecord = existingResult as Record<string, unknown>;
+          if (this.config.enableScoreMergin && existingRecord.rrfScore && resultRecord.rrfScore) {
+            existingRecord.rrfScore = Math.max(existingRecord.rrfScore as number, resultRecord.rrfScore as number);
+            existingRecord.weightedScore = Math.max(existingRecord.weightedScore as number, resultRecord.weightedScore as number);
+            existingRecord.finalScore = Math.max(existingRecord.finalScore as number, resultRecord.finalScore as number);
           }
-          
+
           // Merge source attribution
-          if (this.config.enableSourceAttribution && result.sources) {
-            existingResult.sources = [...(existingResult.sources || []), ...result.sources];
-            existingResult.mergedFromCount = (existingResult.mergedFromCount || 1) + (result.mergedFromCount || 1);
+          if (this.config.enableSourceAttribution && resultRecord.sources) {
+            existingRecord.sources = [...(existingRecord.sources as SourceAttribution[] || []), ...(resultRecord.sources as SourceAttribution[])];
+            existingRecord.mergedFromCount = (existingRecord.mergedFromCount as number || 1) + (resultRecord.mergedFromCount as number || 1);
           }
-          
+
           break;
         }
       }
-      
+
       if (!isDuplicate) {
         uniqueResults.push(result);
       }
@@ -521,45 +539,49 @@ export class ResultDeduplicator {
   /**
    * Calculate average merged score for metrics
    */
-  private calculateAverageMergedScore(results: any[]): number {
+  private calculateAverageMergedScore(results: T[]): number {
     if (results.length === 0) return 0;
-    
+
     const totalScore = results.reduce((sum, result) => {
-      return sum + (result.finalScore || result.weightedScore || result.score || 0);
+      const resultRecord = result as Record<string, unknown>;
+      return sum + (resultRecord.finalScore as number || resultRecord.weightedScore as number || resultRecord.score as number || 0);
     }, 0);
-    
+
     return totalScore / results.length;
   }
 
   /**
    * Calculate source attribution summary for metrics
    */
-  private calculateSourceAttributionSummary(results: any[]): Record<string, number> {
+  private calculateSourceAttributionSummary(results: T[]): Record<string, number> {
     const summary: Record<string, number> = {};
-    
+
     for (const result of results) {
-      if (result.sources && Array.isArray(result.sources)) {
-        for (const source of result.sources) {
+      const resultRecord = result as Record<string, unknown>;
+      if (resultRecord.sources && Array.isArray(resultRecord.sources)) {
+        for (const source of resultRecord.sources as SourceAttribution[]) {
           summary[source.vectorType] = (summary[source.vectorType] || 0) + 1;
         }
       }
     }
-    
+
     return summary;
   }
 
   /**
    * Extract ID from a result object
    */
-  private extractId(result: any): string | null {
-    return result.id || result.payload?.id || result._id || null;
+  private extractId(result: T): string | null {
+    const resultRecord = result as Record<string, unknown>;
+    const payload = resultRecord.payload as Record<string, unknown> | undefined;
+    return resultRecord.id as string || payload?.id as string || resultRecord._id as string || null;
   }
 
   /**
    * Generate content hash for similarity comparison
    */
-  private generateContentHash(result: any): string {
-    const content = this.config.fields
+  private generateContentHash(result: T): string {
+    const content = (this.config.fields as string[])
       .map(field => this.getFieldValue(result, field))
       .filter(value => value && value.trim().length > 0)
       .join(' ')
@@ -571,12 +593,14 @@ export class ResultDeduplicator {
   /**
    * Get field value from result object
    */
-  public getFieldValue(result: any, field: string): string {
-    if (result.payload && result.payload[field]) {
-      return String(result.payload[field]);
+  public getFieldValue(result: T, field: string): string {
+    const resultRecord = result as Record<string, unknown>;
+    const payload = resultRecord.payload as Record<string, unknown> | undefined;
+    if (payload && payload[field]) {
+      return String(payload[field]);
     }
-    if (result[field]) {
-      return String(result[field]);
+    if (resultRecord[field]) {
+      return String(resultRecord[field]);
     }
     return '';
   }
@@ -584,17 +608,19 @@ export class ResultDeduplicator {
   /**
    * Calculate content similarity between two results
    */
-  private calculateContentSimilarity(result1: any, result2: any): number {
+  private calculateContentSimilarity(result1: T, result2: T): number {
     let totalSimilarity = 0;
     let totalWeight = 0;
 
     for (const field of this.config.fields) {
-      const value1 = this.getFieldValue(result1, field);
-      const value2 = this.getFieldValue(result2, field);
-      const weight = this.config.weights[field] || 1.0;
+      const fieldStr = String(field);
+      const value1 = this.getFieldValue(result1, fieldStr);
+      const value2 = this.getFieldValue(result2, fieldStr);
+      const weights = this.config.weights as Record<string, number>;
+      const weight = weights[fieldStr] || 1.0;
 
       if (value1 && value2) {
-        const similarity = this.calculateFieldSimilarity(value1, value2, field);
+        const similarity = this.calculateFieldSimilarity(value1, value2, fieldStr);
         totalSimilarity += similarity * weight;
         totalWeight += weight;
       } else if (totalWeight === 0) {
@@ -766,14 +792,14 @@ export class ResultDeduplicator {
   /**
    * Update configuration
    */
-  updateConfig(newConfig: Partial<DeduplicationConfig>): void {
+  updateConfig(newConfig: Partial<DeduplicationConfig<T>>): void {
     this.config = { ...this.config, ...newConfig };
   }
 
   /**
    * Get current configuration
    */
-  getConfig(): DeduplicationConfig {
+  getConfig(): DeduplicationConfig<T> {
     return { ...this.config };
   }
 }
@@ -781,25 +807,25 @@ export class ResultDeduplicator {
 /**
  * Convenience function for quick deduplication
  */
-export function deduplicateResults(
-  results: any[],
-  config: Partial<DeduplicationConfig> = {}
-): DeduplicationResult {
-  const deduplicator = new ResultDeduplicator(config);
+export function deduplicateResults<T = Record<string, unknown>>(
+  results: T[],
+  config: Partial<DeduplicationConfig<T>> = {}
+): DeduplicationResult<T> {
+  const deduplicator = new ResultDeduplicator<T>(config);
   return deduplicator.deduplicate(results);
 }
 
 /**
  * Calculate similarity between two results with detailed breakdown
  */
-export function calculateResultSimilarity(
-  result1: any,
-  result2: any,
+export function calculateResultSimilarity<T = Record<string, unknown>>(
+  result1: T,
+  result2: T,
   fields: string[] = ['name', 'description', 'category'],
   weights: Record<string, number> = { name: 0.7, description: 0.2, category: 0.1 }
 ): SimilarityResult {
-  const deduplicator = new ResultDeduplicator({ fields, weights });
-  
+  const deduplicator = new ResultDeduplicator<T>({ fields, weights });
+
   const fieldSimilarities: Record<string, number> = {};
   let totalSimilarity = 0;
   let totalWeight = 0;
@@ -815,7 +841,7 @@ export function calculateResultSimilarity(
       fieldSimilarities[field] = similarity;
       totalSimilarity += similarity * weight;
       totalWeight += weight;
-      
+
       if (similarity > 0.8) {
         reasons.push(`${field}: ${Math.round(similarity * 100)}% match`);
       }
@@ -823,7 +849,7 @@ export function calculateResultSimilarity(
   }
 
   const overallSimilarity = totalWeight > 0 ? totalSimilarity / totalWeight : 0;
-  
+
   return {
     similarity: overallSimilarity,
     reason: reasons.join(', ') || 'Low similarity',
@@ -835,21 +861,23 @@ export function calculateResultSimilarity(
 /**
  * Merge results using RRF with enhanced attribution
  */
-export function mergeResultsWithRRF(
-  resultsByVectorType: Record<string, any[]>,
+export function mergeResultsWithRRF<T = Record<string, unknown>>(
+  resultsByVectorType: Record<string, T[]>,
   kValue: number = 60,
   vectorWeights: Record<string, number> = { semantic: 1.0, categories: 0.8, functionality: 0.7 },
   enableSourceAttribution: boolean = true
-): RRFMergeResult[] {
-  const scoreMap: Record<string, RRFMergeResult> = {};
+): RRFMergeResult<T>[] {
+  const scoreMap: Record<string, RRFMergeResult<T>> = {};
 
   // Calculate RRF scores for each result
   Object.entries(resultsByVectorType).forEach(([vectorType, vectorResults]) => {
     const weight = vectorWeights[vectorType] || 0.5;
-    
+
     vectorResults.forEach((result, rank) => {
-      const resultId = result.id || result.payload?.id || `temp_${Math.random().toString(36).substr(2, 9)}`;
-      
+      const resultRecord = result as Record<string, unknown>;
+      const payload = resultRecord.payload as Record<string, unknown> | undefined;
+      const resultId = resultRecord.id as string || payload?.id as string || `temp_${Math.random().toString(36).substr(2, 9)}`;
+
       if (!scoreMap[resultId]) {
         scoreMap[resultId] = {
           id: resultId,
@@ -863,22 +891,23 @@ export function mergeResultsWithRRF(
 
       const rrfContribution = 1 / (kValue + rank + 1);
       const weightedContribution = rrfContribution * weight;
-      
+
       scoreMap[resultId].rrfScore += rrfContribution;
       scoreMap[resultId].weightedScore += weightedContribution;
       scoreMap[resultId].mergedFromCount++;
-      
+
       if (enableSourceAttribution) {
         scoreMap[resultId].sources.push({
           vectorType,
-          score: result.score || 0,
+          score: resultRecord.score as number || 0,
           rank: rank + 1,
           weight
         });
       }
-      
+
       // Keep the result with highest score
-      if ((result.score || 0) > (scoreMap[resultId].result.score || 0)) {
+      const currentResult = scoreMap[resultId].result as Record<string, unknown>;
+      if ((resultRecord.score as number || 0) > (currentResult.score as number || 0)) {
         scoreMap[resultId].result = { ...result };
       }
     });
@@ -892,7 +921,7 @@ export function mergeResultsWithRRF(
 /**
  * Create enhanced deduplication configuration for multi-vector search
  */
-export function createMultiVectorDeduplicationConfig(
+export function createMultiVectorDeduplicationConfig<T = Record<string, unknown>>(
   options: {
     similarityThreshold?: number;
     rrfKValue?: number;
@@ -901,7 +930,7 @@ export function createMultiVectorDeduplicationConfig(
     batchSize?: number;
     enableParallelProcessing?: boolean;
   } = {}
-): DeduplicationConfig {
+): DeduplicationConfig<T> {
   return {
     similarityThreshold: options.similarityThreshold || 0.8,
     strategy: 'rrf_enhanced',

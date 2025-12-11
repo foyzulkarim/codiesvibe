@@ -107,7 +107,7 @@ export async function searchWithAgenticPipeline(
   options: {
     threadId?: string;
     enableCheckpoints?: boolean;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   } = {}
 ): Promise<Partial<typeof StateAnnotation.State>> {
   const startTime = Date.now();

@@ -98,7 +98,7 @@ export const toolsMutationLimiter = rateLimit({
       userAgent: req.get('User-Agent'),
       path: req.path,
       method: req.method,
-      userId: (req as any).auth?.userId,
+      userId: (req as { auth?: { userId?: string } }).auth?.userId,
       timestamp: new Date().toISOString()
     }, 'warn');
     res.status(429).json({

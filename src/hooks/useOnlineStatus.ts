@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 /**
  * Online status information
@@ -115,16 +115,13 @@ export const useOnlineStatus = (options: UseOnlineStatusOptions = {}): OnlineSta
             ? Math.round((Date.now() - prevStatus.offlineSince.getTime()) / 1000)
             : 0;
 
-          toast({
-            title: 'Back Online',
+          toast.success('Back Online', {
             description: offlineDuration > 0
               ? `Connection restored after ${offlineDuration}s`
               : 'Connection restored',
           });
         } else {
-          toast({
-            variant: 'destructive',
-            title: 'No Internet Connection',
+          toast.error('No Internet Connection', {
             description: 'You are currently offline. Some features may not work.',
           });
         }

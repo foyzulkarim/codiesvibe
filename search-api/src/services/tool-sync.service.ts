@@ -11,17 +11,12 @@ import { CollectionConfigService } from './collection-config.service.js';
 import { ContentGeneratorFactory } from './content-generator-factory.service.js';
 import {
   contentHashService,
-  COLLECTION_FIELDS,
-  METADATA_ONLY_FIELDS,
 } from './content-hash.service.js';
 import {
-  Tool,
   ITool,
   SyncCollectionName,
-  SyncStatus,
-  ICollectionSyncStatus,
-} from '../models/tool.model.js';
-import { toolCrudService } from './tool-crud.service.js';
+} from '../types/tool.interfaces.js';
+import { mongoDBService } from './mongodb.service.js';
 import { ToolData, ToolDataValidator } from '../types/tool.types.js';
 
 // ============================================
@@ -115,8 +110,7 @@ export class ToolSyncService {
     tool: ITool,
     options: SyncOptions = {}
   ): Promise<ToolSyncResult> {
-    // Ensure Mongoose connection is established for sync metadata updates
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically via database.ts singleton
 
     const startTime = Date.now();
     const toolId = this.deriveToolId(tool);
@@ -328,7 +322,7 @@ export class ToolSyncService {
    */
   async updatePayloadOnly(
     tool: ITool,
-    options: Omit<SyncOptions, 'collections'> = {}
+    _options: Omit<SyncOptions, 'collections'> = {}
   ): Promise<ToolSyncResult> {
     const startTime = Date.now();
     const toolId = this.deriveToolId(tool);
@@ -406,16 +400,10 @@ export class ToolSyncService {
    * @param toolId - MongoDB _id or tool slug
    */
   async retryFailedSync(toolId: string): Promise<ToolSyncResult> {
-    // Ensure Mongoose connection is established
-    await toolCrudService.ensureConnection();
+    // Native driver handles connection automatically via database.ts singleton
 
-    // Find the tool - support both _id and id/slug
-    const tool = await Tool.findOne({
-      $or: [{ _id: toolId }, { id: toolId }, { slug: toolId }],
-    }).catch(() => {
-      // If _id cast fails, try by id/slug only
-      return Tool.findOne({ $or: [{ id: toolId }, { slug: toolId }] });
-    });
+    // Find the tool by id/slug
+    const tool = await mongoDBService.findToolByIdOrSlug(toolId);
 
     if (!tool) {
       throw new Error(`Tool not found: ${toolId}`);
@@ -602,11 +590,8 @@ export class ToolSyncService {
         updateOps.$inc = incData;
       }
 
-      // Perform the update
-      await Tool.updateOne(
-        { $or: [{ id: toolId }, { slug: toolId }] },
-        updateOps
-      );
+      // Perform the update using native driver
+      await mongoDBService.updateToolSyncMetadata(toolId, updateOps);
     } catch (error) {
       console.error(
         `❌ [ToolSync] Failed to update sync metadata for ${toolId}:`,
@@ -697,13 +682,39 @@ export class ToolSyncService {
 
   /**
    * Convert ITool to ToolData format
+   * Maps ITool fields to ToolData expected structure
    */
   private convertToToolData(tool: ITool): ToolData {
-    const toolObj = tool.toObject ? tool.toObject() : tool;
+    // Documents are already plain objects with native driver (no Mongoose)
+    // Map contributor to createdBy for ToolData compatibility
     return {
-      ...toolObj,
-      _id: tool._id?.toString(),
-    } as ToolData;
+      _id: tool._id?.toString() || '',
+      id: tool.id,
+      name: tool.name,
+      slug: tool.slug,
+      description: tool.description,
+      longDescription: tool.longDescription,
+      tagline: tool.tagline,
+      createdBy: tool.contributor, // Map contributor to createdBy
+      categories: tool.categories,
+      industries: tool.industries,
+      userTypes: tool.userTypes,
+      pricing: tool.pricing,
+      pricingModel: tool.pricingModel as unknown as import('../types/tool.types.js').PricingModelEnum[],
+      pricingUrl: tool.pricingUrl,
+      interface: tool.interface,
+      functionality: tool.functionality,
+      deployment: tool.deployment,
+      logoUrl: tool.logoUrl,
+      website: tool.website,
+      documentation: tool.documentation,
+      status: tool.status as import('../types/tool.types.js').ToolStatus,
+      contributor: tool.contributor,
+      dateAdded: tool.dateAdded,
+      lastUpdated: tool.lastUpdated,
+      createdAt: tool.createdAt,
+      updatedAt: tool.updatedAt,
+    };
   }
 
   /**

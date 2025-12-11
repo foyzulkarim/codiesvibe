@@ -10,7 +10,7 @@ import {
   ALL_SEMANTIC_FIELDS,
   METADATA_ONLY_FIELDS,
 } from '../../../services/content-hash.service.js';
-import { ITool, SyncCollectionName } from '../../../models/tool.model.js';
+import { ITool, SyncCollectionName } from '../../../types/tool.interfaces.js';
 
 describe('ContentHashService', () => {
   let service: ContentHashService;

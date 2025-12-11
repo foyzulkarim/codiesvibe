@@ -1,32 +1,31 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { queryClient, reactQueryDevtoolsConfig } from "@/config/query-client";
+import { ProtectedRoute, ClerkAuthInitializer, AuthHandler } from "@/components/auth";
+import { ErrorBoundary } from "@/components/error";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { apiConfig, validateApiConfig } from "@/config/api";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { ClerkAuthInitializer } from "@/components/ClerkAuthInitializer";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import ToolsList from "./pages/admin/ToolsList";
-import ToolCreate from "./pages/admin/ToolCreate";
+import { queryClient, reactQueryDevtoolsConfig } from "@/config/query-client";
+import { ToolCreate } from "./pages/admin/ToolCreate";
+import { ToolsList } from "./pages/admin/ToolsList";
+import { Index } from "./pages/Index";
+import { NotFound } from "./pages/NotFound";
+import { SignIn } from "./pages/SignIn";
+import { SignUp } from "./pages/SignUp";
 
 // Validate API configuration on app startup
 validateApiConfig();
 
-const App = () => (
+export const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ClerkAuthInitializer />
       <TooltipProvider>
         <Toaster />
-        <Sonner />
         <BrowserRouter>
+          {/* Global authentication event handler */}
+          <AuthHandler />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -72,5 +71,3 @@ const App = () => (
     </QueryClientProvider>
   </ErrorBoundary>
 );
-
-export default App;

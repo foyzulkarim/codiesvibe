@@ -89,6 +89,9 @@ RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund && \
 # Copy built application from builder stage with proper ownership
 COPY --from=search-api-builder --chown=nodejs:nodejs /app/dist ./dist
 
+# Copy OpenAPI specification file for API documentation
+COPY --from=search-api-builder --chown=nodejs:nodejs /app/openapi.yaml ./openapi.yaml
+
 # Create necessary directories with secure permissions
 RUN mkdir -p /app/logs /app/temp && \
     chown -R nodejs:nodejs /app && \

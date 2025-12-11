@@ -1,8 +1,8 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-
+import { ButtonProps } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button.utils";
 import { cn } from "@/lib/utils";
-import { ButtonProps, buttonVariants } from "@/components/ui/button";
 
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
@@ -32,6 +32,7 @@ type PaginationLinkProps = {
   React.ComponentProps<"a">;
 
 const PaginationLink = ({ className, isActive, size = "icon", ...props }: PaginationLinkProps) => (
+  // eslint-disable-next-line jsx-a11y/anchor-has-content
   <a
     aria-current={isActive ? "page" : undefined}
     className={cn(

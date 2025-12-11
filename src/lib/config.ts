@@ -1,6 +1,8 @@
+import { isDevelopment as devMode, isProduction as prodMode } from '@/config/env';
+
 // Environment detection
-export const isDevelopment = import.meta.env.DEV;
-export const isProduction = import.meta.env.PROD;
+export const isDevelopment = devMode;
+export const isProduction = prodMode;
 
 // API Endpoints
 export const API_ENDPOINTS = {

@@ -4,27 +4,27 @@ import { z } from "zod";
 /**
  * Deep clone function that preserves Date objects
  */
-function deepCloneWithDates(obj: any): any {
+function deepCloneWithDates<T>(obj: T): T {
   if (obj === null || typeof obj !== "object") {
     return obj;
   }
-  
+
   if (obj instanceof Date) {
-    return new Date(obj.getTime());
+    return new Date(obj.getTime()) as T;
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(deepCloneWithDates);
+    return obj.map(deepCloneWithDates) as T;
   }
-  
-  const cloned: any = {};
+
+  const cloned: Record<string, unknown> = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      cloned[key] = deepCloneWithDates(obj[key]);
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      cloned[key] = deepCloneWithDates((obj as Record<string, unknown>)[key]);
     }
   }
-  
-  return cloned;
+
+  return cloned as T;
 }
 
 /**
@@ -136,7 +136,7 @@ export const StateSchemas = {
       overall: z.number().min(0).max(1),
       breakdown: z.record(z.number()),
     }),
-    entityStatistics: z.record(z.any()).optional(),
+    entityStatistics: z.record(z.unknown()).optional(),
     metadataContext: z.object({
       searchSpaceSize: z.number(),
       metadataConfidence: z.number(),
@@ -176,7 +176,7 @@ export const StateSchemas = {
     plan: z.object({
       steps: z.array(z.object({
         name: z.string(),
-        parameters: z.record(z.any()).optional(),
+        parameters: z.record(z.unknown()).optional(),
         inputFromStep: z.number().optional(),
       })),
       description: z.string().optional(),
@@ -214,15 +214,15 @@ export const StateSchemas = {
     plan: z.object({
       steps: z.array(z.object({
         name: z.string(),
-        parameters: z.record(z.any()).optional(),
+        parameters: z.record(z.unknown()).optional(),
         inputFromStep: z.number().optional(),
       })),
       description: z.string().optional(),
       mergeStrategy: z.enum(["weighted", "best", "diverse"]).optional(),
     }),
     routingDecision: z.enum(["optimal", "multi-strategy", "fallback"]),
-    executionResults: z.array(z.any()),
-    queryResults: z.array(z.any()),
+    executionResults: z.array(z.unknown()),
+    queryResults: z.array(z.unknown()),
     metadata: z.object({
       startTime: z.date(),
       executionPath: z.array(z.string()),
@@ -235,7 +235,7 @@ export const StateSchemas = {
     completion: z.object({
       query: z.string(),
       strategy: z.string(),
-      results: z.array(z.any()),
+      results: z.array(z.unknown()),
       explanation: z.string(),
       metadata: z.object({
         executionTime: z.string(),
@@ -548,7 +548,7 @@ export class StateValidator {
   /**
    * Check state consistency
    */
-  private checkConsistency(state: State, stage: string): string[] {
+  private checkConsistency(state: State, _stage: string): string[] {
     const errors: string[] = [];
     
     const threadId = state.metadata?.threadId;
@@ -570,7 +570,7 @@ export class StateValidator {
         for (const result of results) {
           errors.push(...result.errors);
         }
-      } catch (error) {
+    } catch (error) {
         errors.push(`Consistency rule ${ruleName} failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
@@ -581,13 +581,13 @@ export class StateValidator {
   /**
    * Check data integrity
    */
-  private checkDataIntegrity(state: State, stage: string): string[] {
+  private checkDataIntegrity(state: State, _stage: string): string[] {
     const warnings: string[] = [];
 
     // Check for circular references
     try {
       JSON.stringify(state);
-    } catch (error) {
+    } catch {
       warnings.push('State contains circular references');
     }
 

@@ -79,7 +79,6 @@ export async function getClerkToken(): Promise<string | null> {
   try {
     return await tokenGetter();
   } catch (error) {
-    console.error('Failed to get Clerk token:', error);
     return null;
   }
 }

@@ -3,17 +3,42 @@
  * Tests for background sync processing with exponential backoff
  */
 
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
-  SyncWorkerService,
-  syncWorkerService,
-  SyncWorkerConfig,
-  SyncWorkerStatus,
-  SweepResult,
-} from '../../../services/sync-worker.service.js';
-import { Tool, ITool, SyncCollectionName } from '../../../models/tool.model.js';
-import { toolSyncService } from '../../../services/tool-sync.service.js';
+  setupTestDatabase,
+  teardownTestDatabase,
+  clearToolsCollection,
+  createTestTool,
+  findTestTool,
+  getTestDb,
+} from '../../test-utils/db-setup.js';
+import { ITool, SyncCollectionName } from '../../../types/tool.interfaces.js';
+
+// Store reference to test database for the mock
+let testDbReference: ReturnType<typeof getTestDb> | null = null;
+
+// Mock the database module to use test database
+jest.mock('../../../config/database', () => ({
+  connectToMongoDB: jest.fn(async () => {
+    if (!testDbReference) {
+      throw new Error('Test database not initialized. Call setupTestDatabase first.');
+    }
+    return testDbReference;
+  }),
+  disconnectFromMongoDB: jest.fn(async () => {}),
+  connectToQdrant: jest.fn(async () => null),
+  mongoConfig: {
+    uri: 'mongodb://localhost:27017',
+    dbName: 'test',
+    options: {},
+  },
+  qdrantConfig: {
+    url: null,
+    host: 'localhost',
+    port: 6333,
+    apiKey: null,
+    collectionName: 'tools',
+  },
+}));
 
 // Mock the tool sync service
 jest.mock('../../../services/tool-sync.service.js', () => ({
@@ -47,8 +72,17 @@ jest.mock('../../../config/logger.js', () => ({
   },
 }));
 
+// Import the service after mocking
+import {
+  SyncWorkerService,
+  syncWorkerService,
+  SyncWorkerConfig,
+  SyncWorkerStatus,
+  SweepResult,
+} from '../../../services/sync-worker.service.js';
+import { toolSyncService } from '../../../services/tool-sync.service.js';
+
 describe('SyncWorkerService', () => {
-  let mongoServer: MongoMemoryServer;
   let service: SyncWorkerService;
 
   const mockToolData = {
@@ -71,19 +105,17 @@ describe('SyncWorkerService', () => {
   };
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    process.env.MONGODB_URI = mongoUri;
-    await mongoose.connect(mongoUri);
+    await setupTestDatabase();
+    testDbReference = getTestDb();
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    testDbReference = null;
+    await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    await Tool.deleteMany({});
+    await clearToolsCollection();
     service = new SyncWorkerService({ enabled: false }); // Disable auto-start
     jest.clearAllMocks();
   });
@@ -225,7 +257,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should process tools with pending status', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'pending',
@@ -246,7 +278,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should process tools with failed status', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -267,7 +299,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should skip non-approved tools', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         approvalStatus: 'pending',
         syncMetadata: {
@@ -289,7 +321,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should skip tools exceeding max retries', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -313,7 +345,7 @@ describe('SyncWorkerService', () => {
     it('should apply exponential backoff', async () => {
       const recentAttempt = new Date(Date.now() - 1000); // 1 second ago
 
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -341,7 +373,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should prevent concurrent sweeps', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'pending',
@@ -369,7 +401,7 @@ describe('SyncWorkerService', () => {
 
   describe('forceRetryTool', () => {
     it('should call toolSyncService.retryFailedSync', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -409,7 +441,7 @@ describe('SyncWorkerService', () => {
 
   describe('forceRetryAllFailed', () => {
     it('should retry all failed tools', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         id: 'tool-1',
         slug: 'tool-1',
@@ -426,7 +458,7 @@ describe('SyncWorkerService', () => {
         },
       });
 
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         id: 'tool-2',
         slug: 'tool-2',
@@ -450,7 +482,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should track failures', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -482,7 +514,7 @@ describe('SyncWorkerService', () => {
 
   describe('getSyncStats', () => {
     it('should return overall statistics', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         id: 'synced-tool',
         slug: 'synced-tool',
@@ -499,7 +531,7 @@ describe('SyncWorkerService', () => {
         },
       });
 
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         id: 'pending-tool',
         slug: 'pending-tool',
@@ -525,7 +557,7 @@ describe('SyncWorkerService', () => {
     });
 
     it('should return per-collection statistics', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -551,7 +583,7 @@ describe('SyncWorkerService', () => {
 
   describe('resetRetryCount', () => {
     it('should reset retry count for all collections', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'failed',
@@ -570,7 +602,7 @@ describe('SyncWorkerService', () => {
 
       expect(result).toBe(true);
 
-      const tool = await Tool.findOne({ id: 'test-tool' });
+      const tool = await findTestTool('test-tool');
       expect(tool?.syncMetadata?.collections?.tools?.retryCount).toBe(0);
       expect(tool?.syncMetadata?.collections?.functionality?.retryCount).toBe(0);
     });
@@ -584,7 +616,7 @@ describe('SyncWorkerService', () => {
 
   describe('markToolAsStale', () => {
     it('should mark tool as pending with reset retry counts', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           overallStatus: 'synced',
@@ -603,7 +635,7 @@ describe('SyncWorkerService', () => {
 
       expect(result).toBe(true);
 
-      const tool = await Tool.findOne({ id: 'test-tool' });
+      const tool = await findTestTool('test-tool');
       expect(tool?.syncMetadata?.overallStatus).toBe('pending');
       expect(tool?.syncMetadata?.collections?.tools?.status).toBe('pending');
       expect(tool?.syncMetadata?.collections?.functionality?.status).toBe('pending');

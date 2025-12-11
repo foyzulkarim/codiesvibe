@@ -5,9 +5,40 @@
 
 import express, { Express, Request, Response, NextFunction } from 'express';
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { Tool } from '../../../models/tool.model.js';
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  clearToolsCollection,
+  createTestTool,
+  getTestDb,
+} from '../../test-utils/db-setup.js';
+
+// Store reference to test database for the mock
+let testDbReference: ReturnType<typeof getTestDb> | null = null;
+
+// Mock the database module to use test database
+jest.mock('../../../config/database', () => ({
+  connectToMongoDB: jest.fn(async () => {
+    if (!testDbReference) {
+      throw new Error('Test database not initialized. Call setupTestDatabase first.');
+    }
+    return testDbReference;
+  }),
+  disconnectFromMongoDB: jest.fn(async () => {}),
+  connectToQdrant: jest.fn(async () => null), // Return null to simulate no Qdrant connection in tests
+  mongoConfig: {
+    uri: 'mongodb://localhost:27017',
+    dbName: 'test',
+    options: {},
+  },
+  qdrantConfig: {
+    url: null,
+    host: 'localhost',
+    port: 6333,
+    apiKey: null,
+    collectionName: 'tools',
+  },
+}));
 
 // Mock the rate limiters module
 jest.mock('../../../middleware/rate-limiters', () => ({
@@ -148,7 +179,6 @@ import { toolSyncService } from '../../../services/tool-sync.service.js';
 
 describe('Sync Routes Integration Tests', () => {
   let app: Express;
-  let mongoServer: MongoMemoryServer;
   const mockAuthToken = 'mock-admin-token';
 
   const mockToolData = {
@@ -182,10 +212,10 @@ describe('Sync Routes Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    process.env.MONGODB_URI = mongoUri;
-    await mongoose.connect(mongoUri);
+    await setupTestDatabase();
+
+    // Set the test database reference for the mock
+    testDbReference = getTestDb();
 
     app = express();
     app.use(express.json());
@@ -193,12 +223,12 @@ describe('Sync Routes Integration Tests', () => {
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    testDbReference = null;
+    await teardownTestDatabase();
   });
 
   beforeEach(async () => {
-    await Tool.deleteMany({});
+    await clearToolsCollection();
     jest.clearAllMocks();
   });
 
@@ -423,8 +453,8 @@ describe('Sync Routes Integration Tests', () => {
 
   describe('POST /api/sync/batch/sync', () => {
     it('should sync multiple tools', async () => {
-      await Tool.create(mockToolData);
-      await Tool.create({ ...mockToolData, id: 'tool-2', slug: 'tool-2' });
+      await createTestTool(mockToolData);
+      await createTestTool({ ...mockToolData, id: 'tool-2', slug: 'tool-2' });
 
       const response = await request(app)
         .post('/api/sync/batch/sync')
@@ -448,7 +478,7 @@ describe('Sync Routes Integration Tests', () => {
     });
 
     it('should support collections parameter', async () => {
-      await Tool.create(mockToolData);
+      await createTestTool(mockToolData);
 
       const response = await request(app)
         .post('/api/sync/batch/sync')
@@ -479,7 +509,7 @@ describe('Sync Routes Integration Tests', () => {
 
   describe('GET /api/sync/tool/:toolId', () => {
     it('should return sync status for a tool', async () => {
-      await Tool.create(mockToolData);
+      await createTestTool(mockToolData);
 
       const response = await request(app)
         .get('/api/sync/tool/test-tool')
@@ -501,7 +531,7 @@ describe('Sync Routes Integration Tests', () => {
 
   describe('GET /api/sync/failed', () => {
     it('should return list of failed tools', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           ...mockToolData.syncMetadata,
@@ -521,7 +551,7 @@ describe('Sync Routes Integration Tests', () => {
     it('should support pagination', async () => {
       // Create multiple failed tools
       for (let i = 0; i < 10; i++) {
-        await Tool.create({
+        await createTestTool({
           ...mockToolData,
           id: `failed-tool-${i}`,
           slug: `failed-tool-${i}`,
@@ -546,7 +576,7 @@ describe('Sync Routes Integration Tests', () => {
 
   describe('GET /api/sync/pending', () => {
     it('should return list of pending tools', async () => {
-      await Tool.create({
+      await createTestTool({
         ...mockToolData,
         syncMetadata: {
           ...mockToolData.syncMetadata,

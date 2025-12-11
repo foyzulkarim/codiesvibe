@@ -1,4 +1,9 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
+import type {
+  QdrantPayload,
+  QdrantFilter,
+  QdrantCollectionInfo
+} from "@qdrant/js-client-rest";
 import {
   connectToQdrant,
   qdrantConfig,
@@ -11,22 +16,50 @@ import {
 } from "#config/database";
 import {
   isEnhancedVectorTypeSupported,
-  validateEnhancedVectors,
-  getVectorConfig
+  validateEnhancedVectors
 } from "#config/enhanced-qdrant-schema";
+import { CONFIG } from '#config/env.config';
 import { embeddingService } from "./embedding.service.js";
 import { createHash } from "crypto";
 import {
   VectorValidationError,
   validateSearchParams,
   validateUpsertParams,
-  validateBatchOperations,
   validateVectorType,
   validateToolId,
   validateEmbedding
 } from "#utils/vector-validation";
 import { CollectionConfigService } from "./collection-config.service.js";
 import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
+
+// Local type definitions for Qdrant service operations
+export interface OptimizerStatus {
+  ok: boolean;
+  error?: string;
+  status?: string;
+}
+
+export interface VectorParams {
+  size: number;
+  distance: 'Cosine' | 'Euclid' | 'Dot';
+  hnsw_config?: {
+    m?: number;
+    ef_construct?: number;
+    full_scan_threshold?: number;
+  };
+}
+
+export interface CollectionConfig {
+  params: {
+    vectors: VectorParams | Record<string, VectorParams>;
+    shard_number?: number;
+  };
+}
+
+export interface UpsertResult {
+  operation_id?: number;
+  status: string;
+}
 
 // Multi-collection management interfaces
 export interface CollectionInfo {
@@ -36,9 +69,9 @@ export interface CollectionInfo {
   vectorSize: number;
   distance: string;
   status: 'green' | 'yellow' | 'red';
-  optimizerStatus?: any;
+  optimizerStatus?: OptimizerStatus;
   indexedVectorsCount?: number;
-  config?: any;
+  config?: CollectionConfig;
 }
 
 export interface MultiCollectionStats {
@@ -64,18 +97,77 @@ export interface CollectionOperationResult {
 
 export class QdrantService {
   private client: QdrantClient | null = null;
+  private initPromise: Promise<void> | null = null;  // Track initialization
+  private isInitialized: boolean = false;            // Ready state flag
   private collectionConfig: CollectionConfigService;
   private contentFactory: ContentGeneratorFactory;
 
   constructor() {
-    // Initialize multi-collection services
+    // Initialize multi-collection services (synchronous)
     this.collectionConfig = new CollectionConfigService();
     this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
-    this.init();
+    // Don't auto-initialize - initialization now happens explicitly via initialize()
   }
 
-  private async init(): Promise<void> {
-    this.client = await connectToQdrant();
+  /**
+   * Initialize Qdrant client connection
+   * Safe to call multiple times - returns same promise if already initializing
+   */
+  public async initialize(): Promise<void> {
+    // Return existing initialization promise if already initializing
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Return immediately if already initialized
+    if (this.isInitialized && this.client) {
+      return Promise.resolve();
+    }
+
+    // Create initialization promise
+    this.initPromise = this._doInitialize();
+
+    try {
+      await this.initPromise;
+      this.isInitialized = true;
+    } catch (error) {
+      // Reset state on failure to allow retry
+      this.initPromise = null;
+      this.isInitialized = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Internal initialization logic
+   */
+  private async _doInitialize(): Promise<void> {
+    try {
+      this.client = await connectToQdrant();
+      if (!this.client) {
+        throw new Error('Failed to connect to Qdrant: client is null');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize Qdrant client:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if QdrantService is initialized and ready
+   */
+  public isReady(): boolean {
+    return this.isInitialized && this.client !== null;
+  }
+
+  /**
+   * Ensure client is initialized before use
+   * All public methods should call this first
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.isReady()) {
+      await this.initialize();
+    }
   }
 
   /**
@@ -99,19 +191,26 @@ export class QdrantService {
    * Search directly on a specific collection without vector type validation
    * Used for collection health checks and accessibility tests
    */
-  async searchDirectOnCollection(
+  async searchDirectOnCollection<T extends QdrantPayload = QdrantPayload>(
     embedding: number[],
     collectionName: string,
     limit: number = 1,
-    filter?: Record<string, any>
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+    filter?: QdrantFilter
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       // Validate only the embedding, not the vector type
       validateEmbedding(embedding, 768);
 
-      const searchParams: any = {
+      const searchParams: {
+        vector: number[];
+        limit: number;
+        with_payload: boolean;
+        with_vector: boolean;
+        filter?: QdrantFilter;
+      } = {
         vector: embedding,
         limit,
         with_payload: true,
@@ -122,36 +221,38 @@ export class QdrantService {
         searchParams.filter = filter;
       }
 
-      const response = await this.client.search(collectionName, searchParams);
+      const response = await this.client.search<T>(collectionName, searchParams);
 
-      return response.map((point: any) => ({
+      return response.map((point) => ({
         id: point.id.toString(),
         score: point.score,
-        payload: point.payload || {}
+        payload: point.payload || ({} as T)
       }));
 
     } catch (error) {
-      console.error(`❌ Error searching collection ${collectionName}:`, error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Error searching collection ${collectionName}:`, errorMessage);
       throw error;
     }
   }
 
-  async searchByEmbedding(
+  async searchByEmbedding<T extends QdrantPayload = QdrantPayload>(
     embedding: number[],
     limit: number = 10,
-    filter?: Record<string, any>,
+    filter?: QdrantFilter,
     vectorType?: string,
     collection?: string,
     scoreThreshold?: number
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       // Validate search parameters
-      validateSearchParams({ embedding, limit, filter, vectorType });
-      
+      validateSearchParams({ embedding, limit, filter: filter as Record<string, unknown>, vectorType });
+
       // Set default score threshold if not provided
-      const threshold = scoreThreshold !== undefined ? scoreThreshold : parseFloat(process.env.SEARCH_SCORE_THRESHOLD || '0.5');
+      const threshold = scoreThreshold !== undefined ? scoreThreshold : CONFIG.search.SEARCH_SCORE_THRESHOLD;
 
       // Determine collection name based on vector type and configuration
       const collectionName = collection || getCollectionNameForVectorType(vectorType);
@@ -164,24 +265,28 @@ export class QdrantService {
       console.log("   - limit:", limit);
       console.log("   - scoreThreshold:", threshold);
 
-      const searchParams: any = {
+      const searchParams: {
+        limit: number;
+        filter?: QdrantFilter;
+        with_payload: boolean;
+        score_threshold: number;
+        vector: number[];
+        vector_name?: string;
+      } = {
         limit: limit,
         filter: filter,
         with_payload: true,
         score_threshold: threshold,
+        vector: embedding
       };
 
       // Add vector parameter based on whether we're using named vectors or separate collections
       if (useEnhanced && vectorType) {
         // Use named vector in enhanced collection
-        searchParams.vector = embedding;
         searchParams.vector_name = vectorType;
-      } else {
-        // Use single vector in legacy collection
-        searchParams.vector = embedding;
       }
 
-      const searchResult = await this.client.search(collectionName, searchParams);
+      const searchResult = await this.client.search<T>(collectionName, searchParams);
 
       console.log("🔍 Qdrant search returned", searchResult.length, "results");
       if (searchResult.length > 0) {
@@ -189,12 +294,14 @@ export class QdrantService {
       }
 
       return searchResult.map(result => {
-        const payloadAny = result.payload as any;
-        const originalId = payloadAny?.id;
+        const payload = result.payload || ({} as T);
+        const originalId = typeof payload === 'object' && payload !== null && 'id' in payload
+          ? (payload as { id?: string }).id
+          : undefined;
         return {
           id: (originalId ?? (result.id as string)),
           score: result.score,
-          payload: result.payload,
+          payload: payload,
         };
       });
     } catch (error) {
@@ -209,16 +316,16 @@ export class QdrantService {
   /**
    * Search for similar tools using specific vector type
    */
-  async searchByVectorType(
+  async searchByVectorType<T extends QdrantPayload = QdrantPayload>(
     embedding: number[],
     vectorType: string,
     limit: number = 10,
-    filter?: Record<string, any>
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+    filter?: QdrantFilter
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
     try {
       // Validate vector type (additional validation beyond searchByEmbedding)
       validateVectorType(vectorType);
-      return this.searchByEmbedding(embedding, limit, filter, vectorType);
+      return this.searchByEmbedding<T>(embedding, limit, filter, vectorType);
     } catch (error) {
       console.error("Error searching by vector type:", error);
       if (error instanceof VectorValidationError) {
@@ -231,21 +338,22 @@ export class QdrantService {
   /**
    * Enhanced multi-vector search with parallel execution and detailed metrics
    */
-  async searchMultipleVectorTypes(
+  async searchMultipleVectorTypes<T extends QdrantPayload = QdrantPayload>(
     embedding: number[],
     vectorTypes: string[],
     limit: number = 10,
-    filter?: Record<string, any>,
+    filter?: QdrantFilter,
     options: {
       timeout?: number;
       includeMetrics?: boolean;
       maxResultsPerVector?: number;
     } = {}
   ): Promise<{
-    results: Record<string, Array<{ id: string; score: number; payload: any; rank: number; vectorType: string }>>;
+    results: Record<string, Array<{ id: string; score: number; payload: T; rank: number; vectorType: string }>>;
     metrics: Record<string, { searchTime: number; resultCount: number; avgScore: number; error?: string }>;
     totalTime: number;
   }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const startTime = Date.now();
@@ -255,7 +363,7 @@ export class QdrantService {
       maxResultsPerVector = limit * 2
     } = options;
 
-    const results: Record<string, Array<{ id: string; score: number; payload: any; rank: number; vectorType: string }>> = {};
+    const results: Record<string, Array<{ id: string; score: number; payload: T; rank: number; vectorType: string }>> = {};
     const metrics: Record<string, { searchTime: number; resultCount: number; avgScore: number; error?: string }> = {};
 
     // Create search promises for parallel execution
@@ -267,7 +375,7 @@ export class QdrantService {
         validateVectorType(vectorType);
 
         // Search with timeout
-        const searchPromise = this.searchByVectorType(
+        const searchPromise = this.searchByVectorType<T>(
           embedding,
           vectorType,
           maxResultsPerVector,
@@ -332,12 +440,19 @@ export class QdrantService {
    * Get available vector types in the enhanced collection
    */
   async getAvailableVectorTypes(): Promise<string[]> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       if (shouldUseEnhancedCollection()) {
         const collectionInfo = await this.getEnhancedCollectionInfo();
-        return Object.keys(collectionInfo.config.params.vectors_config || {});
+        const vectors = collectionInfo.config?.params?.vectors;
+
+        // Check if vectors is an object with named vectors
+        if (vectors && typeof vectors === 'object' && !('size' in vectors)) {
+          return Object.keys(vectors);
+        }
+        return getSupportedVectorTypes();
       } else {
         // For legacy collections, return supported vector types
         return getSupportedVectorTypes();
@@ -376,21 +491,21 @@ export class QdrantService {
   /**
    * Search for similar tools based on text query
    */
-  async searchByText(
+  async searchByText<T extends QdrantPayload = QdrantPayload>(
     query: string,
     limit: number = 10,
-    filter?: Record<string, any>,
+    filter?: QdrantFilter,
     vectorType?: string
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
     try {
       // Validate search parameters (excluding embedding which will be generated)
-      validateSearchParams({ query, limit, filter, vectorType });
+      validateSearchParams({ query, limit, filter: filter as Record<string, unknown>, vectorType });
 
       // Generate embedding for the query
       const embedding = await embeddingService.generateEmbedding(query);
 
       // Search using the embedding
-      return this.searchByEmbedding(embedding, limit, filter, vectorType);
+      return this.searchByEmbedding<T>(embedding, limit, filter, vectorType);
     } catch (error) {
       console.error("Error searching by text:", error);
       if (error instanceof VectorValidationError) {
@@ -403,16 +518,16 @@ export class QdrantService {
   /**
    * Search for similar tools using text query with specific vector type
    */
-  async searchByTextAndVectorType(
+  async searchByTextAndVectorType<T extends QdrantPayload = QdrantPayload>(
     query: string,
     vectorType: string,
     limit: number = 10,
-    filter?: Record<string, any>
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+    filter?: QdrantFilter
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
     try {
       // Validate vector type (additional validation beyond searchByText)
       validateVectorType(vectorType);
-      return this.searchByText(query, limit, filter, vectorType);
+      return this.searchByText<T>(query, limit, filter, vectorType);
     } catch (error) {
       console.error("Error searching by text and vector type:", error);
       if (error instanceof VectorValidationError) {
@@ -425,19 +540,20 @@ export class QdrantService {
   /**
    * Find tools similar to a reference tool
    */
-  async findSimilarTools(
+  async findSimilarTools<T extends QdrantPayload = QdrantPayload>(
     toolId: string,
     limit: number = 10,
-    filter?: Record<string, any>,
+    filter?: QdrantFilter,
     vectorType?: string
-  ): Promise<Array<{ id: string; score: number; payload: any }>> {
+  ): Promise<Array<{ id: string; score: number; payload: T }>> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       // Validate input parameters
       validateToolId(toolId);
       if (limit !== undefined) {
-        validateSearchParams({ limit, filter, vectorType });
+        validateSearchParams({ limit, filter: filter as Record<string, unknown>, vectorType });
       }
 
       // Determine collection name based on vector type and configuration
@@ -446,7 +562,11 @@ export class QdrantService {
 
       // Get the reference tool's embedding
       const pointId = this.toPointId(toolId);
-      const retrieveParams: any = {
+      const retrieveParams: {
+        ids: string[];
+        with_payload: boolean;
+        with_vector: boolean | string[];
+      } = {
         ids: [pointId],
         with_payload: false,
         with_vector: true,
@@ -489,7 +609,7 @@ export class QdrantService {
       validateEmbedding(embeddingVector);
 
       // Search for similar tools, excluding the reference tool (by payload id)
-      const searchFilter = {
+      const searchFilter: QdrantFilter = {
         ...filter,
         must_not: [
           ...(filter?.must_not || []),
@@ -497,7 +617,7 @@ export class QdrantService {
         ],
       };
 
-      return this.searchByEmbedding(embeddingVector, limit, searchFilter, vectorType);
+      return this.searchByEmbedding<T>(embeddingVector, limit, searchFilter, vectorType);
     } catch (error) {
       console.error("Error finding similar tools:", error);
       if (error instanceof VectorValidationError) {
@@ -510,7 +630,8 @@ export class QdrantService {
   /**
    * Add or update a tool's embedding
    */
-  async upsertTool(toolId: string, embedding: number[], payload: Record<string, any>): Promise<void> {
+  async upsertTool(toolId: string, embedding: number[], payload: QdrantPayload): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -536,9 +657,10 @@ export class QdrantService {
   async upsertToolVector(
     toolId: string,
     embedding: number[],
-    payload: Record<string, any>,
+    payload: QdrantPayload,
     vectorType: string
   ): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
     console.log(`[QdrantService] Upserting tool vector for type ${vectorType} with ID ${toolId}`, {
       embedding,
@@ -575,8 +697,9 @@ export class QdrantService {
   async upsertToolMultiVector(
     toolId: string,
     vectors: { [vectorType: string]: number[] },
-    payload: Record<string, any>
+    payload: QdrantPayload
   ): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -634,8 +757,9 @@ export class QdrantService {
   async upsertToolEnhanced(
     toolId: string,
     vectors: { [vectorType: string]: number[] },
-    payload: Record<string, any>
+    payload: QdrantPayload
   ): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -675,8 +799,9 @@ export class QdrantService {
     toolId: string,
     vectorType: string,
     embedding: number[],
-    payload: Record<string, any>
+    payload: QdrantPayload
   ): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -717,6 +842,7 @@ export class QdrantService {
    * Delete a tool's embedding
    */
   async deleteTool(toolId: string): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -734,6 +860,7 @@ export class QdrantService {
    * Delete a tool's embedding for specific vector type
    */
   async deleteToolVector(toolId: string, vectorType: string): Promise<void> {
+    await this.ensureInitialized();
     if (!isSupportedVectorType(vectorType)) {
       throw new Error(`Unsupported vector type: ${vectorType}. Supported types: ${getSupportedVectorTypes().join(', ')}`);
     }
@@ -757,6 +884,7 @@ export class QdrantService {
    * Delete all vectors for a tool across all collections
    */
   async deleteToolAllVectors(toolId: string): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -786,6 +914,7 @@ export class QdrantService {
    * Clear all points from the collection (for force re-indexing)
    */
   async clearAllPoints(): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -804,6 +933,7 @@ export class QdrantService {
    * Clear all points from specific vector type collection
    */
   async clearAllPointsForVectorType(vectorType: string): Promise<void> {
+    await this.ensureInitialized();
     if (!isSupportedVectorType(vectorType)) {
       throw new Error(`Unsupported vector type: ${vectorType}. Supported types: ${getSupportedVectorTypes().join(', ')}`);
     }
@@ -828,6 +958,7 @@ export class QdrantService {
    * Clear all points from all collections (for force re-indexing)
    */
   async clearAllPointsFromAllCollections(): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -850,7 +981,8 @@ export class QdrantService {
   /**
    * Get collection info
    */
-  async getCollectionInfo(): Promise<any> {
+  async getCollectionInfo(): Promise<QdrantCollectionInfo> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -864,7 +996,8 @@ export class QdrantService {
   /**
    * Get collection info for specific vector type
    */
-  async getCollectionInfoForVectorType(vectorType: string): Promise<any> {
+  async getCollectionInfoForVectorType(vectorType: string): Promise<QdrantCollectionInfo> {
+    await this.ensureInitialized();
     if (!isSupportedVectorType(vectorType)) {
       throw new Error(`Unsupported vector type: ${vectorType}. Supported types: ${getSupportedVectorTypes().join(', ')}`);
     }
@@ -883,7 +1016,8 @@ export class QdrantService {
   /**
    * Get enhanced collection info
    */
-  async getEnhancedCollectionInfo(): Promise<any> {
+  async getEnhancedCollectionInfo(): Promise<QdrantCollectionInfo> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -897,11 +1031,12 @@ export class QdrantService {
   /**
    * Get info for all collections including enhanced
    */
-  async getAllCollectionsInfo(): Promise<{ [collectionType: string]: any }> {
+  async getAllCollectionsInfo(): Promise<{ [collectionType: string]: QdrantCollectionInfo | { error: string } }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
-      const allInfo: { [collectionType: string]: any } = {};
+      const allInfo: { [collectionType: string]: QdrantCollectionInfo | { error: string } } = {};
 
       // Get legacy collection info
       allInfo.legacy = await this.getCollectionInfo();
@@ -950,6 +1085,7 @@ export class QdrantService {
    * Clear all points from enhanced collection
    */
   async clearEnhancedCollection(): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -968,6 +1104,7 @@ export class QdrantService {
    * Delete a tool's vectors from enhanced collection
    */
   async deleteToolFromEnhanced(toolId: string): Promise<void> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -986,6 +1123,7 @@ export class QdrantService {
    * Get vector types available for a tool in enhanced collection
    */
   async getToolVectorTypes(toolId: string): Promise<string[]> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1020,7 +1158,14 @@ export class QdrantService {
    * Health check for Qdrant service
    * Verifies connection and collection availability
    */
-  async healthCheck(): Promise<{ status: string; collections: any; enhanced?: any }> {
+  async healthCheck(): Promise<{
+    status: string;
+    collections: {
+      legacy: QdrantCollectionInfo;
+      enhanced?: QdrantCollectionInfo | { error: string };
+    };
+  }> {
+    await this.ensureInitialized();
     if (!this.client) {
       throw new Error("Qdrant client not initialized");
     }
@@ -1028,7 +1173,13 @@ export class QdrantService {
     try {
       // Try to get collection info to verify connection
       const legacyInfo = await this.getCollectionInfo();
-      const healthData: any = {
+      const healthData: {
+        status: string;
+        collections: {
+          legacy: QdrantCollectionInfo;
+          enhanced?: QdrantCollectionInfo | { error: string };
+        };
+      } = {
         status: "healthy",
         collections: {
           legacy: legacyInfo
@@ -1077,6 +1228,7 @@ export class QdrantService {
    * Get comprehensive statistics for all multi-collection architecture collections
    */
   async getMultiCollectionStats(): Promise<MultiCollectionStats> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
@@ -1092,7 +1244,7 @@ export class QdrantService {
         collections[collectionName] = info;
         totalVectors += info.pointsCount;
         if (info.status === 'green') healthyCount++;
-      } catch (error) {
+      } catch {
         collections[collectionName] = {
           name: collectionName,
           exists: false,
@@ -1100,7 +1252,11 @@ export class QdrantService {
           vectorSize: 0,
           distance: 'unknown',
           status: 'red',
-          config: { error: error instanceof Error ? error.message : String(error) }
+          config: {
+            params: {
+              vectors: { size: 0, distance: 'Cosine' }
+            }
+          }
         };
       }
     }
@@ -1128,6 +1284,7 @@ export class QdrantService {
    * Get information for a specific collection by name
    */
   async getCollectionInfoForCollection(collectionName: string): Promise<CollectionInfo> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1163,6 +1320,13 @@ export class QdrantService {
       }
       const status = (collection.status === 'grey' ? 'yellow' : collection.status) || 'green';
 
+      // Map optimizer_status to OptimizerStatus
+      const optimizerStatus: OptimizerStatus | undefined = collection.optimizer_status
+        ? (typeof collection.optimizer_status === 'object'
+          ? collection.optimizer_status as OptimizerStatus
+          : { ok: true, status: String(collection.optimizer_status) })
+        : undefined;
+
       return {
         name: collectionName,
         exists: true,
@@ -1170,12 +1334,24 @@ export class QdrantService {
         vectorSize: vectorSize,
         distance: distance,
         status: status as 'green' | 'yellow' | 'red',
-        optimizerStatus: collection.optimizer_status,
+        optimizerStatus,
         indexedVectorsCount: collection.indexed_vectors_count,
-        config: collection.config
+        config: collection.config as CollectionConfig | undefined
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
+      // Handle collection not found errors (case-insensitive)
+      if (error instanceof Error && error.message.toLowerCase().includes('not found')) {
+        return {
+          name: collectionName,
+          exists: false,
+          pointsCount: 0,
+          vectorSize: 0,
+          distance: 'unknown',
+          status: 'red'
+        };
+      }
+      // Also check for 404 status codes from Qdrant API
+      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
         return {
           name: collectionName,
           exists: false,
@@ -1193,6 +1369,7 @@ export class QdrantService {
    * Create collections based on collection configuration
    */
   async createMultiCollections(): Promise<CollectionOperationResult[]> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const enabledCollections = this.collectionConfig.getEnabledCollectionNames();
@@ -1229,6 +1406,7 @@ export class QdrantService {
    * Create a single collection with proper configuration
    */
   async createCollection(collectionName: string): Promise<CollectionOperationResult> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1274,7 +1452,18 @@ export class QdrantService {
         message: `Collection ${collectionName} created successfully`
       };
     } catch (error) {
-      throw new Error(`Failed to create collection ${collectionName}: ${error instanceof Error ? error.message : String(error)}`);
+      // Handle conflict error (collection already exists) - this can happen in race conditions
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.toLowerCase().includes('conflict') || errorMessage.toLowerCase().includes('already exists')) {
+        return {
+          success: true,
+          collection: collectionName,
+          operation: 'create',
+          message: 'Collection already exists'
+        };
+      }
+
+      throw new Error(`Failed to create collection ${collectionName}: ${errorMessage}`);
     }
   }
 
@@ -1282,6 +1471,7 @@ export class QdrantService {
    * Delete collections (use with caution!)
    */
   async deleteMultiCollections(collectionNames?: string[]): Promise<CollectionOperationResult[]> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const collectionsToDelete = collectionNames || this.collectionConfig.getEnabledCollectionNames();
@@ -1318,6 +1508,7 @@ export class QdrantService {
    * Delete a single collection
    */
   async deleteCollection(collectionName: string): Promise<CollectionOperationResult> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1349,6 +1540,7 @@ export class QdrantService {
    * Clear all points from specific collections
    */
   async clearMultiCollections(collectionNames?: string[]): Promise<CollectionOperationResult[]> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const collectionsToClear = collectionNames || this.collectionConfig.getEnabledCollectionNames();
@@ -1389,12 +1581,12 @@ export class QdrantService {
   /**
    * Enhanced search across multiple collections with result merging
    */
-  async searchMultiCollection(
+  async searchMultiCollection<T extends QdrantPayload = QdrantPayload>(
     embedding: number[],
     options: {
       collections?: string[];
       limit?: number;
-      filter?: Record<string, any>;
+      filter?: QdrantFilter;
       mergeStrategy?: 'weighted' | 'ranked' | 'best';
       timeout?: number;
     } = {}
@@ -1402,13 +1594,14 @@ export class QdrantService {
     results: Array<{
       id: string;
       score: number;
-      payload: any;
+      payload: T;
       collection: string;
       rank: number;
     }>;
     collectionStats: Record<string, { resultCount: number; avgScore: number; searchTime: number }>;
     totalSearchTime: number;
   }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     const {
@@ -1430,7 +1623,7 @@ export class QdrantService {
 
       try {
         const vectorType = this.collectionConfig.getVectorTypeForCollection(collectionName);
-        const searchPromise = this.searchByEmbedding(embedding, limit, filter, vectorType);
+        const searchPromise = this.searchByEmbedding<T>(embedding, limit, filter, vectorType);
         const results = timeout > 0
           ? await this.withTimeout(searchPromise, timeout)
           : await searchPromise;
@@ -1477,7 +1670,7 @@ export class QdrantService {
     const allResults: Array<{
       id: string;
       score: number;
-      payload: any;
+      payload: T;
       collection: string;
       rank: number;
     }> = [];
@@ -1507,11 +1700,11 @@ export class QdrantService {
   /**
    * Merge search results from multiple collections using different strategies
    */
-  private mergeSearchResults(
+  private mergeSearchResults<T extends QdrantPayload>(
     results: Array<{
       id: string;
       score: number;
-      payload: any;
+      payload: T;
       collection: string;
       rank: number;
     }>,
@@ -1520,24 +1713,35 @@ export class QdrantService {
   ): Array<{
     id: string;
     score: number;
-    payload: any;
+    payload: T;
     collection: string;
     rank: number;
   }> {
     // Remove duplicates (same toolId across collections)
-    const uniqueResults = new Map<string, any>();
+    const uniqueResults = new Map<string, {
+      id: string;
+      score: number;
+      payload: T;
+      collection: string;
+      rank: number;
+    }>();
 
     for (const result of results) {
-      const toolId = result.payload?.toolId || result.id;
+      const payload = result.payload;
+      const toolId = (typeof payload === 'object' && payload !== null && 'toolId' in payload)
+        ? (payload as { toolId?: string }).toolId
+        : result.id;
 
-      if (!uniqueResults.has(toolId)) {
-        uniqueResults.set(toolId, result);
+      if (!uniqueResults.has(toolId || result.id)) {
+        uniqueResults.set(toolId || result.id, result);
       } else {
         // Merge if tool appears in multiple collections
-        const existing = uniqueResults.get(toolId);
+        const existing = uniqueResults.get(toolId || result.id);
+        if (!existing) continue;
+
         if (strategy === 'best') {
           if (result.score > existing.score) {
-            uniqueResults.set(toolId, result);
+            uniqueResults.set(toolId || result.id, result);
           }
         } else if (strategy === 'weighted') {
           // Weight by collection priority and combine scores
@@ -1545,7 +1749,7 @@ export class QdrantService {
           const existingPriority = this.getCollectionPriority(existing.collection);
 
           if (result.score * collectionPriority > existing.score * existingPriority) {
-            uniqueResults.set(toolId, result);
+            uniqueResults.set(toolId || result.id, result);
           }
         }
       }
@@ -1690,6 +1894,7 @@ export class QdrantService {
     payload: Record<string, unknown>,
     collectionName: string
   ): Promise<{ success: boolean; error?: string }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1702,7 +1907,9 @@ export class QdrantService {
       };
 
       // Type assertion needed as setPayload exists at runtime but not in TS definitions
-      await (this.client as any).setPayload(collectionName, {
+      await (this.client as unknown as {
+        setPayload: (collection: string, params: { points: string[]; payload: Record<string, unknown> }) => Promise<void>;
+      }).setPayload(collectionName, {
         points: [pointId],
         payload: payloadWithTimestamp,
       });
@@ -1776,13 +1983,16 @@ export class QdrantService {
     payload: Record<string, unknown>,
     collectionName: string
   ): Promise<{ success: boolean; error?: string }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       const pointId = this.toPointId(toolId);
 
       // Type assertion needed as overwritePayload exists at runtime but not in TS definitions
-      await (this.client as any).overwritePayload(collectionName, {
+      await (this.client as unknown as {
+        overwritePayload: (collection: string, params: { points: string[]; payload: Record<string, unknown> }) => Promise<void>;
+      }).overwritePayload(collectionName, {
         points: [pointId],
         payload: {
           ...payload,
@@ -1811,13 +2021,16 @@ export class QdrantService {
     fields: string[],
     collectionName: string
   ): Promise<{ success: boolean; error?: string }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
       const pointId = this.toPointId(toolId);
 
       // Type assertion needed as deletePayload exists at runtime but not in TS definitions
-      await (this.client as any).deletePayload(collectionName, {
+      await (this.client as unknown as {
+        deletePayload: (collection: string, params: { points: string[]; keys: string[] }) => Promise<void>;
+      }).deletePayload(collectionName, {
         points: [pointId],
         keys: fields,
       });
@@ -1843,6 +2056,7 @@ export class QdrantService {
     toolId: string,
     collectionName: string
   ): Promise<{ success: boolean; payload?: Record<string, unknown>; error?: string }> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {
@@ -1876,6 +2090,7 @@ export class QdrantService {
    * @param collectionName - Target collection name
    */
   async toolExistsInCollection(toolId: string, collectionName: string): Promise<boolean> {
+    await this.ensureInitialized();
     if (!this.client) throw new Error("Qdrant client not connected");
 
     try {

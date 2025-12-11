@@ -157,7 +157,7 @@ export class CollectionConfigService {
       }
 
       // Check that all weightings are positive numbers
-      for (const [field, weight] of Object.entries(config.weightings)) {
+      for (const [, weight] of Object.entries(config.weightings)) {
         if (typeof weight !== 'number' || weight <= 0) {
           return false;
         }
@@ -239,7 +239,7 @@ export class CollectionConfigService {
   /**
    * Get collection configuration summary
    */
-  getCollectionSummary(): Record<string, any> {
+  getCollectionSummary(): Record<string, unknown> {
     return {
       totalCollections: this.collections.length,
       enabledCollections: this.getEnabledCollections().length,

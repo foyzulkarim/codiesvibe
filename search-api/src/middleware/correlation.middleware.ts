@@ -51,7 +51,7 @@ export function correlationMiddleware(req: SearchRequest, res: Response, next: N
     () => {
       // Override res.end to log response completion
       const originalEnd = res.end;
-      res.end = function(this: Response, ...args: any[]): Response {
+      res.end = function(this: Response, chunk?: unknown, encodingOrCb?: unknown, cb?: () => void): Response {
         const responseTime = Date.now() - (req.startTime || Date.now());
 
         const responseContext: SearchLogContext = {
@@ -73,8 +73,12 @@ export function correlationMiddleware(req: SearchRequest, res: Response, next: N
           });
         }
 
-        return originalEnd.apply(this, args);
-      } as any;
+        // Call original with proper argument handling
+        if (typeof encodingOrCb === 'function') {
+          return originalEnd.call(this, chunk, encodingOrCb);
+        }
+        return originalEnd.call(this, chunk, encodingOrCb as BufferEncoding | undefined, cb);
+      };
 
       next();
     }

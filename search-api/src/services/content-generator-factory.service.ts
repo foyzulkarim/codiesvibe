@@ -1,4 +1,4 @@
-import { ToolData, ToolDataValidator } from '../types/tool.types.js';
+import { ToolData } from '../types/tool.types.js';
 import { CollectionConfigService } from './collection-config.service.js';
 
 export interface ContentGenerator {
@@ -107,7 +107,12 @@ export class ContentGeneratorFactory {
     fieldsUsed: string[];
     weightingApplied: boolean;
   }> {
-    const stats: Record<string, any> = {};
+    const stats: Record<string, {
+      length: number;
+      wordCount: number;
+      fieldsUsed: string[];
+      weightingApplied: boolean;
+    }> = {};
 
     for (const collectionName of collections) {
       try {
