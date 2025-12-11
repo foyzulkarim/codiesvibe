@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import promClient from 'prom-client';
-import { searchLogger } from '../config/logger.js';
+import { searchLogger } from '../../config/logger.js';
 
 export class MetricsService {
   private register: promClient.Registry;

@@ -1,4 +1,4 @@
-import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
+import { QdrantCollectionConfigService } from '../database/qdrant-collection-config.service.js';
 
 export interface VectorTypeMetadata {
   name: string;

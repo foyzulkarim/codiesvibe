@@ -1,5 +1,5 @@
 import { StateAnnotation } from '../../types/state.js';
-import { planCacheService } from '../../services/plan-cache.service.js';
+import { planCacheService } from '../../services/llm/plan-cache.service.js';
 import { CONFIG } from '#config/env.config';
 import type { LogMetadata } from '#types/logger.types.js';
 

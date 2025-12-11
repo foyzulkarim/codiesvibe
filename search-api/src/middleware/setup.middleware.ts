@@ -17,7 +17,7 @@ import { compressionOptions } from '../config/compression.config.js';
 import { correlationMiddleware } from './correlation.middleware.js';
 import { globalTimeout } from './timeout.middleware.js';
 import { limiter } from './rate-limiters.js';
-import { metricsService } from '../services/metrics.service.js';
+import { metricsService } from '../services/infrastructure/metrics.service.js';
 import { searchLogger } from '../config/logger.js';
 
 /**

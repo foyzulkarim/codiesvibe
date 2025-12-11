@@ -1,30 +1,75 @@
 # Search API Services
 
-This directory contains the core services for the search API, providing functionality for data access, vector operations, multi-collection orchestration, and content generation.
+This directory contains the core services for the search API, organized into logical subdirectories for better navigation and maintainability.
+
+## Directory Structure
+
+```
+services/
+├── database/           # Data persistence layer
+│   ├── mongodb.service.ts
+│   ├── qdrant.service.ts
+│   └── qdrant-collection-config.service.ts
+├── embedding/          # Vector embedding generation
+│   ├── embedding.service.ts
+│   ├── vector-type-registry.service.ts
+│   └── content-generator-factory.service.ts
+├── indexing/           # Change detection
+│   └── content-hash.service.ts
+├── sync/               # MongoDB-Qdrant synchronization
+│   ├── tool-sync.service.ts
+│   └── sync-worker.service.ts
+├── search/             # Search orchestration
+│   └── multi-collection-orchestrator.service.ts
+├── llm/                # LLM integration
+│   ├── llm.service.ts
+│   └── plan-cache.service.ts
+├── infrastructure/     # Operational services
+│   ├── health-check.service.ts
+│   ├── metrics.service.ts
+│   ├── circuit-breaker.service.ts
+│   └── graceful-shutdown.service.ts
+└── index.ts            # Re-exports all services
+```
 
 ## Services Overview
 
-### Core Data Services
+### Database Services (`database/`)
 
-- **MongoDBService** (`mongodb.service.ts`) - Handles all MongoDB operations for tool data storage and retrieval
-- **QdrantService** (`qdrant.service.ts`) - Manages vector database operations with multi-collection support
-- **EmbeddingService** (`embedding.service.ts`) - Generates and caches text embeddings using Ollama
+- **MongoDBService** - Handles all MongoDB operations for tool data storage and retrieval
+- **QdrantService** - Manages vector database operations with multi-collection support
+- **QdrantCollectionConfigService** - Configuration management for Qdrant vector collections
 
-### Indexing & Vector Services
+### Embedding Services (`embedding/`)
 
-- **VectorIndexingService** (`vector-indexing.service.ts`) - Handles vector indexing operations with progress tracking
-- **EnhancedVectorIndexingService** (`enhanced-vector-indexing.service.ts`) - Advanced multi-vector indexing with enhanced schema support
-- **VectorSeedingService** (`vector-seeding.service.ts`) - Manages vector data seeding with progress monitoring
+- **EmbeddingService** - Generates and caches text embeddings using Together AI (with batch support)
+- **VectorTypeRegistryService** - Registry for vector types with metadata and combinations
+- **ContentGeneratorFactory** - Factory for creating collection-specific content generators
 
-### Collection Management Services
+### Indexing Services (`indexing/`)
 
-- **QdrantCollectionConfigService** (`qdrant-collection-config.service.ts`) - Configuration management for Qdrant vector collections with purposes and weightings
-- **MultiCollectionOrchestrator** (`multi-collection-orchestrator.service.ts`) - Orchestrates search across multiple collections with intelligent routing
-- **VectorTypeRegistryService** (`vector-type-registry.service.ts`) - Registry for vector types with metadata and combinations
+- **ContentHashService** - Change detection for sync optimization via SHA-256 hashing
 
-### Content Generation Services
+### Sync Services (`sync/`)
 
-- **ContentGeneratorFactory** (`content-generator-factory.service.ts`) - Factory for creating collection-specific content generators
+- **ToolSyncService** - Per-collection synchronization between MongoDB and Qdrant
+- **SyncWorkerService** - Background worker for retrying failed syncs
+
+### Search Services (`search/`)
+
+- **MultiCollectionOrchestrator** - Orchestrates search across multiple collections with intelligent routing
+
+### LLM Services (`llm/`)
+
+- **LLMService** - LLM integration for intent extraction and query planning
+- **PlanCacheService** - Cache for LLM-generated query plans
+
+### Infrastructure Services (`infrastructure/`)
+
+- **HealthCheckService** - Comprehensive health monitoring
+- **MetricsService** - Prometheus metrics collection
+- **CircuitBreakerManager** - Prevents cascading failures
+- **GracefulShutdownService** - Clean shutdown handling
 
 ## Collection Architecture
 
@@ -79,10 +124,28 @@ The system uses a multi-collection approach with four primary collections:
 
 ## Service Usage Examples
 
+### Importing Services
+
+Services can be imported from their subdirectories or from the main index:
+
+```typescript
+// Import from subdirectory (recommended for clarity)
+import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service';
+import { MultiCollectionOrchestrator } from '#services/search/multi-collection-orchestrator.service';
+import { embeddingService } from '#services/embedding/embedding.service';
+
+// Import from main index (convenient for multiple imports)
+import {
+  mongoDBService,
+  qdrantService,
+  embeddingService
+} from '#services';
+```
+
 ### Qdrant Collection Configuration Service
 
 ```typescript
-import { QdrantCollectionConfigService } from './services/qdrant-collection-config.service';
+import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service';
 
 const collectionConfig = new QdrantCollectionConfigService();
 
@@ -102,7 +165,7 @@ const semanticCollections = collectionConfig.getCollectionsForVectorTypes(['sema
 ### Multi-Collection Orchestrator
 
 ```typescript
-import { MultiCollectionOrchestrator } from './services/multi-collection-orchestrator.service';
+import { MultiCollectionOrchestrator } from '#services/search/multi-collection-orchestrator.service';
 
 const orchestrator = new MultiCollectionOrchestrator(
   collectionConfig,
@@ -122,27 +185,10 @@ console.log('Collection stats:', result.collectionStats);
 console.log('Query analysis:', result.queryAnalysis);
 ```
 
-### Enhanced Vector Indexing
-
-```typescript
-import { enhancedVectorIndexingService } from './services/enhanced-vector-indexing.service';
-
-// Index all tools with multiple vectors
-await enhancedVectorIndexingService.indexAllToolsMultiVector([
-  'semantic',
-  'entities.functionality',
-  'entities.categories'
-]);
-
-// Validate multi-vector index
-const healthReport = await enhancedVectorIndexingService.validateMultiVectorIndex();
-console.log('Index health:', healthReport);
-```
-
 ### Content Generation
 
 ```typescript
-import { ContentGeneratorFactory } from './services/content-generator-factory.service';
+import { ContentGeneratorFactory } from '#services/embedding/content-generator-factory.service';
 
 const contentFactory = new ContentGeneratorFactory(collectionConfig);
 
@@ -165,7 +211,7 @@ const multiContent = contentFactory.generateForCollections(toolData, [
 ### Vector Type Registry
 
 ```typescript
-import { VectorTypeRegistryService } from './services/vector-type-registry.service';
+import { VectorTypeRegistryService } from '#services/embedding/vector-type-registry.service';
 
 const vectorRegistry = new VectorTypeRegistryService(collectionConfig);
 
@@ -280,11 +326,20 @@ Each service can be configured through:
 
 When adding new services:
 
-1. Follow the existing service pattern with proper error handling
-2. Include comprehensive TypeScript types and interfaces
-3. Add progress tracking for long-running operations
-4. Include health check methods
-5. Update the services index file (`index.ts`)
+1. Place the service in the appropriate subdirectory:
+   - `database/` - Data persistence (MongoDB, Qdrant)
+   - `embedding/` - Vector embedding generation
+   - `indexing/` - Vector indexing pipelines
+   - `sync/` - Data synchronization
+   - `search/` - Search orchestration
+   - `llm/` - LLM integration
+   - `infrastructure/` - Operational services (health, metrics, etc.)
+2. Follow the existing service pattern with proper error handling
+3. Include comprehensive TypeScript types and interfaces
+4. Add progress tracking for long-running operations
+5. Include health check methods
+6. Export from the subdirectory's `index.ts` file
+7. Re-export from the main `services/index.ts` if needed
 
 ### Adding New Collections
 
@@ -313,9 +368,6 @@ const qdrantHealth = await qdrantService.getCollectionInfo();
 
 // Check collection consistency
 const isConsistent = await orchestrator.validateCollectionConsistency();
-
-// Check vector index health
-const indexHealth = await enhancedVectorIndexingService.validateMultiVectorIndex();
 ```
 
 ### Integration Testing

@@ -19,7 +19,7 @@ import {
   validateEnhancedVectors
 } from "#config/enhanced-qdrant-schema";
 import { CONFIG } from '#config/env.config';
-import { embeddingService } from "./embedding.service.js";
+import { embeddingService } from "../embedding/embedding.service.js";
 import { createHash } from "crypto";
 import {
   VectorValidationError,
@@ -30,7 +30,7 @@ import {
   validateEmbedding
 } from "#utils/vector-validation";
 import { QdrantCollectionConfigService } from "./qdrant-collection-config.service.js";
-import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
+import { ContentGeneratorFactory } from "../embedding/content-generator-factory.service.js";
 
 // Local type definitions for Qdrant service operations
 export interface OptimizerStatus {

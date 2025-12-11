@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z, ZodError, ZodIssue } from 'zod';
-import { toolCrudService } from '../services/tool-crud.service.js';
+import { toolCrudService } from '#domains/tools/tool-crud.service.js';
 import {
   CreateToolSchema,
   UpdateToolSchema,

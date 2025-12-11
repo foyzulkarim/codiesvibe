@@ -4,7 +4,7 @@
  */
 
 import CircuitBreaker from 'opossum';
-import { searchLogger } from '../config/logger.js';
+import { searchLogger } from '../../config/logger.js';
 import type { CircuitBreakerFunction } from '#types/circuit-breaker.types.js';
 
 export interface CircuitBreakerConfig {

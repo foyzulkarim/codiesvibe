@@ -140,12 +140,12 @@ async function setupCacheIndexes(): Promise<void> {
     // Sample data insertion for testing
     console.log("\n🧪 Inserting sample cache data for testing...");
 
-    // Use Together AI embedding service
-    const { productionEmbeddingService } = await import("#services/production-embedding.service");
-    await productionEmbeddingService.initialize();
+    // Use embedding service
+    const { embeddingService } = await import("#services/embedding/embedding.service");
+    await embeddingService.initialize();
 
     const sampleQuery = "code editor";
-    const sampleEmbedding = await productionEmbeddingService.generateEmbedding(sampleQuery);
+    const sampleEmbedding = await embeddingService.generateEmbedding(sampleQuery);
 
     const samplePlan = {
       originalQuery: sampleQuery,

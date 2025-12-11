@@ -1,6 +1,6 @@
 import { Db, ObjectId } from "mongodb";
 import { connectToMongoDB, disconnectFromMongoDB } from "#config/database";
-import { productionEmbeddingService } from "./production-embedding.service.js";
+import { embeddingService } from "../embedding/embedding.service.js";
 import { embeddingConfig } from "#config/constants";
 import { IntentState } from "#types/intent-state";
 import { QueryPlan } from "#types/query-plan";
@@ -97,7 +97,7 @@ export class PlanCacheService {
 
     try {
       // Generate embedding for the query using Together AI
-      const queryEmbedding = await productionEmbeddingService.generateEmbedding(query);
+      const queryEmbedding = await embeddingService.generateEmbedding(query);
 
       // Generate query hash for exact matching
       const queryHash = this.generateQueryHash(query);
@@ -390,7 +390,7 @@ export class PlanCacheService {
       await this.ensureConnected();
 
       // Test embedding generation with Together AI
-      await productionEmbeddingService.initialize();
+      await embeddingService.initialize();
 
       // Log model information
       console.log(`✅ PlanCacheService initialized successfully`);

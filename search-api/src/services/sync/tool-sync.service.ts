@@ -5,19 +5,19 @@
  * Provides per-collection sync with change detection and status tracking.
  */
 
-import { qdrantService } from './qdrant.service.js';
-import { embeddingService } from './embedding.service.js';
-import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
-import { ContentGeneratorFactory } from './content-generator-factory.service.js';
+import { qdrantService } from '../database/qdrant.service.js';
+import { embeddingService } from '../embedding/embedding.service.js';
+import { QdrantCollectionConfigService } from '../database/qdrant-collection-config.service.js';
+import { ContentGeneratorFactory } from '../embedding/content-generator-factory.service.js';
 import {
   contentHashService,
-} from './content-hash.service.js';
+} from '../indexing/content-hash.service.js';
 import {
   ITool,
   SyncCollectionName,
-} from '../types/tool.interfaces.js';
-import { mongoDBService } from './mongodb.service.js';
-import { ToolData, ToolDataValidator } from '../types/tool.types.js';
+} from '../../types/tool.interfaces.js';
+import { mongoDBService } from '../database/mongodb.service.js';
+import { ToolData, ToolDataValidator } from '../../types/tool.types.js';
 
 // ============================================
 // TYPES AND INTERFACES
@@ -700,7 +700,7 @@ export class ToolSyncService {
       industries: tool.industries,
       userTypes: tool.userTypes,
       pricing: tool.pricing,
-      pricingModel: tool.pricingModel as unknown as import('../types/tool.types.js').PricingModelEnum[],
+      pricingModel: tool.pricingModel as unknown as import('../../types/tool.types.js').PricingModelEnum[],
       pricingUrl: tool.pricingUrl,
       interface: tool.interface,
       functionality: tool.functionality,
@@ -708,7 +708,7 @@ export class ToolSyncService {
       logoUrl: tool.logoUrl,
       website: tool.website,
       documentation: tool.documentation,
-      status: tool.status as import('../types/tool.types.js').ToolStatus,
+      status: tool.status as import('../../types/tool.types.js').ToolStatus,
       contributor: tool.contributor,
       dateAdded: tool.dateAdded,
       lastUpdated: tool.lastUpdated,

@@ -33,6 +33,10 @@ export {
   getEnabledCollections,
 } from './tools.validators.js';
 
+// Export CRUD service
+export { toolCrudService } from './tool-crud.service.js';
+export type { ToolCrudService } from './tool-crud.service.js';
+
 // Import for convenient namespace and backward-compatible exports
 import {
   toolsSchema,

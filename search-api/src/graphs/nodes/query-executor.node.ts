@@ -1,9 +1,9 @@
 import { StateAnnotation } from '../../types/state.js';
 import { QueryPlan } from '../../types/query-plan.js';
 import { Candidate, QueryExecutorOutput } from '../../types/candidate.js';
-import { QdrantService } from '../../services/qdrant.service.js';
-import { MongoDBService } from '../../services/mongodb.service.js';
-import { EmbeddingService } from '../../services/embedding.service.js';
+import { QdrantService } from '../../services/database/qdrant.service.js';
+import { MongoDBService } from '../../services/database/mongodb.service.js';
+import { EmbeddingService } from '../../services/embedding/embedding.service.js';
 import { fuseResults, groupCandidatesBySource } from '../../utils/fusion.js';
 import { CONFIG } from '#config/env.config';
 import type { LogMetadata } from '#types/logger.types.js';

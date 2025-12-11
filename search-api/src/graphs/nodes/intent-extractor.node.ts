@@ -1,5 +1,5 @@
 import { StateAnnotation } from '../../types/state.js';
-import { llmService } from '../../services/llm.service.js';
+import { llmService } from '../../services/llm/llm.service.js';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { generateIntentExtractionPrompt } from '../../core/prompts/prompt.generator.js';
 import { CONFIG } from '#config/env.config';

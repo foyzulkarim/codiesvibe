@@ -6,9 +6,9 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { syncWorkerService } from '../services/sync-worker.service.js';
-import { toolSyncService } from '../services/tool-sync.service.js';
-import { mongoDBService } from '../services/mongodb.service.js';
+import { syncWorkerService } from '../services/sync/sync-worker.service.js';
+import { toolSyncService } from '../services/sync/tool-sync.service.js';
+import { mongoDBService } from '../services/database/mongodb.service.js';
 import { SyncCollectionName } from '../types/tool.interfaces.js';
 import { searchLogger } from '../config/logger.js';
 import { SearchRequest } from '../middleware/correlation.middleware.js';

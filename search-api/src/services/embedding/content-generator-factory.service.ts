@@ -1,5 +1,5 @@
-import { ToolData } from '../types/tool.types.js';
-import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
+import { ToolData } from '../../types/tool.types.js';
+import { QdrantCollectionConfigService } from '../database/qdrant-collection-config.service.js';
 
 export interface ContentGenerator {
   generate(tool: ToolData): string;
