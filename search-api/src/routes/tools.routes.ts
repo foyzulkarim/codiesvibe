@@ -14,7 +14,7 @@ import {
 } from '../schemas/tool.schema.js';
 import { searchLogger } from '../config/logger.js';
 import { SearchRequest } from '../middleware/correlation.middleware.js';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
+import { toolsSchema } from '#domains/tools/index.js';
 import { clerkRequireAuth } from '../middleware/clerk-auth.middleware.js';
 import {
   attachUserRole,
@@ -141,14 +141,14 @@ router.get('/', validateQuery(GetToolsQuerySchema), async (req: Request, res: Re
  */
 router.get('/vocabularies', clerkRequireAuth, attachUserRole, (_req: Request, res: Response) => {
   res.json({
-    categories: CONTROLLED_VOCABULARIES.categories,
-    industries: CONTROLLED_VOCABULARIES.industries,
-    userTypes: CONTROLLED_VOCABULARIES.userTypes,
-    interface: CONTROLLED_VOCABULARIES.interface,
-    functionality: CONTROLLED_VOCABULARIES.functionality,
-    deployment: CONTROLLED_VOCABULARIES.deployment,
-    pricingModels: CONTROLLED_VOCABULARIES.pricingModels,
-    billingPeriods: CONTROLLED_VOCABULARIES.billingPeriods,
+    categories: toolsSchema.vocabularies.categories,
+    industries: toolsSchema.vocabularies.industries,
+    userTypes: toolsSchema.vocabularies.userTypes,
+    interface: toolsSchema.vocabularies.interface,
+    functionality: toolsSchema.vocabularies.functionality,
+    deployment: toolsSchema.vocabularies.deployment,
+    pricingModels: toolsSchema.vocabularies.pricingModels,
+    billingPeriods: toolsSchema.vocabularies.billingPeriods,
   });
 });
 

@@ -97,7 +97,7 @@ export class EmbeddingService {
       throw new Error("Qdrant client not initialized");
     }
 
-    const { enumValues } = await import("#config/constants");
+    const { enumValues } = await import("#domains/tools/index.js");
     const allEnumValues = [
       ...enumValues.categories,
       ...enumValues.functionality,
@@ -144,7 +144,7 @@ export class EmbeddingService {
       throw new Error("Qdrant client not initialized");
     }
 
-    const { enumValues } = await import("#config/constants");
+    const { enumValues } = await import("#domains/tools/index.js");
     const validEnumValues = enumValues[enumType as keyof typeof enumValues];
 
     if (!validEnumValues) {

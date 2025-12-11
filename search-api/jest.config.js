@@ -3,6 +3,20 @@ export default {
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
+    // Strip .js extension from # imports (must be before the main # mappings)
+    '^#config/(.*)\\.js$': '<rootDir>/src/config/$1',
+    '^#types/(.*)\\.js$': '<rootDir>/src/types/$1',
+    '^#services/(.*)\\.js$': '<rootDir>/src/services/$1',
+    '^#utils/(.*)\\.js$': '<rootDir>/src/utils/$1',
+    '^#middleware/(.*)\\.js$': '<rootDir>/src/middleware/$1',
+    '^#models/(.*)\\.js$': '<rootDir>/src/models/$1',
+    '^#routes/(.*)\\.js$': '<rootDir>/src/routes/$1',
+    '^#graphs/(.*)\\.js$': '<rootDir>/src/graphs/$1',
+    '^#nodes/(.*)\\.js$': '<rootDir>/src/nodes/$1',
+    '^#core/(.*)\\.js$': '<rootDir>/src/core/$1',
+    '^#shared/(.*)\\.js$': '<rootDir>/src/shared/$1',
+    '^#domains/(.*)\\.js$': '<rootDir>/src/domains/$1',
+    // Main # mappings (without .js)
     '^#config/(.*)$': '<rootDir>/src/config/$1',
     '^#types/(.*)$': '<rootDir>/src/types/$1',
     '^#services/(.*)$': '<rootDir>/src/services/$1',
@@ -15,6 +29,7 @@ export default {
     '^#core/(.*)$': '<rootDir>/src/core/$1',
     '^#shared/(.*)$': '<rootDir>/src/shared/$1',
     '^#domains/(.*)$': '<rootDir>/src/domains/$1',
+    // Strip .js from relative imports
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {

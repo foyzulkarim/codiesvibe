@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTROLLED_VOCABULARIES, OPERATORS } from "#shared/constants/controlled-vocabularies";
+import { toolsSchema, TOOLS_PRICE_OPERATORS } from "#domains/tools/index.js";
 
 /**
  * Structured representation of a user's search or discovery intent for AI tools and technologies
@@ -46,44 +46,44 @@ export const IntentStateSchema = z.object({
 
   priceComparison: z.object({
     operator: z.enum([
-      OPERATORS.LESS_THAN,
-      OPERATORS.GREATER_THAN,
-      OPERATORS.EQUAL,
-      OPERATORS.NOT_EQUAL,
-      OPERATORS.AROUND,
-      OPERATORS.BETWEEN
+      TOOLS_PRICE_OPERATORS.LESS_THAN,
+      TOOLS_PRICE_OPERATORS.GREATER_THAN,
+      TOOLS_PRICE_OPERATORS.EQUAL,
+      TOOLS_PRICE_OPERATORS.NOT_EQUAL,
+      TOOLS_PRICE_OPERATORS.AROUND,
+      TOOLS_PRICE_OPERATORS.BETWEEN
     ]).describe("Price comparison operator"),
     value: z.number().describe("Reference price value"),
-    billingPeriod: z.enum([CONTROLLED_VOCABULARIES.billingPeriods[0], CONTROLLED_VOCABULARIES.billingPeriods[1]]).nullable().optional().describe("Billing period context")
+    billingPeriod: z.enum([toolsSchema.vocabularies.billingPeriods[0], toolsSchema.vocabularies.billingPeriods[1]]).nullable().optional().describe("Billing period context")
   }).nullable().optional().describe(
     "Price comparison constraint (e.g., 'under $50', 'around $20/month')"
   ),
 
-  category: z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]).nullable().optional().describe(
+  category: z.enum(toolsSchema.vocabularies.categories as [string, ...string[]]).nullable().optional().describe(
     "Tool type category mentioned or implied"
   ),
 
-  interface: z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]).nullable().optional().describe(
+  interface: z.enum(toolsSchema.vocabularies.interface as [string, ...string[]]).nullable().optional().describe(
     "Platform or interface preference"
   ),
 
-  functionality: z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]).describe(
+  functionality: z.enum(toolsSchema.vocabularies.functionality as [string, ...string[]]).describe(
     "Specific features or capabilities required or desired"
   ),
 
-  deployment: z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]).describe(
+  deployment: z.enum(toolsSchema.vocabularies.deployment as [string, ...string[]]).describe(
     "Deployment preferences or requirements"
   ),
 
-  industry: z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]).describe(
+  industry: z.enum(toolsSchema.vocabularies.industries as [string, ...string[]]).describe(
     "Industry sectors or domains of interest"
   ),
 
-  userType: z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]).describe(
+  userType: z.enum(toolsSchema.vocabularies.userTypes as [string, ...string[]]).describe(
     "Target user groups or roles"
   ),
 
-  pricing: z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]).nullable().optional().describe(
+  pricing: z.enum(toolsSchema.vocabularies.pricingModels as [string, ...string[]]).nullable().optional().describe(
     "Primary pricing filter if explicitly mentioned"
   ),
 
