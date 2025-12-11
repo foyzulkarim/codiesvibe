@@ -1,5 +1,5 @@
 import { ToolData } from '../types/tool.types.js';
-import { CollectionConfigService } from './collection-config.service.js';
+import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
 import { VectorTypeRegistryService } from './vector-type-registry.service.js';
 import { ContentGeneratorFactory } from './content-generator-factory.service.js';
 import { qdrantService } from './qdrant.service.js';
@@ -57,7 +57,7 @@ export interface ProcessingOptions {
 
 export class MultiCollectionOrchestrator {
   constructor(
-    private readonly collectionConfig: CollectionConfigService,
+    private readonly collectionConfig: QdrantCollectionConfigService,
     private readonly vectorTypeRegistry: VectorTypeRegistryService,
     private readonly contentFactory: ContentGeneratorFactory
   ) {}

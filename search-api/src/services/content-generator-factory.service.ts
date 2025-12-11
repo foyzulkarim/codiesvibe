@@ -1,5 +1,5 @@
 import { ToolData } from '../types/tool.types.js';
-import { CollectionConfigService } from './collection-config.service.js';
+import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
 
 export interface ContentGenerator {
   generate(tool: ToolData): string;
@@ -18,7 +18,7 @@ export interface WeightedContentPart {
 export class ContentGeneratorFactory {
   private readonly generators: Map<string, ContentGenerator> = new Map();
 
-  constructor(private readonly collectionConfig: CollectionConfigService) {
+  constructor(private readonly collectionConfig: QdrantCollectionConfigService) {
     this.initializeGenerators();
   }
 
@@ -160,7 +160,7 @@ class ToolsContentGenerator implements ContentGenerator {
   generate(tool: ToolData): string {
     const contentParts: string[] = [];
 
-    // Add weighted content using CollectionConfigService weightings
+    // Add weighted content using QdrantCollectionConfigService weightings
     this.addWeighted([tool.name], 3.0, contentParts);
     this.addWeighted([tool.description], 2.0, contentParts);
     this.addWeighted([tool.longDescription].filter(Boolean), 1.5, contentParts);

@@ -18,7 +18,7 @@ This directory contains the core services for the search API, providing function
 
 ### Collection Management Services
 
-- **CollectionConfigService** (`collection-config.service.ts`) - Configuration management for multiple collections with purposes and weightings
+- **QdrantCollectionConfigService** (`qdrant-collection-config.service.ts`) - Configuration management for Qdrant vector collections with purposes and weightings
 - **MultiCollectionOrchestrator** (`multi-collection-orchestrator.service.ts`) - Orchestrates search across multiple collections with intelligent routing
 - **VectorTypeRegistryService** (`vector-type-registry.service.ts`) - Registry for vector types with metadata and combinations
 
@@ -79,12 +79,12 @@ The system uses a multi-collection approach with four primary collections:
 
 ## Service Usage Examples
 
-### Collection Configuration Service
+### Qdrant Collection Configuration Service
 
 ```typescript
-import { CollectionConfigService } from './services/collection-config.service';
+import { QdrantCollectionConfigService } from './services/qdrant-collection-config.service';
 
-const collectionConfig = new CollectionConfigService();
+const collectionConfig = new QdrantCollectionConfigService();
 
 // Get all enabled collections
 const enabledCollections = collectionConfig.getEnabledCollections();
@@ -288,7 +288,7 @@ When adding new services:
 
 ### Adding New Collections
 
-1. Define collection configuration in `CollectionConfigService`
+1. Define collection configuration in `QdrantCollectionConfigService`
 2. Create content generator in `ContentGeneratorFactory`
 3. Update vector type mappings in `VectorTypeRegistryService`
 4. Add collection-specific validation logic

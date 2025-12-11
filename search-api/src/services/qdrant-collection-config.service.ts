@@ -18,7 +18,7 @@ export interface CollectionHealth {
   issues: string[];
 }
 
-export class CollectionConfigService {
+export class QdrantCollectionConfigService {
   private readonly collections: CollectionConfig[] = [
     {
       name: 'tools',

@@ -10,7 +10,7 @@ import {
   createTestTool,
   getTestDb,
 } from '../../test-utils/db-setup.js';
-import { ITool, SyncCollectionName } from '../../../types/tool.interfaces.js';
+import { ITool } from '../../../types/tool.interfaces.js';
 import { contentHashService } from '../../../services/content-hash.service.js';
 
 // Store reference to test database for the mock
@@ -80,8 +80,8 @@ jest.mock('../../../services/embedding.service.js', () => {
   };
 });
 
-jest.mock('../../../services/collection-config.service.js', () => ({
-  CollectionConfigService: jest.fn().mockImplementation(() => ({
+jest.mock('../../../services/qdrant-collection-config.service.js', () => ({
+  QdrantCollectionConfigService: jest.fn().mockImplementation(() => ({
     getVectorTypeForCollection: jest.fn().mockImplementation((collection: string) => {
       const map: Record<string, string> = {
         tools: 'detailed',

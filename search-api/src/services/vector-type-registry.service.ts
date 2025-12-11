@@ -1,4 +1,4 @@
-import { CollectionConfigService } from './collection-config.service.js';
+import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
 
 export interface VectorTypeMetadata {
   name: string;
@@ -182,7 +182,7 @@ export class VectorTypeRegistryService {
     }
   ];
 
-  constructor(private readonly collectionConfig: CollectionConfigService) {}
+  constructor(private readonly collectionConfig: QdrantCollectionConfigService) {}
 
   /**
    * Get all available vector types

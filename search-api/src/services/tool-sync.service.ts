@@ -7,7 +7,7 @@
 
 import { qdrantService } from './qdrant.service.js';
 import { embeddingService } from './embedding.service.js';
-import { CollectionConfigService } from './collection-config.service.js';
+import { QdrantCollectionConfigService } from './qdrant-collection-config.service.js';
 import { ContentGeneratorFactory } from './content-generator-factory.service.js';
 import {
   contentHashService,
@@ -80,14 +80,14 @@ export const SYNC_ERROR_CODES = {
 // ============================================
 
 export class ToolSyncService {
-  private readonly collectionConfig: CollectionConfigService;
+  private readonly collectionConfig: QdrantCollectionConfigService;
   private readonly contentFactory: ContentGeneratorFactory;
   private readonly toolValidator: ToolDataValidator;
   private readonly DEFAULT_MAX_RETRIES = 3;
   private readonly RETRY_DELAY_MS = 500;
 
   constructor() {
-    this.collectionConfig = new CollectionConfigService();
+    this.collectionConfig = new QdrantCollectionConfigService();
     this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
     this.toolValidator = new ToolDataValidator();
   }

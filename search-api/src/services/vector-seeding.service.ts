@@ -2,7 +2,7 @@ import { vectorIndexingService } from "./vector-indexing.service.js";
 import { mongoDBService } from "./mongodb.service.js";
 import { qdrantService } from "./qdrant.service.js";
 import { embeddingService } from "./embedding.service.js";
-import { CollectionConfigService } from "./collection-config.service.js";
+import { QdrantCollectionConfigService } from "./qdrant-collection-config.service.js";
 import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 import { MultiCollectionOrchestrator } from "./multi-collection-orchestrator.service.js";
 import { VectorTypeRegistryService } from "./vector-type-registry.service.js";
@@ -89,7 +89,7 @@ export class VectorSeedingService {
   private readonly DEFAULT_BATCH_SIZE = 50;
 
   constructor(
-    private collectionConfig: CollectionConfigService = new CollectionConfigService(),
+    private collectionConfig: QdrantCollectionConfigService = new QdrantCollectionConfigService(),
     private contentFactory: ContentGeneratorFactory = new ContentGeneratorFactory(collectionConfig),
     private orchestrator: MultiCollectionOrchestrator = new MultiCollectionOrchestrator(collectionConfig, new VectorTypeRegistryService(collectionConfig), contentFactory)
   ) {

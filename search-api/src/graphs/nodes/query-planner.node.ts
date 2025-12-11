@@ -12,7 +12,7 @@ import {
   getRecommendedFusionMethod
 } from '../../domains/tools/tools.validators.js';
 // Keep these services for now - they provide collection orchestration
-import { CollectionConfigService } from '../../services/collection-config.service.js';
+import { QdrantCollectionConfigService } from '../../services/qdrant-collection-config.service.js';
 import { VectorTypeRegistryService } from '../../services/vector-type-registry.service.js';
 import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service.js';
 import { ContentGeneratorFactory } from '../../services/content-generator-factory.service.js';
@@ -36,7 +36,7 @@ const LOG_CONFIG = {
 };
 
 // Initialize multi-collection services
-const collectionConfig = new CollectionConfigService();
+const collectionConfig = new QdrantCollectionConfigService();
 const vectorTypeRegistry = new VectorTypeRegistryService(collectionConfig);
 const contentFactory = new ContentGeneratorFactory(collectionConfig);
 const multiCollectionOrchestrator = new MultiCollectionOrchestrator(

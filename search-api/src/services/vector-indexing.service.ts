@@ -3,7 +3,7 @@ import { qdrantService } from "./qdrant.service.js";
 import { embeddingService } from "./embedding.service.js";
 import { ToolData, ToolDataValidator } from "../types/tool.types.js";
 import { ITool } from "../types/tool.interfaces.js";
-import { CollectionConfigService } from "./collection-config.service.js";
+import { QdrantCollectionConfigService } from "./qdrant-collection-config.service.js";
 import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 
 export interface IndexingProgress {
@@ -54,11 +54,11 @@ export class VectorIndexingService {
   private readonly RETRY_DELAY_MS = 1000;
   private isShuttingDown = false;
 
-  private readonly collectionConfig: CollectionConfigService;
+  private readonly collectionConfig: QdrantCollectionConfigService;
   private readonly contentFactory: ContentGeneratorFactory;
 
   constructor() {
-    this.collectionConfig = new CollectionConfigService();
+    this.collectionConfig = new QdrantCollectionConfigService();
     this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
   }
 
@@ -720,7 +720,7 @@ export class VectorIndexingService {
   /**
    * Get collection configuration
    */
-  getCollectionConfiguration(): CollectionConfigService {
+  getCollectionConfiguration(): QdrantCollectionConfigService {
     return this.collectionConfig;
   }
 

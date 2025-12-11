@@ -29,7 +29,7 @@ import {
   validateToolId,
   validateEmbedding
 } from "#utils/vector-validation";
-import { CollectionConfigService } from "./collection-config.service.js";
+import { QdrantCollectionConfigService } from "./qdrant-collection-config.service.js";
 import { ContentGeneratorFactory } from "./content-generator-factory.service.js";
 
 // Local type definitions for Qdrant service operations
@@ -99,12 +99,12 @@ export class QdrantService {
   private client: QdrantClient | null = null;
   private initPromise: Promise<void> | null = null;  // Track initialization
   private isInitialized: boolean = false;            // Ready state flag
-  private collectionConfig: CollectionConfigService;
+  private collectionConfig: QdrantCollectionConfigService;
   private contentFactory: ContentGeneratorFactory;
 
   constructor() {
     // Initialize multi-collection services (synchronous)
-    this.collectionConfig = new CollectionConfigService();
+    this.collectionConfig = new QdrantCollectionConfigService();
     this.contentFactory = new ContentGeneratorFactory(this.collectionConfig);
     // Don't auto-initialize - initialization now happens explicitly via initialize()
   }
@@ -1856,7 +1856,7 @@ export class QdrantService {
   /**
    * Get access to collection configuration
    */
-  getCollectionConfiguration(): CollectionConfigService {
+  getCollectionConfiguration(): QdrantCollectionConfigService {
     return this.collectionConfig;
   }
 
