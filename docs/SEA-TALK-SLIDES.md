@@ -459,35 +459,51 @@ Bottleneck: LLM calls (87% of time)
 
 **Speaker Notes** (spend 1-2 min on each lesson):
 
-### Lesson 1: Schema-Driven Design (1.5 min)
+### Lesson 1: Schema-Driven Design Enables Everything (2 min)
 
-"Let me show you what I mean by schema-driven..."
+"Remember: Schema is the foundation. Without it, everything collapses to basic keyword search."
 
-**Show code snippet**:
-```typescript
-// Before: Hardcoded in prompts (bad)
-const prompt = `
-  Categories: AI, Code Editor, IDE, Chatbot, ...
-  Features: Code Generation, Debugging, ...
-`;
-
-// After: Schema configuration (good)
-const toolsSchema = {
-  vocabularies: {
-    categories: ['AI', 'Code Editor', 'IDE', ...],
-    functionality: ['Code Generation', 'Debugging', ...]
-  }
-};
-
-// Prompts generated dynamically
-const prompt = generatePrompt(toolsSchema);
+**The Critical Chain**:
+```
+Schema identifies:           NO SCHEMA:
+  - functionality fields  →  Dump everything in one blob
+  - use cases fields      →  Create 1 generic collection
+  - interface fields      →  No query planning possible
+         ↓                         ↓
+  4 Qdrant Collections    Basic MongoDB string search
+         ↓
+  Query Planner routes
+         ↓
+  Intelligent Search
 ```
 
-**Why this matters**:
-- ✅ Single source of truth
-- ✅ Easy to add new domains (recipes, products, etc.)
-- ✅ Type-safe across the entire pipeline
-- ❌ Initial refactoring effort
+**Show code evolution**:
+```typescript
+// Before: Hardcoded, no multi-vector possible
+const prompt = `Categories: AI, Code Editor...`;
+if (query.includes('code')) {
+  return 'generic-collection';  // Only one collection!
+}
+
+// After: Schema defines collections
+const toolsSchema = {
+  collections: [
+    {name: 'tools', fields: ['name', 'description']},
+    {name: 'functionality', fields: ['features', 'capabilities']},
+    {name: 'usecases', fields: ['problemsSolved']},
+    {name: 'interface', fields: ['deployment', 'pricing']}
+  ],
+  vocabularies: {...}
+};
+// Now planner can route to different collections!
+```
+
+**Why this is foundational**:
+- ✅ **Schema determines which collections exist** → Without it, no multi-vector
+- ✅ **Collections enable query planning** → Planner routes to specialized collections
+- ✅ **Query planning enables agentic search** → Different strategies for different queries
+- ✅ **Portable** → Same code, different schema = different domain (recipes, products)
+- 💡 **Key insight**: Schema IS the architecture, not just configuration
 
 ---
 

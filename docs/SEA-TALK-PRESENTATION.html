@@ -242,6 +242,68 @@
                 </aside>
             </section>
 
+            <!-- NEW: Schema as Foundation -->
+            <section>
+                <h2>🏗️ The Foundation: Schema Architecture</h2>
+
+                <div class="box">
+                    <p><strong>Critical Insight:</strong> Without a well-designed schema, everything collapses to basic keyword search.</p>
+                </div>
+
+                <div class="comparison-table" style="margin-top: 30px;">
+                    <div class="comparison-col">
+                        <h4 class="good">With Thoughtful Schema Design</h4>
+                        <pre><code class="language-plaintext" data-trim style="font-size: 0.45em;">
+Schema identifies:
+  - General semantics (name, description)
+  - Functionality (features, capabilities)
+  - Use cases (problems solved)
+  - Interface (deployment, pricing)
+        ↓
+Create 4 Qdrant Collections:
+  - tools (semantic)
+  - functionality (functional)
+  - usecases (problem-oriented)
+  - interface (technical)
+        ↓
+Query Planner routes intelligently
+        ↓
+🎯 Intelligent Multi-Vector Search
+                        </code></pre>
+                    </div>
+                    <div class="comparison-col">
+                        <h4 class="bad">Without Schema Design</h4>
+                        <pre><code class="language-plaintext" data-trim style="font-size: 0.45em;">
+No structure:
+  - Dump everything in one field
+  - "Just embed the whole document"
+        ↓
+Create 1 Generic Collection:
+  - Single undifferentiated vector
+        ↓
+No query planning possible
+        ↓
+😞 Basic MongoDB String Matching
+(or generic vector search)
+                        </code></pre>
+                    </div>
+                </div>
+
+                <p style="margin-top: 30px; font-size: 0.85em;">
+                    <span class="highlight">Schema design is not just configuration—it's the architecture.</span><br>
+                    It determines which collections exist → which enables intelligent query planning → which enables agentic search.
+                </p>
+
+                <aside class="notes">
+                    - This is the foundational decision that enables everything else
+                    - Schema determines: What aspects of a tool deserve separate embeddings?
+                    - For us: functionality, use cases, and interface are semantically distinct
+                    - Each becomes a specialized collection the planner can route to
+                    - Without this: just one blob vector, no intelligent routing possible
+                    - This is what I mean by "schema-driven" - the schema enables the multi-vector strategy
+                </aside>
+            </section>
+
             <!-- Slide 5: Live Demo Setup -->
             <section class="center">
                 <h2>🎬 LIVE DEMO</h2>
@@ -399,45 +461,61 @@
 
             <!-- Lesson 1 -->
             <section>
-                <h3>1. Schema-Driven Design</h3>
+                <h3>1. Schema-Driven Design Enables Everything</h3>
 
-                <div class="comparison-table">
+                <div class="box">
+                    <p><strong>Remember:</strong> Schema determines which vector collections exist → enables query planning → enables agentic search</p>
+                </div>
+
+                <div class="comparison-table" style="margin-top: 20px;">
                     <div class="comparison-col">
-                        <h4 class="bad">Before</h4>
+                        <h4 class="bad">Before (Hardcoded)</h4>
                         <pre><code class="language-typescript" data-trim style="font-size: 0.4em;">
+// Intent extractor prompt
 const prompt = `
   Categories: AI, Code Editor,
   IDE, Chatbot, ...
   Features: Code Generation,
   Debugging, ...
 `;
+// Query planner hardcoded
+if (query.includes('code')) {
+  return 'tools-collection';
+}
                         </code></pre>
-                        <p class="small">❌ 200+ lines hardcoded per node</p>
+                        <p class="small">❌ 200+ lines per node<br>❌ No multi-vector possible<br>❌ Change domain? Rewrite everything</p>
                     </div>
                     <div class="comparison-col">
-                        <h4 class="good">After</h4>
+                        <h4 class="good">After (Schema-Driven)</h4>
                         <pre><code class="language-typescript" data-trim style="font-size: 0.4em;">
+// Schema defines structure
 const schema = {
-  vocabularies: {
-    categories: ['AI', ...],
-    functionality: [...]
-  }
+  collections: [
+    {name: 'tools', fields: [...]},
+    {name: 'functionality', ...},
+    {name: 'usecases', ...}
+  ],
+  vocabularies: {...}
 };
+// Prompts generated dynamically
 const prompt =
   generatePrompt(schema);
                         </code></pre>
-                        <p class="small">✅ Single source of truth</p>
+                        <p class="small">✅ Schema → Collections → Query routes<br>✅ Change domain? Update schema only<br>✅ Portable to recipes, products, etc.</p>
                     </div>
                 </div>
 
                 <p class="small" style="margin-top: 20px;">
-                    <span class="highlight">Impact:</span> Easy to add new domains (recipes, products) without code changes
+                    <span class="highlight">Key Insight:</span> Without schema identifying "functionality", "usecases", "interface" as distinct concerns,
+                    we'd have one generic collection and no intelligent routing. Schema IS the architecture.
                 </p>
 
                 <aside class="notes">
-                    - Before: Domain knowledge scattered in hardcoded prompts
-                    - After: Schema as configuration, prompts generated dynamically
-                    - Makes system portable and maintainable
+                    - Before: Domain knowledge scattered across hardcoded prompts
+                    - Couldn't create multi-vector collections because didn't identify which attributes matter
+                    - After: Schema explicitly defines what aspects deserve separate embeddings
+                    - This enables 4 collections, which enables query planner to route intelligently
+                    - Makes entire system portable - same code, different schema = different domain
                 </aside>
             </section>
 
