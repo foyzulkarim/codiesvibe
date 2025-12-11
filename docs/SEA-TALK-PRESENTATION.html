@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Search: From Research to Production | SEA 2025</title>
+
+    <!-- Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/theme/black.css">
+
+    <!-- Code highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/highlight/monokai.css">
+
+    <style>
+        /* Custom styles */
+        :root {
+            --r-main-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --r-heading-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --r-main-font-size: 32px;
+            --r-heading-font-size: 2.5em;
+            --r-code-font: 'Fira Code', 'Monaco', 'Courier New', monospace;
+        }
+
+        .reveal h1, .reveal h2, .reveal h3 {
+            text-transform: none;
+            font-weight: 600;
+        }
+
+        .reveal section {
+            text-align: left;
+        }
+
+        .reveal .center {
+            text-align: center;
+        }
+
+        .reveal pre {
+            width: 100%;
+            font-size: 0.55em;
+            line-height: 1.3;
+        }
+
+        .reveal code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .reveal .box {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #42affa;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .reveal .highlight {
+            color: #42affa;
+            font-weight: 600;
+        }
+
+        .reveal .emoji {
+            font-style: normal;
+        }
+
+        .reveal ul, .reveal ol {
+            margin-left: 1em;
+        }
+
+        .reveal li {
+            margin-bottom: 0.5em;
+        }
+
+        .columns {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .small {
+            font-size: 0.8em;
+        }
+
+        .comparison-table {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .comparison-col {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .comparison-col h4 {
+            margin-top: 0;
+            color: #42affa;
+        }
+
+        .good {
+            color: #4ade80;
+        }
+
+        .bad {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- Slide 1: Title -->
+            <section class="center">
+                <h1>Agentic Search for AI Tools Discovery</h1>
+                <h3>From Research Concepts to Production Reality</h3>
+                <p style="margin-top: 60px;">
+                    <strong>Foyzul Karim</strong><br>
+                    CodiesVibe.com
+                </p>
+                <p style="margin-top: 40px; font-size: 0.8em;">
+                    Search Engines Amsterdam 2025<br>
+                    Agentic Search and Reasoning Session
+                </p>
+
+                <aside class="notes">
+                    - Introduce yourself
+                    - "Today I'll show you how we built an agentic search system for real users"
+                    - "Focus on what worked, what didn't, and what we learned"
+                </aside>
+            </section>
+
+            <!-- Slide 2: The Challenge -->
+            <section>
+                <h2>The Challenge</h2>
+                <div class="box">
+                    <h4>Users Ask Natural Questions:</h4>
+                    <ul>
+                        <li><span class="bad">❌</span> "AI tools for code completion"</li>
+                        <li><span class="bad">❌</span> "Local code assistants that are free"</li>
+                        <li><span class="bad">❌</span> "Tools like Cursor but cheaper"</li>
+                    </ul>
+                </div>
+
+                <h4 style="margin-top: 30px;">Traditional Keyword Search:</h4>
+                <ul>
+                    <li>→ Misses semantic meaning</li>
+                    <li>→ Can't handle comparisons</li>
+                    <li>→ Ignores constraints (free, local, etc.)</li>
+                </ul>
+
+                <div style="margin-top: 30px; font-size: 0.9em;">
+                    <strong>Scale:</strong> 500+ AI tools, 50+ attributes per tool, 1000s of queries/day
+                </div>
+
+                <aside class="notes">
+                    - This is a real problem we faced at CodiesVibe
+                    - Users don't speak database - they speak human
+                    - DEMO: Show traditional keyword search failing (1 min)
+                </aside>
+            </section>
+
+            <!-- Slide 3: Research Concepts We Used -->
+            <section>
+                <h2>From Research to Practice</h2>
+                <table style="width: 100%; font-size: 0.85em;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px;">📚 Research Concept</th>
+                            <th style="padding: 10px;">🔨 Our Implementation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px;">Query Understanding<br>(NLP, NLU)</td>
+                            <td style="padding: 10px;">LLM Intent Extractor</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Dense Retrieval<br>(BERT, embeddings)</td>
+                            <td style="padding: 10px;">Multi-Vector Search<br>(Qdrant + 4 collections)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Result Fusion<br>(CombMNZ, RRF)</td>
+                            <td style="padding: 10px;">Reciprocal Rank Fusion<br>(RRF with k=60)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Hybrid Search<br>(BM25 + Dense)</td>
+                            <td style="padding: 10px;">Vector + Structured<br>(Qdrant + MongoDB)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Agentic AI<br>(ReAct, CoT)</td>
+                            <td style="padding: 10px;">LangGraph 3-Node<br>Pipeline</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <aside class="notes">
+                    - These are familiar concepts to you as researchers
+                    - The challenge: How do you make them work together in production?
+                    - Let me show you our architecture
+                </aside>
+            </section>
+
+            <!-- Slide 4: System Architecture -->
+            <section>
+                <h2>CodiesVibe Architecture</h2>
+                <pre><code class="language-plaintext" data-trim>
+┌─────────────────────────────────────────────────┐
+│            DATA INGESTION (Admin UI)            │
+│  Tool Create/Update → MongoDB → Async Sync     │
+│                         ↓                       │
+│                  Qdrant (4 collections)         │
+└─────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────┐
+│         SEARCH PIPELINE (User Queries)          │
+│                                                 │
+│  Query → [Intent] → [Planner] → [Executor]     │
+│            ↓ LLM      ↓ LLM       ↓             │
+│                                   ├─ Qdrant     │
+│                                   ├─ MongoDB    │
+│                                   └─ RRF Fusion │
+│                                       ↓         │
+│                                   Results       │
+└─────────────────────────────────────────────────┘
+                </code></pre>
+
+                <p style="margin-top: 20px; font-size: 0.9em;">
+                    <span class="highlight">Two Flows:</span> Data IN (sync) + Search OUT (LangGraph)
+                </p>
+
+                <aside class="notes">
+                    - Three-stage pipeline: Understand → Plan → Execute
+                    - LLM nodes for reasoning, deterministic execution for reliability
+                    - Let's see this in action with a live demo
+                </aside>
+            </section>
+
+            <!-- Slide 5: Live Demo Setup -->
+            <section class="center">
+                <h2>🎬 LIVE DEMO</h2>
+                <h3>Let's Search Together</h3>
+
+                <div class="box" style="margin-top: 40px; text-align: left;">
+                    <p><strong>Query:</strong> "Free AI code completion tools that work locally"</p>
+
+                    <p style="margin-top: 30px;">We'll watch the 3-node pipeline in action:</p>
+                    <ol>
+                        <li><strong>Intent Extraction</strong> - What did the LLM understand?</li>
+                        <li><strong>Query Planning</strong> - How will we search?</li>
+                        <li><strong>Execution</strong> - What results do we get?</li>
+                    </ol>
+                </div>
+
+                <p style="margin-top: 30px; font-size: 0.8em;">
+                    [Enable Debug Mode for visibility]
+                </p>
+
+                <aside class="notes">
+                    - I've enabled debug mode so we can see inside the pipeline
+                    - This is a real query from a real user
+                    - Switch to live demo (8 minutes total)
+                </aside>
+            </section>
+
+            <!-- Demo slides would be replaced by actual demo -->
+            <section class="center">
+                <h3>Demo: Intent Extraction</h3>
+                <pre><code class="language-json" data-trim style="max-height: 500px;">
+{
+  "node": "intent-extractor",
+  "output": {
+    "primaryGoal": "find",
+    "category": ["Code Completion", "AI"],
+    "deployment": "Local",
+    "pricing": "free",
+    "desiredFeatures": [
+      "Code Completion",
+      "Local Inference"
+    ],
+    "confidence": 0.92
+  },
+  "executionTime": "340ms"
+}
+                </code></pre>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Research → Practice:</span>
+                    Schema-driven extraction with controlled vocabularies
+                </p>
+
+                <aside class="notes">
+                    - The LLM extracted structured intent from natural language
+                    - Notice: category, deployment, pricing - all mapped to our schema
+                    - Confidence score helps us decide if we need fallback
+                </aside>
+            </section>
+
+            <section class="center">
+                <h3>Demo: Query Planning</h3>
+                <pre><code class="language-json" data-trim style="max-height: 450px; font-size: 0.45em;">
+{
+  "strategy": "identity-focused",
+  "vectorSources": [
+    { "collection": "tools", "embeddingType": "semantic", "topK": 20 },
+    { "collection": "functionality", "embeddingType": "functional", "topK": 12 }
+  ],
+  "structuredSources": [
+    {
+      "source": "mongodb",
+      "filters": [
+        { "field": "pricingSummary.hasFreeTier", "value": true },
+        { "field": "deployment", "value": "Local" }
+      ]
+    }
+  ],
+  "fusion": "rrf",
+  "confidence": 0.88
+}
+                </code></pre>
+
+                <p class="small" style="margin-top: 15px;">
+                    <span class="highlight">Why RRF?</span> Scale-invariant, no training data needed, robust
+                </p>
+
+                <aside class="notes">
+                    - The planner chose an 'identity-focused' strategy
+                    - It selected 2 vector collections + MongoDB structured search
+                    - Different topK values - tools get higher priority
+                    - RRF chosen because it works well without normalization
+                </aside>
+            </section>
+
+            <section class="center">
+                <h3>Demo: Cache Hit</h3>
+                <div class="comparison-table">
+                    <div class="comparison-col">
+                        <h4>First Run (Cache Miss)</h4>
+                        <ul class="small">
+                            <li>Intent Extractor: 340ms</li>
+                            <li>Query Planner: 420ms</li>
+                            <li>Query Executor: 95ms</li>
+                            <li><strong>Total: 875ms</strong></li>
+                        </ul>
+                    </div>
+                    <div class="comparison-col">
+                        <h4>Second Run (Cache Hit)</h4>
+                        <ul class="small">
+                            <li>Cache Check: 15ms</li>
+                            <li>Query Executor: 92ms</li>
+                            <li>Skipped: Intent + Planner</li>
+                            <li><strong>Total: 107ms</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="box" style="margin-top: 20px;">
+                    <p><strong>Savings:</strong> 88% faster, avoided 2 LLM calls, ~70% cache hit rate in production</p>
+                </div>
+
+                <aside class="notes">
+                    - Cache hit! Query executed in 107ms vs 875ms
+                    - 88% faster, avoided 2 LLM calls
+                    - In production, 70% cache hit rate → massive cost savings
+                    - Research → Practice: Caching is essential for LLM systems
+                </aside>
+            </section>
+
+            <!-- Lessons Section -->
+            <section>
+                <h2>Research → Implementation Lessons</h2>
+                <div style="font-size: 0.85em;">
+                    <ol>
+                        <li><strong>Schema-Driven Design</strong> - Make domain knowledge explicit</li>
+                        <li><strong>Hybrid is Better Than Pure</strong> - Combine strengths</li>
+                        <li><strong>LLMs for Reasoning, Not Retrieval</strong> - Use right tool</li>
+                        <li><strong>Caching is Not Optional</strong> - Production needs speed</li>
+                        <li><strong>Data Sync is Harder Than It Looks</strong> - Two databases</li>
+                        <li><strong>Interpretability > Black Box</strong> - Debugging requires observability</li>
+                    </ol>
+                </div>
+
+                <p style="margin-top: 30px; font-size: 0.9em; color: #42affa;">
+                    Let's explore each lesson...
+                </p>
+
+                <aside class="notes">
+                    - These are the 6 key lessons from building a production system
+                    - I'll spend 1-2 minutes on each
+                    - Each bridges research concepts to practical reality
+                </aside>
+            </section>
+
+            <!-- Lesson 1 -->
+            <section>
+                <h3>1. Schema-Driven Design</h3>
+
+                <div class="comparison-table">
+                    <div class="comparison-col">
+                        <h4 class="bad">Before</h4>
+                        <pre><code class="language-typescript" data-trim style="font-size: 0.4em;">
+const prompt = `
+  Categories: AI, Code Editor,
+  IDE, Chatbot, ...
+  Features: Code Generation,
+  Debugging, ...
+`;
+                        </code></pre>
+                        <p class="small">❌ 200+ lines hardcoded per node</p>
+                    </div>
+                    <div class="comparison-col">
+                        <h4 class="good">After</h4>
+                        <pre><code class="language-typescript" data-trim style="font-size: 0.4em;">
+const schema = {
+  vocabularies: {
+    categories: ['AI', ...],
+    functionality: [...]
+  }
+};
+const prompt =
+  generatePrompt(schema);
+                        </code></pre>
+                        <p class="small">✅ Single source of truth</p>
+                    </div>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Impact:</span> Easy to add new domains (recipes, products) without code changes
+                </p>
+
+                <aside class="notes">
+                    - Before: Domain knowledge scattered in hardcoded prompts
+                    - After: Schema as configuration, prompts generated dynamically
+                    - Makes system portable and maintainable
+                </aside>
+            </section>
+
+            <!-- Lesson 2 -->
+            <section>
+                <h3>2. Hybrid is Better Than Pure</h3>
+
+                <div class="box">
+                    <p><strong>Query:</strong> "Free tools under $10/month"</p>
+                </div>
+
+                <div class="comparison-table">
+                    <div class="comparison-col">
+                        <h4 class="bad">Pure Vector Search</h4>
+                        <ul class="small">
+                            <li>❌ "Free" and "$10/month" are contradictory</li>
+                            <li>❌ Embedding can't capture exact constraints</li>
+                            <li>❌ Results include expensive tools</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-col">
+                        <h4 class="good">Hybrid (Vector + Structured)</h4>
+                        <ul class="small">
+                            <li>✅ Vector: Semantic understanding</li>
+                            <li>✅ MongoDB: Exact price filter</li>
+                            <li>✅ Results: Only matching both</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Lesson:</span> Research loves "pure" approaches. Production needs "whatever works".
+                </p>
+
+                <aside class="notes">
+                    - Pure vector search struggles with exact constraints
+                    - Hybrid approach combines best of both worlds
+                    - Don't choose - use both!
+                </aside>
+            </section>
+
+            <!-- Lesson 3 -->
+            <section>
+                <h3>3. LLMs for Reasoning, Not Retrieval</h3>
+
+                <div class="comparison-table">
+                    <div class="comparison-col">
+                        <h4 class="bad">Bad Approach</h4>
+                        <pre><code class="language-plaintext" data-trim style="font-size: 0.35em;">
+Query → LLM →
+"Here are 10 tools..."
+→ Parse response
+
+❌ LLM generates tool names
+❌ No guarantee tools exist
+❌ Expensive, slow
+                        </code></pre>
+                    </div>
+                    <div class="comparison-col">
+                        <h4 class="good">Our Approach</h4>
+                        <pre><code class="language-plaintext" data-trim style="font-size: 0.35em;">
+Query → LLM →
+{intent JSON} →
+Database → Real results
+
+✅ LLM only understands
+✅ DB guarantees real data
+✅ Cheaper, faster, reliable
+                        </code></pre>
+                    </div>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Lesson:</span> LLMs are great at reasoning, bad at facts. Separate concerns.
+                </p>
+
+                <aside class="notes">
+                    - LLMs excel at understanding and planning
+                    - Databases excel at factual retrieval
+                    - Use each for what it's good at
+                </aside>
+            </section>
+
+            <!-- Lesson 4 -->
+            <section>
+                <h3>4. Caching is Not Optional</h3>
+
+                <div class="box">
+                    <h4>Production Reality:</h4>
+                    <ul class="small">
+                        <li>1000 queries/day</li>
+                        <li>Many similar: "free AI tools", "free ai tools", "free AI tools for developers"</li>
+                    </ul>
+                </div>
+
+                <div class="columns" style="font-size: 0.75em; margin-top: 20px;">
+                    <div class="column">
+                        <h4 class="bad">Without Cache</h4>
+                        <ul class="small">
+                            <li>1000 × 2 LLM calls × $0.0001</li>
+                            <li>= $0.20/day = $73/year</li>
+                            <li>Latency: 800-1200ms</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h4 class="good">With Cache (70% hit)</h4>
+                        <ul class="small">
+                            <li>300 × 2 × $0.0001</li>
+                            <li>= $0.06/day = $22/year</li>
+                            <li>Latency: 100-200ms</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Lesson:</span> Research papers rarely mention caching. Production systems live or die on it.
+                </p>
+
+                <aside class="notes">
+                    - Semantic caching using vector similarity
+                    - 70% savings on cost and 5-10x faster
+                    - Essential for LLM-based systems
+                </aside>
+            </section>
+
+            <!-- Lesson 5 -->
+            <section>
+                <h3>5. Data Sync is Harder Than It Looks</h3>
+
+                <pre><code class="language-plaintext" data-trim style="font-size: 0.5em;">
+User creates tool in Admin UI
+    ↓
+MongoDB updated ✅
+    ↓
+Qdrant vector index... 🤔
+    ↓
+Is it updated? Which collections? What if it fails?
+                </code></pre>
+
+                <div class="box" style="margin-top: 20px;">
+                    <h4 class="good">Our Solution: Smart Sync System</h4>
+                    <ul class="small">
+                        <li>✅ MongoDB write ALWAYS succeeds (don't lose data!)</li>
+                        <li>✅ Async sync to 4 Qdrant collections</li>
+                        <li>✅ Per-collection status tracking (synced/pending/failed)</li>
+                        <li>✅ Background worker with exponential backoff (1 min → 1 hour)</li>
+                        <li>✅ Change detection: Only sync what actually changed (60% savings)</li>
+                    </ul>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Research:</span> "Just index your vectors" ✨<br>
+                    <span class="highlight">Production:</span> Sync failures, retries, monitoring, debugging 😅
+                </p>
+
+                <aside class="notes">
+                    - Two databases = synchronization problem
+                    - Can't block user operations waiting for sync
+                    - Need observability, retry logic, failure isolation
+                    - This is ~2,000 lines of code we wouldn't need in research
+                </aside>
+            </section>
+
+            <!-- Lesson 6 -->
+            <section>
+                <h3>6. Interpretability > Black Box</h3>
+
+                <div class="comparison-table">
+                    <div class="comparison-col">
+                        <h4 class="bad">Black Box System</h4>
+                        <p class="small"><strong>User:</strong> "Results are wrong!"</p>
+                        <ul class="small">
+                            <li>❓ Which component failed?</li>
+                            <li>❓ Was it embedding? Ranking? Filtering?</li>
+                            <li>❓ How do we fix it?</li>
+                        </ul>
+                    </div>
+                    <div class="comparison-col">
+                        <h4 class="good">Our 3-Node System</h4>
+                        <p class="small"><strong>User:</strong> "Results are wrong!"</p>
+                        <ul class="small">
+                            <li>✅ Check intent extraction → Correct? Yes.</li>
+                            <li>✅ Check query plan → Right collections? No!</li>
+                            <li>✅ Found the bug → Planner logic issue</li>
+                            <li>✅ Fix and redeploy</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p class="small" style="margin-top: 20px;">
+                    <span class="highlight">Lesson:</span> End-to-end models are elegant. Production needs debuggability.
+                </p>
+
+                <aside class="notes">
+                    - Visible intermediate steps = faster debugging
+                    - Can inspect intent, plan, and execution separately
+                    - Trade-off: More complexity, but worth it for production
+                </aside>
+            </section>
+
+            <!-- Challenges -->
+            <section>
+                <h2>Challenges We Faced</h2>
+                <table style="width: 100%; font-size: 0.7em;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 8px;">⚠️ Challenge</th>
+                            <th style="padding: 8px;">✅ Our Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px;">LLM Costs Adding Up</td>
+                            <td style="padding: 8px;">Semantic cache (70% hit rate)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;">LLM Hallucinations</td>
+                            <td style="padding: 8px;">Schema validation + controlled vocabs</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;">Multi-Collection Different Scales</td>
+                            <td style="padding: 8px;">RRF fusion (scale-invariant)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;">MongoDB-Qdrant Sync</td>
+                            <td style="padding: 8px;">Smart sync + background worker</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px;">How to Evaluate?</td>
+                            <td style="padding: 8px;">User clicks + diversity metrics</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p style="margin-top: 30px; font-size: 0.9em;">
+                    <span class="highlight">These are problems you won't find in research papers...</span>
+                </p>
+
+                <aside class="notes">
+                    - These are production-specific challenges
+                    - Each required pragmatic engineering solutions
+                    - Happy to discuss any of these in Q&A
+                </aside>
+            </section>
+
+            <!-- Open Questions -->
+            <section>
+                <h2>Open Research Questions</h2>
+                <ol style="font-size: 0.8em;">
+                    <li><strong>Evaluation:</strong> How do we evaluate agentic search quality? No standard benchmarks.</li>
+                    <li><strong>Learning:</strong> Can we learn query planning from user behavior? RLHF for planners?</li>
+                    <li><strong>Architecture:</strong> How many agents is optimal? 3 nodes or 5? Or 10?</li>
+                    <li><strong>Portability:</strong> Does schema-driven design work for other domains? Medical? Legal?</li>
+                    <li><strong>Evolution:</strong> How to handle evolving schemas? New categories emerge over time.</li>
+                </ol>
+
+                <p style="margin-top: 40px; font-size: 0.9em;">
+                    <span class="highlight">These are genuine open questions. Let's collaborate!</span>
+                </p>
+
+                <aside class="notes">
+                    - These are questions we don't have good answers for
+                    - Would love to work with researchers here
+                    - If any of these interest you, let's talk after
+                </aside>
+            </section>
+
+            <!-- Key Takeaways -->
+            <section>
+                <h2>Key Takeaways</h2>
+
+                <div class="columns">
+                    <div class="column">
+                        <h4>For Researchers</h4>
+                        <ul class="small">
+                            <li>Agentic search is interpretable and modular</li>
+                            <li>Hybrid approaches often beat pure methods</li>
+                            <li>We need better evaluation frameworks</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h4>For Practitioners</h4>
+                        <ul class="small">
+                            <li>Schema-driven design enables portability</li>
+                            <li>LLMs for reasoning, DBs for retrieval</li>
+                            <li>Caching is essential for production</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="box" style="margin-top: 40px; text-align: center;">
+                    <p style="font-size: 1.1em;">
+                        <strong>Research without implementation is incomplete.<br>
+                        Implementation without research is fragile.</strong>
+                    </p>
+                    <p style="margin-top: 20px;">
+                        → We need both.
+                    </p>
+                </div>
+
+                <aside class="notes">
+                    - This is what I hope you take away
+                    - Research and practice need each other
+                    - CodiesVibe is open source - please try it, break it, improve it
+                </aside>
+            </section>
+
+            <!-- Resources -->
+            <section class="center">
+                <h2>Try It Yourself</h2>
+
+                <div style="margin-top: 40px; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto;">
+                    <p><strong>🌐 Live Demo</strong><br>
+                    <a href="https://codiesvibe.com">codiesvibe.com</a></p>
+
+                    <p style="margin-top: 20px;"><strong>💻 Source Code</strong><br>
+                    <a href="https://github.com/foyzulkarim/codiesvibe">github.com/foyzulkarim/codiesvibe</a><br>
+                    <span class="small">→ search-api/ directory</span></p>
+
+                    <p style="margin-top: 20px;"><strong>📚 Documentation</strong><br>
+                    <span class="small">/docs/SEA-TALK-PREPARATION.md</span><br>
+                    <span class="small">→ Full architecture deep-dive</span></p>
+
+                    <p style="margin-top: 40px;"><strong>📧 Contact</strong><br>
+                    [Your email]<br>
+                    [Your Twitter/LinkedIn]</p>
+                </div>
+
+                <p style="margin-top: 60px; font-size: 1.2em;">
+                    <strong>Questions?</strong>
+                </p>
+
+                <aside class="notes">
+                    - All code is open source
+                    - Documentation includes everything I couldn't cover today
+                    - I'm here for Q&A - please ask anything!
+                </aside>
+            </section>
+
+            <!-- Thank you slide -->
+            <section class="center">
+                <h1>Thank You!</h1>
+                <h3 style="margin-top: 60px;">Let's bridge research and practice together</h3>
+
+                <p style="margin-top: 80px;">
+                    <strong>Foyzul Karim</strong><br>
+                    <a href="https://codiesvibe.com">codiesvibe.com</a><br>
+                    <a href="https://github.com/foyzulkarim/codiesvibe">github.com/foyzulkarim/codiesvibe</a>
+                </p>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Reveal.js JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/highlight/highlight.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/zoom/zoom.js"></script>
+
+    <script>
+        // Initialize Reveal.js
+        Reveal.initialize({
+            hash: true,
+            center: false,
+            slideNumber: 'c/t',
+            showSlideNumber: 'speaker',
+
+            // Transitions
+            transition: 'slide',
+            transitionSpeed: 'fast',
+
+            // Progress bar
+            progress: true,
+
+            // Controls
+            controls: true,
+            controlsTutorial: true,
+
+            // Navigation
+            keyboard: true,
+            overview: true,
+            touch: true,
+            loop: false,
+            rtl: false,
+            navigationMode: 'default',
+            shuffle: false,
+            fragments: true,
+            fragmentInURL: true,
+            embedded: false,
+
+            // Presentation Size
+            width: 1280,
+            height: 720,
+            margin: 0.04,
+            minScale: 0.2,
+            maxScale: 2.0,
+
+            // Plugins
+            plugins: [
+                RevealNotes,
+                RevealHighlight,
+                RevealZoom
+            ],
+
+            // PDF export
+            pdfSeparateFragments: false,
+            pdfMaxPagesPerSlide: 1,
+        });
+
+        // Add custom keyboard shortcuts
+        Reveal.addKeyBinding({keyCode: 66, key: 'B', description: 'Blank screen'}, () => {
+            document.body.style.backgroundColor = document.body.style.backgroundColor === 'black' ? '' : 'black';
+            document.querySelector('.reveal').style.visibility =
+                document.querySelector('.reveal').style.visibility === 'hidden' ? 'visible' : 'hidden';
+        });
+    </script>
+</body>
+</html>
