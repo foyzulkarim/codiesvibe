@@ -66,7 +66,6 @@ npm test                       # Jest unit tests
 npm run test:e2e               # End-to-end tests
 npm run typecheck              # TypeScript checking
 npm run create-collections     # Create Qdrant collections
-npm run seed-vectors           # Seed vectors from MongoDB
 ```
 
 ### Production Deployment

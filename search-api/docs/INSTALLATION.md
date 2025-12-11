@@ -83,17 +83,9 @@ qdrant       "/qdrant/qdrant"       qdrant      Up (healthy)  0.0.0.0:6333->6333
 search-api   "dumb-init node..."    search-api  Up (healthy)  0.0.0.0:4003->4003/tcp
 ```
 
-### Step 4: Initialize Vector Database
+### Step 4: Verify Services
 
-```bash
-# Create Qdrant collections
-docker exec -it search-api npm run create-collections
-
-# Seed vectors from MongoDB
-docker exec -it search-api npm run seed-vectors
-```
-
-**Note**: Qdrant collections are automatically created when the server starts. The manual `npm run create-collections` command is still available for troubleshooting.
+Qdrant collections are automatically created when the server starts. Vector indexing happens automatically when tools are added or updated through the UI.
 
 ---
 
@@ -156,17 +148,7 @@ npm run dev
 
 The server will start on `http://localhost:4003` with automatic reload on file changes.
 
-### Step 5: Initialize Data
-
-In another terminal:
-
-```bash
-# Create collections
-npm run create-collections
-
-# Seed vectors
-npm run seed-vectors
-```
+Qdrant collections are automatically created when the server starts. Vector indexing happens automatically when tools are added or updated through the UI.
 
 ---
 
@@ -209,34 +191,9 @@ The search API uses 4 Qdrant collections:
 3. **interface** - Technical implementation details
 4. **usecases** - Industry and user type targeting
 
-**Create collections:**
-```bash
-# Docker
-docker exec -it search-api npm run create-collections
+### Auto-Indexing
 
-# Local
-npm run create-collections
-```
-
-### Seeding Vectors
-
-**Seed from MongoDB data:**
-```bash
-# Docker
-docker exec -it search-api npm run seed-vectors
-
-# Local
-npm run seed-vectors
-```
-
-**Force re-seed (clears existing data):**
-```bash
-# Docker
-docker exec -it search-api npm run seed-vectors -- --force
-
-# Local
-npm run seed-vectors -- --force
-```
+Vector indexing happens automatically when tools are added or updated through the UI. There's no need for manual seeding.
 
 ### Auto-Creation on Startup
 
@@ -244,8 +201,6 @@ Qdrant collections are automatically created when the server starts. This ensure
 - Fresh deployments work immediately
 - Collection schema stays up-to-date
 - Dev and production environments behave consistently
-
-**Manual Creation**: Run `npm run create-collections` if you need to troubleshoot or recreate collections.
 
 ---
 

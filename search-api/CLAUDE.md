@@ -31,11 +31,6 @@ npm run test:cov               # Coverage report
 npm run typecheck              # TypeScript type checking
 npm run lint                   # ESLint
 
-# Database setup
-npm run create-collections     # Create Qdrant collections
-npm run seed-vectors           # Seed vectors from MongoDB
-npm run seed-vectors -- --force # Force re-seed (clears existing)
-
 # Debug scripts
 npm run test:script:intent     # Test intent extractor
 npm run test:script:plan       # Test query planner

@@ -239,8 +239,8 @@ Add a load balancer to distribute traffic across instances.
 # Check data
 docker exec -it mongodb mongosh toolsearch --eval "db.tools.countDocuments()"
 
-# Re-seed
-docker exec -it search-api npm run seed-vectors -- --force
+# Check vector collections
+curl http://localhost:6333/collections/tools
 ```
 
 See [Troubleshooting Guide](TROUBLESHOOTING.md#search-returns-empty-results).

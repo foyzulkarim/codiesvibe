@@ -283,11 +283,10 @@ export class CollectionConfigService {
 
   /**
    * Map collection name to physical Qdrant collection name
-   * Updated to use simple collection names that match what create-collections creates
+   * Uses simple collection names created during server startup
    */
   getPhysicalCollectionName(collectionName: string): string {
-    // Return the simple collection names that we actually created
-    // This matches the output of create-collections.ts
+    // Return the simple collection names created by qdrantService.createMultiCollections()
     return collectionName;
   }
 }
