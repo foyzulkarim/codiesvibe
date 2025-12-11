@@ -6,9 +6,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { searchClient } from '@/api/search-client';
+import { UseToolsReturn, AiSearchReasoning } from '@/api/types';
 import { apiConfig } from '@/config/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import { UseToolsReturn, AiSearchReasoning } from '@/api/types';
 
 // Types for AI search API response
 interface AiSearchResponse {

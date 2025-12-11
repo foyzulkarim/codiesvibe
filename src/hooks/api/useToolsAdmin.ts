@@ -6,19 +6,15 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { searchClient } from '@/api/search-client';
 import { buildToolsQueryParams } from '@/lib/query-params';
 import { ToolFormValues } from '@/schemas/tool-form.schema';
-import { toast } from 'sonner';
 import type {
   Tool,
   ToolsQueryParams,
   Vocabularies,
   PaginatedToolsResponse,
-  SyncStatus,
-  SyncCollectionName,
-  SyncMetadata,
-  ApprovalStatus,
 } from '@/types';
 
 // Re-export types for consumers that import from this file

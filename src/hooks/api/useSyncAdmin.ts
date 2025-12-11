@@ -6,9 +6,9 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { searchClient } from '@/api/search-client';
 import { apiConfig } from '@/config/api';
-import { toast } from 'sonner';
 import type { SyncStatus, SyncCollectionName, SyncMetadata, Tool } from '@/types';
 
 // ============================================
