@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Search: From Research to Production | SEA 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888a0;
+            --text-muted: #55556a;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --accent-orange: #f97316;
+            --gradient-main: linear-gradient(135deg, #00d4ff 0%, #a855f7 50%, #ec4899 100%);
+            --gradient-subtle: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(168,85,247,0.1) 100%);
+            --font-display: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --border-glow: 0 0 20px rgba(0,212,255,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+        }
+
+        /* Slide Container */
+        .slides-container {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px 100px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(30px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-primary);
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-30px);
+        }
+
+        /* Background Effects */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.06) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .slide > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Grid Pattern Overlay */
+        .slide::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 24px;
+        }
+
+        h1 .gradient-text {
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            letter-spacing: -0.02em;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        p {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .subtitle {
+            font-size: 1.6rem;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+            font-weight: 300;
+        }
+
+        /* Title Slide Specific */
+        .slide-title {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .slide-title h1 {
+            font-size: 4.5rem;
+            max-width: 900px;
+        }
+
+        .speaker-info {
+            margin-top: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .speaker-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .speaker-org {
+            font-size: 1.2rem;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+        }
+
+        .conference-badge {
+            margin-top: 40px;
+            padding: 12px 24px;
+            background: var(--gradient-subtle);
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 100px;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+        }
+
+        /* Cards and Boxes */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 32px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-accent {
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(168,85,247,0.1) 100%);
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 12px;
+            padding: 24px 32px;
+            margin: 24px 0;
+        }
+
+        /* Lists */
+        ul, ol {
+            list-style: none;
+            font-size: 1.3rem;
+        }
+
+        li {
+            padding: 12px 0;
+            padding-left: 32px;
+            position: relative;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+        }
+
+        .list-bad li::before {
+            background: var(--accent-pink);
+        }
+
+        .list-good li::before {
+            background: var(--accent-green);
+        }
+
+        /* Code Blocks */
+        pre {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            background: rgba(0,212,255,0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .code-comment { color: var(--text-muted); }
+        .code-keyword { color: var(--accent-purple); }
+        .code-string { color: var(--accent-green); }
+        .code-number { color: var(--accent-orange); }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            font-size: 1.1rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 16px 20px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .data-table td {
+            padding: 20px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+        }
+
+        .data-table tr td:first-child {
+            border-radius: 12px 0 0 12px;
+        }
+
+        .data-table tr td:last-child {
+            border-radius: 0 12px 12px 0;
+        }
+
+        /* Architecture Diagram */
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 40px;
+        }
+
+        .arch-node {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            position: relative;
+        }
+
+        .arch-node.primary {
+            background: linear-gradient(135deg, rgba(0,212,255,0.15) 0%, rgba(168,85,247,0.15) 100%);
+            border-color: rgba(0,212,255,0.3);
+        }
+
+        .arch-node.secondary {
+            background: rgba(16,185,129,0.1);
+            border-color: rgba(16,185,129,0.3);
+        }
+
+        .arch-arrow {
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+
+        .arch-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        /* Pipeline Flow */
+        .pipeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .pipeline-node {
+            flex: 1;
+            max-width: 280px;
+            text-align: center;
+        }
+
+        .pipeline-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 20px;
+            background: var(--gradient-subtle);
+            border: 1px solid rgba(0,212,255,0.2);
+        }
+
+        .pipeline-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .pipeline-desc {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .pipeline-connector {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            position: relative;
+        }
+
+        .pipeline-connector::after {
+            content: '→';
+            position: absolute;
+            right: -8px;
+            top: -10px;
+            color: var(--accent-purple);
+            font-size: 1.2rem;
+        }
+
+        /* Stats Display */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 32px 20px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Comparison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .comparison-side {
+            padding: 32px;
+            border-radius: 16px;
+        }
+
+        .comparison-side.research {
+            background: linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(168,85,247,0.05) 100%);
+            border: 1px solid rgba(168,85,247,0.2);
+        }
+
+        .comparison-side.production {
+            background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(0,212,255,0.05) 100%);
+            border: 1px solid rgba(0,212,255,0.2);
+        }
+
+        .comparison-side h4 {
+            margin-bottom: 24px;
+        }
+
+        .comparison-side.research h4 {
+            color: var(--accent-purple);
+        }
+
+        .comparison-side.production h4 {
+            color: var(--accent-cyan);
+        }
+
+        /* Takeaway Box */
+        .takeaway {
+            background: linear-gradient(135deg, rgba(0,212,255,0.08) 0%, rgba(168,85,247,0.08) 100%);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 20px;
+            padding: 48px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .takeaway p {
+            font-size: 1.6rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        /* Navigation */
+        .nav-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            width: 48px;
+            height: 48px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0,212,255,0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--gradient-main);
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+
+        /* Slide Counter */
+        .slide-counter {
+            position: fixed;
+            bottom: 40px;
+            right: 60px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            z-index: 1000;
+        }
+
+        /* JSON Display */
+        .json-block {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 12px;
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.7;
+            overflow: hidden;
+        }
+
+        .json-key { color: var(--accent-cyan); }
+        .json-string { color: var(--accent-green); }
+        .json-number { color: var(--accent-orange); }
+        .json-bool { color: var(--accent-purple); }
+
+        /* Links */
+        a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+
+        a:hover {
+            border-bottom-color: var(--accent-cyan);
+        }
+
+        /* Final Slide */
+        .slide-final {
+            text-align: center;
+        }
+
+        .contact-links {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-top: 60px;
+        }
+
+        .contact-item {
+            text-align: center;
+        }
+
+        .contact-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .contact-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .contact-value {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-accent { color: var(--accent-cyan); }
+        .text-muted { color: var(--text-muted); }
+        .mt-20 { margin-top: 20px; }
+        .mt-40 { margin-top: 40px; }
+        .mb-40 { margin-bottom: 40px; }
+
+        /* Speaker Notes (hidden) */
+        .speaker-notes {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .slide {
+                padding: 40px 60px;
+            }
+            h1 { font-size: 3rem; }
+            h2 { font-size: 2.2rem; }
+            .slide-title h1 { font-size: 3.5rem; }
+        }
+
+        /* Animation Classes */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide.active .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .slide.active .delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .slide.active .delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .slide.active .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .slide.active .delay-4 { animation-delay: 0.4s; opacity: 0; }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progress"></div>
+    
+    <div class="slides-container">
+        
+        <!-- Slide 1: Title -->
+        <section class="slide slide-title active" data-slide="1">
+            <h1><span class="gradient-text">Agentic Search</span> for AI Tools Discovery</h1>
+            <p class="subtitle">From Research Concepts to Production Reality</p>
+            
+            <div class="speaker-info">
+                <span class="speaker-name">Foyzul Karim</span>
+                <span class="speaker-org">CodiesVibe.com</span>
+            </div>
+            
+            <div class="conference-badge">
+                Search Engines Amsterdam 2025 • Agentic Search & Reasoning
+            </div>
+        </section>
+
+        <!-- Slide 2: The Challenge -->
+        <section class="slide" data-slide="2">
+            <h2>The Challenge</h2>
+            
+            <div class="card card-accent mb-40 animate-in delay-1">
+                <h4>Users Ask Natural Questions</h4>
+                <ul class="list-bad">
+                    <li>"AI tools for code completion"</li>
+                    <li>"Local code assistants that are free"</li>
+                    <li>"Tools like Cursor but cheaper"</li>
+                </ul>
+            </div>
+            
+            <h4 class="animate-in delay-2">Traditional Keyword Search Fails</h4>
+            <ul class="animate-in delay-2">
+                <li>Misses semantic meaning</li>
+                <li>Can't handle comparisons</li>
+                <li>Ignores constraints (free, local, etc.)</li>
+            </ul>
+            
+        </section>
+
+        <!-- Slide 3: Research to Practice -->
+        <section class="slide" data-slide="3">
+            <h2>From Research to Practice</h2>
+            
+            <table class="data-table animate-in delay-1">
+                <thead>
+                    <tr>
+                        <th>📚 Research Concept</th>
+                        <th>🔨 Our Implementation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Query Understanding (NLP, NLU)</td>
+                        <td><span class="text-accent">LLM Intent Extractor</span></td>
+                    </tr>
+                    <tr>
+                        <td>Dense Retrieval (BERT, embeddings)</td>
+                        <td><span class="text-accent">Multi-Vector Search</span> (Qdrant + 4 collections)</td>
+                    </tr>
+                    <tr>
+                        <td>Result Fusion (CombMNZ, RRF)</td>
+                        <td><span class="text-accent">Reciprocal Rank Fusion</span> (k=60)</td>
+                    </tr>
+                    <tr>
+                        <td>Hybrid Search (BM25 + Dense)</td>
+                        <td><span class="text-accent">Vector + Structured</span> (Qdrant + MongoDB)</td>
+                    </tr>
+                    <tr>
+                        <td>Agentic AI (ReAct, CoT)</td>
+                        <td><span class="text-accent">LangGraph 3-Node Pipeline</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="highlight-box mt-40 text-center animate-in delay-2">
+                <p style="font-size: 1.2rem;">The challenge: How do you make them work together in production?</p>
+            </div>
+        </section>
+
+        <!-- Slide 4: System Architecture -->
+        <section class="slide" data-slide="4">
+            <h2>System Architecture</h2>
+            
+            <div class="pipeline animate-in delay-1">
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">🎯</div>
+                    <div class="pipeline-title">Intent Extractor</div>
+                    <div class="pipeline-desc">LLM understands query</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">📋</div>
+                    <div class="pipeline-title">Query Planner</div>
+                    <div class="pipeline-desc">LLM creates strategy</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">⚡</div>
+                    <div class="pipeline-title">Query Executor</div>
+                    <div class="pipeline-desc">Deterministic execution</div>
+                </div>
+            </div>
+            
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="card">
+                    <h4>Vector Search</h4>
+                    <p style="font-size: 1.1rem;">Qdrant with 4 specialized collections: tools, functionality, useCases, interface</p>
+                </div>
+                <div class="card">
+                    <h4>Structured Search</h4>
+                    <p style="font-size: 1.1rem;">MongoDB for filters: pricing, deployment, categories, features</p>
+                </div>
+            </div>
+            
+            <div class="highlight-box text-center mt-40 animate-in delay-3">
+                <p style="font-size: 1.3rem; color: var(--text-primary);">Results combined via <span class="text-accent">Reciprocal Rank Fusion (RRF)</span></p>
+            </div>
+        </section>
+
+        <!-- Slide 5: Schema Foundation -->
+        <section class="slide" data-slide="5">
+            <h2>Schema: The Foundation</h2>
+            
+            <div class="highlight-box text-center animate-in delay-1">
+                <p style="font-size: 1.4rem; color: var(--text-primary);">
+                    Schema → Collections → Query Planning → Agentic Search
+                </p>
+            </div>
+            
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="json-block" style="font-size: 0.75rem;">
+<span class="json-key">// tools.schema.ts</span>
+{
+  <span class="json-key">"collections"</span>: {
+    <span class="json-key">"tools"</span>: {
+      <span class="json-key">"fields"</span>: [<span class="json-string">"name"</span>, <span class="json-string">"description"</span>],
+      <span class="json-key">"purpose"</span>: <span class="json-string">"semantic identity"</span>
+    },
+    <span class="json-key">"functionality"</span>: {
+      <span class="json-key">"fields"</span>: [<span class="json-string">"features"</span>, <span class="json-string">"capabilities"</span>],
+      <span class="json-key">"purpose"</span>: <span class="json-string">"what it does"</span>
+    },
+    <span class="json-key">"usecases"</span>: {
+      <span class="json-key">"fields"</span>: [<span class="json-string">"scenarios"</span>, <span class="json-string">"workflows"</span>],
+      <span class="json-key">"purpose"</span>: <span class="json-string">"when to use it"</span>
+    },
+    <span class="json-key">"interface"</span>: {
+      <span class="json-key">"fields"</span>: [<span class="json-string">"deployment"</span>, <span class="json-string">"integration"</span>],
+      <span class="json-key">"purpose"</span>: <span class="json-string">"how to use it"</span>
+    }
+  },
+  <span class="json-key">"vocabularies"</span>: {
+    <span class="json-key">"categories"</span>: [...],
+    <span class="json-key">"pricingModels"</span>: [<span class="json-string">"Free"</span>, <span class="json-string">"Paid"</span>]
+  }
+}
+                </div>
+                <div class="card">
+                    <h4>Why Schema-Driven?</h4>
+                    <ul>
+                        <li><span class="text-accent">Defines collections:</span> Schema decides what deserves separate embeddings</li>
+                        <li><span class="text-accent">Enables routing:</span> Query planner knows where to search</li>
+                        <li><span class="text-accent">Validates LLMs:</span> Controlled vocabularies catch hallucinations</li>
+                        <li><span class="text-accent">Portable:</span> New domain = new schema file</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: Data Sync -->
+        <section class="slide" data-slide="6">
+            <h2>MongoDB-Qdrant Smart Sync</h2>
+            <p class="text-muted mb-40">How tools flow into the 4 schema-defined collections</p>
+            
+            <div class="pipeline animate-in delay-1">
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">📝</div>
+                    <div class="pipeline-title">Admin UI</div>
+                    <div class="pipeline-desc">Create/Update tool</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">🗄️</div>
+                    <div class="pipeline-title">MongoDB</div>
+                    <div class="pipeline-desc">Always succeeds</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">⚡</div>
+                    <div class="pipeline-title">Async Sync</div>
+                    <div class="pipeline-desc">Fire-and-forget</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-node">
+                    <div class="pipeline-icon">🔍</div>
+                    <div class="pipeline-title">Qdrant</div>
+                    <div class="pipeline-desc">4 collections</div>
+                </div>
+            </div>
+            
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="card">
+                    <h4>Smart Change Detection</h4>
+                    <ul>
+                        <li>SHA-256 hash per collection</li>
+                        <li>Only sync what changed</li>
+                        <li>~60% fewer embedding calls</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Failure Recovery</h4>
+                    <ul>
+                        <li>Background worker every 60s</li>
+                        <li>Exponential backoff (1min → 1hr)</li>
+                        <li>95% success on first attempt</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Demo Setup -->
+        <section class="slide" data-slide="7">
+            <h2>Demo: Let's Search Together</h2>
+            
+            <div class="highlight-box animate-in delay-1">
+                <p style="font-size: 1.4rem; color: var(--text-primary); text-align: center;">
+                    "Free AI code completion tools that work locally"
+                </p>
+            </div>
+            
+            <h4 class="mt-40 animate-in delay-2">Watch the 3-Node Pipeline in Action</h4>
+            
+            <div class="grid-3 mt-20 animate-in delay-2">
+                <div class="card">
+                    <div style="font-size: 2rem; margin-bottom: 16px;">1️⃣</div>
+                    <h4 style="color: var(--text-primary);">Intent Extraction</h4>
+                    <p style="font-size: 1rem;">What did the LLM understand?</p>
+                </div>
+                <div class="card">
+                    <div style="font-size: 2rem; margin-bottom: 16px;">2️⃣</div>
+                    <h4 style="color: var(--text-primary);">Query Planning</h4>
+                    <p style="font-size: 1rem;">How will we search?</p>
+                </div>
+                <div class="card">
+                    <div style="font-size: 2rem; margin-bottom: 16px;">3️⃣</div>
+                    <h4 style="color: var(--text-primary);">Execution</h4>
+                    <p style="font-size: 1rem;">What results do we get?</p>
+                </div>
+            </div>
+            
+            <p class="text-center mt-40 text-muted animate-in delay-3" style="font-size: 1.1rem;">
+                Debug mode enabled for visibility into each pipeline stage
+            </p>
+        </section>
+
+        <!-- Slide 8: Intent Extraction -->
+        <section class="slide" data-slide="8">
+            <h2>Node 1: Intent Extraction</h2>
+            
+            <div class="grid-2 animate-in delay-1">
+                <div>
+                    <h4>Input Query</h4>
+                    <div class="json-block">
+                        <span class="json-string">"Free AI code completion tools that work locally"</span>
+                    </div>
+                </div>
+                <div>
+                    <h4>Extracted Intent</h4>
+                    <div class="json-block">
+{
+  <span class="json-key">"primaryGoal"</span>: <span class="json-string">"find"</span>,
+  <span class="json-key">"category"</span>: [<span class="json-string">"Code Completion"</span>, <span class="json-string">"Local LLM"</span>],
+  <span class="json-key">"deployment"</span>: <span class="json-string">"Local"</span>,
+  <span class="json-key">"pricing"</span>: <span class="json-string">"free"</span>,
+  <span class="json-key">"functionality"</span>: [<span class="json-string">"Code Completion"</span>],
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.92</span>
+}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-3 mt-40 animate-in delay-2">
+                <div class="card text-center">
+                    <div class="stat-value" style="font-size: 2rem;">Schema</div>
+                    <p class="text-muted mt-20">Controlled vocabularies</p>
+                </div>
+                <div class="card text-center">
+                    <div class="stat-value" style="font-size: 2rem;">Validation</div>
+                    <p class="text-muted mt-20">JSON structure check</p>
+                </div>
+                <div class="card text-center">
+                    <div class="stat-value" style="font-size: 2rem;">Confidence</div>
+                    <p class="text-muted mt-20">Fallback triggers</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 9: Query Planning -->
+        <section class="slide" data-slide="9">
+            <h2>Node 2: Query Planning</h2>
+            
+            <div class="json-block animate-in delay-1" style="font-size: 0.8rem;">
+{
+  <span class="json-key">"strategy"</span>: <span class="json-string">"multi-collection-hybrid"</span>,
+  <span class="json-key">"vectorSources"</span>: [
+    { <span class="json-key">"collection"</span>: <span class="json-string">"tools"</span>, <span class="json-key">"topK"</span>: <span class="json-number">20</span>, <span class="json-key">"weight"</span>: <span class="json-number">0.4</span> },
+    { <span class="json-key">"collection"</span>: <span class="json-string">"functionality"</span>, <span class="json-key">"topK"</span>: <span class="json-number">15</span>, <span class="json-key">"weight"</span>: <span class="json-number">0.35</span> },
+    { <span class="json-key">"collection"</span>: <span class="json-string">"interface"</span>, <span class="json-key">"topK"</span>: <span class="json-number">10</span>, <span class="json-key">"weight"</span>: <span class="json-number">0.25</span> }
+  ],
+  <span class="json-key">"structuredSources"</span>: [{
+    <span class="json-key">"source"</span>: <span class="json-string">"mongodb"</span>,
+    <span class="json-key">"filters"</span>: [
+      { <span class="json-key">"field"</span>: <span class="json-string">"pricingSummary.hasFreeTier"</span>, <span class="json-key">"value"</span>: <span class="json-bool">true</span> },
+      { <span class="json-key">"field"</span>: <span class="json-string">"deployment"</span>, <span class="json-key">"value"</span>: <span class="json-string">"Local"</span> }
+    ]
+  }],
+  <span class="json-key">"fusion"</span>: <span class="json-string">"rrf"</span>
+}
+            </div>
+            
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="card">
+                    <h4>4 Search Strategies</h4>
+                    <ul>
+                        <li>identity-focused</li>
+                        <li>capability-focused</li>
+                        <li>usecase-focused</li>
+                        <li>multi-collection-hybrid</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Adaptive Routing</h4>
+                    <ul>
+                        <li>Collection selection by intent</li>
+                        <li>Dynamic topK allocation</li>
+                        <li>Weighted result fusion</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 10: Query Execution -->
+        <section class="slide" data-slide="10">
+            <h2>Node 3: Query Execution</h2>
+            
+            <div class="grid-2 animate-in delay-1">
+                <div class="card">
+                    <h4>Vector Search (Qdrant)</h4>
+                    <div class="json-block" style="font-size: 0.8rem;">
+<span class="json-key">// Parallel queries to collections</span>
+tools: <span class="json-number">20</span> results → <span class="json-string">"semantic identity"</span>
+functionality: <span class="json-number">15</span> results → <span class="json-string">"what it does"</span>
+interface: <span class="json-number">10</span> results → <span class="json-string">"how to use"</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4>Structured Search (MongoDB)</h4>
+                    <div class="json-block" style="font-size: 0.8rem;">
+<span class="json-key">// Apply hard filters</span>
+{ <span class="json-key">"pricingSummary.hasFreeTier"</span>: <span class="json-bool">true</span> }
+{ <span class="json-key">"deployment"</span>: <span class="json-string">"Local"</span> }
+→ <span class="json-number">45</span> matching tools
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pipeline mt-40 animate-in delay-2" style="justify-content: center; gap: 40px;">
+                <div class="card text-center" style="padding: 20px 30px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Vector Results</p>
+                    <p class="text-accent" style="font-size: 1.3rem; font-weight: 600;">45 docs</p>
+                </div>
+                <div style="font-size: 2rem; color: var(--accent-cyan);">+</div>
+                <div class="card text-center" style="padding: 20px 30px;">
+                    <p class="text-muted" style="font-size: 0.9rem;">Structured Results</p>
+                    <p class="text-accent" style="font-size: 1.3rem; font-weight: 600;">45 docs</p>
+                </div>
+                <div style="font-size: 2rem; color: var(--accent-cyan);">→</div>
+                <div class="card text-center" style="padding: 20px 30px; background: linear-gradient(135deg, rgba(0,212,255,0.15) 0%, rgba(168,85,247,0.15) 100%);">
+                    <p class="text-muted" style="font-size: 0.9rem;">RRF Fusion</p>
+                    <p class="text-accent" style="font-size: 1.3rem; font-weight: 600;">Top 20</p>
+                </div>
+            </div>
+            
+            <div class="highlight-box mt-40 text-center animate-in delay-3">
+                <p style="font-size: 1.2rem;">Node 3 is <span class="text-accent">deterministic</span> — no LLM calls, just fast database queries</p>
+            </div>
+        </section>
+
+        <!-- Slide 11: Dynamic Result Fusion -->
+        <section class="slide" data-slide="11">
+            <h2>Dynamic Result Fusion</h2>
+            <p class="text-muted mb-40">The query planner decides how to merge results</p>
+
+            <div class="grid-2 animate-in delay-1">
+                <div class="card">
+                    <h4>LLM Chooses the Strategy</h4>
+                    <ul>
+                        <li><span class="text-accent">3+ sources</span> → RRF (rank-based)</li>
+                        <li><span class="text-accent">2 sources</span> → Weighted Sum</li>
+                        <li><span class="text-accent">1 source</span> → No fusion needed</li>
+                    </ul>
+                    <p class="text-muted mt-20" style="font-size: 0.95rem;">Fusion method is part of the query plan, not hardcoded</p>
+                </div>
+                <div class="card">
+                    <h4>Why Dynamic?</h4>
+                    <ul>
+                        <li>Simple queries don't need complex fusion</li>
+                        <li>Multi-collection queries benefit from RRF</li>
+                        <li>Hybrid (vector + structured) needs special handling</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="json-block mt-40 animate-in delay-2" style="font-size: 0.85rem;">
+<span class="json-key">// query-executor.node.ts</span>
+finalCandidates = fuseResults(
+  candidatesBySource,
+  <span class="json-string">executionPlan.fusion</span> <span class="json-key">// LLM decided: 'rrf' | 'weighted_sum' | 'none'</span>
+);
+            </div>
+
+            <div class="highlight-box mt-40 text-center animate-in delay-3">
+                <p style="font-size: 1.2rem;">The <span class="text-accent">agentic</span> part: even fusion strategy is planned, not prescribed</p>
+            </div>
+        </section>
+
+        <!-- Slide 12: Plan Caching -->
+        <section class="slide" data-slide="12">
+            <h2>Plan Caching</h2>
+
+            <div class="grid-2 animate-in delay-1">
+                <div>
+                    <h4>The Problem</h4>
+                    <ul class="list-bad">
+                        <li>LLM calls are expensive</li>
+                        <li>Identical queries waste compute</li>
+                        <li>Latency adds up</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>The Solution</h4>
+                    <ul class="list-good">
+                        <li>Hash the query (MD5)</li>
+                        <li>Store intent + execution plan</li>
+                        <li>Exact match lookup</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="card">
+                    <h4>What Gets Cached</h4>
+                    <ul>
+                        <li>Original query + hash</li>
+                        <li>Extracted intent state</li>
+                        <li>Query execution plan</li>
+                        <li>Result candidates</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Why Not Semantic Matching?</h4>
+                    <ul>
+                        <li>"free code editors" ≈ "paid code editors"</li>
+                        <li>Similar embeddings, opposite filters!</li>
+                        <li>Exact match prevents wrong results</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="highlight-box mt-40 text-center animate-in delay-3">
+                <p style="font-size: 1.2rem;">Cache hit = skip 2 LLM calls (intent + planner) → significant cost savings</p>
+            </div>
+        </section>
+
+        <!-- Slide 13: Production Challenges -->
+        <section class="slide" data-slide="13">
+            <h2>Production Challenges</h2>
+            <p class="text-muted mb-40">Problems you won't find in research papers...</p>
+            
+            <table class="data-table animate-in delay-1">
+                <thead>
+                    <tr>
+                        <th>Challenge</th>
+                        <th>Solution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>LLM costs adding up</td>
+                        <td><span class="text-accent">Plan cache</span> (exact-match, skips 2 LLM calls)</td>
+                    </tr>
+                    <tr>
+                        <td>LLM hallucinations</td>
+                        <td><span class="text-accent">Schema validation</span> + controlled vocabularies</td>
+                    </tr>
+                    <tr>
+                        <td>Multi-collection different scales</td>
+                        <td><span class="text-accent">Dynamic fusion</span> (LLM-planned, scale-invariant)</td>
+                    </tr>
+                    <tr>
+                        <td>MongoDB-Qdrant sync</td>
+                        <td><span class="text-accent">Smart sync</span> + background worker</td>
+                    </tr>
+                    <tr>
+                        <td>How to evaluate?</td>
+                        <td><span class="text-accent">User clicks</span> + diversity metrics</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Slide 14: What I'm Still Figuring Out -->
+        <section class="slide" data-slide="14">
+            <h2>What I'm Still Figuring Out</h2>
+            <p class="text-muted mb-40">Honest questions from building this...</p>
+
+            <div class="grid-2 animate-in delay-1">
+                <div class="card">
+                    <h4>Evaluation is Hard</h4>
+                    <ul>
+                        <li>How do I know if results are "good"?</li>
+                        <li>User clicks? But users click bad results too</li>
+                        <li>No standard benchmarks for agentic search</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Schema Evolution</h4>
+                    <ul>
+                        <li>New AI tool categories appear monthly</li>
+                        <li>When do I add vs. merge categories?</li>
+                        <li>Re-embedding everything is expensive</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid-2 mt-20 animate-in delay-2">
+                <div class="card">
+                    <h4>LLM Unpredictability</h4>
+                    <ul>
+                        <li>Same query, different plans sometimes</li>
+                        <li>Model updates break prompts</li>
+                        <li>How much should I constrain the LLM?</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Cost vs Quality</h4>
+                    <ul>
+                        <li>Better models = better plans = more $$$</li>
+                        <li>Where's the sweet spot?</li>
+                        <li>When to cache vs. when to re-plan?</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 15: What I Learned -->
+        <section class="slide" data-slide="15">
+            <h2>What I Learned Building This</h2>
+
+            <div class="animate-in delay-1">
+                <ol style="counter-reset: item;">
+                    <li style="padding-left: 48px;"><span class="text-accent">Schema first.</span> Define your domain before writing any LLM prompts. It saves debugging time later.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Let LLMs reason, let DBs retrieve.</span> Don't ask the LLM to search - ask it to plan. Databases are faster and cheaper.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Cache aggressively, but carefully.</span> Semantic caching sounds great until "free" and "paid" return the same results.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Plan for failure.</span> Qdrant down? Background worker. LLM hallucinates? Schema validation. Always have fallbacks.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Start simple, add complexity when needed.</span> I started with 1 collection. Now I have 4. The schema told me when to split.</li>
+                </ol>
+            </div>
+
+            <div class="takeaway animate-in delay-2">
+                <p style="font-size: 1.3rem;">
+                    Build something real. Break it. Fix it. <span class="text-accent">That's how you learn.</span>
+                </p>
+            </div>
+        </section>
+
+        <!-- Slide 16: Resources -->
+        <section class="slide slide-final" data-slide="16">
+            <h2>Try It Yourself</h2>
+            
+            <div class="contact-links animate-in delay-1">
+                <div class="contact-item">
+                    <div class="contact-icon">🌐</div>
+                    <div class="contact-label">Live Demo</div>
+                    <div class="contact-value"><a href="https://codiesvibe.com">codiesvibe.com</a></div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">💻</div>
+                    <div class="contact-label">Source Code</div>
+                    <div class="contact-value"><a href="https://github.com/foyzulkarim/codiesvibe">github.com/foyzulkarim/codiesvibe</a></div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📚</div>
+                    <div class="contact-label">Documentation</div>
+                    <div class="contact-value">/docs/architecture</div>
+                </div>
+            </div>
+            
+            <div class="takeaway mt-40 animate-in delay-2">
+                <p style="font-size: 1.8rem;">Questions?</p>
+            </div>
+        </section>
+
+        <!-- Slide 17: Thank You -->
+        <section class="slide slide-title" data-slide="17">
+            <h1><span class="gradient-text">Thank You!</span></h1>
+            <p class="subtitle">Let's bridge research and practice together</p>
+            
+            <div class="speaker-info">
+                <span class="speaker-name">Foyzul Karim</span>
+                <span class="speaker-org">codiesvibe.com</span>
+                <span class="speaker-org" style="margin-top: 8px;">github.com/foyzulkarim</span>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">←</button>
+        <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">→</button>
+    </div>
+    
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">17</span>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+        
+        function updateProgress() {
+            const progress = (currentSlide / totalSlides) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('currentSlide').textContent = currentSlide;
+        }
+        
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+            
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index + 1 === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index + 1 < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+            
+            updateProgress();
+        }
+        
+        function changeSlide(direction) {
+            currentSlide += direction;
+            showSlide(currentSlide);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                e.preventDefault();
+                changeSlide(-1);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                currentSlide = 1;
+                showSlide(currentSlide);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                currentSlide = totalSlides;
+                showSlide(currentSlide);
+            }
+        });
+        
+        // Touch navigation
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) {
+                changeSlide(1);
+            } else if (touchEndX - touchStartX > 50) {
+                changeSlide(-1);
+            }
+        });
+        
+        // Initialize
+        updateProgress();
+    </script>
+</body>
+</html>
