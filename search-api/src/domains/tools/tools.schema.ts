@@ -408,8 +408,6 @@ export const toolsSchema: DomainSchema = {
       'pricingSummary.hasCustomPricing',
       'pricingSummary.pricingModel',
       'categories',
-      'categories.primary',
-      'categories.secondary',
       'functionality',
       'interface',
       'deployment',

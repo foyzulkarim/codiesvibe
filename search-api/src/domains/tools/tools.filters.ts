@@ -184,7 +184,7 @@ export function buildToolsFilters(intentState: IntentStateForFilters): FilterObj
       // Skip empty array
     } else {
       filters.push({
-        field: 'categories.primary',
+        field: 'categories',
         operator: 'in',
         value: Array.isArray(categoryValue) ? categoryValue : [categoryValue],
       });
@@ -228,7 +228,7 @@ export function buildToolsFilters(intentState: IntentStateForFilters): FilterObj
   // ============================================================================
   if (intentState.functionality) {
     filters.push({
-      field: 'capabilities.core',
+      field: 'functionality',
       operator: 'in',
       value: [intentState.functionality],
     });

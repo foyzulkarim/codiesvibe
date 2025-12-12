@@ -187,6 +187,8 @@ export class MongoDBService {
         ? criteria
         : { ...criteria, approvalStatus: 'approved' } as Filter<ITool>;
 
+      console.log(`🗄️ searchTools(): MongoDB query:`, searchCriteria);
+
       let query = collection.find(searchCriteria);
 
       if (limit) {
