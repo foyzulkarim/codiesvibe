@@ -11,9 +11,6 @@ import {
   getRecommendedTopK,
   getRecommendedFusionMethod
 } from '#domains/tools/tools.validators.js';
-// Keep these services for now - they provide collection orchestration
-import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service.js';
-import { VectorTypeRegistryService } from '#services/embedding/vector-type-registry.service.js';
 import { CONFIG } from '#config/env.config.js';
 import type { LogMetadata } from '#types/logger.types.js';
 import type { DomainSchema } from '#core/types/schema.types.js';
@@ -32,10 +29,6 @@ const LOG_CONFIG = {
   enabled: !CONFIG.env.IS_PRODUCTION,
   prefix: '🗺️ Query Planner:',
 };
-
-// Initialize multi-collection services
-const collectionConfig = new QdrantCollectionConfigService();
-const vectorTypeRegistry = new VectorTypeRegistryService(collectionConfig);
 
 // Helper function for conditional logging
 const log = (message: string, data?: LogMetadata) => {
@@ -127,10 +120,10 @@ async function validateAndEnhanceQueryPlan(
     }
 
     // Enhance fusion method using domain validator
-    let fusionMethod: QueryPlan['fusion'] = queryPlan.fusion || (getRecommendedFusionMethod(enhancedVectorSources.length) as QueryPlan['fusion']);
+    const fusionMethod: QueryPlan['fusion'] = queryPlan.fusion || (getRecommendedFusionMethod(enhancedVectorSources.length) as QueryPlan['fusion']);
 
     // Build enhanced structured sources using domain-specific filter builder
-    let enhancedStructuredSources = queryPlan.structuredSources || [];
+    const enhancedStructuredSources = queryPlan.structuredSources || [];
 
     // Use domain handler to build filters from intent state
     const filters = domainHandlers.buildFilters(intentState);
