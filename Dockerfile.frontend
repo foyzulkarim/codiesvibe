@@ -8,6 +8,7 @@ ARG VERSION
 
 # Build arguments for Vite environment variables
 ARG VITE_API_URL=http://localhost:4000/api
+ARG VITE_SEARCH_API_URL=/api
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG NODE_ENV=production
 
@@ -28,11 +29,13 @@ FROM dependencies AS builder
 
 # Build arguments must be declared before they can be used
 ARG VITE_API_URL=http://localhost:4000/api
+ARG VITE_SEARCH_API_URL=/api
 ARG VITE_CLERK_PUBLISHABLE_KEY
 ARG NODE_ENV=production
 
 # Set environment variables from build arguments BEFORE copying files
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_SEARCH_API_URL=${VITE_SEARCH_API_URL}
 ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
 ENV NODE_ENV=${NODE_ENV}
 
@@ -40,7 +43,7 @@ ENV NODE_ENV=${NODE_ENV}
 COPY . .
 
 # Debug: Verify environment variables are set correctly
-RUN echo "Building with VITE_API_URL=${VITE_API_URL}" && echo "VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}" && echo "NODE_ENV=${NODE_ENV}"
+RUN echo "Building with VITE_API_URL=${VITE_API_URL}" && echo "VITE_SEARCH_API_URL=${VITE_SEARCH_API_URL}" && echo "VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}" && echo "NODE_ENV=${NODE_ENV}"
 
 # Build the application with environment variables available
 RUN npm run build

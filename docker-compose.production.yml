@@ -57,6 +57,7 @@ services:
         - VERSION=${VERSION}
         # Vite build-time environment variables (from .env file)
         - VITE_API_URL=${VITE_API_URL}
+        - VITE_SEARCH_API_URL=${VITE_SEARCH_API_URL}
         - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
         - NODE_ENV=production
     container_name: codiesvibe-frontend-init
