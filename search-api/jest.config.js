@@ -80,6 +80,9 @@ export default {
       statements: 70
     }
   },
+  // setupFiles runs BEFORE test framework - sets env vars before dotenv loads
+  setupFiles: ['<rootDir>/src/__tests__/setup-env.ts'],
+  // setupFilesAfterEnv runs AFTER test framework - sets up mocks and utilities
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   verbose: true,

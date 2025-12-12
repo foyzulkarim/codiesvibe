@@ -51,8 +51,8 @@ jest.mock('together-ai', () => ({
   })),
 }));
 
-// Mock external services
-jest.mock('../../../services/database/qdrant.service.js', () => ({
+// Mock external services - use hash imports to match actual service imports
+jest.mock('#services/database/qdrant.service.js', () => ({
   qdrantService: {
     upsertToolVector: jest.fn().mockResolvedValue(undefined),
     deleteToolVector: jest.fn().mockResolvedValue(undefined),
@@ -61,7 +61,7 @@ jest.mock('../../../services/database/qdrant.service.js', () => ({
 }));
 
 // Mock the embedding service to avoid real API calls
-jest.mock('../../../services/embedding/embedding.service.js', () => {
+jest.mock('#services/embedding/embedding.service.js', () => {
   const mockGenerateEmbedding = jest.fn().mockResolvedValue([0.1, 0.2, 0.3]);
 
   return {
@@ -80,7 +80,7 @@ jest.mock('../../../services/embedding/embedding.service.js', () => {
   };
 });
 
-jest.mock('../../../services/database/qdrant-collection-config.service.js', () => ({
+jest.mock('#services/database/qdrant-collection-config.service.js', () => ({
   QdrantCollectionConfigService: jest.fn().mockImplementation(() => ({
     getVectorTypeForCollection: jest.fn().mockImplementation((collection: string) => {
       const map: Record<string, string> = {
@@ -103,7 +103,7 @@ jest.mock('../../../services/database/qdrant-collection-config.service.js', () =
   })),
 }));
 
-jest.mock('../../../services/embedding/content-generator-factory.service.js', () => ({
+jest.mock('#services/embedding/content-generator-factory.service.js', () => ({
   ContentGeneratorFactory: jest.fn().mockImplementation(() => ({
     createGenerator: jest.fn().mockImplementation(() => ({
       generate: jest.fn().mockReturnValue('Generated content for embedding'),
@@ -111,15 +111,15 @@ jest.mock('../../../services/embedding/content-generator-factory.service.js', ()
   })),
 }));
 
-jest.mock('../../../types/tool.types.js', () => ({
+jest.mock('#types/tool.types.js', () => ({
   ToolDataValidator: jest.fn().mockImplementation(() => ({
     generateToolId: jest.fn().mockImplementation((tool) => tool.id || tool.name?.toLowerCase().replace(/\s+/g, '-')),
   })),
 }));
 
-// Import mocked services for assertions
-import { qdrantService } from '../../../services/database/qdrant.service.js';
-import { embeddingService } from '../../../services/embedding/embedding.service.js';
+// Import mocked services for assertions - use hash imports to match mocks
+import { qdrantService } from '#services/database/qdrant.service.js';
+import { embeddingService } from '#services/embedding/embedding.service.js';
 
 // Import the service after mocking
 import {
@@ -128,7 +128,7 @@ import {
   SYNC_ERROR_CODES,
   ToolSyncResult,
   CollectionSyncResult,
-} from '../../../services/sync/tool-sync.service.js';
+} from '#services/sync/tool-sync.service.js';
 
 describe('ToolSyncService', () => {
   let service: ToolSyncService;
