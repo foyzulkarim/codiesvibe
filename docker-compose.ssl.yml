@@ -1,0 +1,105 @@
+# CodiesVibe Production with SSL (Let's Encrypt)
+# For DigitalOcean deployment with automatic SSL certificate management
+#
+# Usage:
+#   1. First run: docker compose -f docker-compose.ssl.yml up -d
+#   2. Get certificates: docker compose -f docker-compose.ssl.yml run --rm certbot
+#   3. Restart nginx: docker compose -f docker-compose.ssl.yml restart nginx
+
+services:
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: codiesvibe-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.ssl.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
+    networks:
+      - codiesvibe-network
+    depends_on:
+      frontend-init:
+        condition: service_completed_successfully
+      search-api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    # Reload nginx when certificates are renewed
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  # Certbot for Let's Encrypt SSL certificates
+  certbot:
+    image: certbot/certbot:latest
+    container_name: codiesvibe-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    networks:
+      - codiesvibe-network
+    # Renew certificates every 12 hours
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # Frontend Init Container
+  frontend-init:
+    image: ghcr.io/foyzulkarim/codiesvibe-frontend:${FRONTEND_VERSION:-latest}
+    container_name: codiesvibe-frontend-init
+    volumes:
+      - frontend_dist:/shared/dist
+    command: sh -c "cp -r /usr/share/nginx/html/* /shared/dist/ && echo 'Frontend assets copied' && ls -la /shared/dist/"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - codiesvibe-network
+    restart: "no"
+    user: root
+
+  # Search API Service
+  search-api:
+    image: ghcr.io/foyzulkarim/codiesvibe-search-api:${SEARCH_API_VERSION:-latest}
+    container_name: codiesvibe-search-api-prod
+    expose:
+      - "4003"
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - PORT=4003
+    networks:
+      - codiesvibe-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100M,mode=1777
+      - /app/logs:rw,size=50M,mode=0755
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  codiesvibe-network:
+    driver: bridge
+
+volumes:
+  frontend_dist:
+    driver: local
