@@ -82,7 +82,7 @@ jest.mock('../../../middleware/role.middleware', () => ({
 }));
 
 // Mock the sync services
-jest.mock('../../../services/sync-worker.service.js', () => ({
+jest.mock('../../../services/sync/sync-worker.service.js', () => ({
   syncWorkerService: {
     getSyncStats: jest.fn().mockResolvedValue({
       total: 100,
@@ -133,7 +133,7 @@ jest.mock('../../../services/sync-worker.service.js', () => ({
   },
 }));
 
-jest.mock('../../../services/tool-sync.service.js', () => ({
+jest.mock('../../../services/sync/tool-sync.service.js', () => ({
   toolSyncService: {
     syncTool: jest.fn().mockResolvedValue({
       success: true,
@@ -174,8 +174,8 @@ jest.mock('../../../middleware/correlation.middleware.js', () => ({
 }));
 
 import syncRoutes from '../../../routes/sync.routes.js';
-import { syncWorkerService } from '../../../services/sync-worker.service.js';
-import { toolSyncService } from '../../../services/tool-sync.service.js';
+import { syncWorkerService } from '../../../services/sync/sync-worker.service.js';
+import { toolSyncService } from '../../../services/sync/tool-sync.service.js';
 
 describe('Sync Routes Integration Tests', () => {
   let app: Express;

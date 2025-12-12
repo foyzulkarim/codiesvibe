@@ -1,5 +1,5 @@
-import { connectToMongoDB } from "#config/database";
-import { embeddingConfig } from "#config/constants";
+import { connectToMongoDB } from "#config/database.js";
+import { embeddingConfig } from "#config/constants.js";
 
 /**
  * Script to set up MongoDB indexes for the plans collection
@@ -141,7 +141,7 @@ async function setupCacheIndexes(): Promise<void> {
     console.log("\n🧪 Inserting sample cache data for testing...");
 
     // Use embedding service
-    const { embeddingService } = await import("#services/embedding/embedding.service");
+    const { embeddingService } = await import("#services/embedding/embedding.service.js");
     await embeddingService.initialize();
 
     const sampleQuery = "code editor";

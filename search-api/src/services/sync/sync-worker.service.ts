@@ -6,10 +6,10 @@
  */
 
 import { Filter } from 'mongodb';
-import { ITool, SyncCollectionName } from '../../types/tool.interfaces.js';
+import { ITool, SyncCollectionName } from '#types/tool.interfaces.js';
 import { toolSyncService } from './tool-sync.service.js';
-import { mongoDBService } from '../database/mongodb.service.js';
-import { searchLogger } from '../../config/logger.js';
+import { mongoDBService } from '#services/database/mongodb.service.js';
+import { searchLogger } from '#config/logger.js';
 
 // ============================================
 // TYPES AND CONFIGURATION

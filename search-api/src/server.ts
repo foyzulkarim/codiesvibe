@@ -20,7 +20,8 @@ import {
 import { setupSwaggerDocs } from './docs/swagger.setup.js';
 import { initializeServer } from './startup/server.startup.js';
 import { searchLogger } from './config/logger.js';
-import { CONFIG } from '#config/env.config';
+import { CONFIG } from '#config/env.config.js';
+import { validateCorsConfiguration } from './config/cors.config.js';
 
 // Route imports
 import searchRoutes from './routes/search.routes.js';
@@ -30,6 +31,9 @@ import healthRoutes from './routes/health.routes.js';
 
 // Validate critical environment variables
 validateEnvironment();
+
+// Validate CORS configuration specifically
+validateCorsConfiguration();
 
 // Create Express application
 const app = express();

@@ -1,6 +1,6 @@
 import { Together } from 'together-ai';
-import { embeddingConfig as embeddingConstants } from "#config/constants";
-import { CONFIG } from '#config/env.config';
+import { embeddingConfig as embeddingConstants } from "#config/constants.js";
+import { CONFIG } from '#config/env.config.js';
 
 // Model configuration
 const MODEL_CONFIG = {

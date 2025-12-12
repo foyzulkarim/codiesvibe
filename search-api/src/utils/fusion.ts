@@ -1,5 +1,5 @@
-import { Candidate } from '../types/candidate.js';
-import { CONFIG } from '#config/env.config';
+import { Candidate } from '#types/candidate.js';
+import { CONFIG } from '#config/env.config.js';
 
 // Configuration for logging
 const LOG_CONFIG = {

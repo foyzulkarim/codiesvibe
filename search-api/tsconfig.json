@@ -30,7 +30,10 @@
       "#nodes/*": ["./nodes/*"],
       "#core/*": ["./core/*"],
       "#shared/*": ["./shared/*"],
-      "#domains/*": ["./domains/*"]
+      "#domains/*": ["./domains/*"],
+      "#controllers/*": ["./controllers/*"],
+      "#validation/*": ["./validation/*"],
+      "#schemas/*": ["./schemas/*"]
     }
   },
   "include": ["src/**/*"],

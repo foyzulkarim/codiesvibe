@@ -276,7 +276,7 @@ function buildConfig(): AppConfig {
  *
  * Usage:
  * ```typescript
- * import { CONFIG } from '#config/env.config';
+ * import { CONFIG } from '#config/env.config.js';
  *
  * const port = CONFIG.server.PORT;
  * const isProduction = CONFIG.env.IS_PRODUCTION;

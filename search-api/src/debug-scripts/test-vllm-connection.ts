@@ -10,7 +10,7 @@
 
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
-import { CONFIG } from '../config/env.config.js';
+import { CONFIG } from '#config/env.config.js';
 
 // Load environment variables
 dotenv.config();

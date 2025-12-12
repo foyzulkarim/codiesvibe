@@ -6,7 +6,7 @@
  */
 
 import crypto from 'crypto';
-import { ITool, SyncCollectionName } from '../../types/tool.interfaces.js';
+import { ITool, SyncCollectionName } from '#types/tool.interfaces.js';
 
 // ============================================
 // FIELD-TO-COLLECTION MAPPINGS

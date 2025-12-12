@@ -1,9 +1,9 @@
-import { ToolData } from '../../types/tool.types.js';
-import { QdrantCollectionConfigService } from '../database/qdrant-collection-config.service.js';
-import { VectorTypeRegistryService } from '../embedding/vector-type-registry.service.js';
-import { ContentGeneratorFactory } from '../embedding/content-generator-factory.service.js';
-import { qdrantService } from '../database/qdrant.service.js';
-import { embeddingService } from '../embedding/embedding.service.js';
+import { ToolData } from '#types/tool.types.js';
+import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service.js';
+import { VectorTypeRegistryService } from '#services/embedding/vector-type-registry.service.js';
+import { ContentGeneratorFactory } from '#services/embedding/content-generator-factory.service.js';
+import { qdrantService } from '#services/database/qdrant.service.js';
+import { embeddingService } from '#services/embedding/embedding.service.js';
 
 export interface MultiCollectionRequest {
   query: string;

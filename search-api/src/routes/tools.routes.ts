@@ -11,20 +11,20 @@ import {
   type GetToolsQuery,
   type GetMyToolsQuery,
   type GetAdminToolsQuery,
-} from '../schemas/tool.schema.js';
-import { searchLogger } from '../config/logger.js';
-import { SearchRequest } from '../middleware/correlation.middleware.js';
+} from '#schemas/tool.schema.js';
+import { searchLogger } from '#config/logger.js';
+import { SearchRequest } from '#middleware/correlation.middleware.js';
 import { toolsSchema } from '#domains/tools/index.js';
-import { clerkRequireAuth } from '../middleware/clerk-auth.middleware.js';
+import { clerkRequireAuth } from '#middleware/clerk-auth.middleware.js';
 import {
   attachUserRole,
   requireAdmin,
   RoleAuthenticatedRequest,
   isAdmin,
   isOwner,
-} from '../middleware/role.middleware.js';
-import { toolsMutationLimiter } from '../middleware/rate-limiters.js';
-import { getErrorMessage } from '#utils/error-handling';
+} from '#middleware/role.middleware.js';
+import { toolsMutationLimiter } from '#middleware/rate-limiters.js';
+import { getErrorMessage } from '#utils/error-handling.js';
 
 const router = Router();
 

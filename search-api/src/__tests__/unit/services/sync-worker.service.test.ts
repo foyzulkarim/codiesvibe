@@ -41,7 +41,7 @@ jest.mock('../../../config/database', () => ({
 }));
 
 // Mock the tool sync service
-jest.mock('../../../services/tool-sync.service.js', () => ({
+jest.mock('../../../services/sync/tool-sync.service.js', () => ({
   toolSyncService: {
     syncToolToCollections: jest.fn().mockResolvedValue({
       success: true,
@@ -79,8 +79,8 @@ import {
   SyncWorkerConfig,
   SyncWorkerStatus,
   SweepResult,
-} from '../../../services/sync-worker.service.js';
-import { toolSyncService } from '../../../services/tool-sync.service.js';
+} from '../../../services/sync/sync-worker.service.js';
+import { toolSyncService } from '../../../services/sync/tool-sync.service.js';
 
 describe('SyncWorkerService', () => {
   let service: SyncWorkerService;

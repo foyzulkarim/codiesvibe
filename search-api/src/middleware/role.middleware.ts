@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getAuth } from '@clerk/express';
 import { ClerkAuthenticatedRequest } from './clerk-auth.middleware.js';
-import { searchLogger } from '../config/logger.js';
+import { searchLogger } from '#config/logger.js';
 import { SearchRequest } from './correlation.middleware.js';
 
 // User roles

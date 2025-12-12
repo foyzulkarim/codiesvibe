@@ -6,14 +6,14 @@
  */
 
 import { Server } from 'http';
-import { searchLogger } from '../config/logger.js';
-import { healthCheckService } from '../services/infrastructure/health-check.service.js';
-import { gracefulShutdown } from '../services/infrastructure/graceful-shutdown.service.js';
-import { syncWorkerService } from '../services/sync/sync-worker.service.js';
-import { circuitBreakerManager } from '../services/infrastructure/circuit-breaker.service.js';
-import { qdrantService } from '../services/database/qdrant.service.js';
-import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from '../config/database.js';
-import { CONFIG } from '#config/env.config';
+import { searchLogger } from '#config/logger.js';
+import { healthCheckService } from '#services/infrastructure/health-check.service.js';
+import { gracefulShutdown } from '#services/infrastructure/graceful-shutdown.service.js';
+import { syncWorkerService } from '#services/sync/sync-worker.service.js';
+import { circuitBreakerManager } from '#services/infrastructure/circuit-breaker.service.js';
+import { qdrantService } from '#services/database/qdrant.service.js';
+import { getMongoClient, getQdrantClient, connectToMongoDB, mongoConfig } from '#config/database.js';
+import { CONFIG } from '#config/env.config.js';
 
 /**
  * Connect to MongoDB database

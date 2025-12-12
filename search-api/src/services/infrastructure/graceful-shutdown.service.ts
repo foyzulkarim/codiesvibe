@@ -6,7 +6,7 @@
 import { Server } from 'http';
 import { Socket } from 'net';
 import { MongoClient } from 'mongodb';
-import { searchLogger } from '../../config/logger.js';
+import { searchLogger } from '#config/logger.js';
 
 export interface ShutdownOptions {
   /**

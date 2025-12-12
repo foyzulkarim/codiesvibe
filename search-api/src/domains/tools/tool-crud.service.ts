@@ -5,7 +5,7 @@
  * Uses mongoDBService for all database operations.
  */
 
-import { mongoDBService } from '../../services/database/mongodb.service.js';
+import { mongoDBService } from '#services/database/mongodb.service.js';
 import {
   ITool,
   IPricing,
@@ -13,17 +13,17 @@ import {
   createDefaultSyncMetadata,
   PaginatedResult,
   CreateToolData,
-} from '../../types/tool.interfaces.js';
+} from '#types/tool.interfaces.js';
 import {
   CreateToolInput,
   UpdateToolInput,
   GetToolsQuery,
   GetAdminToolsQuery,
   GetMyToolsQuery,
-} from '../../schemas/tool.schema.js';
-import { searchLogger } from '../../config/logger.js';
-import { toolSyncService } from '../../services/sync/tool-sync.service.js';
-import { contentHashService } from '../../services/indexing/content-hash.service.js';
+} from '#schemas/tool.schema.js';
+import { searchLogger } from '#config/logger.js';
+import { toolSyncService } from '#services/sync/tool-sync.service.js';
+import { contentHashService } from '#services/indexing/content-hash.service.js';
 
 export class ToolCrudService {
   // Note: Connection management removed - native driver handles this via database.ts singleton

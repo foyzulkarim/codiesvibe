@@ -16,6 +16,9 @@ export default {
     '^#core/(.*)\\.js$': '<rootDir>/src/core/$1',
     '^#shared/(.*)\\.js$': '<rootDir>/src/shared/$1',
     '^#domains/(.*)\\.js$': '<rootDir>/src/domains/$1',
+    '^#controllers/(.*)\\.js$': '<rootDir>/src/controllers/$1',
+    '^#validation/(.*)\\.js$': '<rootDir>/src/validation/$1',
+    '^#schemas/(.*)\\.js$': '<rootDir>/src/schemas/$1',
     // Main # mappings (without .js)
     '^#config/(.*)$': '<rootDir>/src/config/$1',
     '^#types/(.*)$': '<rootDir>/src/types/$1',
@@ -29,6 +32,9 @@ export default {
     '^#core/(.*)$': '<rootDir>/src/core/$1',
     '^#shared/(.*)$': '<rootDir>/src/shared/$1',
     '^#domains/(.*)$': '<rootDir>/src/domains/$1',
+    '^#controllers/(.*)$': '<rootDir>/src/controllers/$1',
+    '^#validation/(.*)$': '<rootDir>/src/validation/$1',
+    '^#schemas/(.*)$': '<rootDir>/src/schemas/$1',
     // Strip .js from relative imports
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },

@@ -2,7 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { CONFIG } from '#config/env.config';
+import { CONFIG } from '#config/env.config.js';
 
 interface LLMTaskConfig {
   model: string;

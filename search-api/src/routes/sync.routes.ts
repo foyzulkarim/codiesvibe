@@ -6,14 +6,14 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { syncWorkerService } from '../services/sync/sync-worker.service.js';
-import { toolSyncService } from '../services/sync/tool-sync.service.js';
-import { mongoDBService } from '../services/database/mongodb.service.js';
-import { SyncCollectionName } from '../types/tool.interfaces.js';
-import { searchLogger } from '../config/logger.js';
-import { SearchRequest } from '../middleware/correlation.middleware.js';
-import { clerkRequireAuth } from '../middleware/clerk-auth.middleware.js';
-import { attachUserRole, requireAdmin, RoleAuthenticatedRequest } from '../middleware/role.middleware.js';
+import { syncWorkerService } from '#services/sync/sync-worker.service.js';
+import { toolSyncService } from '#services/sync/tool-sync.service.js';
+import { mongoDBService } from '#services/database/mongodb.service.js';
+import { SyncCollectionName } from '#types/tool.interfaces.js';
+import { searchLogger } from '#config/logger.js';
+import { SearchRequest } from '#middleware/correlation.middleware.js';
+import { clerkRequireAuth } from '#middleware/clerk-auth.middleware.js';
+import { attachUserRole, requireAdmin, RoleAuthenticatedRequest } from '#middleware/role.middleware.js';
 
 const router = Router();
 

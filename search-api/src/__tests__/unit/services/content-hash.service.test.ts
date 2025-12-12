@@ -9,7 +9,7 @@ import {
   COLLECTION_FIELDS,
   ALL_SEMANTIC_FIELDS,
   METADATA_ONLY_FIELDS,
-} from '../../../services/content-hash.service.js';
+} from '../../../services/indexing/content-hash.service.js';
 import { ITool, SyncCollectionName } from '../../../types/tool.interfaces.js';
 
 describe('ContentHashService', () => {

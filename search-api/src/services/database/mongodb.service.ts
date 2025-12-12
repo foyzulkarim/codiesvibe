@@ -1,5 +1,5 @@
 import { Db, ObjectId, Document, WithId, Filter, UpdateFilter } from "mongodb";
-import { connectToMongoDB, disconnectFromMongoDB } from "../../config/database.js";
+import { connectToMongoDB, disconnectFromMongoDB } from "#config/database.js";
 import {
   ITool,
   CreateToolData,
@@ -7,7 +7,7 @@ import {
   createDefaultSyncMetadata,
   FindToolsOptions,
   FindToolsResult,
-} from "../../types/tool.interfaces.js";
+} from "#types/tool.interfaces.js";
 
 export class MongoDBService {
   private db: Db | null = null;

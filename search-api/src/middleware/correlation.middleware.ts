@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { searchLogger, SearchLogContext } from '../config/logger.js';
-import { correlationContext } from '../utils/correlation-context.js';
+import { searchLogger, SearchLogContext } from '#config/logger.js';
+import { correlationContext } from '#utils/correlation-context.js';
 
 export interface SearchRequest extends Request {
   correlationId?: string;

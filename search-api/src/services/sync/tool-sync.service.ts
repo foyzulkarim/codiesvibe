@@ -5,19 +5,19 @@
  * Provides per-collection sync with change detection and status tracking.
  */
 
-import { qdrantService } from '../database/qdrant.service.js';
-import { embeddingService } from '../embedding/embedding.service.js';
-import { QdrantCollectionConfigService } from '../database/qdrant-collection-config.service.js';
-import { ContentGeneratorFactory } from '../embedding/content-generator-factory.service.js';
+import { qdrantService } from '#services/database/qdrant.service.js';
+import { embeddingService } from '#services/embedding/embedding.service.js';
+import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service.js';
+import { ContentGeneratorFactory } from '#services/embedding/content-generator-factory.service.js';
 import {
   contentHashService,
-} from '../indexing/content-hash.service.js';
+} from '#services/indexing/content-hash.service.js';
 import {
   ITool,
   SyncCollectionName,
-} from '../../types/tool.interfaces.js';
-import { mongoDBService } from '../database/mongodb.service.js';
-import { ToolData, ToolDataValidator } from '../../types/tool.types.js';
+} from '#types/tool.interfaces.js';
+import { mongoDBService } from '#services/database/mongodb.service.js';
+import { ToolData, ToolDataValidator } from '#types/tool.types.js';
 
 // ============================================
 // TYPES AND INTERFACES

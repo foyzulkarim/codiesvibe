@@ -13,13 +13,13 @@ import {
   getEnhancedCollectionName,
   shouldUseEnhancedCollection,
   getCollectionNameForVectorType
-} from "#config/database";
+} from "#config/database.js";
 import {
   isEnhancedVectorTypeSupported,
   validateEnhancedVectors
-} from "#config/enhanced-qdrant-schema";
-import { CONFIG } from '#config/env.config';
-import { embeddingService } from "../embedding/embedding.service.js";
+} from "#config/enhanced-qdrant-schema.js";
+import { CONFIG } from '#config/env.config.js';
+import { embeddingService } from "#services/embedding/embedding.service.js";
 import { createHash } from "crypto";
 import {
   VectorValidationError,
@@ -28,9 +28,9 @@ import {
   validateVectorType,
   validateToolId,
   validateEmbedding
-} from "#utils/vector-validation";
+} from "#utils/vector-validation.js";
 import { QdrantCollectionConfigService } from "./qdrant-collection-config.service.js";
-import { ContentGeneratorFactory } from "../embedding/content-generator-factory.service.js";
+import { ContentGeneratorFactory } from "#services/embedding/content-generator-factory.service.js";
 
 // Local type definitions for Qdrant service operations
 export interface OptimizerStatus {

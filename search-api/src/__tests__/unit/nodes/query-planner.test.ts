@@ -19,7 +19,7 @@ jest.mock('../../../config/database', () => ({
 }));
 
 // Mock the LLM service with dynamic responses
-jest.mock('../../../services/llm.service', () => ({
+jest.mock('../../../services/llm/llm.service', () => ({
   llmService: {
     createTogetherAILangchainClient: jest.fn().mockReturnValue({
       invoke: jest.fn().mockImplementation((input: any) => {
