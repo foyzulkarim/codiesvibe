@@ -811,7 +811,7 @@
             
             <div class="grid-2 mt-40 animate-in delay-2">
                 <div class="json-block" style="font-size: 0.75rem;">
-<span class="json-key">// schema.config.ts</span>
+<span class="json-key">// tools.schema.ts</span>
 {
   <span class="json-key">"collections"</span>: {
     <span class="json-key">"tools"</span>: {
@@ -822,7 +822,7 @@
       <span class="json-key">"fields"</span>: [<span class="json-string">"features"</span>, <span class="json-string">"capabilities"</span>],
       <span class="json-key">"purpose"</span>: <span class="json-string">"what it does"</span>
     },
-    <span class="json-key">"useCases"</span>: {
+    <span class="json-key">"usecases"</span>: {
       <span class="json-key">"fields"</span>: [<span class="json-string">"scenarios"</span>, <span class="json-string">"workflows"</span>],
       <span class="json-key">"purpose"</span>: <span class="json-string">"when to use it"</span>
     },
@@ -833,7 +833,7 @@
   },
   <span class="json-key">"vocabularies"</span>: {
     <span class="json-key">"categories"</span>: [...],
-    <span class="json-key">"pricing"</span>: [<span class="json-string">"free"</span>, <span class="json-string">"freemium"</span>, <span class="json-string">"paid"</span>]
+    <span class="json-key">"pricingModels"</span>: [<span class="json-string">"Free"</span>, <span class="json-string">"Paid"</span>]
   }
 }
                 </div>
@@ -1068,111 +1068,94 @@ interface: <span class="json-number">10</span> results → <span class="json-str
             </div>
         </section>
 
-        <!-- Slide 11: RRF Fusion -->
+        <!-- Slide 11: Dynamic Result Fusion -->
         <section class="slide" data-slide="11">
-            <h2>Reciprocal Rank Fusion</h2>
-            
-            <div class="highlight-box text-center animate-in delay-1">
-                <p style="font-size: 1.8rem; font-family: var(--font-mono); color: var(--accent-cyan);">
-                    RRF(d) = Σ 1 / (k + rank(d))
-                </p>
-                <p class="text-muted mt-20">k = 60 (standard constant)</p>
+            <h2>Dynamic Result Fusion</h2>
+            <p class="text-muted mb-40">The query planner decides how to merge results</p>
+
+            <div class="grid-2 animate-in delay-1">
+                <div class="card">
+                    <h4>LLM Chooses the Strategy</h4>
+                    <ul>
+                        <li><span class="text-accent">3+ sources</span> → RRF (rank-based)</li>
+                        <li><span class="text-accent">2 sources</span> → Weighted Sum</li>
+                        <li><span class="text-accent">1 source</span> → No fusion needed</li>
+                    </ul>
+                    <p class="text-muted mt-20" style="font-size: 0.95rem;">Fusion method is part of the query plan, not hardcoded</p>
+                </div>
+                <div class="card">
+                    <h4>Why Dynamic?</h4>
+                    <ul>
+                        <li>Simple queries don't need complex fusion</li>
+                        <li>Multi-collection queries benefit from RRF</li>
+                        <li>Hybrid (vector + structured) needs special handling</li>
+                    </ul>
+                </div>
             </div>
-            
-            <div class="grid-3 mt-40 animate-in delay-2">
-                <div class="card text-center">
-                    <h4>Tools Collection</h4>
-                    <p class="text-muted">Rank: 1</p>
-                    <p class="text-accent mt-20">Score: 1/61 = 0.016</p>
-                </div>
-                <div class="card text-center">
-                    <h4>Functionality</h4>
-                    <p class="text-muted">Rank: 3</p>
-                    <p class="text-accent mt-20">Score: 1/63 = 0.016</p>
-                </div>
-                <div class="card text-center">
-                    <h4>Interface</h4>
-                    <p class="text-muted">Rank: 2</p>
-                    <p class="text-accent mt-20">Score: 1/62 = 0.016</p>
-                </div>
+
+            <div class="json-block mt-40 animate-in delay-2" style="font-size: 0.85rem;">
+<span class="json-key">// query-executor.node.ts</span>
+finalCandidates = fuseResults(
+  candidatesBySource,
+  <span class="json-string">executionPlan.fusion</span> <span class="json-key">// LLM decided: 'rrf' | 'weighted_sum' | 'none'</span>
+);
+            </div>
+
+            <div class="highlight-box mt-40 text-center animate-in delay-3">
+                <p style="font-size: 1.2rem;">The <span class="text-accent">agentic</span> part: even fusion strategy is planned, not prescribed</p>
             </div>
         </section>
 
-        <!-- Slide 12: Why RRF -->
+        <!-- Slide 12: Plan Caching -->
         <section class="slide" data-slide="12">
-            <h2>Why RRF?</h2>
-            
-            <div class="grid-3 animate-in delay-1">
-                <div class="card">
-                    <h4>Scale-Invariant</h4>
-                    <p style="font-size: 1.1rem;">Works across collections with different score ranges. No normalization needed.</p>
-                </div>
-                <div class="card">
-                    <h4>No Tuning Required</h4>
-                    <p style="font-size: 1.1rem;">k=60 works well without domain-specific optimization. Just works out of the box.</p>
-                </div>
-                <div class="card">
-                    <h4>Robust</h4>
-                    <p style="font-size: 1.1rem;">Handles missing documents gracefully. A document only needs to appear in one source.</p>
-                </div>
-            </div>
-            
-            <div class="highlight-box mt-40 text-center animate-in delay-2">
-                <p style="font-size: 1.3rem; color: var(--text-primary);">
-                    RRF lets us combine <span class="text-accent">vector similarity</span> scores with <span class="text-accent">structured filters</span> seamlessly
-                </p>
-            </div>
-        </section>
+            <h2>Plan Caching</h2>
 
-        <!-- Slide 13: Semantic Caching -->
-        <section class="slide" data-slide="13">
-            <h2>Intelligent Caching</h2>
-            
             <div class="grid-2 animate-in delay-1">
                 <div>
                     <h4>The Problem</h4>
                     <ul class="list-bad">
                         <li>LLM calls are expensive</li>
-                        <li>Similar queries waste compute</li>
+                        <li>Identical queries waste compute</li>
                         <li>Latency adds up</li>
                     </ul>
                 </div>
                 <div>
                     <h4>The Solution</h4>
                     <ul class="list-good">
-                        <li>Embed the query</li>
-                        <li>Vector similarity search in cache</li>
-                        <li>Threshold: 0.85 similarity</li>
+                        <li>Hash the query (MD5)</li>
+                        <li>Store intent + execution plan</li>
+                        <li>Exact match lookup</li>
                     </ul>
                 </div>
             </div>
-            
-            <div class="stat-grid mt-40 animate-in delay-2">
-                <div class="stat-item">
-                    <div class="stat-value">72%</div>
-                    <div class="stat-label">Cache Hit Rate</div>
+
+            <div class="grid-2 mt-40 animate-in delay-2">
+                <div class="card">
+                    <h4>What Gets Cached</h4>
+                    <ul>
+                        <li>Original query + hash</li>
+                        <li>Extracted intent state</li>
+                        <li>Query execution plan</li>
+                        <li>Result candidates</li>
+                    </ul>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">180ms</div>
-                    <div class="stat-label">Cached Response</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">950ms</div>
-                    <div class="stat-label">Full Pipeline</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">5x</div>
-                    <div class="stat-label">Speedup</div>
+                <div class="card">
+                    <h4>Why Not Semantic Matching?</h4>
+                    <ul>
+                        <li>"free code editors" ≈ "paid code editors"</li>
+                        <li>Similar embeddings, opposite filters!</li>
+                        <li>Exact match prevents wrong results</li>
+                    </ul>
                 </div>
             </div>
-            
+
             <div class="highlight-box mt-40 text-center animate-in delay-3">
-                <p style="font-size: 1.2rem;">"AI tools" ≈ "AI powered tools" ≈ "artificial intelligence tools"</p>
+                <p style="font-size: 1.2rem;">Cache hit = skip 2 LLM calls (intent + planner) → significant cost savings</p>
             </div>
         </section>
 
-        <!-- Slide 14: Production Challenges -->
-        <section class="slide" data-slide="14">
+        <!-- Slide 13: Production Challenges -->
+        <section class="slide" data-slide="13">
             <h2>Production Challenges</h2>
             <p class="text-muted mb-40">Problems you won't find in research papers...</p>
             
@@ -1186,7 +1169,7 @@ interface: <span class="json-number">10</span> results → <span class="json-str
                 <tbody>
                     <tr>
                         <td>LLM costs adding up</td>
-                        <td><span class="text-accent">Semantic cache</span> (70% hit rate)</td>
+                        <td><span class="text-accent">Plan cache</span> (exact-match, skips 2 LLM calls)</td>
                     </tr>
                     <tr>
                         <td>LLM hallucinations</td>
@@ -1194,7 +1177,7 @@ interface: <span class="json-number">10</span> results → <span class="json-str
                     </tr>
                     <tr>
                         <td>Multi-collection different scales</td>
-                        <td><span class="text-accent">RRF fusion</span> (scale-invariant)</td>
+                        <td><span class="text-accent">Dynamic fusion</span> (LLM-planned, scale-invariant)</td>
                     </tr>
                     <tr>
                         <td>MongoDB-Qdrant sync</td>
@@ -1208,59 +1191,73 @@ interface: <span class="json-number">10</span> results → <span class="json-str
             </table>
         </section>
 
-        <!-- Slide 15: Open Questions -->
-        <section class="slide" data-slide="15">
-            <h2>Open Research Questions</h2>
-            
-            <div class="animate-in delay-1">
-                <ol style="counter-reset: item;">
-                    <li style="padding-left: 48px;"><span class="text-accent">Evaluation:</span> How do we evaluate agentic search quality? No standard benchmarks.</li>
-                    <li style="padding-left: 48px;"><span class="text-accent">Learning:</span> Can we learn query planning from user behavior? RLHF for planners?</li>
-                    <li style="padding-left: 48px;"><span class="text-accent">Architecture:</span> How many agents is optimal? 3 nodes or 5? Or 10?</li>
-                    <li style="padding-left: 48px;"><span class="text-accent">Portability:</span> Does schema-driven design work for other domains? Medical? Legal?</li>
-                    <li style="padding-left: 48px;"><span class="text-accent">Evolution:</span> How to handle evolving schemas? New categories emerge over time.</li>
-                </ol>
+        <!-- Slide 14: What I'm Still Figuring Out -->
+        <section class="slide" data-slide="14">
+            <h2>What I'm Still Figuring Out</h2>
+            <p class="text-muted mb-40">Honest questions from building this...</p>
+
+            <div class="grid-2 animate-in delay-1">
+                <div class="card">
+                    <h4>Evaluation is Hard</h4>
+                    <ul>
+                        <li>How do I know if results are "good"?</li>
+                        <li>User clicks? But users click bad results too</li>
+                        <li>No standard benchmarks for agentic search</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Schema Evolution</h4>
+                    <ul>
+                        <li>New AI tool categories appear monthly</li>
+                        <li>When do I add vs. merge categories?</li>
+                        <li>Re-embedding everything is expensive</li>
+                    </ul>
+                </div>
             </div>
-            
-            <div class="takeaway animate-in delay-2">
-                <p>These are genuine open questions. <span class="text-accent">Let's collaborate!</span></p>
+
+            <div class="grid-2 mt-20 animate-in delay-2">
+                <div class="card">
+                    <h4>LLM Unpredictability</h4>
+                    <ul>
+                        <li>Same query, different plans sometimes</li>
+                        <li>Model updates break prompts</li>
+                        <li>How much should I constrain the LLM?</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Cost vs Quality</h4>
+                    <ul>
+                        <li>Better models = better plans = more $$$</li>
+                        <li>Where's the sweet spot?</li>
+                        <li>When to cache vs. when to re-plan?</li>
+                    </ul>
+                </div>
             </div>
         </section>
 
-        <!-- Slide 16: Key Takeaways -->
-        <section class="slide" data-slide="16">
-            <h2>Key Takeaways</h2>
-            
-            <div class="comparison animate-in delay-1">
-                <div class="comparison-side research">
-                    <h4>For Researchers</h4>
-                    <ul>
-                        <li>Agentic search is interpretable and modular</li>
-                        <li>Hybrid approaches often beat pure methods</li>
-                        <li>We need better evaluation frameworks</li>
-                    </ul>
-                </div>
-                <div class="comparison-side production">
-                    <h4>For Practitioners</h4>
-                    <ul>
-                        <li>Schema-driven design enables portability</li>
-                        <li>LLMs for reasoning, DBs for retrieval</li>
-                        <li>Caching is essential for production</li>
-                    </ul>
-                </div>
+        <!-- Slide 15: What I Learned -->
+        <section class="slide" data-slide="15">
+            <h2>What I Learned Building This</h2>
+
+            <div class="animate-in delay-1">
+                <ol style="counter-reset: item;">
+                    <li style="padding-left: 48px;"><span class="text-accent">Schema first.</span> Define your domain before writing any LLM prompts. It saves debugging time later.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Let LLMs reason, let DBs retrieve.</span> Don't ask the LLM to search - ask it to plan. Databases are faster and cheaper.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Cache aggressively, but carefully.</span> Semantic caching sounds great until "free" and "paid" return the same results.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Plan for failure.</span> Qdrant down? Background worker. LLM hallucinates? Schema validation. Always have fallbacks.</li>
+                    <li style="padding-left: 48px;"><span class="text-accent">Start simple, add complexity when needed.</span> I started with 1 collection. Now I have 4. The schema told me when to split.</li>
+                </ol>
             </div>
-            
+
             <div class="takeaway animate-in delay-2">
-                <p style="font-size: 1.4rem;">
-                    Research without implementation is incomplete.<br>
-                    Implementation without research is fragile.<br><br>
-                    <span class="text-accent">We need both.</span>
+                <p style="font-size: 1.3rem;">
+                    Build something real. Break it. Fix it. <span class="text-accent">That's how you learn.</span>
                 </p>
             </div>
         </section>
 
-        <!-- Slide 17: Resources -->
-        <section class="slide slide-final" data-slide="17">
+        <!-- Slide 16: Resources -->
+        <section class="slide slide-final" data-slide="16">
             <h2>Try It Yourself</h2>
             
             <div class="contact-links animate-in delay-1">
@@ -1286,8 +1283,8 @@ interface: <span class="json-number">10</span> results → <span class="json-str
             </div>
         </section>
 
-        <!-- Slide 18: Thank You -->
-        <section class="slide slide-title" data-slide="18">
+        <!-- Slide 17: Thank You -->
+        <section class="slide slide-title" data-slide="17">
             <h1><span class="gradient-text">Thank You!</span></h1>
             <p class="subtitle">Let's bridge research and practice together</p>
             
@@ -1307,7 +1304,7 @@ interface: <span class="json-number">10</span> results → <span class="json-str
     </div>
     
     <div class="slide-counter">
-        <span id="currentSlide">1</span> / <span id="totalSlides">18</span>
+        <span id="currentSlide">1</span> / <span id="totalSlides">17</span>
     </div>
 
     <script>
