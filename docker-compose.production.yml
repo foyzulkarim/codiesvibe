@@ -20,8 +20,8 @@ services:
       - ./includes:/etc/nginx/includes:ro
       # Static files from frontend build
       - frontend_dist:/usr/share/nginx/html:ro
-      # SSL certificates (for future use)
-      - nginx_ssl:/etc/nginx/ssl:ro
+      # SSL certificates (Cloudflare Origin Certificate)
+      - ./ssl:/etc/nginx/ssl:ro
     environment:
       - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
       - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
@@ -57,6 +57,7 @@ services:
         - VERSION=${VERSION}
         # Vite build-time environment variables (from .env file)
         - VITE_API_URL=${VITE_API_URL}
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
         - NODE_ENV=production
     container_name: codiesvibe-frontend-init
     volumes:
@@ -107,6 +108,9 @@ services:
       - QDRANT_COLLECTION_NAME=${QDRANT_COLLECTION_NAME}
       # AI service endpoints (from .env file)
       - TOGETHER_API_KEY=${TOGETHER_API_KEY}
+      # Clerk Authentication (from .env file)
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       # Production security and CORS (from .env file)
       - CORS_ORIGINS=${CORS_ORIGINS}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
@@ -156,9 +160,6 @@ networks:
 volumes:
   # Frontend build artifacts shared between frontend build and nginx
   frontend_dist:
-    driver: local
-  # SSL certificates for Nginx
-  nginx_ssl:
     driver: local
   # Nginx includes for dynamic configurations
   nginx_includes:
