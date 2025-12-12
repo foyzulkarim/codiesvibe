@@ -48,14 +48,6 @@ npm run dev
 | `npm run test:cov` | Run tests with coverage |
 | `npm run test:integration` | Run integration tests |
 
-### Database
-
-| Script | Description |
-|--------|-------------|
-| `npm run create-collections` | Create Qdrant collections |
-| `npm run seed-vectors` | Seed vectors from MongoDB |
-| `npm run seed-vectors -- --force` | Force re-seed (clears data) |
-
 ### Debug Scripts
 
 | Script | Description |

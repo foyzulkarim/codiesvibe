@@ -15,9 +15,9 @@ import {
   toolsSchema,
   buildToolsFilters,
   validateToolsQueryPlan,
-} from '../domains/tools/index.js';
+} from '#domains/tools/index.js';
 import { DomainSchema } from './types/schema.types.js';
-import { StateAnnotation } from '../types/state.js';
+import { StateAnnotation } from '#types/state.js';
 
 /**
  * Initialize pipeline configuration with schema and domain handlers

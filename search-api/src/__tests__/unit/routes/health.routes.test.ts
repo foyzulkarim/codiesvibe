@@ -8,21 +8,21 @@ import request from 'supertest';
 import express from 'express';
 
 // Mock dependencies before importing routes
-jest.mock('../../../services/health-check.service', () => ({
+jest.mock('../../../services/infrastructure/health-check.service', () => ({
   healthCheckService: {
     checkLiveness: jest.fn(),
     checkReadiness: jest.fn(),
   },
 }));
 
-jest.mock('../../../services/metrics.service', () => ({
+jest.mock('../../../services/infrastructure/metrics.service', () => ({
   metricsService: {
     getContentType: jest.fn().mockReturnValue('text/plain; version=0.0.4'),
     getMetrics: jest.fn(),
   },
 }));
 
-jest.mock('../../../services/circuit-breaker.service', () => ({
+jest.mock('../../../services/infrastructure/circuit-breaker.service', () => ({
   circuitBreakerManager: {
     getAllStats: jest.fn(),
   },
@@ -43,9 +43,9 @@ jest.mock('../../../utils/error-responses', () => ({
 }));
 
 import healthRoutes from '../../../routes/health.routes.js';
-import { healthCheckService } from '../../../services/health-check.service.js';
-import { metricsService } from '../../../services/metrics.service.js';
-import { circuitBreakerManager } from '../../../services/circuit-breaker.service.js';
+import { healthCheckService } from '../../../services/infrastructure/health-check.service.js';
+import { metricsService } from '../../../services/infrastructure/metrics.service.js';
+import { circuitBreakerManager } from '../../../services/infrastructure/circuit-breaker.service.js';
 
 describe('Health Routes', () => {
   let app: express.Application;

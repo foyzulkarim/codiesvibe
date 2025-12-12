@@ -286,17 +286,11 @@ CACHE_TTL=3600
 
 ### Vector Indexing
 
-Tools are automatically indexed when added to the database:
+Tools are automatically indexed when added or updated through the UI. The system handles vector generation and indexing automatically.
 
 ```bash
-# Create collections
+# Create collections (if needed)
 npm run create-collections
-
-# Index all tools
-npm run seed-vectors
-
-# Force re-indexing
-npm run seed-vectors -- --force
 
 # Validate index health
 curl http://localhost:4003/health

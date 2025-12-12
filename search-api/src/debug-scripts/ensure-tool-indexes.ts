@@ -10,7 +10,7 @@
 
 import { Db, MongoClient, IndexDescription } from 'mongodb';
 import dotenv from 'dotenv';
-import { CONFIG } from '../config/env.config.js';
+import { CONFIG } from '#config/env.config.js';
 
 dotenv.config();
 

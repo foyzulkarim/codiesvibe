@@ -1,7 +1,7 @@
-import { Plan, MultiStrategyPlan } from "#types/plan";
-import { StateAnnotation } from "#types/state";
-import { ExecutionPlanSchema, ExecutionStepSchema } from "#types/enhanced-state";
-import { defaultEnhancedSearchConfig } from "#config/enhanced-search-config";
+import { Plan, MultiStrategyPlan } from "#types/plan.js";
+import { StateAnnotation } from "#types/state.js";
+import { ExecutionPlanSchema, ExecutionStepSchema } from "#types/enhanced-state.js";
+import { defaultEnhancedSearchConfig } from "#config/enhanced-search-config.js";
 import type { z } from "zod";
 
 // Type aliases for better readability

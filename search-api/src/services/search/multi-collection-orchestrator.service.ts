@@ -1,9 +1,9 @@
-import { ToolData } from '../types/tool.types.js';
-import { CollectionConfigService } from './collection-config.service.js';
-import { VectorTypeRegistryService } from './vector-type-registry.service.js';
-import { ContentGeneratorFactory } from './content-generator-factory.service.js';
-import { qdrantService } from './qdrant.service.js';
-import { embeddingService } from './embedding.service.js';
+import { ToolData } from '#types/tool.types.js';
+import { QdrantCollectionConfigService } from '#services/database/qdrant-collection-config.service.js';
+import { VectorTypeRegistryService } from '#services/embedding/vector-type-registry.service.js';
+import { ContentGeneratorFactory } from '#services/embedding/content-generator-factory.service.js';
+import { qdrantService } from '#services/database/qdrant.service.js';
+import { embeddingService } from '#services/embedding/embedding.service.js';
 
 export interface MultiCollectionRequest {
   query: string;
@@ -57,7 +57,7 @@ export interface ProcessingOptions {
 
 export class MultiCollectionOrchestrator {
   constructor(
-    private readonly collectionConfig: CollectionConfigService,
+    private readonly collectionConfig: QdrantCollectionConfigService,
     private readonly vectorTypeRegistry: VectorTypeRegistryService,
     private readonly contentFactory: ContentGeneratorFactory
   ) {}

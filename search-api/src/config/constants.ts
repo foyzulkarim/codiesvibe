@@ -9,28 +9,5 @@ export const embeddingConfig = {
   model: "togethercomputer/m2-bert-80M-32k-retrieval",
 };
 
-// Enum values for various tool attributes
-export const enumValues = {
-  categories: [
-    "development", "design", "productivity", "communication",
-    "marketing", "analytics", "security", "infrastructure", "other"
-  ],
-  functionality: [
-    "code-editing", "version-control", "testing", "deployment",
-    "ui-design", "wireframing", "collaboration", "automation",
-    "monitoring", "documentation", "other"
-  ],
-  userTypes: [
-    "developer", "designer", "product-manager", "marketer",
-    "analyst", "administrator", "other"
-  ],
-  interface: [
-    "web", "desktop", "mobile", "cli", "api", "other"
-  ],
-  deployment: [
-    "cloud", "self-hosted", "hybrid", "other"
-  ],
-  pricingModel: [
-    "Free", "Paid"
-  ],
-};
+// Vocabularies moved to #domains/tools/index.ts
+// Import: toolsSchema.vocabularies, enumValues, TOOLS_PRICE_OPERATORS

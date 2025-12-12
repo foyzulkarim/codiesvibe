@@ -6,13 +6,13 @@
 
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { SearchRequest } from '../middleware/correlation.middleware.js';
-import { searchLogger } from '../config/logger.js';
-import { metricsService } from '../services/metrics.service.js';
-import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph.js';
-import { sanitizeQuery } from '../validation/search.validation.js';
-import { searchErrorResponse } from '../utils/error-responses.js';
-import { debugLog } from '../utils/debug.js';
+import { SearchRequest } from '#middleware/correlation.middleware.js';
+import { searchLogger } from '#config/logger.js';
+import { metricsService } from '#services/infrastructure/metrics.service.js';
+import { searchWithAgenticPipeline } from '#graphs/agentic-search.graph.js';
+import { sanitizeQuery } from '#validation/search.validation.js';
+import { searchErrorResponse } from '#utils/error-responses.js';
+import { debugLog } from '#utils/debug.js';
 
 /**
  * POST /api/search

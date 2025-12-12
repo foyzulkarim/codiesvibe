@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { searchLogger } from '../config/logger.js';
+import { searchLogger } from '#config/logger.js';
 import { SearchRequest } from './correlation.middleware.js';
 
 interface TimeoutOptions {

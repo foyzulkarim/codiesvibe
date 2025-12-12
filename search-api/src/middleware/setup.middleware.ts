@@ -11,14 +11,14 @@ import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import compression from 'compression';
 import { clerkMiddleware } from '@clerk/express';
-import { securityConfig } from '../config/security.config.js';
-import { createCorsMiddleware } from '../config/cors.config.js';
-import { compressionOptions } from '../config/compression.config.js';
+import { securityConfig } from '#config/security.config.js';
+import { createCorsMiddleware } from '#config/cors.config.js';
+import { compressionOptions } from '#config/compression.config.js';
 import { correlationMiddleware } from './correlation.middleware.js';
 import { globalTimeout } from './timeout.middleware.js';
 import { limiter } from './rate-limiters.js';
-import { metricsService } from '../services/metrics.service.js';
-import { searchLogger } from '../config/logger.js';
+import { metricsService } from '#services/infrastructure/metrics.service.js';
+import { searchLogger } from '#config/logger.js';
 
 /**
  * Setup core middleware (correlation, metrics, compression, CORS)

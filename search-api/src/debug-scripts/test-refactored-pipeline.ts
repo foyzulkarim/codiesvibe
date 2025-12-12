@@ -4,7 +4,7 @@
  * Debug script to test the refactored 3-node LLM-first pipeline
  */
 
-import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph.js';
+import { searchWithAgenticPipeline } from '#graphs/agentic-search.graph.js';
 
 // Test cases from the specification
 const testCases = [

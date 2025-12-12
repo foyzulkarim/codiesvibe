@@ -13,8 +13,8 @@
 
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
-import { IntentStateSchema } from '../types/intent-state.js';
-import { CONFIG } from '../config/env.config.js';
+import { IntentStateSchema } from '#types/intent-state.js';
+import { CONFIG } from '#config/env.config.js';
 
 // Load environment variables
 dotenv.config();

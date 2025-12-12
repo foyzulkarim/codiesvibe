@@ -5,7 +5,7 @@
  */
 
 import Joi from 'joi';
-import { containsMaliciousPattern } from '../config/security.config.js';
+import { containsMaliciousPattern } from '#config/security.config.js';
 
 /**
  * Custom Joi validator for malicious content

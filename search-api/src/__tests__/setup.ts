@@ -1,26 +1,54 @@
 /**
  * Jest Test Setup
  * Global configuration and setup for all tests
+ *
+ * NOTE: Environment variables are loaded from .env.test via setup-env.ts
+ * which runs before this file (via setupFiles in jest.config.js)
  */
 
-// Configure MongoDB Memory Server settings
-// These are used when MongoDB Memory Server is needed for testing
-// In CI, MongoDB runs as a service and tests connect via MONGODB_URI
-process.env.MONGOMS_DOWNLOAD_MIRROR = 'https://fastdl.mongodb.org';
-process.env.MONGOMS_VERSION = '6.0.15';
+// ==============================================================================
+// GLOBAL MOCKS - External API Services
+// ==============================================================================
+// Mock embedding service to prevent tests from calling real Together AI API
+// Even though .env.test has a test API key, it's not a valid key, so real API calls fail.
+// This mock ensures no network calls are made during tests.
+jest.mock('../services/embedding/embedding.service', () => {
+  const mockGenerateEmbedding = jest.fn().mockResolvedValue(
+    Array(768).fill(0).map((_, i) => i * 0.001) // Deterministic 768-dim vector
+  );
+  const mockGenerateEmbeddings = jest.fn().mockImplementation(async (texts: string[]) =>
+    texts.map((_, i) => Array(768).fill(0).map((_, j) => (i + j) * 0.001))
+  );
 
-// Set test environment variables
-process.env.NODE_ENV = 'test';
-// Use CI's MongoDB service if available, otherwise tests needing MongoDB will be skipped
-process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
-process.env.QDRANT_HOST = 'localhost';
-process.env.QDRANT_PORT = '6333';
-process.env.TOGETHER_API_KEY = 'test-api-key';
-process.env.VLLM_BASE_URL = 'http://localhost:8000';
-process.env.ENABLE_CACHE = 'false';
-process.env.ENABLE_VECTOR_VALIDATION = 'false';
-process.env.ENABLE_RATE_LIMITING = 'false';
-process.env.ENABLE_SECURITY_HEADERS = 'false';
+  return {
+    EmbeddingService: jest.fn().mockImplementation(() => ({
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: mockGenerateEmbeddings,
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+      getModelInfo: jest.fn().mockReturnValue({
+        model: 'mock-model',
+        dimensions: 768,
+        provider: 'Mock',
+      }),
+      test: jest.fn().mockResolvedValue(true),
+      getCacheStats: jest.fn().mockReturnValue({ size: 0, enabled: false }),
+    })),
+    embeddingService: {
+      generateEmbedding: mockGenerateEmbedding,
+      generateEmbeddings: mockGenerateEmbeddings,
+      clearCache: jest.fn(),
+      initialize: jest.fn().mockResolvedValue(undefined),
+      getModelInfo: jest.fn().mockReturnValue({
+        model: 'mock-model',
+        dimensions: 768,
+        provider: 'Mock',
+      }),
+      test: jest.fn().mockResolvedValue(true),
+      getCacheStats: jest.fn().mockReturnValue({ size: 0, enabled: false }),
+    },
+  };
+});
 
 // ==============================================================================
 // GLOBAL MOCKS - Database Connections
@@ -55,17 +83,54 @@ jest.mock('../config/database', () => {
   };
 });
 
+// ==============================================================================
+// GLOBAL MOCKS - QdrantService Singleton
+// ==============================================================================
+// Mock QdrantService to prevent initialization and connection attempts
+// This catches any code path that uses the qdrantService singleton directly
+jest.mock('../services/database/qdrant.service', () => ({
+  qdrantService: {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    isReady: jest.fn().mockReturnValue(true),
+    upsertToolVector: jest.fn().mockResolvedValue(undefined),
+    deleteToolVector: jest.fn().mockResolvedValue(undefined),
+    updatePayloadOnly: jest.fn().mockResolvedValue({ success: true }),
+    searchDirectOnCollection: jest.fn().mockResolvedValue([]),
+    getMultiCollectionStats: jest.fn().mockResolvedValue({
+      totalCollections: 4,
+      healthyCollections: 4,
+      totalVectors: 0,
+      collections: {},
+      summary: { healthy: [], unhealthy: [], missing: [] },
+    }),
+  },
+  QdrantService: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    isReady: jest.fn().mockReturnValue(true),
+    upsertToolVector: jest.fn().mockResolvedValue(undefined),
+    deleteToolVector: jest.fn().mockResolvedValue(undefined),
+    updatePayloadOnly: jest.fn().mockResolvedValue({ success: true }),
+    searchDirectOnCollection: jest.fn().mockResolvedValue([]),
+    getMultiCollectionStats: jest.fn().mockResolvedValue({
+      totalCollections: 4,
+      healthyCollections: 4,
+      totalVectors: 0,
+      collections: {},
+      summary: { healthy: [], unhealthy: [], missing: [] },
+    }),
+  })),
+}));
+
 // Increase timeout for integration tests
 jest.setTimeout(30000);
 
-// Global test utilities
+// Global test utilities - suppress all console output in tests
 global.console = {
   ...console,
-  // Suppress console output in tests unless explicitly needed
   log: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: console.error, // Keep errors visible
+  error: jest.fn(),
   debug: jest.fn(),
 };
 

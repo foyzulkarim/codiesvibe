@@ -6,8 +6,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { validationErrorResponse } from '../utils/error-responses.js';
-import { searchLogger } from '../config/logger.js';
+import { validationErrorResponse } from '#utils/error-responses.js';
+import { searchLogger } from '#config/logger.js';
 import { SearchRequest } from './correlation.middleware.js';
 
 /**

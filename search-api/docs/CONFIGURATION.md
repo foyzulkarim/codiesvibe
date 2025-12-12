@@ -300,8 +300,6 @@ Qdrant collections are **automatically created** on server startup. This behavio
 - Is idempotent (safe to run multiple times)
 - Fails fast if collections cannot be created
 
-**Manual alternative**: Run `npm run create-collections` without starting the server (useful for troubleshooting).
-
 ### ENABLE_SYNC_WORKER
 
 Background MongoDB-Qdrant synchronization:

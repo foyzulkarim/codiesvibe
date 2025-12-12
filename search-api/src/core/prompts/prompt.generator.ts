@@ -7,7 +7,7 @@
  * @module core/prompts/generator
  */
 
-import { DomainSchema, IntentFieldDefinition } from '../types/schema.types.js';
+import { DomainSchema, IntentFieldDefinition } from '#core/types/schema.types.js';
 import {
   INTENT_EXTRACTION_TEMPLATE,
   QUERY_PLANNING_TEMPLATE,

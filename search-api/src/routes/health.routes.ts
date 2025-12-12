@@ -6,11 +6,11 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { healthCheckService } from '../services/health-check.service.js';
-import { metricsService } from '../services/metrics.service.js';
-import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
-import { searchLogger } from '../config/logger.js';
-import { internalServerError } from '../utils/error-responses.js';
+import { healthCheckService } from '#services/infrastructure/health-check.service.js';
+import { metricsService } from '#services/infrastructure/metrics.service.js';
+import { circuitBreakerManager } from '#services/infrastructure/circuit-breaker.service.js';
+import { searchLogger } from '#config/logger.js';
+import { internalServerError } from '#utils/error-responses.js';
 
 const router = Router();
 

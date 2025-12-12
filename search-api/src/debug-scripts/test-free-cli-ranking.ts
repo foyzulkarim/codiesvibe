@@ -4,7 +4,7 @@
  * Debug script to test "free cli" query and verify ollama/lmstudio ranking
  */
 
-import { searchWithAgenticPipeline } from '../graphs/agentic-search.graph.js';
+import { searchWithAgenticPipeline } from '#graphs/agentic-search.graph.js';
 
 async function testFreeCLIRanking() {
   console.log('🚀 Testing "free cli" query ranking');
