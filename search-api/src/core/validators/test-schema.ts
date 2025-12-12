@@ -3,7 +3,7 @@
  * Run with: npx ts-node src/core/validators/test-schema.ts
  */
 
-import { toolsSchema } from '../../domains/tools/tools.schema.js';
+import { toolsSchema } from '#domains/tools/tools.schema.js';
 import { validateSchema } from './schema.validator.js';
 
 // Test schema validation

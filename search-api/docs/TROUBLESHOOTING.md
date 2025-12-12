@@ -207,9 +207,6 @@ docker exec -it mongodb mongosh toolsearch \
 # Check Qdrant collections
 curl http://localhost:6333/collections/tools
 
-# Re-seed data
-docker exec -it search-api npm run seed-vectors -- --force
-
 # Enable debug mode
 curl -X POST http://localhost:4003/api/search \
   -H "Content-Type: application/json" \
@@ -292,15 +289,14 @@ Vector index validation failed: missing vectors
 **Solutions**:
 
 ```bash
-# Re-create collections
-docker exec -it search-api npm run create-collections
-
-# Force re-seed
-docker exec -it search-api npm run seed-vectors -- --force
-
 # Check collection info
 curl http://localhost:6333/collections/tools
+
+# Check if collections exist
+curl http://localhost:6333/collections
 ```
+
+**Note**: Qdrant collections are automatically created when the server starts. Vector indexing happens automatically when tools are added or updated through the UI. Restart the server to recreate collections if needed.
 
 ---
 

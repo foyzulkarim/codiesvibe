@@ -4,13 +4,36 @@
  * Validates critical environment variables on application startup
  */
 
-import { searchLogger } from '../config/logger.js';
+import { searchLogger } from '#config/logger.js';
 
 interface EnvVar {
   name: string;
   required: boolean;
   validate?: (value: string) => boolean | string;
   description: string;
+}
+
+/**
+ * Validate a list of origin URLs
+ * Returns true if all URLs are valid, error message if any are invalid
+ */
+function validateOriginUrls(origins: string[]): boolean | string {
+  for (const origin of origins) {
+    if (!origin) continue; // Skip empty strings
+    
+    // Check if origin starts with http:// or https://
+    if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
+      return `Invalid origin format: "${origin}". Origins must start with http:// or https://`;
+    }
+    
+    // Validate URL format
+    try {
+      new URL(origin);
+    } catch {
+      return `Invalid URL format: "${origin}"`;
+    }
+  }
+  return true;
 }
 
 export const REQUIRED_ENV_VARS: EnvVar[] = [
@@ -73,6 +96,33 @@ export const REQUIRED_ENV_VARS: EnvVar[] = [
     required: false,
     validate: (val) => ['development', 'production', 'test'].includes(val) || 'Must be development, production, or test',
     description: 'Node environment'
+  },
+
+  // CORS Configuration
+  {
+    name: 'ALLOWED_ORIGINS',
+    required: false, // Optional in development, required in production
+    validate: (val) => {
+      if (process.env.NODE_ENV === 'production' && !val) {
+        return 'ALLOWED_ORIGINS is required in production';
+      }
+      if (val) {
+        return validateOriginUrls(val.split(',').map(s => s.trim()));
+      }
+      return true;
+    },
+    description: 'Comma-separated list of allowed CORS origins (required in production)'
+  },
+  {
+    name: 'CORS_ORIGINS',
+    required: false,
+    validate: (val) => {
+      if (val) {
+        return validateOriginUrls(val.split(',').map(s => s.trim()));
+      }
+      return true;
+    },
+    description: 'Comma-separated list of development CORS origins'
   },
 
   // Feature Flags (all optional with defaults)

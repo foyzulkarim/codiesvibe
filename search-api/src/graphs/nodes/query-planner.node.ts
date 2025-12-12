@@ -1,22 +1,17 @@
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 
-import { StateAnnotation } from '../../types/state.js';
-import { QueryPlanSchema, QueryPlan } from '../../types/query-plan.js';
-import { IntentState } from '../../types/intent-state.js';
-import { llmService } from '../../services/llm.service.js';
-import { generateQueryPlanningPrompt } from '../../core/prompts/prompt.generator.js';
+import { StateAnnotation } from '#types/state.js';
+import { QueryPlan } from '#types/query-plan.js';
+import { IntentState } from '#types/intent-state.js';
+import { llmService } from '#services/llm/llm.service.js';
+import { generateQueryPlanningPrompt } from '#core/prompts/prompt.generator.js';
 import {
   getEnabledCollections,
   getRecommendedEmbeddingType,
   getRecommendedTopK,
   getRecommendedFusionMethod
-} from '../../domains/tools/tools.validators.js';
-// Keep these services for now - they provide collection orchestration
-import { CollectionConfigService } from '../../services/collection-config.service.js';
-import { VectorTypeRegistryService } from '../../services/vector-type-registry.service.js';
-import { MultiCollectionOrchestrator } from '../../services/multi-collection-orchestrator.service.js';
-import { ContentGeneratorFactory } from '../../services/content-generator-factory.service.js';
-import { CONFIG } from '#config/env.config';
+} from '#domains/tools/tools.validators.js';
+import { CONFIG } from '#config/env.config.js';
 import type { LogMetadata } from '#types/logger.types.js';
 import type { DomainSchema } from '#core/types/schema.types.js';
 
@@ -35,16 +30,6 @@ const LOG_CONFIG = {
   prefix: '🗺️ Query Planner:',
 };
 
-// Initialize multi-collection services
-const collectionConfig = new CollectionConfigService();
-const vectorTypeRegistry = new VectorTypeRegistryService(collectionConfig);
-const contentFactory = new ContentGeneratorFactory(collectionConfig);
-const multiCollectionOrchestrator = new MultiCollectionOrchestrator(
-  collectionConfig,
-  vectorTypeRegistry,
-  contentFactory
-);
-
 // Helper function for conditional logging
 const log = (message: string, data?: LogMetadata) => {
   if (LOG_CONFIG.enabled) {
@@ -56,29 +41,6 @@ const logError = (message: string, error?: LogMetadata) => {
   console.error(`${LOG_CONFIG.prefix} ERROR: ${message}`, error ? error : '');
 };
 
-/**
- * Get dynamic multi-collection configuration for query planning
- */
-function getMultiCollectionConfig() {
-  const enabledCollections = collectionConfig.getEnabledCollectionNames();
-  const vectorTypes = vectorTypeRegistry.getAllVectorTypes();
-
-  return {
-    enabledCollections,
-    vectorTypes: vectorTypes.map((vt) => vt.name),
-    collectionConfigs: enabledCollections.map((name) =>
-      collectionConfig.getCollectionByName(name)
-    ),
-    availableStrategies: [
-      'multi-collection-hybrid', // Search across all relevant collections
-      'identity-focused', // Focus on tools collection for tool identity
-      'capability-focused', // Focus on functionality collection
-      'usecase-focused', // Focus on usecases collection
-      'technical-focused', // Focus on interface collection
-      'adaptive-weighted', // Dynamically weight collections based on query
-    ],
-  };
-}
 
 /**
  * Generate schema-driven system prompt for query planning
@@ -158,10 +120,10 @@ async function validateAndEnhanceQueryPlan(
     }
 
     // Enhance fusion method using domain validator
-    let fusionMethod: QueryPlan['fusion'] = queryPlan.fusion || (getRecommendedFusionMethod(enhancedVectorSources.length) as QueryPlan['fusion']);
+    const fusionMethod: QueryPlan['fusion'] = queryPlan.fusion || (getRecommendedFusionMethod(enhancedVectorSources.length) as QueryPlan['fusion']);
 
     // Build enhanced structured sources using domain-specific filter builder
-    let enhancedStructuredSources = queryPlan.structuredSources || [];
+    const enhancedStructuredSources = queryPlan.structuredSources || [];
 
     // Use domain handler to build filters from intent state
     const filters = domainHandlers.buildFilters(intentState);

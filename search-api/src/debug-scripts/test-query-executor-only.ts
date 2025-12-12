@@ -24,12 +24,12 @@
  */
 
 import dotenv from 'dotenv';
-import { queryExecutorNode } from '../graphs/nodes/query-executor.node.js';
-import { StateAnnotation } from '../types/state.js';
+import { queryExecutorNode } from '#graphs/nodes/query-executor.node.js';
+import { StateAnnotation } from '#types/state.js';
 import net from 'net';
-import { toolsSchema } from '../domains/tools/tools.schema.js';
-import { buildToolsFilters } from '../domains/tools/tools.filters.js';
-import { validateToolsQueryPlan } from '../domains/tools/tools.validators.js';
+import { toolsSchema } from '#domains/tools/tools.schema.js';
+import { buildToolsFilters } from '#domains/tools/tools.filters.js';
+import { validateToolsQueryPlan } from '#domains/tools/tools.validators.js';
 
 // Load environment variables
 dotenv.config();

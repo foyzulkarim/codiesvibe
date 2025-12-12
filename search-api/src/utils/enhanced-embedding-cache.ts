@@ -1,4 +1,4 @@
-import { PerformanceConfig } from "#config/enhanced-search-config";
+import { PerformanceConfig } from "#config/enhanced-search-config.js";
 import { cosineSimilarity } from "./cosine-similarity.js";
 import { gzipSync, gunzipSync } from "zlib";
 
@@ -706,7 +706,7 @@ export class EnhancedEmbeddingCache {
 }
 
 // Export singleton instance with default configuration
-import { defaultEnhancedSearchConfig } from "#config/enhanced-search-config";
+import { defaultEnhancedSearchConfig } from "#config/enhanced-search-config.js";
 
 export const enhancedEmbeddingCache = new EnhancedEmbeddingCache(
   defaultEnhancedSearchConfig.performance

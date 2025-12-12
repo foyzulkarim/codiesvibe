@@ -7,7 +7,7 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import { searchLogger } from '#config/logger';
+import { searchLogger } from '#config/logger.js';
 import { SearchRequest } from './correlation.middleware.js';
 
 /**

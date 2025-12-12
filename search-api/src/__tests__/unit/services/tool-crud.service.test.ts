@@ -49,7 +49,7 @@ jest.mock('../../../config/database', () => ({
 }));
 
 // Import the service after mocking
-import { toolCrudService } from '../../../services/tool-crud.service.js';
+import { toolCrudService } from '../../../domains/tools/tool-crud.service.js';
 
 describe('ToolCrudService', () => {
   const TEST_CLERK_USER_ID = 'user_test123456789'; // Mock Clerk user ID

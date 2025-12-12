@@ -57,7 +57,7 @@ jest.mock('../../../middleware/rate-limiters', () => ({
   },
 }));
 
-jest.mock('../../../services/metrics.service', () => ({
+jest.mock('../../../services/infrastructure/metrics.service', () => ({
   metricsService: {
     trackHttpMetrics: jest.fn(() => (req: Request, res: Response, next: NextFunction) => {
       next();
@@ -89,7 +89,7 @@ import {
 import { searchLogger } from '../../../config/logger.js';
 import { securityConfig } from '../../../config/security.config.js';
 import { createCorsMiddleware } from '../../../config/cors.config.js';
-import { metricsService } from '../../../services/metrics.service.js';
+import { metricsService } from '../../../services/infrastructure/metrics.service.js';
 import { clerkMiddleware } from '@clerk/express';
 
 describe('Setup Middleware', () => {

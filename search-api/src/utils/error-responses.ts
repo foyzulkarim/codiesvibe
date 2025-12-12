@@ -5,7 +5,7 @@
  */
 
 import Joi from 'joi';
-import { CONFIG } from '#config/env.config';
+import { CONFIG } from '#config/env.config.js';
 
 /**
  * Format validation error response

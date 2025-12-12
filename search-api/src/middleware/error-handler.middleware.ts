@@ -6,8 +6,8 @@
 
 import { Response, NextFunction } from 'express';
 import type { AppRequest } from '#types/express.types.js';
-import { searchLogger } from '../config/logger.js';
-import { CONFIG } from '#config/env.config';
+import { searchLogger } from '#config/logger.js';
+import { CONFIG } from '#config/env.config.js';
 
 export function errorHandler(
   err: Error,

@@ -14,18 +14,46 @@ import { CONFIG } from './env.config.js';
  */
 function getAllowedOrigins(): string[] | boolean {
   if (CONFIG.env.IS_PRODUCTION) {
-    // Production: Use specific allowed origins
-    const allowedOrigins = CONFIG.cors.ALLOWED_ORIGINS.length > 0
-      ? CONFIG.cors.ALLOWED_ORIGINS
-      : ['https://yourdomain.com', 'https://www.yourdomain.com'];
-    return allowedOrigins;
+    // Production: Must have explicit allowed origins
+    if (CONFIG.cors.ALLOWED_ORIGINS.length === 0) {
+      throw new Error(
+        'CORS configuration error: ALLOWED_ORIGINS is required in production. ' +
+        'Set ALLOWED_ORIGINS environment variable with comma-separated origins.'
+      );
+    }
+    return CONFIG.cors.ALLOWED_ORIGINS;
   } else {
-    // Development: Allow all origins or specific development origins
+    // Development: Use specific origins or allow all
     const devOrigins = CONFIG.cors.CORS_ORIGINS;
     if (devOrigins && devOrigins.length > 0) {
       return devOrigins;
     }
     return true; // Allow all origins in development
+  }
+}
+
+/**
+ * Validate CORS configuration
+ * Throws error if configuration is invalid
+ */
+export function validateCorsConfiguration(): void {
+  if (CONFIG.env.IS_PRODUCTION) {
+    if (CONFIG.cors.ALLOWED_ORIGINS.length === 0) {
+      throw new Error(
+        'Production CORS validation failed: ALLOWED_ORIGINS environment variable is required. ' +
+        'Please set ALLOWED_ORIGINS to a comma-separated list of your production domains.'
+      );
+    }
+
+    // Validate each origin format
+    for (const origin of CONFIG.cors.ALLOWED_ORIGINS) {
+      if (!origin.startsWith('http://') && !origin.startsWith('https://')) {
+        throw new Error(
+          `Production CORS validation failed: Invalid origin format "${origin}". ` +
+          'Origins must start with http:// or https://'
+        );
+      }
+    }
   }
 }
 

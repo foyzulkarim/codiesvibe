@@ -1,7 +1,7 @@
 import { Annotation } from "@langchain/langgraph";
 
 import { ToolData } from "./tool.types.js";
-import { DomainSchema } from "../core/types/schema.types.js";
+import { DomainSchema } from "#core/types/schema.types.js";
 import type { IntentState } from "./intent-state.js";
 import type { QueryPlan } from "./query-plan.js";
 import type { Candidate } from "./candidate.js";

@@ -7,7 +7,7 @@
 
 import { MongoClient, Db, Collection, Document } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { ITool, CreateToolData, createDefaultSyncMetadata } from '../../types/tool.interfaces.js';
+import { ITool, CreateToolData, createDefaultSyncMetadata } from '#types/tool.interfaces.js';
 
 let mongoServer: MongoMemoryServer | null = null;
 let mongoClient: MongoClient | null = null;

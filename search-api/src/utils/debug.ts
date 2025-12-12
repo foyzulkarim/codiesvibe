@@ -4,7 +4,7 @@
  * Conditional debug logging based on environment configuration
  */
 
-import { CONFIG } from '#config/env.config';
+import { CONFIG } from '#config/env.config.js';
 
 /**
  * Log debug information if DEBUG environment variable is set

@@ -33,7 +33,11 @@ export {
   getEnabledCollections,
 } from './tools.validators.js';
 
-// Import for convenient namespace
+// Export CRUD service
+export { toolCrudService } from './tool-crud.service.js';
+export type { ToolCrudService } from './tool-crud.service.js';
+
+// Import for convenient namespace and backward-compatible exports
 import {
   toolsSchema,
   TOOLS_VOCABULARY_MAPPINGS,
@@ -53,10 +57,31 @@ import {
   getEnabledCollections,
 } from './tools.validators.js';
 
+// ============================================================================
+// VOCABULARY EXPORTS
+// Single source of truth: toolsSchema.vocabularies
+// ============================================================================
+
+/**
+ * Enum values for embedding service
+ * Provides key aliases (e.g., pricingModel → pricingModels) for compatibility
+ */
+export const enumValues = {
+  categories: toolsSchema.vocabularies.categories,
+  functionality: toolsSchema.vocabularies.functionality,
+  userTypes: toolsSchema.vocabularies.userTypes,
+  interface: toolsSchema.vocabularies.interface,
+  deployment: toolsSchema.vocabularies.deployment,
+  pricingModel: toolsSchema.vocabularies.pricingModels,
+  industries: toolsSchema.vocabularies.industries,
+  billingPeriods: toolsSchema.vocabularies.billingPeriods,
+};
+
 // Re-export as convenient namespace
 export const ToolsDomain = {
   // Schema
   schema: toolsSchema,
+  vocabularies: toolsSchema.vocabularies,
   vocabularyMappings: TOOLS_VOCABULARY_MAPPINGS,
   priceOperators: TOOLS_PRICE_OPERATORS,
 

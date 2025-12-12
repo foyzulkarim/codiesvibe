@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CONTROLLED_VOCABULARIES } from '../shared/constants/controlled-vocabularies.js';
+import { toolsSchema } from '#domains/tools/index.js';
 
 // Approval status enum
 export const ApprovalStatusEnum = z.enum(['pending', 'approved', 'rejected']);
@@ -8,8 +8,8 @@ export type ApprovalStatus = z.infer<typeof ApprovalStatusEnum>;
 // Pricing tier schema
 export const PricingSchema = z.object({
   tier: z.string().min(1, 'Tier name is required'),
-  billingPeriod: z.enum(CONTROLLED_VOCABULARIES.billingPeriods as [string, ...string[]], {
-    errorMap: () => ({ message: `billingPeriod must be one of: ${CONTROLLED_VOCABULARIES.billingPeriods.join(', ')}` }),
+  billingPeriod: z.enum(toolsSchema.vocabularies.billingPeriods as [string, ...string[]], {
+    errorMap: () => ({ message: `billingPeriod must be one of: ${toolsSchema.vocabularies.billingPeriods.join(', ')}` }),
   }),
   price: z.number().min(0, 'Price must be non-negative'),
 });
@@ -55,17 +55,17 @@ export const CreateToolSchema = z.object({
 
   // Categorization
   categories: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.categories as [string, ...string[]]))
     .min(1, 'At least one category is required')
     .max(5, 'At most 5 categories allowed'),
 
   industries: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.industries as [string, ...string[]]))
     .min(1, 'At least one industry is required')
     .max(10, 'At most 10 industries allowed'),
 
   userTypes: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.userTypes as [string, ...string[]]))
     .min(1, 'At least one user type is required')
     .max(10, 'At most 10 user types allowed'),
 
@@ -75,7 +75,7 @@ export const CreateToolSchema = z.object({
     .min(1, 'At least one pricing tier is required'),
 
   pricingModel: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.pricingModels as [string, ...string[]]))
     .min(1, 'At least one pricing model is required'),
 
   pricingUrl: z
@@ -86,15 +86,15 @@ export const CreateToolSchema = z.object({
 
   // Technical specifications
   interface: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.interface as [string, ...string[]]))
     .min(1, 'At least one interface is required'),
 
   functionality: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.functionality as [string, ...string[]]))
     .min(1, 'At least one functionality is required'),
 
   deployment: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.deployment as [string, ...string[]]))
     .min(1, 'At least one deployment option is required'),
 
   // Metadata
@@ -166,19 +166,19 @@ export const UpdateToolSchema = z.object({
 
   // Categorization
   categories: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.categories as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.categories as [string, ...string[]]))
     .min(1, 'At least one category is required')
     .max(5, 'At most 5 categories allowed')
     .optional(),
 
   industries: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.industries as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.industries as [string, ...string[]]))
     .min(1, 'At least one industry is required')
     .max(10, 'At most 10 industries allowed')
     .optional(),
 
   userTypes: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.userTypes as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.userTypes as [string, ...string[]]))
     .min(1, 'At least one user type is required')
     .max(10, 'At most 10 user types allowed')
     .optional(),
@@ -190,7 +190,7 @@ export const UpdateToolSchema = z.object({
     .optional(),
 
   pricingModel: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.pricingModels as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.pricingModels as [string, ...string[]]))
     .min(1, 'At least one pricing model is required')
     .optional(),
 
@@ -202,17 +202,17 @@ export const UpdateToolSchema = z.object({
 
   // Technical specifications
   interface: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.interface as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.interface as [string, ...string[]]))
     .min(1, 'At least one interface is required')
     .optional(),
 
   functionality: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.functionality as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.functionality as [string, ...string[]]))
     .min(1, 'At least one functionality is required')
     .optional(),
 
   deployment: z
-    .array(z.enum(CONTROLLED_VOCABULARIES.deployment as [string, ...string[]]))
+    .array(z.enum(toolsSchema.vocabularies.deployment as [string, ...string[]]))
     .min(1, 'At least one deployment option is required')
     .optional(),
 
