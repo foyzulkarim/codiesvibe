@@ -64,7 +64,6 @@ docker-compose*.yml
 .editorconfig
 .eslintrc*
 .prettierrc*
-tsconfig*.json
 nodemon.json
 jest.config.js
 
