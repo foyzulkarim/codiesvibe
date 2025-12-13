@@ -196,7 +196,7 @@ describe('Tools Filters - Unit Tests', () => {
       const filters = buildToolsFilters(intentState);
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].field).toBe('categories.primary');
+      expect(filters[0].field).toBe('categories');
       expect(filters[0].operator).toBe('in');
       expect(filters[0].value).toEqual(['AI']);
     });
@@ -274,7 +274,7 @@ describe('Tools Filters - Unit Tests', () => {
       const filters = buildToolsFilters(intentState);
 
       expect(filters).toHaveLength(1);
-      expect(filters[0].field).toBe('capabilities.core');
+      expect(filters[0].field).toBe('functionality');
       expect(filters[0].operator).toBe('in');
       expect(filters[0].value).toEqual(['Code Generation']);
     });
@@ -295,7 +295,7 @@ describe('Tools Filters - Unit Tests', () => {
 
       expect(filters).toHaveLength(2);
       expect(filters.some(f => f.field === 'pricing')).toBe(true);
-      expect(filters.some(f => f.field === 'categories.primary')).toBe(true);
+      expect(filters.some(f => f.field === 'categories')).toBe(true);
     });
 
     test('7.2 Category + interface + deployment - should build all filters', () => {
@@ -308,7 +308,7 @@ describe('Tools Filters - Unit Tests', () => {
       const filters = buildToolsFilters(intentState);
 
       expect(filters).toHaveLength(3);
-      expect(filters.some(f => f.field === 'categories.primary')).toBe(true);
+      expect(filters.some(f => f.field === 'categories')).toBe(true);
       expect(filters.some(f => f.field === 'interface')).toBe(true);
       expect(filters.some(f => f.field === 'deployment')).toBe(true);
     });
